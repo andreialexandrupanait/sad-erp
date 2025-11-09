@@ -1,0 +1,13 @@
+/vendor
+/node_modules
+/storage/*.key
+/storage/logs
+/bootstrap/cache
+/.env
+/mysql
+/logs
+*.sql
+.idea
+.DS_Store
+.env.backup
+docker-compose.override.yml

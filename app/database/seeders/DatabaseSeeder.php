@@ -1,0 +1,312 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use App\Models\Organization;
+use App\Models\Client;
+use App\Models\Credential;
+use App\Models\InternalAccount;
+use App\Models\Domain;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        // Create Demo Organization
+        $organization = Organization::create([
+            'name' => 'Demo Company Inc',
+            'slug' => 'demo-company',
+            'email' => 'info@democompany.com',
+            'phone' => '+1-555-123-4567',
+            'address' => '123 Business Street',
+            'tax_id' => 'TAX-123456',
+            'billing_email' => 'billing@democompany.com',
+            'status' => 'active',
+        ]);
+
+        // Create Admin User
+        $adminUser = User::create([
+            'name' => 'Admin User',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('password'),
+            'organization_id' => $organization->id,
+            'role' => 'admin',
+            'phone' => '+1-555-999-0001',
+            'status' => 'active',
+        ]);
+
+        // Create Manager User
+        $managerUser = User::create([
+            'name' => 'Manager User',
+            'email' => 'manager@example.com',
+            'password' => Hash::make('password'),
+            'organization_id' => $organization->id,
+            'role' => 'manager',
+            'phone' => '+1-555-999-0002',
+            'status' => 'active',
+        ]);
+
+        // Create Sample Clients
+        $clients = [
+            [
+                'name' => 'John Smith',
+                'company' => 'Tech Solutions Ltd',
+                'email' => 'john@techsolutions.com',
+                'phone' => '+1-555-100-0001',
+                'city' => 'San Francisco',
+                'state' => 'California',
+                'country' => 'United States',
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Maria Garcia',
+                'company' => 'Digital Marketing Pro',
+                'email' => 'maria@digitalmarketingpro.com',
+                'phone' => '+1-555-200-0002',
+                'city' => 'New York',
+                'country' => 'United States',
+                'status' => 'active',
+            ],
+            [
+                'name' => 'Robert Johnson',
+                'company' => 'Global Enterprises Inc',
+                'email' => 'robert@globalenterprises.com',
+                'phone' => '+1-555-300-0003',
+                'city' => 'Chicago',
+                'country' => 'United States',
+                'status' => 'active',
+            ],
+        ];
+
+        $clientRecords = [];
+        foreach ($clients as $clientData) {
+            $clientRecords[] = Client::create(array_merge($clientData, [
+                'organization_id' => $organization->id,
+            ]));
+        }
+
+        // Create Sample Credentials
+        $credentials = [
+            [
+                'client_id' => $clientRecords[0]->id,
+                'platform' => 'Facebook',
+                'url' => 'https://business.facebook.com',
+                'username' => 'john@techsolutions.com',
+                'password' => 'SecurePass123!',
+                'notes' => 'Facebook Business Manager account for advertising campaigns',
+            ],
+            [
+                'client_id' => $clientRecords[0]->id,
+                'platform' => 'Google Ads',
+                'url' => 'https://ads.google.com',
+                'username' => 'john@techsolutions.com',
+                'password' => 'GoogleAds2025',
+                'notes' => 'Google Ads account - Monthly budget $5000',
+            ],
+            [
+                'client_id' => $clientRecords[1]->id,
+                'platform' => 'WordPress',
+                'url' => 'https://digitalmarketingpro.com/wp-admin',
+                'username' => 'admin',
+                'password' => 'WP@dmin2025',
+                'notes' => 'Main website admin access',
+            ],
+            [
+                'client_id' => $clientRecords[1]->id,
+                'platform' => 'LinkedIn',
+                'url' => 'https://linkedin.com',
+                'username' => 'maria@digitalmarketingpro.com',
+                'password' => 'LinkedIn#2025',
+                'notes' => 'Company LinkedIn page administrator',
+            ],
+            [
+                'client_id' => $clientRecords[2]->id,
+                'platform' => 'AWS',
+                'url' => 'https://console.aws.amazon.com',
+                'username' => 'robert@globalenterprises.com',
+                'password' => 'AWS_Secure_Pass_2025',
+                'notes' => 'AWS Console - Production environment access',
+            ],
+        ];
+
+        foreach ($credentials as $credentialData) {
+            Credential::create(array_merge($credentialData, [
+                'organization_id' => $organization->id,
+            ]));
+        }
+
+        // Create Sample Internal Accounts
+        $internalAccounts = [
+            [
+                'user_id' => $adminUser->id,
+                'nume_cont_aplicatie' => 'Company Bank Account - Main',
+                'platforma' => 'Bank Account',
+                'url' => 'https://online-banking.example.com',
+                'username' => 'democompany',
+                'password' => 'BankSecure2025!',
+                'accesibil_echipei' => true,
+                'notes' => 'Primary business checking account - Account #1234567890',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'nume_cont_aplicatie' => 'AWS Root Account',
+                'platforma' => 'Cloud Storage',
+                'url' => 'https://console.aws.amazon.com',
+                'username' => 'root@democompany.com',
+                'password' => 'AWS_R00t_P@ss_2025',
+                'accesibil_echipei' => false,
+                'notes' => 'AWS root account - DO NOT USE FOR DAILY OPERATIONS. Use IAM users instead.',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'nume_cont_aplicatie' => 'Stripe Payment Gateway',
+                'platforma' => 'Payment Gateway',
+                'url' => 'https://dashboard.stripe.com',
+                'username' => 'billing@democompany.com',
+                'password' => 'Stripe_Secure_2025',
+                'accesibil_echipei' => true,
+                'notes' => 'Live API keys stored separately. Test mode: enabled',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'nume_cont_aplicatie' => 'Mailchimp Marketing',
+                'platforma' => 'Email Service',
+                'url' => 'https://mailchimp.com',
+                'username' => 'marketing@democompany.com',
+                'password' => 'Mail_Ch1mp_2025',
+                'accesibil_echipei' => true,
+                'notes' => 'Email marketing campaigns - Subscriber count: 15,000',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'nume_cont_aplicatie' => 'Domain Registrar - GoDaddy',
+                'platforma' => 'Domain Registrar',
+                'url' => 'https://sso.godaddy.com',
+                'username' => 'admin@democompany.com',
+                'password' => 'G0Daddy_Secure_2025!',
+                'accesibil_echipei' => false,
+                'notes' => 'Domains: democompany.com, democompany.net (expires 2026-12)',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'nume_cont_aplicatie' => 'QuickBooks Accounting',
+                'platforma' => 'Accounting Software',
+                'url' => 'https://quickbooks.intuit.com',
+                'username' => 'accounting@democompany.com',
+                'password' => 'QB_Acc0unting_2025',
+                'accesibil_echipei' => true,
+                'notes' => 'Fiscal year: Jan-Dec. Accountant access: enabled',
+            ],
+        ];
+
+        foreach ($internalAccounts as $accountData) {
+            InternalAccount::create(array_merge($accountData, [
+                'organization_id' => $organization->id,
+            ]));
+        }
+
+        // Create Sample Domains with varying expiry dates
+        $domains = [
+            [
+                'client_id' => $clientRecords[0]->id,
+                'domain_name' => 'techsolutions.com',
+                'registrar' => 'GoDaddy',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(3),
+                'expiry_date' => Carbon::now()->addDays(45), // Valid (>30 days)
+                'annual_cost' => 12.99,
+                'auto_renew' => true,
+                'notes' => 'Primary business domain',
+            ],
+            [
+                'client_id' => $clientRecords[0]->id,
+                'domain_name' => 'techsolutions.net',
+                'registrar' => 'Namecheap',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(2),
+                'expiry_date' => Carbon::now()->addDays(15), // Expiring soon (< 30 days)
+                'annual_cost' => 10.99,
+                'auto_renew' => false,
+                'notes' => 'Backup domain - needs renewal',
+            ],
+            [
+                'client_id' => $clientRecords[1]->id,
+                'domain_name' => 'digitalmarketingpro.com',
+                'registrar' => 'Google Domains',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(4),
+                'expiry_date' => Carbon::now()->addMonths(6), // Valid
+                'annual_cost' => 15.00,
+                'auto_renew' => true,
+                'notes' => 'Main business website',
+            ],
+            [
+                'client_id' => $clientRecords[1]->id,
+                'domain_name' => 'marketingpro.io',
+                'registrar' => 'Namecheap',
+                'status' => 'Expired',
+                'registration_date' => Carbon::now()->subYears(2),
+                'expiry_date' => Carbon::now()->subDays(10), // Expired
+                'annual_cost' => 25.00,
+                'auto_renew' => false,
+                'notes' => 'URGENT: Expired 10 days ago!',
+            ],
+            [
+                'client_id' => $clientRecords[2]->id,
+                'domain_name' => 'globalenterprises.com',
+                'registrar' => 'Cloudflare',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(5),
+                'expiry_date' => Carbon::now()->addYear(), // Valid
+                'annual_cost' => 9.99,
+                'auto_renew' => true,
+                'notes' => 'Corporate domain with Cloudflare DNS',
+            ],
+            [
+                'client_id' => null, // No client assigned
+                'domain_name' => 'democompany.com',
+                'registrar' => 'GoDaddy',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(6),
+                'expiry_date' => Carbon::now()->addDays(5), // Expiring very soon
+                'annual_cost' => 12.99,
+                'auto_renew' => false,
+                'notes' => 'Company main domain - RENEW ASAP!',
+            ],
+            [
+                'client_id' => null,
+                'domain_name' => 'democompany.net',
+                'registrar' => 'GoDaddy',
+                'status' => 'Active',
+                'registration_date' => Carbon::now()->subYears(5),
+                'expiry_date' => Carbon::now()->addMonths(3), // Valid
+                'annual_cost' => 12.99,
+                'auto_renew' => true,
+            ],
+        ];
+
+        foreach ($domains as $domainData) {
+            Domain::create(array_merge($domainData, [
+                'organization_id' => $organization->id,
+            ]));
+        }
+
+        echo "\n✓ Database seeded successfully!\n";
+        echo "✓ Created 1 organization: Demo Company Inc\n";
+        echo "✓ Created 2 users\n";
+        echo "✓ Created 3 sample clients\n";
+        echo "✓ Created 5 sample credentials\n";
+        echo "✓ Created 6 sample internal accounts\n";
+        echo "✓ Created 7 sample domains (1 expired, 2 expiring soon, 4 valid)\n\n";
+        echo "Login credentials:\n";
+        echo "  Admin:   admin@example.com / password\n";
+        echo "  Manager: manager@example.com / password\n\n";
+    }
+}
