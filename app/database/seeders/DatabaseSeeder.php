@@ -8,6 +8,7 @@ use App\Models\Client;
 use App\Models\Credential;
 use App\Models\InternalAccount;
 use App\Models\Domain;
+use App\Models\Subscription;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
@@ -298,13 +299,134 @@ class DatabaseSeeder extends Seeder
             ]));
         }
 
+        // Create Sample Subscriptions with varying renewal dates
+        $subscriptions = [
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'Adobe Creative Cloud',
+                'price' => 249.99,
+                'billing_cycle' => 'monthly',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subMonths(6),
+                'next_renewal_date' => Carbon::now()->addDays(3), // Urgent (0-7 days)
+                'status' => 'active',
+                'notes' => 'Team subscription - 5 licenses for design team',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'Microsoft 365 Business',
+                'price' => 599.00,
+                'billing_cycle' => 'monthly',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subYear(),
+                'next_renewal_date' => Carbon::now()->addDays(12), // Warning (8-14 days)
+                'status' => 'active',
+                'notes' => 'Company-wide Office suite and email',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'AWS Cloud Services',
+                'price' => 1250.00,
+                'billing_cycle' => 'monthly',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subYears(2),
+                'next_renewal_date' => Carbon::now()->addDays(20), // Normal (>14 days)
+                'status' => 'active',
+                'notes' => 'Production servers and storage - EC2, S3, RDS',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'vendor_name' => 'Slack Business+',
+                'price' => 799.00,
+                'billing_cycle' => 'annual',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subMonths(8),
+                'next_renewal_date' => Carbon::now()->addMonths(4), // Normal
+                'status' => 'active',
+                'notes' => 'Team communication platform - 50 users',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'vendor_name' => 'Mailchimp Pro',
+                'price' => 149.99,
+                'billing_cycle' => 'monthly',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subMonths(3),
+                'next_renewal_date' => Carbon::now()->subDays(5), // Overdue!
+                'status' => 'active',
+                'notes' => 'Email marketing - 15,000 subscribers',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'GitHub Team',
+                'price' => 89.99,
+                'billing_cycle' => 'monthly',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subMonths(14),
+                'next_renewal_date' => Carbon::now()->addDays(8), // Warning
+                'status' => 'active',
+                'notes' => 'Code repository - 10 private repos',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'vendor_name' => 'Zoom Business',
+                'price' => 299.99,
+                'billing_cycle' => 'annual',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subYear(),
+                'next_renewal_date' => Carbon::now()->addMonths(2),
+                'status' => 'paused',
+                'notes' => 'Video conferencing - Paused due to remote work reduction',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'Dropbox Business',
+                'price' => 450.00,
+                'billing_cycle' => 'annual',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subYears(2),
+                'next_renewal_date' => Carbon::now()->subMonths(1),
+                'status' => 'cancelled',
+                'notes' => 'Cancelled - Migrated to Google Workspace',
+            ],
+            [
+                'user_id' => $managerUser->id,
+                'vendor_name' => 'Asana Premium',
+                'price' => 39.99,
+                'billing_cycle' => 'custom',
+                'custom_days' => 90, // Quarterly
+                'start_date' => Carbon::now()->subMonths(9),
+                'next_renewal_date' => Carbon::now()->addDays(15), // Normal
+                'status' => 'active',
+                'notes' => 'Project management - Quarterly billing (90 days)',
+            ],
+            [
+                'user_id' => $adminUser->id,
+                'vendor_name' => 'CloudFlare Pro',
+                'price' => 240.00,
+                'billing_cycle' => 'annual',
+                'custom_days' => null,
+                'start_date' => Carbon::now()->subMonths(2),
+                'next_renewal_date' => Carbon::now()->addMonths(10),
+                'status' => 'active',
+                'notes' => 'CDN and security - All company domains',
+            ],
+        ];
+
+        foreach ($subscriptions as $subscriptionData) {
+            Subscription::create(array_merge($subscriptionData, [
+                'organization_id' => $organization->id,
+            ]));
+        }
+
         echo "\n✓ Database seeded successfully!\n";
         echo "✓ Created 1 organization: Demo Company Inc\n";
         echo "✓ Created 2 users\n";
         echo "✓ Created 3 sample clients\n";
         echo "✓ Created 5 sample credentials\n";
         echo "✓ Created 6 sample internal accounts\n";
-        echo "✓ Created 7 sample domains (1 expired, 2 expiring soon, 4 valid)\n\n";
+        echo "✓ Created 7 sample domains (1 expired, 2 expiring soon, 4 valid)\n";
+        echo "✓ Created 10 sample subscriptions (1 overdue, 3 urgent/warning, 5 active, 1 paused, 1 cancelled)\n\n";
         echo "Login credentials:\n";
         echo "  Admin:   admin@example.com / password\n";
         echo "  Manager: manager@example.com / password\n\n";

@@ -7,38 +7,87 @@
 
         <title>{{ config('app.name', 'Laravel') }}</title>
 
-        <!-- Fonts -->
+        <!-- Fonts - Inter for modern clean look -->
         <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Tailwind CSS CDN (temporary) -->
+        <!-- Tailwind CSS CDN with custom config -->
         <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        fontFamily: {
+                            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                        },
+                        colors: {
+                            primary: {
+                                50: '#eff6ff',
+                                100: '#dbeafe',
+                                200: '#bfdbfe',
+                                300: '#93c5fd',
+                                400: '#60a5fa',
+                                500: '#3b82f6',
+                                600: '#2563eb',
+                                700: '#1d4ed8',
+                                800: '#1e40af',
+                                900: '#1e3a8a',
+                            },
+                        },
+                    }
+                }
+            }
+        </script>
 
         <!-- Alpine.js for interactivity -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
         <!-- Alpine Collapse Plugin -->
         <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+
+        <!-- Custom Styles for smooth transitions -->
+        <style>
+            * {
+                scroll-behavior: smooth;
+            }
+
+            /* Custom scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: #f1f5f9;
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 4px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: #94a3b8;
+            }
+        </style>
     </head>
-    <body class="font-sans antialiased bg-gray-50">
-        <!-- Sidebar -->
-        <x-sidebar />
+    <body class="font-sans antialiased bg-gray-50/50">
+        <div class="flex h-screen overflow-hidden">
+            <!-- Sidebar -->
+            <x-sidebar />
 
-        <!-- Main Content Area -->
-        <div class="md:ml-64">
-            <!-- Page Heading -->
-            @isset($header)
-                <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
-                    <div class="px-4 sm:px-6 lg:px-8 py-4">
-                        {{ $header }}
+            <!-- Main Content Area -->
+            <div class="flex-1 flex flex-col overflow-hidden">
+                <!-- Header -->
+                <x-header />
+
+                <!-- Page Content -->
+                <main class="flex-1 overflow-y-auto bg-gray-50/50">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        {{ $slot }}
                     </div>
-                </header>
-            @endisset
-
-            <!-- Page Content -->
-            <main class="min-h-screen">
-                {{ $slot }}
-            </main>
+                </main>
+            </div>
         </div>
     </body>
 </html>
