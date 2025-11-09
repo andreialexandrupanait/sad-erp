@@ -16,22 +16,27 @@
 
         <!-- Alpine.js for interactivity -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100 dark:bg-gray-900">
-            @include('layouts.navigation')
 
+        <!-- Alpine Collapse Plugin -->
+        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+    </head>
+    <body class="font-sans antialiased bg-gray-50">
+        <!-- Sidebar -->
+        <x-sidebar />
+
+        <!-- Main Content Area -->
+        <div class="md:ml-64">
             <!-- Page Heading -->
             @isset($header)
-                <header class="bg-white dark:bg-gray-800 shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+                    <div class="px-4 sm:px-6 lg:px-8 py-4">
                         {{ $header }}
                     </div>
                 </header>
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="min-h-screen">
                 {{ $slot }}
             </main>
         </div>
