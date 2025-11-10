@@ -7,16 +7,30 @@
                 </h2>
                 <p class="mt-2 text-sm text-slate-600">Manage your client relationships and track business information</p>
             </div>
-            <x-ui.button variant="default" onclick="window.location.href='{{ route('clients.create') }}'">
-                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                New Client
-            </x-ui.button>
+            <div class="flex items-center gap-3">
+                <x-ui.button variant="outline" onclick="window.location.href='{{ route('clients.import.form') }}'">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                    </svg>
+                    Import
+                </x-ui.button>
+                <x-ui.button variant="outline" onclick="window.location.href='{{ route('clients.export', request()->query()) }}'">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    Export
+                </x-ui.button>
+                <x-ui.button variant="default" onclick="window.location.href='{{ route('clients.create') }}'">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    New Client
+                </x-ui.button>
+            </div>
         </div>
     </x-slot>
 
-    <div class="px-6 lg:px-8 pb-8 space-y-6">
+    <div class="px-6 lg:px-8 py-8 space-y-6">
         <!-- Success Message -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -207,7 +221,7 @@
 
         <!-- Kanban View -->
         @if($viewMode === 'kanban')
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" x-data="kanbanBoard()">
                 @foreach($statuses as $status)
                     <x-ui.card>
                         <x-ui.card-header>
@@ -219,20 +233,106 @@
                             </div>
                         </x-ui.card-header>
                         <x-ui.card-content>
-                            <div class="space-y-2">
+                            <div class="space-y-2 kanban-column" data-status-id="{{ $status->id }}">
                                 @foreach($clients->get($status->id, collect()) as $client)
-                                    <a href="{{ route('clients.show', $client) }}" class="block p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition">
-                                        <div class="font-medium text-slate-900">{{ $client->name }}</div>
-                                        @if($client->company_name)
-                                            <div class="text-sm text-slate-500">{{ $client->company_name }}</div>
-                                        @endif
-                                    </a>
+                                    <div class="kanban-card cursor-move p-3 bg-slate-50 hover:bg-slate-100 rounded-lg transition border border-transparent hover:border-slate-300"
+                                         data-client-id="{{ $client->id }}"
+                                         draggable="true"
+                                         @dragstart="dragStart($event)"
+                                         @dragend="dragEnd($event)"
+                                         @dragover.prevent
+                                         @drop="drop($event, {{ $status->id }})">
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="font-medium text-slate-900">{{ $client->name }}</div>
+                                                @if($client->company_name)
+                                                    <div class="text-sm text-slate-500">{{ $client->company_name }}</div>
+                                                @endif
+                                            </div>
+                                            <a href="{{ route('clients.show', $client) }}" class="text-slate-400 hover:text-slate-600" onclick="event.stopPropagation()">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
                                 @endforeach
                             </div>
                         </x-ui.card-content>
                     </x-ui.card>
                 @endforeach
             </div>
+
+            <script>
+                function kanbanBoard() {
+                    return {
+                        draggedElement: null,
+
+                        dragStart(event) {
+                            this.draggedElement = event.target;
+                            event.target.classList.add('opacity-50');
+                        },
+
+                        dragEnd(event) {
+                            event.target.classList.remove('opacity-50');
+                        },
+
+                        drop(event, newStatusId) {
+                            event.preventDefault();
+
+                            if (!this.draggedElement) return;
+
+                            const clientId = this.draggedElement.dataset.clientId;
+                            const oldStatusId = this.draggedElement.closest('.kanban-column').dataset.statusId;
+
+                            if (oldStatusId !== newStatusId.toString()) {
+                                // Update status via AJAX
+                                fetch(`/clients/${clientId}/status`, {
+                                    method: 'PATCH',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: JSON.stringify({ status_id: newStatusId })
+                                })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // Move the card visually
+                                        const targetColumn = event.target.closest('.kanban-column');
+                                        if (targetColumn) {
+                                            targetColumn.appendChild(this.draggedElement);
+                                        }
+
+                                        // Show success notification
+                                        this.showNotification('Client status updated successfully!');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error updating status:', error);
+                                    this.showNotification('Error updating status', 'error');
+                                });
+                            }
+
+                            this.draggedElement = null;
+                        },
+
+                        showNotification(message, type = 'success') {
+                            // Simple notification - you can enhance this with a toast library
+                            const notification = document.createElement('div');
+                            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white`;
+                            notification.textContent = message;
+                            document.body.appendChild(notification);
+
+                            setTimeout(() => {
+                                notification.remove();
+                            }, 3000);
+                        }
+                    }
+                }
+            </script>
         @endif
 
         <!-- Grid View -->

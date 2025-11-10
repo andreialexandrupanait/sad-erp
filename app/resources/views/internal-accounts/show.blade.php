@@ -26,7 +26,7 @@
         </div>
     </x-slot>
 
-    <div class="px-6 lg:px-8 pb-8 space-y-6">
+    <div class="px-6 lg:px-8 py-8 space-y-6">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">

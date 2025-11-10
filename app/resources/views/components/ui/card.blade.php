@@ -7,9 +7,7 @@
         </div>
     @endif
 
-    <div class="p-6 pt-0">
-        {{ $slot }}
-    </div>
+    {{ $slot }}
 
     @if($footer)
         <div class="flex items-center p-6 pt-0">

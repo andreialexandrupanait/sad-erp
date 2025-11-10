@@ -16,7 +16,7 @@
         </div>
     </x-slot>
 
-    <div class="px-6 lg:px-8 pb-8">
+    <div class="px-6 lg:px-8 py-8">
         <x-ui.card>
             <x-ui.card-content>
                 <form method="POST" action="{{ route('domains.store') }}">

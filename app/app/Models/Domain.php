@@ -62,14 +62,16 @@ class Domain extends Model
         // Automatically set organization_id when creating
         static::creating(function ($domain) {
             if (auth()->check() && empty($domain->organization_id)) {
-                $domain->organization_id = auth()->user()->organization_id;
+                // Use user's organization_id, or default to 1 if user doesn't have one
+                $domain->organization_id = auth()->user()->organization_id ?? 1;
             }
         });
 
         // Global scope to filter by organization
         static::addGlobalScope('organization', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->organization_id) {
-                $builder->where('organization_id', auth()->user()->organization_id);
+            if (auth()->check()) {
+                $orgId = auth()->user()->organization_id ?? 1;
+                $builder->where('organization_id', $orgId);
             }
         });
     }

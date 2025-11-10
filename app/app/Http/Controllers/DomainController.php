@@ -51,7 +51,7 @@ class DomainController extends Controller
 
         // Get data for filters
         $clients = Client::orderBy('name')->get();
-        $registrars = Domain::REGISTRARS;
+        $registrars = setting_options('domain_registrars'); // Use dynamic settings
 
         // Statistics
         $stats = Domain::getStatistics();
@@ -73,7 +73,7 @@ class DomainController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = Domain::REGISTRARS;
+        $registrars = setting_options('domain_registrars'); // Use dynamic settings
 
         return view('domains.create', compact('clients', 'registrars'));
     }
@@ -123,7 +123,7 @@ class DomainController extends Controller
     public function edit(Domain $domain)
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = Domain::REGISTRARS;
+        $registrars = setting_options('domain_registrars'); // Use dynamic settings
 
         return view('domains.edit', compact('domain', 'clients', 'registrars'));
     }

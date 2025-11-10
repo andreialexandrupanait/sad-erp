@@ -8,7 +8,7 @@
         </div>
     </x-slot>
 
-    <div class="px-6 lg:px-8 pb-8">
+    <div class="px-6 lg:px-8 py-8">
         <div class="max-w-2xl">
             <x-ui.card>
                 <div class="p-6">

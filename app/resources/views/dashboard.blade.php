@@ -10,7 +10,7 @@
         </div>
     </x-slot>
 
-    <div class="px-6 lg:px-8 pb-8 space-y-6">
+    <div class="px-6 lg:px-8 py-8 space-y-6">
         <!-- Quick Stats Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Total Clients -->

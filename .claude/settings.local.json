@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose exec:*)",
+      "Bash(php artisan:*)",
+      "Bash(docker compose:*)",
+      "Bash(sudo chown:*)",
+      "Bash(sudo chmod:*)",
+      "Bash(rm:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
