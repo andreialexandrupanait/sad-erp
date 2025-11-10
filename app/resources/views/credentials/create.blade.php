@@ -1,93 +1,114 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-            {{ __('Create New Credential') }}
-        </h2>
+        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+                    {{ __('Create New Credential') }}
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">Add a new client access credential</p>
+            </div>
+        </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
+    <div class="px-6 lg:px-8 pb-8">
+        <div class="max-w-4xl mx-auto">
+            <x-ui.card>
+                <x-ui.card-content>
                     <form method="POST" action="{{ route('credentials.store') }}">
                         @csrf
 
                         <div class="space-y-6">
                             <!-- Client -->
                             <div>
-                                <label for="client_id" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="client_id">
                                     Client <span class="text-red-500">*</span>
-                                </label>
-                                <select id="client_id" name="client_id" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                </x-ui.label>
+                                <x-ui.select id="client_id" name="client_id" required class="mt-1.5">
                                     <option value="">Select a client</option>
                                     @foreach ($clients as $client)
                                         <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>
                                             {{ $client->display_name }}
                                         </option>
                                     @endforeach
-                                </select>
+                                </x-ui.select>
                                 @error('client_id')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <!-- Platform -->
                             <div>
-                                <label for="platform" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="platform">
                                     Platform <span class="text-red-500">*</span>
-                                </label>
-                                <select id="platform" name="platform" required
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                </x-ui.label>
+                                <x-ui.select id="platform" name="platform" required class="mt-1.5">
                                     <option value="">Select a platform</option>
                                     @foreach ($platforms as $key => $value)
                                         <option value="{{ $key }}" {{ old('platform') == $key ? 'selected' : '' }}>
                                             {{ $value }}
                                         </option>
                                     @endforeach
-                                </select>
+                                </x-ui.select>
                                 @error('platform')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <!-- URL -->
                             <div>
-                                <label for="url" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="url">
                                     URL
-                                </label>
-                                <input id="url" type="url" name="url" value="{{ old('url') }}"
+                                </x-ui.label>
+                                <x-ui.input
+                                    id="url"
+                                    type="url"
+                                    name="url"
+                                    value="{{ old('url') }}"
                                     placeholder="https://example.com"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                    class="mt-1.5"
+                                />
                                 @error('url')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <!-- Username/Email -->
                             <div>
-                                <label for="username" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="username">
                                     Username / Email
-                                </label>
-                                <input id="username" type="text" name="username" value="{{ old('username') }}"
+                                </x-ui.label>
+                                <x-ui.input
+                                    id="username"
+                                    type="text"
+                                    name="username"
+                                    value="{{ old('username') }}"
                                     placeholder="username or email@example.com"
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
+                                    class="mt-1.5"
+                                />
                                 @error('username')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <!-- Password -->
                             <div>
-                                <label for="password" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="password">
                                     Password
-                                </label>
-                                <div class="relative">
-                                    <input id="password" type="password" name="password" value="{{ old('password') }}"
+                                </x-ui.label>
+                                <div class="relative mt-1.5">
+                                    <x-ui.input
+                                        id="password"
+                                        type="password"
+                                        name="password"
+                                        value="{{ old('password') }}"
                                         placeholder="Enter password"
-                                        class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">
-                                    <button type="button" onclick="togglePasswordVisibility()"
-                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
+                                        class="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        onclick="togglePasswordVisibility()"
+                                        class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                                    >
                                         <svg id="eye-icon" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
@@ -95,35 +116,46 @@
                                     </button>
                                 </div>
                                 @error('password')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
 
                             <!-- Notes -->
                             <div>
-                                <label for="notes" class="block font-medium text-sm text-gray-700 dark:text-gray-300">
+                                <x-ui.label for="notes">
                                     Notes
-                                </label>
-                                <textarea id="notes" name="notes" rows="3"
+                                </x-ui.label>
+                                <x-ui.textarea
+                                    id="notes"
+                                    name="notes"
+                                    rows="3"
                                     placeholder="Additional information or notes..."
-                                    class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300">{{ old('notes') }}</textarea>
+                                    class="mt-1.5"
+                                >{{ old('notes') }}</x-ui.textarea>
                                 @error('notes')
-                                    <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                    <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
 
-                        <div class="flex items-center justify-end mt-6 gap-4">
-                            <a href="{{ route('credentials.index') }}" class="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100">
+                        <div class="flex items-center justify-end mt-8 gap-3 pt-6 border-t border-slate-200">
+                            <x-ui.button
+                                type="button"
+                                variant="outline"
+                                onclick="window.location.href='{{ route('credentials.index') }}'"
+                            >
                                 Cancel
-                            </a>
-                            <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                            </x-ui.button>
+                            <x-ui.button type="submit" variant="default">
+                                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
                                 Create Credential
-                            </button>
+                            </x-ui.button>
                         </div>
                     </form>
-                </div>
-            </div>
+                </x-ui.card-content>
+            </x-ui.card>
         </div>
     </div>
 

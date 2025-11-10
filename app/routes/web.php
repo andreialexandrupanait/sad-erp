@@ -23,6 +23,7 @@ Route::middleware('auth')->group(function () {
 
     // Clients Module
     Route::resource('clients', ClientController::class);
+    Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
 
     // Credentials Module
     Route::resource('credentials', CredentialController::class);

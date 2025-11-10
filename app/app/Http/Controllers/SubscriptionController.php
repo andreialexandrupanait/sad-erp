@@ -87,9 +87,6 @@ class SubscriptionController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        $validated['organization_id'] = auth()->user()->organization_id;
-        $validated['user_id'] = auth()->id();
-
         Subscription::create($validated);
 
         return redirect()->route('subscriptions.index')

@@ -1,15 +1,8 @@
 version: '3.8'
 
-# ============================================================================
-# Docker Compose configuration for Laravel 10/11 ERP Application
-# Environment: Production-ready setup with PHP 8.3, Nginx, MySQL 8.0
-# Access: http://SERVER_IP:8085
-# ============================================================================
-
 services:
   # ==========================================================================
   # MySQL 8.0 Database Service
-  # Container: erp_db
   # ==========================================================================
   erp_db:
     image: mysql:5.7
@@ -22,12 +15,9 @@ services:
       MYSQL_PASSWORD: laravel_secure_pass_2025
       MYSQL_ROOT_HOST: '%'
     volumes:
-      # Persistent database storage using named volume
       - erp_mysql_data:/var/lib/mysql
-      # Custom MySQL configuration
       - ./mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     ports:
-      # Exposed on host port 3307 to avoid conflicts with local MySQL
       - "3307:3306"
     networks:
       - erpnet
@@ -40,7 +30,6 @@ services:
 
   # ==========================================================================
   # PHP 8.3 FPM Application Service
-  # Container: erp_app
   # ==========================================================================
   erp_app:
     build:
@@ -50,14 +39,10 @@ services:
     restart: unless-stopped
     working_dir: /var/www/html
     volumes:
-      # Mount Laravel application directory
       - ./app:/var/www/html
-      # Custom PHP configuration
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/custom.ini
-      # PHP-FPM pool configuration
       - ./docker/php/www.conf:/usr/local/etc/php-fpm.d/www.conf
     environment:
-      # Database connection settings (also configured in Laravel .env)
       - DB_CONNECTION=mysql
       - DB_HOST=erp_db
       - DB_PORT=3306
@@ -72,31 +57,30 @@ services:
 
   # ==========================================================================
   # Nginx Web Server Service
-  # Container: erp_web
   # ==========================================================================
   erp_web:
     image: nginx:latest
     container_name: erp_web
     restart: unless-stopped
-    ports:
-      # Application accessible at http://SERVER_IP:8085
-      - "8085:80"
+    expose:
+      - "80"
+    environment:
+      - VIRTUAL_HOST=sad.simplead.ro
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=sad.simplead.ro
+      - LETSENCRYPT_EMAIL=admin@simplead.ro
     volumes:
-      # Mount Laravel application directory for serving static files
       - ./app:/var/www/html
-      # Custom Nginx virtual host configuration
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-      # Nginx access and error logs
       - ./logs/nginx:/var/log/nginx
     networks:
       - erpnet
+      - proxy
     depends_on:
       - erp_app
 
   # ==========================================================================
   # Composer - One-time Laravel Installation Service
-  # Container: erp_composer (manual execution only)
-  # Usage: docker-compose run --rm erp_composer create-project laravel/laravel .
   # ==========================================================================
   erp_composer:
     image: composer:latest
@@ -107,20 +91,20 @@ services:
     networks:
       - erpnet
     profiles:
-      - tools  # This service won't start with docker-compose up
+      - tools
 
 # ============================================================================
-# Docker Networks
-# All services communicate through the 'erpnet' bridge network
+# Networks
 # ============================================================================
 networks:
   erpnet:
     driver: bridge
     name: erpnet
+  proxy:
+    external: true
 
 # ============================================================================
-# Docker Volumes
-# Persistent storage for MySQL database data
+# Volumes
 # ============================================================================
 volumes:
   erp_mysql_data:

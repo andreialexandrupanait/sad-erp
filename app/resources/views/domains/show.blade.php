@@ -1,124 +1,154 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-                Domain: {{$domain->domain_name }}
-            </h2>
+        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
+            <div>
+                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
+                    Domain: {{ $domain->domain_name }}
+                </h2>
+                <p class="mt-2 text-sm text-slate-600">View domain details and information</p>
+            </div>
             <div class="flex gap-2">
-                <a href="{{ route('domains.edit', $domain) }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Edit</a>
-                <a href="{{ route('domains.index') }}" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">Back</a>
+                <x-ui.button variant="default" onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Edit
+                </x-ui.button>
+                <x-ui.button variant="outline" onclick="window.location.href='{{ route('domains.index') }}'">
+                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                    Back to Domains
+                </x-ui.button>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            @if (session('success'))
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                    <span>{{ session('success') }}</span>
-                </div>
-            @endif
+    <div class="px-6 lg:px-8 pb-8 space-y-6">
+        <!-- Success Messages -->
+        @if (session('success'))
+            <x-ui.alert variant="success">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>{{ session('success') }}</div>
+            </x-ui.alert>
+        @endif
 
-            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Domain Information</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Domain Name</label>
-                            <p class="mt-1 text-lg font-mono text-gray-900 dark:text-gray-100">{{ $domain->domain_name }}</p>
-                        </div>
+        <!-- Domain Information -->
+        <x-ui.card>
+            <x-ui.card-header>
+                <h3 class="text-lg font-semibold text-slate-900">Domain Information</h3>
+            </x-ui.card-header>
+            <x-ui.card-content>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Domain Name -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Domain Name</div>
+                        <div class="mt-1 text-lg font-mono font-semibold text-slate-900">{{ $domain->domain_name }}</div>
+                    </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Expiry Status</label>
-                            <p class="mt-1">
-                                @if ($domain->expiry_status === 'Expired')
-                                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300">
-                                        🚨 {{ $domain->expiry_text }}
-                                    </span>
-                                @elseif ($domain->expiry_status === 'Expiring')
-                                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
-                                        ⚠️ {{ $domain->expiry_text }}
-                                    </span>
-                                @else
-                                    <span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">
-                                        ✅ {{ $domain->expiry_text }}
-                                    </span>
-                                @endif
-                            </p>
-                        </div>
-
-                        @if ($domain->client)
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Client</label>
-                                <p class="mt-1">
-                                    <a href="{{ route('clients.show', $domain->client) }}" class="text-blue-600 hover:text-blue-800">
-                                        {{ $domain->client->display_name }}
-                                    </a>
-                                </p>
-                            </div>
-                        @endif
-
-                        @if ($domain->registrar)
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Registrar</label>
-                                <p class="mt-1 text-gray-900 dark:text-gray-100">{{ $domain->registrar }}</p>
-                            </div>
-                        @endif
-
-                        @if ($domain->registration_date)
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Registration Date</label>
-                                <p class="mt-1 text-gray-900 dark:text-gray-100">{{ $domain->registration_date->format('M d, Y') }}</p>
-                            </div>
-                        @endif
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Expiry Date</label>
-                            <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-gray-100">{{ $domain->expiry_date->format('M d, Y') }}</p>
-                        </div>
-
-                        @if ($domain->annual_cost)
-                            <div>
-                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Annual Cost</label>
-                                <p class="mt-1 text-gray-900 dark:text-gray-100">${{ number_format($domain->annual_cost, 2) }}</p>
-                            </div>
-                        @endif
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Auto-Renew</label>
-                            <p class="mt-1">
-                                @if ($domain->auto_renew)
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">Enabled</span>
-                                @else
-                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">Disabled</span>
-                                @endif
-                            </p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Status</label>
-                            <p class="mt-1 text-gray-900 dark:text-gray-100">{{ $domain->status }}</p>
-                        </div>
-
-                        @if ($domain->notes)
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Notes</label>
-                                <p class="mt-1 text-gray-900 dark:text-gray-100 whitespace-pre-line">{{ $domain->notes }}</p>
-                            </div>
-                        @endif
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Created</label>
-                            <p class="mt-1 text-gray-900 dark:text-gray-100">{{ $domain->created_at->format('M d, Y H:i') }}</p>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-500 dark:text-gray-400">Last Updated</label>
-                            <p class="mt-1 text-gray-900 dark:text-gray-100">{{ $domain->updated_at->format('M d, Y H:i') }}</p>
+                    <!-- Expiry Status -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Expiry Status</div>
+                        <div class="mt-2">
+                            @if ($domain->expiry_status === 'Expired')
+                                <x-ui.badge variant="destructive" class="text-base">
+                                    {{ $domain->expiry_text }}
+                                </x-ui.badge>
+                            @elseif ($domain->expiry_status === 'Expiring')
+                                <x-ui.badge variant="warning" class="text-base">
+                                    {{ $domain->expiry_text }}
+                                </x-ui.badge>
+                            @else
+                                <x-ui.badge variant="success" class="text-base">
+                                    {{ $domain->expiry_text }}
+                                </x-ui.badge>
+                            @endif
                         </div>
                     </div>
+
+                    <!-- Client -->
+                    @if ($domain->client)
+                        <div>
+                            <div class="text-sm font-medium text-slate-500">Client</div>
+                            <div class="mt-1">
+                                <a href="{{ route('clients.show', $domain->client) }}" class="text-slate-900 hover:text-slate-600 font-medium transition-colors">
+                                    {{ $domain->client->display_name }}
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- Registrar -->
+                    @if ($domain->registrar)
+                        <div>
+                            <div class="text-sm font-medium text-slate-500">Registrar</div>
+                            <div class="mt-1 text-slate-900">{{ $domain->registrar }}</div>
+                        </div>
+                    @endif
+
+                    <!-- Registration Date -->
+                    @if ($domain->registration_date)
+                        <div>
+                            <div class="text-sm font-medium text-slate-500">Registration Date</div>
+                            <div class="mt-1 text-slate-900">{{ $domain->registration_date->format('M d, Y') }}</div>
+                        </div>
+                    @endif
+
+                    <!-- Expiry Date -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Expiry Date</div>
+                        <div class="mt-1 text-lg font-semibold text-slate-900">{{ $domain->expiry_date->format('M d, Y') }}</div>
+                    </div>
+
+                    <!-- Annual Cost -->
+                    @if ($domain->annual_cost)
+                        <div>
+                            <div class="text-sm font-medium text-slate-500">Annual Cost</div>
+                            <div class="mt-1 text-slate-900 font-medium">${{ number_format($domain->annual_cost, 2) }}</div>
+                        </div>
+                    @endif
+
+                    <!-- Auto-Renew -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Auto-Renew</div>
+                        <div class="mt-2">
+                            @if ($domain->auto_renew)
+                                <x-ui.badge variant="info">Enabled</x-ui.badge>
+                            @else
+                                <x-ui.badge variant="secondary">Disabled</x-ui.badge>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Status</div>
+                        <div class="mt-1 text-slate-900">{{ $domain->status }}</div>
+                    </div>
+
+                    <!-- Notes -->
+                    @if ($domain->notes)
+                        <div class="md:col-span-2">
+                            <div class="text-sm font-medium text-slate-500">Notes</div>
+                            <div class="mt-1 text-slate-900 whitespace-pre-line">{{ $domain->notes }}</div>
+                        </div>
+                    @endif
+
+                    <!-- Created At -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Created</div>
+                        <div class="mt-1 text-sm text-slate-700">{{ $domain->created_at->format('M d, Y H:i') }}</div>
+                    </div>
+
+                    <!-- Updated At -->
+                    <div>
+                        <div class="text-sm font-medium text-slate-500">Last Updated</div>
+                        <div class="mt-1 text-sm text-slate-700">{{ $domain->updated_at->format('M d, Y H:i') }}</div>
+                    </div>
                 </div>
-            </div>
-        </div>
+            </x-ui.card-content>
+        </x-ui.card>
     </div>
 </x-app-layout>

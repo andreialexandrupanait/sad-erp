@@ -5,56 +5,83 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class Client extends Model
 {
     use SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
+        'user_id',
+        'status_id',
         'name',
-        'company',
+        'company_name',
+        'slug',
+        'tax_id',
+        'registration_number',
+        'contact_person',
         'email',
         'phone',
-        'tax_id',
         'address',
-        'city',
-        'state',
-        'postal_code',
-        'country',
-        'website',
+        'vat_payer',
         'notes',
-        'status',
+        'order_index',
+    ];
+
+    protected $casts = [
+        'vat_payer' => 'boolean',
+        'order_index' => 'integer',
     ];
 
     /**
-     * Boot function to automatically scope by organization
+     * Boot function to automatically scope by user
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Automatically set organization_id when creating
+        // Automatically set user_id when creating
         static::creating(function ($client) {
-            if (auth()->check() && empty($client->organization_id)) {
-                $client->organization_id = auth()->user()->organization_id;
+            if (auth()->check() && empty($client->user_id)) {
+                $client->user_id = auth()->id();
+            }
+
+            // Auto-generate slug if not provided
+            if (empty($client->slug)) {
+                $client->slug = Str::slug($client->name);
+
+                // Ensure unique slug
+                $originalSlug = $client->slug;
+                $counter = 1;
+                while (static::where('slug', $client->slug)->exists()) {
+                    $client->slug = $originalSlug . '-' . $counter;
+                    $counter++;
+                }
             }
         });
 
-        // Automatically scope all queries by organization
-        static::addGlobalScope('organization', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->organization_id) {
-                $builder->where('organization_id', auth()->user()->organization_id);
+        // Automatically scope all queries by user (RLS)
+        static::addGlobalScope('user', function (Builder $builder) {
+            if (auth()->check()) {
+                $builder->where('user_id', auth()->id());
             }
         });
     }
 
     /**
-     * Get the organization that owns the client
+     * Get the user that owns the client
      */
-    public function organization()
+    public function user()
     {
-        return $this->belongsTo(Organization::class);
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the status of the client
+     */
+    public function status()
+    {
+        return $this->belongsTo(ClientSetting::class, 'status_id');
     }
 
     /**
@@ -106,24 +133,42 @@ class Client extends Model
     }
 
     /**
-     * Scope to get only active clients
+     * Get all domains for this client
      */
-    public function scopeActive($query)
+    public function domains()
     {
-        return $query->where('status', 'active');
+        return $this->hasMany(Domain::class);
     }
 
     /**
-     * Scope to search clients by name, company, or email
+     * Scope to filter by status
+     */
+    public function scopeByStatus($query, $statusId)
+    {
+        return $query->where('status_id', $statusId);
+    }
+
+    /**
+     * Scope to search clients by name, company, tax_id or email
      */
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
             $q->where('name', 'like', "%{$search}%")
-              ->orWhere('company', 'like', "%{$search}%")
+              ->orWhere('company_name', 'like', "%{$search}%")
+              ->orWhere('tax_id', 'like', "%{$search}%")
               ->orWhere('email', 'like', "%{$search}%")
-              ->orWhere('phone', 'like', "%{$search}%");
+              ->orWhere('phone', 'like', "%{$search}%")
+              ->orWhere('contact_person', 'like', "%{$search}%");
         });
+    }
+
+    /**
+     * Scope to order by custom order index
+     */
+    public function scopeOrdered($query)
+    {
+        return $query->orderBy('order_index')->orderBy('name');
     }
 
     /**
@@ -131,7 +176,7 @@ class Client extends Model
      */
     public function getFullNameAttribute()
     {
-        return $this->company ? "{$this->name} ({$this->company})" : $this->name;
+        return $this->company_name ? "{$this->name} ({$this->company_name})" : $this->name;
     }
 
     /**
@@ -139,6 +184,38 @@ class Client extends Model
      */
     public function getDisplayNameAttribute()
     {
-        return $this->company ?: $this->name;
+        return $this->company_name ?: $this->name;
+    }
+
+    /**
+     * Get the route key for the model
+     */
+    public function getRouteKeyName()
+    {
+        return 'slug';
+    }
+
+    /**
+     * Calculate total revenue for this client
+     */
+    public function getTotalRevenueAttribute()
+    {
+        return $this->revenues()->sum('amount');
+    }
+
+    /**
+     * Get count of active domains
+     */
+    public function getActiveDomainsCountAttribute()
+    {
+        return $this->domains()->where('status', 'active')->count();
+    }
+
+    /**
+     * Get count of access credentials
+     */
+    public function getCredentialsCountAttribute()
+    {
+        return $this->accessCredentials()->count();
     }
 }

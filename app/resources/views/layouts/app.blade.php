@@ -71,21 +71,24 @@
             }
         </style>
     </head>
-    <body class="font-sans antialiased bg-gray-50/50">
+    <body class="font-sans antialiased bg-slate-50">
         <div class="flex h-screen overflow-hidden">
             <!-- Sidebar -->
             <x-sidebar />
 
             <!-- Main Content Area -->
             <div class="flex-1 flex flex-col overflow-hidden">
-                <!-- Header -->
-                <x-header />
-
                 <!-- Page Content -->
-                <main class="flex-1 overflow-y-auto bg-gray-50/50">
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                        {{ $slot }}
-                    </div>
+                <main class="flex-1 overflow-y-auto bg-slate-50">
+                    <!-- Page Header (if provided) -->
+                    @isset($header)
+                        <header class="bg-white border-b border-slate-200">
+                            {{ $header }}
+                        </header>
+                    @endisset
+
+                    <!-- Page Content -->
+                    {{ $slot }}
                 </main>
             </div>
         </div>

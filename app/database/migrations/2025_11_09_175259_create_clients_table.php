@@ -13,24 +13,36 @@ return new class extends Migration
     {
         Schema::create('clients', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('company')->nullable();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade'); // owner_user
+            $table->foreignId('status_id')->nullable()->constrained('client_settings')->onDelete('set null');
+
+            // Core identification
+            $table->string('name'); // Display name (required)
+            $table->string('company_name')->nullable(); // Official company name
+            $table->string('slug')->unique(); // URL-friendly identifier
+            $table->string('tax_id')->nullable(); // CUI / Tax ID
+            $table->string('registration_number')->nullable(); // Company registration number
+
+            // Contact information
+            $table->string('contact_person')->nullable();
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('tax_id')->nullable();
             $table->text('address')->nullable();
-            $table->string('city')->nullable();
-            $table->string('state')->nullable();
-            $table->string('postal_code')->nullable();
-            $table->string('country')->nullable();
-            $table->string('website')->nullable();
+
+            // VAT information
+            $table->boolean('vat_payer')->default(false);
+
+            // Additional fields
             $table->text('notes')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->integer('order_index')->default(0); // Manual ordering for UI
+
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['organization_id', 'status']);
+            // Indexes for performance
+            $table->index(['user_id', 'status_id']);
+            $table->index('order_index');
+            $table->unique(['tax_id', 'user_id']); // Unique CUI per user
         });
     }
 

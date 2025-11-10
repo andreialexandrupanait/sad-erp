@@ -13,7 +13,6 @@ class Subscription extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'organization_id',
         'user_id',
         'vendor_name',
         'price',
@@ -33,17 +32,23 @@ class Subscription extends Model
     ];
 
     /**
-     * Boot method - apply global scopes
+     * Boot method - apply global scopes and auto-assign user_id
      */
     protected static function boot()
     {
         parent::boot();
 
+        // Auto-assign user_id when creating
+        static::creating(function ($subscription) {
+            if (auth()->check() && empty($subscription->user_id)) {
+                $subscription->user_id = auth()->id();
+            }
+        });
+
         // User-based scoping: Only show subscriptions owned by current user
         static::addGlobalScope('user', function (Builder $builder) {
             if (auth()->check()) {
-                $builder->where('user_id', auth()->id())
-                        ->where('organization_id', auth()->user()->organization_id);
+                $builder->where('user_id', auth()->id());
             }
         });
     }
@@ -51,11 +56,6 @@ class Subscription extends Model
     /**
      * Relationships
      */
-    public function organization()
-    {
-        return $this->belongsTo(Organization::class);
-    }
-
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -230,16 +230,18 @@ class Subscription extends Model
         $this->next_renewal_date = $newDate;
         $this->save();
 
-        // Create audit log
-        SubscriptionLog::create([
-            'subscription_id' => $this->id,
-            'organization_id' => $this->organization_id,
-            'old_renewal_date' => $oldDate,
-            'new_renewal_date' => $newDate,
-            'change_reason' => $reason,
-            'changed_by_user_id' => auth()->id(),
-            'changed_at' => now(),
-        ]);
+        // Create audit log if SubscriptionLog model exists
+        if (class_exists(SubscriptionLog::class)) {
+            SubscriptionLog::create([
+                'subscription_id' => $this->id,
+                'user_id' => $this->user_id,
+                'old_renewal_date' => $oldDate,
+                'new_renewal_date' => $newDate,
+                'change_reason' => $reason,
+                'changed_by_user_id' => auth()->id(),
+                'changed_at' => now(),
+            ]);
+        }
 
         return $this;
     }
@@ -259,16 +261,18 @@ class Subscription extends Model
             $this->next_renewal_date = $newDate;
             $this->save();
 
-            // Log each advancement
-            SubscriptionLog::create([
-                'subscription_id' => $this->id,
-                'organization_id' => $this->organization_id,
-                'old_renewal_date' => $oldDate,
-                'new_renewal_date' => $newDate,
-                'change_reason' => 'Auto-advanced overdue renewal',
-                'changed_by_user_id' => null, // System action
-                'changed_at' => now(),
-            ]);
+            // Log each advancement if SubscriptionLog model exists
+            if (class_exists(SubscriptionLog::class)) {
+                SubscriptionLog::create([
+                    'subscription_id' => $this->id,
+                    'user_id' => $this->user_id,
+                    'old_renewal_date' => $oldDate,
+                    'new_renewal_date' => $newDate,
+                    'change_reason' => 'Auto-advanced overdue renewal',
+                    'changed_by_user_id' => null, // System action
+                    'changed_at' => now(),
+                ]);
+            }
         }
 
         return $this;
@@ -279,9 +283,6 @@ class Subscription extends Model
      */
     public static function getStatistics()
     {
-        $userId = auth()->id();
-        $organizationId = auth()->user()->organization_id;
-
         $activeCount = self::where('status', 'active')->count();
         $pausedCount = self::where('status', 'paused')->count();
         $cancelledCount = self::where('status', 'cancelled')->count();
