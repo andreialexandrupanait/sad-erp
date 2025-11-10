@@ -8,6 +8,10 @@ use App\Http\Controllers\InternalAccountController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\Financial\DashboardController as FinancialDashboardController;
+use App\Http\Controllers\Financial\RevenueController;
+use App\Http\Controllers\Financial\ExpenseController;
+use App\Http\Controllers\Financial\FileController as FinancialFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -59,6 +63,30 @@ Route::middleware('auth')->group(function () {
     Route::patch('settings/options/{option}', [SettingsController::class, 'updateOption'])->name('settings.options.update');
     Route::delete('settings/options/{option}', [SettingsController::class, 'deleteOption'])->name('settings.options.delete');
     Route::post('settings/groups/{group}/options/reorder', [SettingsController::class, 'reorderOptions'])->name('settings.options.reorder');
+
+    // Financial Module (Financiar)
+    Route::prefix('financiar')->name('financial.')->group(function () {
+        // Dashboard
+        Route::get('/', [FinancialDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/istoric/{year}', [FinancialDashboardController::class, 'yearlyReport'])->name('yearly-report');
+        Route::get('/export/{year}', [FinancialDashboardController::class, 'exportCsv'])->name('export');
+
+        // Revenues (Venituri)
+        Route::resource('venituri', RevenueController::class)->parameters(['venituri' => 'revenue']);
+
+        // Expenses (Cheltuieli)
+        Route::resource('cheltuieli', ExpenseController::class)->parameters(['cheltuieli' => 'expense']);
+
+        // Files (Fisiere)
+        Route::get('fisiere', [FinancialFileController::class, 'index'])->name('files.index');
+        Route::get('fisiere/create', [FinancialFileController::class, 'create'])->name('files.create');
+        Route::post('fisiere', [FinancialFileController::class, 'store'])->name('files.store');
+        Route::post('fisiere/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
+        Route::get('fisiere/{file}', [FinancialFileController::class, 'show'])->name('files.show');
+        Route::get('fisiere/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');
+        Route::patch('fisiere/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');
+        Route::delete('fisiere/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
+    });
 });
 
 require __DIR__.'/auth.php';

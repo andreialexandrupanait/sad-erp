@@ -3,9 +3,9 @@
         <div class="flex justify-between items-center px-6 lg:px-8 py-8">
             <div>
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    Good {{ date('H') < 12 ? 'morning' : (date('H') < 18 ? 'afternoon' : 'evening') }}, {{ auth()->user()->name }}
+                    {{ date('H') < 12 ? 'Bună dimineața' : (date('H') < 18 ? 'Bună ziua' : 'Bună seara') }}, {{ auth()->user()->name }}
                 </h2>
-                <p class="mt-2 text-sm text-slate-600">Here's what's happening with your business today.</p>
+                <p class="mt-2 text-sm text-slate-600">Iată ce se întâmplă cu afacerea ta astăzi.</p>
             </div>
         </div>
     </x-slot>
@@ -18,7 +18,7 @@
                 <x-ui.card-content class="p-6">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300 mb-1">Total Clients</p>
+                            <p class="text-sm font-medium text-slate-300 mb-1">Total Clienți</p>
                             <p class="text-3xl font-bold mb-2">{{ \App\Models\Client::count() }}</p>
                         </div>
                         <div class="flex-shrink-0 w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
@@ -35,7 +35,7 @@
                 <x-ui.card-content class="p-6">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Active Subscriptions</p>
+                            <p class="text-sm font-medium text-slate-600 mb-1">Abonamente Active</p>
                             <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Subscription::where('status', 'active')->count() }}</p>
                         </div>
                         <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
@@ -52,7 +52,7 @@
                 <x-ui.card-content class="p-6">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Total Domains</p>
+                            <p class="text-sm font-medium text-slate-600 mb-1">Total Domenii</p>
                             <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Domain::count() }}</p>
                         </div>
                         <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
@@ -69,7 +69,7 @@
                 <x-ui.card-content class="p-6">
                     <div class="flex items-start justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Expiring Soon</p>
+                            <p class="text-sm font-medium text-slate-600 mb-1">Expiră În Curând</p>
                             <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Domain::where('expiry_date', '<=', now()->addDays(30))->where('expiry_date', '>=', now())->count() }}</p>
                         </div>
                         <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
@@ -89,8 +89,8 @@
                 <x-ui.card>
                     <x-ui.card-header>
                         <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-slate-900">Recent Clients</h3>
-                            <a href="{{ route('clients.index') }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">View all →</a>
+                            <h3 class="text-lg font-semibold text-slate-900">Clienți Recenți</h3>
+                            <a href="{{ route('clients.index') }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Vezi toți →</a>
                         </div>
                     </x-ui.card-header>
                     <x-ui.card-content>
@@ -103,9 +103,9 @@
                                 <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                 </svg>
-                                <p class="text-slate-500 mb-4">No clients yet</p>
+                                <p class="text-slate-500 mb-4">Nu există clienți încă</p>
                                 <x-ui.button variant="default" onclick="window.location.href='{{ route('clients.create') }}'">
-                                    Add your first client
+                                    Adaugă primul client
                                 </x-ui.button>
                             </div>
                         @else
@@ -136,7 +136,7 @@
             <div class="lg:col-span-1">
                 <x-ui.card>
                     <x-ui.card-header>
-                        <h3 class="text-lg font-semibold text-slate-900">Quick Actions</h3>
+                        <h3 class="text-lg font-semibold text-slate-900">Acțiuni Rapide</h3>
                     </x-ui.card-header>
                     <x-ui.card-content>
                         <div class="space-y-3">
@@ -147,8 +147,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-slate-900">Add Client</div>
-                                    <div class="text-sm text-slate-500">Create new client</div>
+                                    <div class="font-medium text-slate-900">Adaugă Client</div>
+                                    <div class="text-sm text-slate-500">Creează client nou</div>
                                 </div>
                             </a>
 
@@ -159,8 +159,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-slate-900">New Subscription</div>
-                                    <div class="text-sm text-slate-500">Track a subscription</div>
+                                    <div class="font-medium text-slate-900">Abonament Nou</div>
+                                    <div class="text-sm text-slate-500">Urmărește un abonament</div>
                                 </div>
                             </a>
 
@@ -171,8 +171,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-slate-900">Add Domain</div>
-                                    <div class="text-sm text-slate-500">Register new domain</div>
+                                    <div class="font-medium text-slate-900">Adaugă Domeniu</div>
+                                    <div class="text-sm text-slate-500">Înregistrează domeniu nou</div>
                                 </div>
                             </a>
 
@@ -183,8 +183,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <div class="font-medium text-slate-900">Save Credential</div>
-                                    <div class="text-sm text-slate-500">Store access info</div>
+                                    <div class="font-medium text-slate-900">Salvează Acces</div>
+                                    <div class="text-sm text-slate-500">Stochează informații acces</div>
                                 </div>
                             </a>
                         </div>
@@ -210,7 +210,7 @@
         @if($expiringDomains->isNotEmpty() || $overdueSubscriptions->isNotEmpty())
             <x-ui.card>
                 <x-ui.card-header>
-                    <h3 class="text-lg font-semibold text-slate-900">Alerts & Notifications</h3>
+                    <h3 class="text-lg font-semibold text-slate-900">Alerte & Notificări</h3>
                 </x-ui.card-header>
                 <x-ui.card-content class="p-0">
                     <div class="divide-y divide-slate-200">
@@ -222,10 +222,10 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="font-medium text-slate-900">Domain expiring soon</div>
-                                    <div class="text-sm text-slate-600">{{ $domain->domain_name }} expires {{ $domain->expiry_date->diffForHumans() }}</div>
+                                    <div class="font-medium text-slate-900">Domeniul expiră în curând</div>
+                                    <div class="text-sm text-slate-600">{{ $domain->domain_name }} expiră {{ $domain->expiry_date->diffForHumans() }}</div>
                                 </div>
-                                <a href="{{ route('domains.edit', $domain) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Renew →</a>
+                                <a href="{{ route('domains.edit', $domain) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Reînnoiește →</a>
                             </div>
                         @endforeach
 
@@ -237,10 +237,10 @@
                                     </svg>
                                 </div>
                                 <div class="flex-1">
-                                    <div class="font-medium text-slate-900">Overdue subscription</div>
-                                    <div class="text-sm text-slate-600">{{ $subscription->vendor_name }} - {{ abs($subscription->days_until_renewal) }} days overdue</div>
+                                    <div class="font-medium text-slate-900">Abonament expirat</div>
+                                    <div class="text-sm text-slate-600">{{ $subscription->vendor_name }} - {{ abs($subscription->days_until_renewal) }} zile întârziere</div>
                                 </div>
-                                <a href="{{ route('subscriptions.edit', $subscription) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Update →</a>
+                                <a href="{{ route('subscriptions.edit', $subscription) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Actualizează →</a>
                             </div>
                         @endforeach
                     </div>

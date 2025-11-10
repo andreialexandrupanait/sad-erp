@@ -58,38 +58,31 @@ class DatabaseSeeder extends Seeder
         $clients = [
             [
                 'name' => 'John Smith',
-                'company' => 'Tech Solutions Ltd',
+                'company_name' => 'Tech Solutions Ltd',
                 'email' => 'john@techsolutions.com',
                 'phone' => '+1-555-100-0001',
-                'city' => 'San Francisco',
-                'state' => 'California',
-                'country' => 'United States',
-                'status' => 'active',
+                'address' => 'San Francisco, California, United States',
             ],
             [
                 'name' => 'Maria Garcia',
-                'company' => 'Digital Marketing Pro',
+                'company_name' => 'Digital Marketing Pro',
                 'email' => 'maria@digitalmarketingpro.com',
                 'phone' => '+1-555-200-0002',
-                'city' => 'New York',
-                'country' => 'United States',
-                'status' => 'active',
+                'address' => 'New York, United States',
             ],
             [
                 'name' => 'Robert Johnson',
-                'company' => 'Global Enterprises Inc',
+                'company_name' => 'Global Enterprises Inc',
                 'email' => 'robert@globalenterprises.com',
                 'phone' => '+1-555-300-0003',
-                'city' => 'Chicago',
-                'country' => 'United States',
-                'status' => 'active',
+                'address' => 'Chicago, United States',
             ],
         ];
 
         $clientRecords = [];
         foreach ($clients as $clientData) {
             $clientRecords[] = Client::create(array_merge($clientData, [
-                'organization_id' => $organization->id,
+                'user_id' => $adminUser->id,
             ]));
         }
 
