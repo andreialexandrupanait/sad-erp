@@ -3,44 +3,44 @@
 namespace App\Observers;
 
 use App\Http\View\Composers\SettingsComposer;
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 
 /**
- * Client Setting Observer
+ * Setting Option Observer
  *
- * Automatically clears cache when client settings are modified
+ * Automatically clears cache when settings are modified
  */
 class ClientSettingObserver
 {
     /**
-     * Handle the ClientSetting "created" event.
+     * Handle the SettingOption "created" event.
      */
-    public function created(ClientSetting $clientSetting): void
+    public function created(SettingOption $settingOption): void
     {
-        SettingsComposer::clearCache($clientSetting->user_id);
+        SettingsComposer::clearCache();
     }
 
     /**
-     * Handle the ClientSetting "updated" event.
+     * Handle the SettingOption "updated" event.
      */
-    public function updated(ClientSetting $clientSetting): void
+    public function updated(SettingOption $settingOption): void
     {
-        SettingsComposer::clearCache($clientSetting->user_id);
+        SettingsComposer::clearCache();
     }
 
     /**
-     * Handle the ClientSetting "deleted" event.
+     * Handle the SettingOption "deleted" event.
      */
-    public function deleted(ClientSetting $clientSetting): void
+    public function deleted(SettingOption $settingOption): void
     {
-        SettingsComposer::clearCache($clientSetting->user_id);
+        SettingsComposer::clearCache();
     }
 
     /**
-     * Handle the ClientSetting "restored" event.
+     * Handle the SettingOption "restored" event.
      */
-    public function restored(ClientSetting $clientSetting): void
+    public function restored(SettingOption $settingOption): void
     {
-        SettingsComposer::clearCache($clientSetting->user_id);
+        SettingsComposer::clearCache();
     }
 }

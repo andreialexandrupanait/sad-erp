@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Financial;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FinancialExpense;
-use App\Models\FinancialSetting;
+use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
 
 class ExpenseController extends Controller
@@ -35,7 +35,7 @@ class ExpenseController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
-        $categories = FinancialSetting::expenseCategories()->get();
+        $categories = SettingOption::active()->ordered()->get();
 
         // Available years
         $availableYears = FinancialExpense::select(DB::raw('DISTINCT year'))
@@ -56,7 +56,7 @@ class ExpenseController extends Controller
 
     public function create()
     {
-        $categories = FinancialSetting::expenseCategories()->get();
+        $categories = SettingOption::active()->ordered()->get();
         return view('financial.expenses.create', compact('categories'));
     }
 
@@ -67,7 +67,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0',
             'currency' => 'required|in:RON,EUR',
             'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:financial_settings,id',
+            'category_option_id' => 'nullable|exists:settings_categories,id',
             'note' => 'nullable|string',
         ]);
 
@@ -94,7 +94,7 @@ class ExpenseController extends Controller
 
     public function edit(FinancialExpense $expense)
     {
-        $categories = FinancialSetting::expenseCategories()->get();
+        $categories = SettingOption::active()->ordered()->get();
         return view('financial.expenses.edit', compact('expense', 'categories'));
     }
 
@@ -105,7 +105,7 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0',
             'currency' => 'required|in:RON,EUR',
             'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:financial_settings,id',
+            'category_option_id' => 'nullable|exists:settings_categories,id',
             'note' => 'nullable|string',
         ]);
 

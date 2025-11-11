@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
-use App\Models\FinancialSetting;
+use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -186,7 +186,7 @@ class DashboardController extends Controller
                     $expense->document_name,
                     $expense->amount,
                     $expense->currency,
-                    $expense->category?->option_label ?? '-',
+                    $expense->category?->name ?? '-',
                     $expense->note ?? '',
                 ]);
             }

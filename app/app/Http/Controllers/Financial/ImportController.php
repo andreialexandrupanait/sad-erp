@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
 use App\Models\Client;
-use App\Models\FinancialSetting;
+use App\Models\SettingOption;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
@@ -240,8 +240,8 @@ class ImportController extends Controller
                 $categoryId = null;
                 if (!empty($data['category'] ?? '')) {
                     $categoryLabel = trim($data['category']);
-                    $category = FinancialSetting::expenseCategories()
-                        ->where('option_label', 'like', "%{$categoryLabel}%")
+                    $category = SettingOption::active()->ordered()
+                        ->where('name', 'like', "%{$categoryLabel}%")
                         ->first();
                     $categoryId = $category?->id;
                 }
@@ -354,7 +354,7 @@ class ImportController extends Controller
                     $expense->amount,
                     $expense->currency,
                     $expense->occurred_at->format('Y-m-d'),
-                    $expense->category?->option_label ?? '',
+                    $expense->category?->name ?? '',
                     $expense->note ?? '',
                     $expense->year,
                     $expense->month,

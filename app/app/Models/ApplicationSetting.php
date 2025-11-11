@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Cache;
 
 class ApplicationSetting extends Model
 {
+    protected $table = 'settings_app';
+
     protected $fillable = ['key', 'value', 'type'];
 
     /**

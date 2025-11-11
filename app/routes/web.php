@@ -73,18 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
 
-    // Setting Groups API
-    Route::post('settings/categories/{category}/groups', [SettingsController::class, 'storeGroup'])->name('settings.groups.store');
-    Route::patch('settings/groups/{group}', [SettingsController::class, 'updateGroup'])->name('settings.groups.update');
-    Route::delete('settings/groups/{group}', [SettingsController::class, 'deleteGroup'])->name('settings.groups.delete');
-
-    // Setting Options API (Generic system - for domains, access, financial, subscriptions)
-    Route::post('settings/groups/{group}/options', [SettingsController::class, 'storeOption'])->name('settings.options.store');
-    Route::patch('settings/options/{option}', [SettingsController::class, 'updateOption'])->name('settings.options.update');
-    Route::delete('settings/options/{option}', [SettingsController::class, 'deleteOption'])->name('settings.options.delete');
-    Route::post('settings/groups/{group}/options/reorder', [SettingsController::class, 'reorderOptions'])->name('settings.options.reorder');
-
-    // Module-Specific Settings (using *_settings tables)
+    // Module-Specific Settings Routes
     Route::post('settings/client-settings', [\App\Http\Controllers\ClientSettingsController::class, 'store'])->name('settings.client-settings.store');
     Route::patch('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'update'])->name('settings.client-settings.update');
     Route::delete('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'destroy'])->name('settings.client-settings.destroy');

@@ -3,115 +3,176 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 class SettingOption extends Model
 {
+    use SoftDeletes;
+
+    protected $table = 'settings_options';
+
     protected $fillable = [
-        'group_id',
+        'organization_id',
+        'category',
         'label',
         'value',
-        'color',
-        'description',
-        'order',
+        'color_class',
+        'sort_order',
         'is_active',
         'is_default',
-        'metadata',
     ];
 
     protected $casts = [
+        'sort_order' => 'integer',
         'is_active' => 'boolean',
         'is_default' => 'boolean',
-        'order' => 'integer',
-        'metadata' => 'array',
     ];
 
-    /**
-     * Get the group this option belongs to
-     */
-    public function group(): BelongsTo
+    protected static function booted()
     {
-        return $this->belongsTo(SettingGroup::class, 'group_id');
+        // Auto-fill organization_id
+        static::creating(function ($setting) {
+            if (Auth::check() && Auth::user()->organization_id) {
+                $setting->organization_id = $setting->organization_id ?? Auth::user()->organization_id;
+            }
+        });
+
+        // Global scope for organization isolation
+        static::addGlobalScope('organization', function (Builder $query) {
+            if (Auth::check() && Auth::user()->organization_id) {
+                $query->where(function ($q) {
+                    $q->where('organization_id', Auth::user()->organization_id)
+                      ->orWhereNull('organization_id'); // Allow global options
+                });
+            }
+        });
     }
 
-    /**
-     * Scope for active options
-     */
+    // Relationships
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    // Scopes by category
+    public function scopeClientStatuses($query)
+    {
+        return $query->where('category', 'client_statuses')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeDomainRegistrars($query)
+    {
+        return $query->where('category', 'domain_registrars')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeDomainStatuses($query)
+    {
+        return $query->where('category', 'domain_statuses')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeBillingCycles($query)
+    {
+        return $query->where('category', 'billing_cycles')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeSubscriptionStatuses($query)
+    {
+        return $query->where('category', 'subscription_statuses')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopePaymentMethods($query)
+    {
+        return $query->where('category', 'payment_methods')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeAccessPlatforms($query)
+    {
+        return $query->where('category', 'access_platforms')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeExpenseCategories($query)
+    {
+        return $query->where('category', 'expense_categories')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    // Alias for backward compatibility
+    public function scopePlatforms($query)
+    {
+        return $this->scopeAccessPlatforms($query);
+    }
+
+    public function scopeRootCategories($query)
+    {
+        // For now, all expense categories are root level (no hierarchy in single table)
+        return $this->scopeExpenseCategories($query);
+    }
+
+    // General scopes
+    public function scopeCategory($query, $category)
+    {
+        return $query->where('category', $category);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
     }
 
-    /**
-     * Scope for ordered options
-     */
     public function scopeOrdered($query)
     {
-        return $query->orderBy('order');
+        return $query->orderBy('sort_order');
     }
 
-    /**
-     * Get the display color with fallback
-     */
-    public function getDisplayColor(): string
-    {
-        return $this->color ?? '#6b7280'; // Default slate-500
-    }
+    // Helper methods
 
     /**
-     * Accessor for 'name' - backwards compatibility with ClientSetting
-     * Maps 'label' to 'name'
+     * Alias for label - provides backward compatibility
      */
-    public function getNameAttribute(): string
+    public function getNameAttribute()
     {
         return $this->label;
     }
 
-    /**
-     * Accessor for 'color_background' - backwards compatibility
-     * Generates a light background color from the main color
-     */
-    public function getColorBackgroundAttribute(): string
+    public function getBadgeClassAttribute()
     {
-        if (!$this->color) {
-            return '#F3F4F6'; // slate-100
+        if (!$this->color_class) {
+            return 'bg-slate-100 text-slate-700 border-slate-300';
         }
 
-        // Convert hex to RGB and lighten it
-        $hex = ltrim($this->color, '#');
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
+        $colorMap = [
+            'slate' => 'bg-slate-100 text-slate-700 border-slate-300',
+            'blue' => 'bg-blue-100 text-blue-700 border-blue-300',
+            'green' => 'bg-green-100 text-green-700 border-green-300',
+            'red' => 'bg-red-100 text-red-700 border-red-300',
+            'yellow' => 'bg-yellow-100 text-yellow-700 border-yellow-300',
+            'purple' => 'bg-purple-100 text-purple-700 border-purple-300',
+            'orange' => 'bg-orange-100 text-orange-700 border-orange-300',
+            'pink' => 'bg-pink-100 text-pink-700 border-pink-300',
+        ];
 
-        // Lighten by mixing with white (90% white, 10% color)
-        $r = round($r * 0.1 + 255 * 0.9);
-        $g = round($g * 0.1 + 255 * 0.9);
-        $b = round($b * 0.1 + 255 * 0.9);
-
-        return sprintf('#%02X%02X%02X', $r, $g, $b);
-    }
-
-    /**
-     * Accessor for 'color_text' - backwards compatibility
-     * Returns a dark version of the color for text
-     */
-    public function getColorTextAttribute(): string
-    {
-        if (!$this->color) {
-            return '#374151'; // slate-700
+        // If color_class is a hex color, return it directly
+        if (str_starts_with($this->color_class, '#')) {
+            return 'border-gray-300';
         }
 
-        // Convert hex to RGB and darken it
-        $hex = ltrim($this->color, '#');
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        // Darken by 60%
-        $r = round($r * 0.4);
-        $g = round($g * 0.4);
-        $b = round($b * 0.4);
-
-        return sprintf('#%02X%02X%02X', $r, $g, $b);
+        return $colorMap[$this->color_class] ?? $colorMap['slate'];
     }
 }

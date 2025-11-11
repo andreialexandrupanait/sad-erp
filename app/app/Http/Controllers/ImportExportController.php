@@ -14,7 +14,7 @@ use App\Models\Subscription;
 use App\Models\Domain;
 use App\Models\InternalAccount;
 use App\Models\AccessCredential;
-use App\Models\FinancialSetting;
+use App\Models\SettingOption;
 
 class ImportExportController extends Controller
 {
@@ -101,7 +101,7 @@ class ImportExportController extends Controller
         $header = array_shift($csvData);
         $header = array_map('trim', $header);
 
-        $defaultStatus = \App\Models\ClientSetting::active()->ordered()->first();
+        $defaultStatus = \App\Models\SettingOption::clientStatuses()->first();
         $imported = 0;
         $skipped = 0;
         $errors = [];
@@ -194,7 +194,7 @@ class ImportExportController extends Controller
                     $client->phone,
                     $client->address,
                     $client->vat_payer ? 'yes' : 'no',
-                    $client->status?->option_label ?? '',
+                    $client->status?->label ?? '',
                     $client->notes,
                 ]);
             }
@@ -337,8 +337,8 @@ class ImportExportController extends Controller
                 $categoryId = null;
                 if (!empty($data['category'] ?? '')) {
                     $categoryLabel = trim($data['category']);
-                    $category = FinancialSetting::expenseCategories()
-                        ->where('option_label', 'like', "%{$categoryLabel}%")
+                    $category = SettingOption::active()->ordered()
+                        ->where('name', 'like', "%{$categoryLabel}%")
                         ->first();
                     $categoryId = $category?->id;
                 }
@@ -394,7 +394,7 @@ class ImportExportController extends Controller
                     $expense->amount,
                     $expense->currency,
                     $expense->occurred_at->format('Y-m-d'),
-                    $expense->category?->option_label ?? '',
+                    $expense->category?->name ?? '',
                     $expense->note ?? '',
                     $expense->year,
                     $expense->month,

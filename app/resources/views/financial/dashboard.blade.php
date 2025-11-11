@@ -83,7 +83,7 @@
                         <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
                             <div class="flex-1">
                                 <p class="font-medium text-slate-900">{{ $expense->document_name }}</p>
-                                <p class="text-sm text-slate-600">{{ $expense->category?->option_label ?? 'Fără categorie' }}</p>
+                                <p class="text-sm text-slate-600">{{ $expense->category?->name ?? 'Fără categorie' }}</p>
                             </div>
                             <div class="text-right">
                                 <p class="font-bold text-red-600">{{ $expense->formatted_amount }}</p>

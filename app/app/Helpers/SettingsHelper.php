@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use App\Models\SettingGroup;
 use App\Models\SettingOption;
 use Illuminate\Support\Facades\Cache;
 
@@ -20,25 +19,26 @@ class SettingsHelper
         $cacheKey = "settings.{$groupKey}." . ($withColors ? 'with_colors' : 'simple');
 
         return Cache::remember($cacheKey, 3600, function () use ($groupKey, $withColors) {
-            $group = SettingGroup::where('key', $groupKey)
-                ->with('activeOptions')
-                ->first();
+            $options = SettingOption::where('category', $groupKey)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get();
 
-            if (!$group) {
+            if ($options->isEmpty()) {
                 return [];
             }
 
             if ($withColors) {
-                return $group->activeOptions->map(function ($option) {
+                return $options->map(function ($option) {
                     return [
                         'value' => $option->value,
                         'label' => $option->label,
-                        'color' => $option->getDisplayColor(),
+                        'color' => $option->color_class ?? '#6b7280',
                     ];
                 })->toArray();
             }
 
-            return $group->activeOptions->pluck('label', 'value')->toArray();
+            return $options->pluck('label', 'value')->toArray();
         });
     }
 
@@ -54,13 +54,9 @@ class SettingsHelper
         $cacheKey = "settings.{$groupKey}.{$value}";
 
         return Cache::remember($cacheKey, 3600, function () use ($groupKey, $value) {
-            $group = SettingGroup::where('key', $groupKey)->first();
-
-            if (!$group) {
-                return null;
-            }
-
-            return $group->options()->where('value', $value)->first();
+            return SettingOption::where('category', $groupKey)
+                ->where('value', $value)
+                ->first();
         });
     }
 
@@ -87,7 +83,7 @@ class SettingsHelper
     public static function getColor(string $groupKey, string $value): string
     {
         $option = self::getOption($groupKey, $value);
-        return $option?->getDisplayColor() ?? '#6b7280';
+        return $option?->color_class ?? '#6b7280';
     }
 
     /**
@@ -103,15 +99,13 @@ class SettingsHelper
             Cache::forget("settings.{$groupKey}.with_colors");
 
             // Clear individual option caches
-            $group = SettingGroup::where('key', $groupKey)->first();
-            if ($group) {
-                foreach ($group->options as $option) {
-                    Cache::forget("settings.{$groupKey}.{$option->value}");
-                }
+            $options = SettingOption::where('category', $groupKey)->get();
+            foreach ($options as $option) {
+                Cache::forget("settings.{$groupKey}.{$option->value}");
             }
         } else {
             // Clear all settings cache
-            Cache::tags('settings')->flush();
+            Cache::flush();
         }
     }
 
@@ -138,13 +132,7 @@ class SettingsHelper
         $cacheKey = "settings.{$groupKey}.default";
 
         return Cache::remember($cacheKey, 3600, function () use ($groupKey) {
-            $group = SettingGroup::where('key', $groupKey)->first();
-
-            if (!$group) {
-                return null;
-            }
-
-            return $group->options()
+            return SettingOption::where('category', $groupKey)
                 ->where('is_default', true)
                 ->where('is_active', true)
                 ->first();

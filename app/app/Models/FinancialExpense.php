@@ -72,7 +72,7 @@ class FinancialExpense extends Model
 
     public function category()
     {
-        return $this->belongsTo(FinancialSetting::class, 'category_option_id');
+        return $this->belongsTo(SettingOption::class, 'category_option_id');
     }
 
     public function files()

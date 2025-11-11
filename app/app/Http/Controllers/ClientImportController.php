@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
@@ -35,7 +35,7 @@ class ClientImportController extends Controller
         $header = array_map('trim', $header);
 
         // Get default status
-        $defaultStatus = ClientSetting::active()->ordered()->first();
+        $defaultStatus = SettingOption::clientStatuses()->first();
 
         $imported = 0;
         $skipped = 0;

@@ -13,21 +13,15 @@
                 .replace(/^-+/, '').replace(/-+$/, '');
         },
 
-        async saveOption(groupId, optionId = null) {
+        async saveOption(category, optionId = null) {
             this.isSubmitting = true;
-            const form = optionId ? document.getElementById('edit-form-' + optionId) : document.getElementById('add-form-' + groupId);
+            const form = optionId ? document.getElementById('edit-form-' + optionId) : document.getElementById('add-form-' + category);
             const formData = new FormData(form);
 
-            // Use module-specific routes for client_settings
-            let url, method;
-            const groupKey = arguments[2]; // Third parameter is groupKey
-            if (groupKey === 'client_statuses') {
-                url = optionId ? `/settings/client-settings/${optionId}` : `/settings/client-settings`;
-                method = optionId ? 'PATCH' : 'POST';
-            } else {
-                url = optionId ? `/settings/options/${optionId}` : `/settings/groups/${groupId}/options`;
-                method = optionId ? 'PATCH' : 'POST';
-            }
+            let url = optionId
+                ? `/settings/client-settings/${optionId}`
+                : `/settings/client-settings`;
+            let method = optionId ? 'PATCH' : 'POST';
 
             try {
                 const response = await fetch(url, {
@@ -51,22 +45,12 @@
         async deleteOption(optionId) {
             if (!confirm('Are you sure you want to delete this option?')) return;
             try {
-                // Use module-specific routes for client_settings
-                const url = (arguments[1] === 'client_statuses')
-                    ? `/settings/client-settings/${optionId}`
-                    : `/settings/options/${optionId}`;
-
-                const response = await fetch(url, {
+                const response = await fetch(`/settings/client-settings/${optionId}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
                 });
                 if (response.ok) {
-                    const row = document.querySelector(`[data-option-id=&quot;${optionId}&quot;]`);
-                    if (row) {
-                        row.style.transition = 'opacity 0.3s';
-                        row.style.opacity = '0';
-                        setTimeout(() => row.remove(), 300);
-                    }
+                    window.location.href = window.location.pathname + '?section=' + this.activeSection;
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -104,14 +88,62 @@
                         <div class="px-3 mb-2">
                             <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nomenclature</h2>
                         </div>
-                        @foreach($categories as $category)
-                            <a href="?section={{ $category->slug }}"
-                               :class="activeSection === '{{ $category->slug }}' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
-                               class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                                <span>{{ $category->name }}</span>
-                                <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $category->groups->count() }}</span>
-                            </a>
-                        @endforeach
+
+                        <a href="?section=client_statuses"
+                           :class="activeSection === 'client_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Client Statuses</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $clientStatuses->count() }}</span>
+                        </a>
+
+                        <a href="?section=domain_registrars"
+                           :class="activeSection === 'domain_registrars' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Domain Registrars</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $domainRegistrars->count() }}</span>
+                        </a>
+
+                        <a href="?section=domain_statuses"
+                           :class="activeSection === 'domain_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Domain Statuses</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $domainStatuses->count() }}</span>
+                        </a>
+
+                        <a href="?section=access_platforms"
+                           :class="activeSection === 'access_platforms' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Access Platforms</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $accessPlatforms->count() }}</span>
+                        </a>
+
+                        <a href="?section=billing_cycles"
+                           :class="activeSection === 'billing_cycles' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Billing Cycles</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $subscriptionBillingCycles->count() }}</span>
+                        </a>
+
+                        <a href="?section=subscription_statuses"
+                           :class="activeSection === 'subscription_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Subscription Statuses</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $subscriptionStatuses->count() }}</span>
+                        </a>
+
+                        <a href="?section=payment_methods"
+                           :class="activeSection === 'payment_methods' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Payment Methods</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $paymentMethods->count() }}</span>
+                        </a>
+
+                        <a href="?section=expense_categories"
+                           :class="activeSection === 'expense_categories' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Expense Categories</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $expenseCategories->count() }}</span>
+                        </a>
                     </div>
                 </nav>
             </div>
@@ -153,166 +185,225 @@
                 </div>
             </div>
 
+            @php
+            $nomenclature = [
+                'client_statuses' => [
+                    'title' => 'Client Statuses',
+                    'description' => 'Manage client status options used throughout the application',
+                    'data' => $clientStatuses,
+                    'has_colors' => true,
+                ],
+                'domain_registrars' => [
+                    'title' => 'Domain Registrars',
+                    'description' => 'Manage domain registrar options',
+                    'data' => $domainRegistrars,
+                    'has_colors' => false,
+                ],
+                'domain_statuses' => [
+                    'title' => 'Domain Statuses',
+                    'description' => 'Manage domain status options',
+                    'data' => $domainStatuses,
+                    'has_colors' => false,
+                ],
+                'access_platforms' => [
+                    'title' => 'Access Platforms',
+                    'description' => 'Manage access platform types',
+                    'data' => $accessPlatforms,
+                    'has_colors' => false,
+                ],
+                'billing_cycles' => [
+                    'title' => 'Billing Cycles',
+                    'description' => 'Manage subscription billing cycle options',
+                    'data' => $subscriptionBillingCycles,
+                    'has_colors' => false,
+                ],
+                'subscription_statuses' => [
+                    'title' => 'Subscription Statuses',
+                    'description' => 'Manage subscription status options',
+                    'data' => $subscriptionStatuses,
+                    'has_colors' => false,
+                ],
+                'payment_methods' => [
+                    'title' => 'Payment Methods',
+                    'description' => 'Manage payment method options',
+                    'data' => $paymentMethods,
+                    'has_colors' => false,
+                ],
+                'expense_categories' => [
+                    'title' => 'Expense Categories',
+                    'description' => 'Manage expense category options',
+                    'data' => $expenseCategories,
+                    'has_colors' => true,
+                ],
+            ];
+            @endphp
+
             <!-- Nomenclature Sections -->
-            @foreach($categories as $category)
-                <div x-show="activeSection === '{{ $category->slug }}'" x-cloak>
+            @foreach($nomenclature as $key => $section)
+                <div x-show="activeSection === '{{ $key }}'" x-cloak>
                     <div class="p-8">
                         <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">{{ $category->name }}</h2>
-                            <p class="text-slate-600 mt-1">{{ $category->description ?? 'Manage ' . strtolower($category->name) . ' settings' }}</p>
+                            <h2 class="text-2xl font-bold text-slate-900">{{ $section['title'] }}</h2>
+                            <p class="text-slate-600 mt-1">{{ $section['description'] }}</p>
                         </div>
 
-                        <div class="space-y-6">
-                            @foreach($category->groups as $group)
-                                <div class="bg-white rounded-lg shadow-sm border border-slate-200">
-                                    <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-slate-900">{{ $group->name }}</h3>
-                                            @if($group->description)
-                                                <p class="text-sm text-slate-500 mt-1">{{ $group->description }}</p>
-                                            @endif
-                                        </div>
-                                        <button @click="addingToGroup = addingToGroup === {{ $group->id }} ? null : {{ $group->id }}"
-                                                class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
-                                            <span x-show="addingToGroup !== {{ $group->id }}">Add Option</span>
-                                            <span x-show="addingToGroup === {{ $group->id }}">Cancel</span>
-                                        </button>
-                                    </div>
-
-                                    <div class="p-6">
-                                        <!-- Add Form -->
-                                        <div x-show="addingToGroup === {{ $group->id }}" x-cloak class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                                            <form id="add-form-{{ $group->id }}" @submit.prevent="saveOption({{ $group->id }}, null, '{{ $group->key }}')">
-                                                <div class="flex gap-3 items-start">
-                                                    <div class="flex-1">
-                                                        <input type="text" name="label" placeholder="Label" required
-                                                               @input="$el.form.querySelector('[name=value]').value = slugify($el.value)"
-                                                               class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent">
-                                                    </div>
-                                                    <div class="flex-1">
-                                                        <input type="text" name="value" placeholder="Value (auto-generated)" required
-                                                               class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-slate-900 focus:border-transparent">
-                                                    </div>
-                                                    @if($group->has_colors)
-                                                        <div class="w-20">
-                                                            <input type="color" name="color" value="#3b82f6" class="w-full h-10 border border-slate-300 rounded-lg cursor-pointer">
-                                                        </div>
-                                                    @endif
-                                                    <div class="flex gap-2 flex-shrink-0">
-                                                        <button type="submit" :disabled="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
-                                                            Save
-                                                        </button>
-                                                        <button type="button" @click="addingToGroup = null" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
-                                                            Cancel
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </form>
-                                        </div>
-
-                                        <!-- Options Table -->
-                                        <div class="overflow-x-auto">
-                                            <table class="w-full">
-                                                <thead>
-                                                    <tr class="border-b border-slate-200">
-                                                        <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Label</th>
-                                                        <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Value</th>
-                                                        @if($group->has_colors)
-                                                            <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Color</th>
-                                                        @endif
-                                                        <th class="text-right py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-24">Actions</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @php
-                                                        // Use module-specific settings for clients
-                                                        $options = ($group->key === 'client_statuses') ? $clientStatuses : $group->options;
-                                                    @endphp
-                                                    @forelse($options as $option)
-                                                        <tr class="border-b border-slate-100 hover:bg-slate-50"
-                                                            x-data="{ editing: false }"
-                                                            data-option-id="{{ $option->id }}">
-                                                            <template x-if="!editing">
-                                                                <td class="py-3 px-2 text-sm text-slate-900">{{ $option->label }}</td>
-                                                            </template>
-                                                            <template x-if="editing">
-                                                                <td class="py-3 px-2">
-                                                                    <input type="text" name="label" value="{{ $option->label }}" required
-                                                                           form="edit-form-{{ $option->id }}"
-                                                                           @input="$el.form.querySelector('[name=value]').value = slugify($el.value)"
-                                                                           class="w-full px-2 py-1 text-sm border border-slate-300 rounded">
-                                                                </td>
-                                                            </template>
-
-                                                            <template x-if="!editing">
-                                                                <td class="py-3 px-2 text-sm text-slate-500 font-mono">{{ $option->value }}</td>
-                                                            </template>
-                                                            <template x-if="editing">
-                                                                <td class="py-3 px-2">
-                                                                    <input type="text" name="value" value="{{ $option->value }}" required
-                                                                           form="edit-form-{{ $option->id }}"
-                                                                           class="w-full px-2 py-1 text-sm border border-slate-300 rounded bg-slate-50">
-                                                                </td>
-                                                            </template>
-
-                                                            @if($group->has_colors)
-                                                                <template x-if="!editing">
-                                                                    <td class="py-3 px-2">
-                                                                        @if($option->color)
-                                                                            <div class="w-8 h-8 rounded border border-slate-300" style="background-color: {{ $option->color }}"></div>
-                                                                        @endif
-                                                                    </td>
-                                                                </template>
-                                                                <template x-if="editing">
-                                                                    <td class="py-3 px-2">
-                                                                        <input type="color" name="color" value="{{ $option->color ?? '#3b82f6' }}"
-                                                                               form="edit-form-{{ $option->id }}"
-                                                                               class="w-full h-8 border border-slate-300 rounded cursor-pointer">
-                                                                    </td>
-                                                                </template>
-                                                            @endif
-
-                                                            <td class="py-3 px-2 text-right">
-                                                                <template x-if="!editing">
-                                                                    <div class="flex justify-end gap-2">
-                                                                        <button @click="editing = true" class="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded">
-                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                                            </svg>
-                                                                        </button>
-                                                                        <button @click="deleteOption({{ $option->id }}, '{{ $group->key }}')" class="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded">
-                                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                                            </svg>
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                                <template x-if="editing">
-                                                                    <div class="flex justify-end gap-2">
-                                                                        <form id="edit-form-{{ $option->id }}" @submit.prevent="saveOption({{ $group->id }}, {{ $option->id }}, '{{ $group->key }}')" class="contents"></form>
-                                                                        <button type="submit" form="edit-form-{{ $option->id }}" class="px-3 py-1 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded">
-                                                                            Save
-                                                                        </button>
-                                                                        <button @click="editing = false" class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded">
-                                                                            Cancel
-                                                                        </button>
-                                                                    </div>
-                                                                </template>
-                                                            </td>
-                                                        </tr>
-                                                    @empty
-                                                        <tr>
-                                                            <td colspan="{{ $group->has_colors ? '4' : '3' }}" class="py-8 text-center text-slate-500">
-                                                                No options yet. Click "Add Option" to create one.
-                                                            </td>
-                                                        </tr>
-                                                    @endforelse
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-slate-200">
+                            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Options</h3>
+                                    <p class="text-sm text-slate-500 mt-1">{{ $section['data']->count() }} option(s)</p>
                                 </div>
-                            @endforeach
+                                @if($key === 'client_statuses')
+                                <button @click="addingToGroup = addingToGroup === '{{ $key }}' ? null : '{{ $key }}'"
+                                        class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
+                                    <span x-show="addingToGroup !== '{{ $key }}'">Add Option</span>
+                                    <span x-show="addingToGroup === '{{ $key }}'">Cancel</span>
+                                </button>
+                                @endif
+                            </div>
+
+                            <div class="p-6">
+                                <!-- Add Form (Only for client_statuses) -->
+                                @if($key === 'client_statuses')
+                                <div x-show="addingToGroup === '{{ $key }}'" x-cloak class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                                    <form id="add-form-{{ $key }}" @submit.prevent="saveOption('{{ $key }}')">
+                                        <div class="flex gap-3 items-start">
+                                            <div class="flex-1">
+                                                <input type="text" name="label" placeholder="Label (e.g., Active)" required
+                                                       @input="$el.form.querySelector('[name=value]').value = slugify($el.value)"
+                                                       class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+                                            </div>
+                                            <div class="flex-1">
+                                                <input type="text" name="value" placeholder="Value (auto-generated)" required
+                                                       class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-slate-900 focus:border-transparent">
+                                            </div>
+                                            @if($section['has_colors'])
+                                                <div class="w-20">
+                                                    <input type="color" name="color" value="#3b82f6" class="w-full h-10 border border-slate-300 rounded-lg cursor-pointer">
+                                                </div>
+                                            @endif
+                                            <div class="flex gap-2 flex-shrink-0">
+                                                <button type="submit" :disabled="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
+                                                    Save
+                                                </button>
+                                                <button type="button" @click="addingToGroup = null" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+                                                    Cancel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                                @endif
+
+                                <!-- Options Table -->
+                                <div class="overflow-x-auto">
+                                    <table class="w-full">
+                                        <thead>
+                                            <tr class="border-b border-slate-200">
+                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Label</th>
+                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Value</th>
+                                                @if($section['has_colors'])
+                                                    <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Color</th>
+                                                @endif
+                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Status</th>
+                                                @if($key === 'client_statuses')
+                                                <th class="text-right py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-24">Actions</th>
+                                                @endif
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($section['data'] as $option)
+                                                <tr class="border-b border-slate-100 hover:bg-slate-50"
+                                                    x-data="{ editing: false }"
+                                                    data-option-id="{{ $option->id }}">
+                                                    <template x-if="!editing">
+                                                        <td class="py-3 px-2 text-sm text-slate-900">{{ $option->label }}</td>
+                                                    </template>
+                                                    <template x-if="editing">
+                                                        <td class="py-3 px-2">
+                                                            <input type="text" name="label" value="{{ $option->label }}" required
+                                                                   form="edit-form-{{ $option->id }}"
+                                                                   @input="$el.form.querySelector('[name=value]').value = slugify($el.value)"
+                                                                   class="w-full px-2 py-1 text-sm border border-slate-300 rounded">
+                                                        </td>
+                                                    </template>
+
+                                                    <template x-if="!editing">
+                                                        <td class="py-3 px-2 text-sm text-slate-500 font-mono">{{ $option->value }}</td>
+                                                    </template>
+                                                    <template x-if="editing">
+                                                        <td class="py-3 px-2">
+                                                            <input type="text" name="value" value="{{ $option->value }}" required
+                                                                   form="edit-form-{{ $option->id }}"
+                                                                   class="w-full px-2 py-1 text-sm border border-slate-300 rounded bg-slate-50">
+                                                        </td>
+                                                    </template>
+
+                                                    @if($section['has_colors'])
+                                                        <template x-if="!editing">
+                                                            <td class="py-3 px-2">
+                                                                @if($option->color_class)
+                                                                    <div class="w-8 h-8 rounded border border-slate-300" style="background-color: {{ $option->color_class }}"></div>
+                                                                @endif
+                                                            </td>
+                                                        </template>
+                                                        <template x-if="editing">
+                                                            <td class="py-3 px-2">
+                                                                <input type="color" name="color" value="{{ $option->color_class ?? '#3b82f6' }}"
+                                                                       form="edit-form-{{ $option->id }}"
+                                                                       class="w-full h-8 border border-slate-300 rounded cursor-pointer">
+                                                            </td>
+                                                        </template>
+                                                    @endif
+
+                                                    <td class="py-3 px-2">
+                                                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                                                            {{ $option->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                                            {{ $option->is_active ? 'Active' : 'Inactive' }}
+                                                        </span>
+                                                    </td>
+
+                                                    @if($key === 'client_statuses')
+                                                    <td class="py-3 px-2 text-right">
+                                                        <template x-if="!editing">
+                                                            <div class="flex justify-end gap-2">
+                                                                <button @click="editing = true" class="p-1 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                                    </svg>
+                                                                </button>
+                                                                <button @click="deleteOption({{ $option->id }})" class="p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                                    </svg>
+                                                                </button>
+                                                            </div>
+                                                        </template>
+                                                        <template x-if="editing">
+                                                            <div class="flex justify-end gap-2">
+                                                                <form id="edit-form-{{ $option->id }}" @submit.prevent="saveOption('{{ $key }}', {{ $option->id }})" class="contents"></form>
+                                                                <button type="submit" form="edit-form-{{ $option->id }}" class="px-3 py-1 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded">
+                                                                    Save
+                                                                </button>
+                                                                <button @click="editing = false" class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded">
+                                                                    Cancel
+                                                                </button>
+                                                            </div>
+                                                        </template>
+                                                    </td>
+                                                    @endif
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="{{ $section['has_colors'] ? ($key === 'client_statuses' ? '5' : '4') : ($key === 'client_statuses' ? '4' : '3') }}" class="py-8 text-center text-slate-500">
+                                                        No options available.
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

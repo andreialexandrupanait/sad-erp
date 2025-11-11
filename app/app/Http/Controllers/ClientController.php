@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Client;
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -82,7 +82,7 @@ class ClientController extends Controller
             'address' => 'nullable|string',
             'vat_payer' => 'nullable|boolean',
             'notes' => 'nullable|string',
-            'status_id' => 'nullable|exists:client_settings,id',
+            'status_id' => 'nullable|exists:settings_options,id',
             'order_index' => 'nullable|integer',
         ]);
 
@@ -158,7 +158,7 @@ class ClientController extends Controller
             'address' => 'nullable|string',
             'vat_payer' => 'nullable|boolean',
             'notes' => 'nullable|string',
-            'status_id' => 'nullable|exists:client_settings,id',
+            'status_id' => 'nullable|exists:settings_options,id',
             'order_index' => 'nullable|integer',
         ]);
 
@@ -187,7 +187,7 @@ class ClientController extends Controller
     public function updateStatus(Request $request, Client $client)
     {
         $validated = $request->validate([
-            'status_id' => 'required|exists:client_settings,id',
+            'status_id' => 'required|exists:settings_options,id',
         ]);
 
         $client->update($validated);

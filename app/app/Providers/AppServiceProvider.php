@@ -2,7 +2,7 @@
 
 namespace App\Providers;
 
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 use App\Observers\ClientSettingObserver;
 use Illuminate\Support\ServiceProvider;
 
@@ -22,6 +22,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Register observers for automatic cache invalidation
-        ClientSetting::observe(ClientSettingObserver::class);
+        // SettingOption::observe(ClientSettingObserver::class);
+        // TODO: Update observer to work with unified SettingOption model
     }
 }

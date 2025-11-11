@@ -78,7 +78,7 @@ class Organization extends Model
      */
     public function expenses()
     {
-        return $this->hasMany(Expense::class);
+        return $this->hasMany(FinancialExpense::class);
     }
 
     /**
@@ -86,7 +86,7 @@ class Organization extends Model
      */
     public function revenues()
     {
-        return $this->hasMany(Revenue::class);
+        return $this->hasMany(FinancialRevenue::class);
     }
 
     /**

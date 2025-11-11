@@ -8,7 +8,7 @@ use App\Models\Domain;
 use App\Models\Subscription;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
-use App\Models\FinancialSetting;
+use App\Models\SettingOption;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -83,7 +83,7 @@ class DashboardController extends Controller
             'clients' => Client::with('status')->get(),
 
             // Expense categories for forms
-            'expenseCategories' => FinancialSetting::expenseCategories()->get(),
+            'expenseCategories' => SettingOption::active()->ordered()->get(),
         ];
 
         // Calculate profit
@@ -124,13 +124,19 @@ class DashboardController extends Controller
      */
     private function getTopClientsByRevenue($limit = 5)
     {
+        $userId = auth()->id();
+
         return Client::select('clients.*')
             ->selectRaw('COALESCE(SUM(financial_revenues.amount), 0) as total_revenue')
-            ->leftJoin('financial_revenues', function($join) {
-                $join->on('clients.id', '=', 'financial_revenues.client_id')
-                     ->where('financial_revenues.user_id', '=', DB::raw(auth()->id()));
+            ->leftJoin('financial_revenues', function($join) use ($userId) {
+                $join->on('clients.id', '=', 'financial_revenues.client_id');
+                if ($userId) {
+                    $join->where('financial_revenues.user_id', '=', $userId);
+                }
             })
-            ->where('clients.user_id', auth()->id())
+            ->when($userId, function($query) use ($userId) {
+                return $query->where('clients.user_id', $userId);
+            })
             ->withoutGlobalScope('user')
             ->groupBy('clients.id')
             ->orderByDesc('total_revenue')

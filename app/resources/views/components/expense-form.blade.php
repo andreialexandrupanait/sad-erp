@@ -93,7 +93,7 @@
                             <option value="">Select Category (Optional)</option>
                             @foreach($categories as $category)
                                 <option value="{{ $category->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $category->id ? 'selected' : '' }}>
-                                    {{ $category->option_label }}
+                                    {{ $category->name }}
                                 </option>
                             @endforeach
                         </x-ui.select>

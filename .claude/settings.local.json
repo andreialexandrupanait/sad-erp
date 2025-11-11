@@ -10,7 +10,13 @@
       "Bash(/tmp/nginx_default.conf)",
       "Bash(curl:*)",
       "Bash(git checkout:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(xargs basename:*)",
+      "Bash(sed:*)",
+      "Bash(chmod:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep \"\"\"\"use App\\\\\\\\Models\\\\\\\\SettingOption;\"\"\"\" {}')"
     ],
     "deny": [],
     "ask": []

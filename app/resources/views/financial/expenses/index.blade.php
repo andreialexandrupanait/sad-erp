@@ -39,7 +39,7 @@
                 <option value="">Toate categoriile</option>
                 @foreach($categories as $category)
                     <option value="{{ $category->id }}" {{ $categoryId == $category->id ? 'selected' : '' }}>
-                        {{ $category->option_label }}
+                        {{ $category->name }}
                     </option>
                 @endforeach
             </select>
@@ -76,7 +76,7 @@
                             <td class="px-6 py-4 text-sm">
                                 @if($expense->category)
                                     <span class="px-2 py-1 rounded text-xs {{ $expense->category->badge_class }}">
-                                        {{ $expense->category->option_label }}
+                                        {{ $expense->category->name }}
                                     </span>
                                 @else
                                     -
@@ -162,7 +162,7 @@
                             <x-ui.select name="category_option_id" id="expense_category_create">
                                 <option value="">Selectează categorie (opțional)</option>
                                 @foreach($categories as $category)
-                                    <option value="{{$category->id}}">{{$category->option_label}}</option>
+                                    <option value="{{$category->id}}">{{$category->name}}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>
@@ -232,7 +232,7 @@
                             <x-ui.select name="category_option_id" id="expense_category_edit_{{$expense->id}}">
                                 <option value="">Selectează categorie (opțional)</option>
                                 @foreach($categories as $category)
-                                    <option value="{{$category->id}}" {{$expense->category_option_id==$category->id?'selected':''}}>{{$category->option_label}}</option>
+                                    <option value="{{$category->id}}" {{$expense->category_option_id==$category->id?'selected':''}}>{{$category->name}}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>

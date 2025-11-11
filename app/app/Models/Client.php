@@ -83,7 +83,7 @@ class Client extends Model
      */
     public function status()
     {
-        return $this->belongsTo(ClientSetting::class, 'status_id');
+        return $this->belongsTo(SettingOption::class, 'status_id');
     }
 
     /**
@@ -131,7 +131,7 @@ class Client extends Model
      */
     public function revenues()
     {
-        return $this->hasMany(Revenue::class);
+        return $this->hasMany(FinancialRevenue::class);
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace App\Http\View\Composers;
 
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
@@ -35,9 +35,7 @@ class SettingsComposer
 
         // Get statuses from cache or database (cache for 1 hour)
         $clientStatuses = Cache::remember($cacheKey, 3600, function () {
-            return ClientSetting::active()
-                ->ordered()
-                ->get();
+            return SettingOption::clientStatuses()->get();
         });
 
         // Make available to view

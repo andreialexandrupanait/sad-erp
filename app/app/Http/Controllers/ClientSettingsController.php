@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ClientSetting;
+use App\Models\SettingOption;
 use App\Http\View\Composers\SettingsComposer;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 /**
  * Client Settings Controller
  *
- * Manages client-specific settings (statuses)
+ * Manages client-specific settings (statuses) in settings_options table
  */
 class ClientSettingsController extends Controller
 {
@@ -19,31 +20,28 @@ class ClientSettingsController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'label' => 'required|string|max:255', // Maps to 'name'
-            'value' => 'nullable|string|max:255', // Not used, but accepted for compatibility
+            'label' => 'required|string|max:255',
+            'value' => 'nullable|string|max:255',
             'color' => 'required|string|max:7',
             'color_background' => 'nullable|string|max:7',
             'color_text' => 'nullable|string|max:7',
         ]);
 
-        // Map 'label' to 'name'
-        $validated['name'] = $validated['label'];
-        unset($validated['label'], $validated['value']);
+        // Auto-generate value from label if not provided
+        $value = $validated['value'] ?? Str::slug($validated['label']);
 
-        // Auto-generate background and text colors if not provided
-        if (!isset($validated['color_background'])) {
-            $validated['color_background'] = $this->generateBackgroundColor($validated['color']);
-        }
+        // Get max sort_order for client_status category
+        $maxOrder = SettingOption::where('category', 'client_statuses')->max('sort_order') ?? 0;
 
-        if (!isset($validated['color_text'])) {
-            $validated['color_text'] = $this->generateTextColor($validated['color']);
-        }
-
-        // Set order_index to be last
-        $validated['order_index'] = ClientSetting::max('order_index') + 1;
-        $validated['is_active'] = true;
-
-        $setting = ClientSetting::create($validated);
+        $setting = SettingOption::create([
+            'category' => 'client_statuses',
+            'label' => $validated['label'],
+            'value' => $value,
+            'color_class' => $validated['color'],
+            'sort_order' => $maxOrder + 1,
+            'is_active' => true,
+            'is_default' => false,
+        ]);
 
         // Clear cache
         SettingsComposer::clearCache();
@@ -57,29 +55,25 @@ class ClientSettingsController extends Controller
     /**
      * Update an existing client status
      */
-    public function update(Request $request, ClientSetting $setting)
+    public function update(Request $request, SettingOption $setting)
     {
         $validated = $request->validate([
-            'label' => 'required|string|max:255', // Maps to 'name'
-            'value' => 'nullable|string|max:255', // Not used, but accepted for compatibility
+            'label' => 'required|string|max:255',
+            'value' => 'nullable|string|max:255',
             'color' => 'required|string|max:7',
-            'color_background' => 'nullable|string|max:7',
-            'color_text' => 'nullable|string|max:7',
             'is_active' => 'boolean',
-            'order_index' => 'integer',
+            'sort_order' => 'integer',
         ]);
 
-        // Map 'label' to 'name'
-        $validated['name'] = $validated['label'];
-        unset($validated['label'], $validated['value']);
-
-        // Auto-generate background and text colors if not provided
-        if (!isset($validated['color_background']) && isset($validated['color'])) {
-            $validated['color_background'] = $this->generateBackgroundColor($validated['color']);
+        // Auto-generate value from label if not provided
+        if (isset($validated['label']) && !isset($validated['value'])) {
+            $validated['value'] = Str::slug($validated['label']);
         }
 
-        if (!isset($validated['color_text']) && isset($validated['color'])) {
-            $validated['color_text'] = $this->generateTextColor($validated['color']);
+        // Map color to color_class
+        if (isset($validated['color'])) {
+            $validated['color_class'] = $validated['color'];
+            unset($validated['color']);
         }
 
         $setting->update($validated);
@@ -96,8 +90,16 @@ class ClientSettingsController extends Controller
     /**
      * Delete a client status
      */
-    public function destroy(ClientSetting $setting)
+    public function destroy(SettingOption $setting)
     {
+        // Ensure we're only deleting client_status options
+        if ($setting->category !== 'client_statuses') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid setting type'
+            ], 400);
+        }
+
         $setting->delete();
 
         // Clear cache
@@ -116,14 +118,14 @@ class ClientSettingsController extends Controller
         try {
             $validated = $request->validate([
                 'settings' => 'required|array',
-                'settings.*.id' => 'required|integer|exists:client_settings,id',
-                'settings.*.order_index' => 'required|integer|min:0',
+                'settings.*.id' => 'required|integer|exists:settings_options,id',
+                'settings.*.sort_order' => 'required|integer|min:0',
             ]);
 
             foreach ($validated['settings'] as $settingData) {
-                ClientSetting::where('id', $settingData['id'])
-                    ->where('user_id', auth()->id())
-                    ->update(['order_index' => $settingData['order_index']]);
+                SettingOption::where('id', $settingData['id'])
+                    ->where('category', 'client_statuses')
+                    ->update(['sort_order' => $settingData['sort_order']]);
             }
 
             // Clear cache
@@ -143,41 +145,5 @@ class ClientSettingsController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
-    }
-
-    /**
-     * Generate a light background color from primary color
-     */
-    private function generateBackgroundColor(string $color): string
-    {
-        $hex = ltrim($color, '#');
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        // Lighten by mixing with white (90% white, 10% color)
-        $r = round($r * 0.1 + 255 * 0.9);
-        $g = round($g * 0.1 + 255 * 0.9);
-        $b = round($b * 0.1 + 255 * 0.9);
-
-        return sprintf('#%02X%02X%02X', $r, $g, $b);
-    }
-
-    /**
-     * Generate a dark text color from primary color
-     */
-    private function generateTextColor(string $color): string
-    {
-        $hex = ltrim($color, '#');
-        $r = hexdec(substr($hex, 0, 2));
-        $g = hexdec(substr($hex, 2, 2));
-        $b = hexdec(substr($hex, 4, 2));
-
-        // Darken by 60%
-        $r = round($r * 0.4);
-        $g = round($g * 0.4);
-        $b = round($b * 0.4);
-
-        return sprintf('#%02X%02X%02X', $r, $g, $b);
     }
 }
