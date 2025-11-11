@@ -24,12 +24,14 @@ class Client extends Model
         'phone',
         'address',
         'vat_payer',
+        'total_incomes',
         'notes',
         'order_index',
     ];
 
     protected $casts = [
         'vat_payer' => 'boolean',
+        'total_incomes' => 'decimal:2',
         'order_index' => 'integer',
     ];
 

@@ -71,7 +71,16 @@ class ExpenseController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        FinancialExpense::create($validated);
+        $expense = FinancialExpense::create($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Expense created successfully!',
+                'expense' => $expense->load('category'),
+            ], 201);
+        }
 
         return redirect()->route('financial.expenses.index')
             ->with('success', 'Expense added successfully.');
@@ -106,6 +115,15 @@ class ExpenseController extends Controller
         $validated['month'] = $date->month;
 
         $expense->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Expense updated successfully!',
+                'expense' => $expense->fresh()->load('category'),
+            ]);
+        }
 
         return redirect()->route('financial.expenses.index')
             ->with('success', 'Expense updated successfully.');

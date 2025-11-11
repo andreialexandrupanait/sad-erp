@@ -5,8 +5,13 @@
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                        @if(isset($globalAppSettings['app_logo']) && $globalAppSettings['app_logo'])
+                            <img src="{{ asset('storage/' . $globalAppSettings['app_logo']) }}" alt="{{ $globalAppSettings['app_name'] ?? 'Logo' }}" class="h-9 w-auto">
+                        @else
+                            <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
+                        @endif
+                        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ $globalAppSettings['app_name'] ?? 'ERP System' }}</span>
                     </a>
                 </div>
 
@@ -18,14 +23,23 @@
                     <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                         {{ __('Clients') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
+                        {{ __('Financial') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')">
+                        {{ __('Subscriptions') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
+                        {{ __('Domains') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('credentials.index')" :active="request()->routeIs('credentials.*')">
                         {{ __('Credentials') }}
                     </x-nav-link>
                     <x-nav-link :href="route('internal-accounts.index')" :active="request()->routeIs('internal-accounts.*')">
-                        {{ __('Conturi') }}
+                        {{ __('Accounts') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
-                        {{ __('Domenii') }}
+                    <x-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
+                        {{ __('Settings') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -85,14 +99,23 @@
             <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                 {{ __('Clients') }}
             </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
+                {{ __('Financial') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')">
+                {{ __('Subscriptions') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
+                {{ __('Domains') }}
+            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('credentials.index')" :active="request()->routeIs('credentials.*')">
                 {{ __('Credentials') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('internal-accounts.index')" :active="request()->routeIs('internal-accounts.*')">
-                {{ __('Conturi') }}
+                {{ __('Accounts') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('domains.index')" :active="request()->routeIs('domains.*')">
-                {{ __('Domenii') }}
+            <x-responsive-nav-link :href="route('settings.index')" :active="request()->routeIs('settings.*')">
+                {{ __('Settings') }}
             </x-responsive-nav-link>
         </div>
 

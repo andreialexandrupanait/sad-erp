@@ -1,11 +1,13 @@
 <x-app-layout>
-    <div class="p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-slate-900">Cheltuieli</h1>
-            <a href="{{ route('financial.cheltuieli.create') }}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                + Adaugă cheltuială
-            </a>
-        </div>
+    <x-slot name="pageTitle">Cheltuieli</x-slot>
+
+    <x-slot name="headerActions">
+        <button @click="$dispatch('open-slide-panel', 'expense-create')" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium transition-colors">
+            + Adaugă cheltuială
+        </button>
+    </x-slot>
+
+    <div class="p-6" x-data>
 
         @if(session('success'))
             <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
@@ -82,8 +84,10 @@
                             </td>
                             <td class="px-6 py-4 text-sm font-bold text-red-600">{{ number_format($expense->amount, 2) }} {{ $expense->currency }}</td>
                             <td class="px-6 py-4 text-right text-sm space-x-2">
-                                <a href="{{ route('financial.cheltuieli.edit', $expense) }}" class="text-blue-600 hover:text-blue-900">Editează</a>
-                                <form method="POST" action="{{ route('financial.cheltuieli.destroy', $expense) }}" class="inline">
+                                <button @click="$dispatch('open-slide-panel', 'expense-edit-{{ $expense->id }}')" class="text-blue-600 hover:text-blue-900">
+                                    Editează
+                                </button>
+                                <form method="POST" action="{{ route('financial.expenses.destroy', $expense) }}" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" onclick="return confirm('Ești sigur?')" class="text-red-600 hover:text-red-900">Șterge</button>
@@ -103,4 +107,150 @@
             {{ $expenses->links() }}
         </div>
     </div>
+
+    <!-- Toast Notifications -->
+    <x-toast />
+
+    <!-- Create Expense Slide Panel -->
+    <x-slide-panel name="expense-create" :show="false" maxWidth="2xl">
+        <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900">Adaugă cheltuială nouă</h2>
+            <button type="button" @click="$dispatch('close-slide-panel', 'expense-create')" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="expense-create-form" x-data="{loading:false,async submit(e){e.preventDefault();this.loading=true;document.querySelectorAll('#expense-create-form .error-message').forEach(el=>el.remove());const fd=new FormData(e.target);try{const r=await fetch('{{route('financial.expenses.store')}}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{csrf_token()}}','Accept':'application/json'},body:fd});const d=await r.json();if(r.ok){$dispatch('close-slide-panel','expense-create');$dispatch('toast',{message:'Expense created successfully!',type:'success'});setTimeout(()=>window.location.reload(),500);}else if(d.errors){Object.keys(d.errors).forEach(k=>{const i=document.querySelector(`#expense-create-form [name='${k}']`);if(i){const w=i.closest('.field-wrapper');if(w){const existingError=w.querySelector('.error-message');if(existingError)existingError.remove();const err=document.createElement('p');err.className='error-message mt-2 text-sm text-red-600';err.textContent=d.errors[k][0];w.appendChild(err);}}});$dispatch('toast',{message:'Please correct the errors.',type:'error'});}}catch(err){console.error(err);$dispatch('toast',{message:'An error occurred.',type:'error'});}finally{this.loading=false;}}}" @submit="submit">
+                @csrf
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="expense_document_name_create">Nume document <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="document_name" id="expense_document_name_create" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_amount_create">Sumă <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="number" step="0.01" name="amount" id="expense_amount_create" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_currency_create">Valută <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="currency" id="expense_currency_create" required>
+                                <option value="RON">RON</option>
+                                <option value="EUR">EUR</option>
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_occurred_at_create">Dată <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="date" name="occurred_at" id="expense_occurred_at_create" value="{{now()->format('Y-m-d')}}" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_category_create">Categorie</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="category_option_id" id="expense_category_create">
+                                <option value="">Selectează categorie (opțional)</option>
+                                @foreach($categories as $category)
+                                    <option value="{{$category->id}}">{{$category->option_label}}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="expense_note_create">Notă</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.textarea name="note" id="expense_note_create" rows="3"></x-ui.textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','expense-create')">Anulează</x-ui.button>
+            <x-ui.button type="submit" form="expense-create-form" variant="default">Salvează cheltuială</x-ui.button>
+        </div>
+    </x-slide-panel>
+
+    @foreach($expenses as $expense)
+    <x-slide-panel name="expense-edit-{{$expense->id}}" :show="false" maxWidth="2xl">
+        <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900">Editează cheltuială</h2>
+            <button type="button" @click="$dispatch('close-slide-panel','expense-edit-{{$expense->id}}')" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="expense-edit-form-{{$expense->id}}" x-data="{loading:false,async submit(e){e.preventDefault();this.loading=true;document.querySelectorAll('#expense-edit-form-{{$expense->id}} .error-message').forEach(el=>el.remove());const fd=new FormData(e.target);try{const r=await fetch('{{route('financial.expenses.update',$expense)}}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{csrf_token()}}','Accept':'application/json'},body:fd});const d=await r.json();if(r.ok){$dispatch('close-slide-panel','expense-edit-{{$expense->id}}');$dispatch('toast',{message:'Expense updated!',type:'success'});setTimeout(()=>window.location.reload(),500);}else if(d.errors){Object.keys(d.errors).forEach(k=>{const i=document.querySelector(`#expense-edit-form-{{$expense->id}} [name='${k}']`);if(i){const w=i.closest('.field-wrapper');if(w){const existingError=w.querySelector('.error-message');if(existingError)existingError.remove();const err=document.createElement('p');err.className='error-message mt-2 text-sm text-red-600';err.textContent=d.errors[k][0];w.appendChild(err);}}});$dispatch('toast',{message:'Please correct errors.',type:'error'});}}catch(err){console.error(err);$dispatch('toast',{message:'Error occurred.',type:'error'});}finally{this.loading=false;}}}" @submit="submit">
+                @csrf @method('PUT')
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="expense_document_name_edit_{{$expense->id}}">Nume document <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="document_name" id="expense_document_name_edit_{{$expense->id}}" value="{{$expense->document_name}}" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_amount_edit_{{$expense->id}}">Sumă <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="number" step="0.01" name="amount" id="expense_amount_edit_{{$expense->id}}" value="{{$expense->amount}}" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_currency_edit_{{$expense->id}}">Valută <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="currency" id="expense_currency_edit_{{$expense->id}}" required>
+                                <option value="RON" {{$expense->currency=='RON'?'selected':''}}>RON</option>
+                                <option value="EUR" {{$expense->currency=='EUR'?'selected':''}}>EUR</option>
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_occurred_at_edit_{{$expense->id}}">Dată <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="date" name="occurred_at" id="expense_occurred_at_edit_{{$expense->id}}" value="{{$expense->occurred_at->format('Y-m-d')}}" required/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="expense_category_edit_{{$expense->id}}">Categorie</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="category_option_id" id="expense_category_edit_{{$expense->id}}">
+                                <option value="">Selectează categorie (opțional)</option>
+                                @foreach($categories as $category)
+                                    <option value="{{$category->id}}" {{$expense->category_option_id==$category->id?'selected':''}}>{{$category->option_label}}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="expense_note_edit_{{$expense->id}}">Notă</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.textarea name="note" id="expense_note_edit_{{$expense->id}}" rows="3">{{$expense->note}}</x-ui.textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','expense-edit-{{$expense->id}}')">Anulează</x-ui.button>
+            <x-ui.button type="submit" form="expense-edit-form-{{$expense->id}}" variant="default">Actualizează cheltuială</x-ui.button>
+        </div>
+    </x-slide-panel>
+    @endforeach
 </x-app-layout>

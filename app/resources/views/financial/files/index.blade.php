@@ -1,30 +1,22 @@
 <x-app-layout>
-    <div class="h-screen flex flex-col bg-slate-50">
-        <!-- Header -->
-        <div class="bg-white border-b border-slate-200 px-6 py-4">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">Fișiere</h1>
-                    <p class="text-sm text-slate-600 mt-1">Gestionează fișierele financiare cu structură dinamică</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <!-- Year Filter -->
-                    <form method="GET" class="flex items-center gap-2">
-                        <label class="text-sm font-medium text-slate-700">An:</label>
-                        <select name="year" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm">
-                            @forelse($availableYears as $availableYear)
-                                <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>
-                                    {{ $availableYear }}
-                                </option>
-                            @empty
-                                <option value="{{ now()->year }}">{{ now()->year }}</option>
-                            @endforelse
-                        </select>
-                    </form>
-                </div>
-            </div>
-        </div>
+    <x-slot name="pageTitle">Fișiere</x-slot>
 
+    <x-slot name="headerActions">
+        <!-- Year Filter -->
+        <form method="GET" class="flex items-center gap-2">
+            <select name="year" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm px-3 py-2">
+                @forelse($availableYears as $availableYear)
+                    <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>
+                        {{ $availableYear }}
+                    </option>
+                @empty
+                    <option value="{{ now()->year }}">{{ now()->year }}</option>
+                @endforelse
+            </select>
+        </form>
+    </x-slot>
+
+    <div class="h-full flex flex-col bg-slate-50">
         <!-- Main Content -->
         <div class="flex-1 flex overflow-hidden">
             <!-- Left Sidebar - File Tree -->

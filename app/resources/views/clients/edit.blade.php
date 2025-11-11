@@ -11,7 +11,7 @@
     <div class="px-6 lg:px-8 py-8">
         <x-client-form
             :client="$client"
-            :statuses="$statuses"
+            :statuses="$clientStatuses"
             :action="route('clients.update', $client)"
             method="PUT"
         />

@@ -87,7 +87,16 @@ class SubscriptionController extends Controller
             'notes' => 'nullable|string',
         ]);
 
-        Subscription::create($validated);
+        $subscription = Subscription::create($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Subscription created successfully!',
+                'subscription' => $subscription,
+            ], 201);
+        }
 
         return redirect()->route('subscriptions.index')
             ->with('success', 'Subscription created successfully.');
@@ -137,6 +146,15 @@ class SubscriptionController extends Controller
             $subscription->updateRenewalDate($validated['next_renewal_date'], 'Manual update via edit form');
         } else {
             $subscription->update($validated);
+        }
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Subscription updated successfully!',
+                'subscription' => $subscription->fresh(),
+            ]);
         }
 
         return redirect()->route('subscriptions.index')

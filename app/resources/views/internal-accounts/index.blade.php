@@ -1,22 +1,16 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ __('Conturi Interne (Internal Accounts)') }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Manage internal accounts and team access credentials</p>
-            </div>
-            <x-ui.button variant="default" onclick="window.location.href='{{ route('internal-accounts.create') }}'">
-                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Add New Account
-            </x-ui.button>
-        </div>
+    <x-slot name="pageTitle">Conturi Interne</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="default" @click="$dispatch('open-slide-panel', 'internal-account-create')">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Cont nou
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
+    <div class="p-6 space-y-6" x-data>
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -240,7 +234,7 @@
                                                 <x-ui.button
                                                     variant="outline"
                                                     size="sm"
-                                                    onclick="window.location.href='{{ route('internal-accounts.edit', $account) }}'"
+                                                    @click="$dispatch('open-slide-panel', 'internal-account-edit-{{ $account->id }}')"
                                                 >
                                                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -293,4 +287,183 @@
             @endif
         </x-ui.card>
     </div>
+
+    <!-- Toast Notifications -->
+    <x-toast />
+
+    <!-- Create Internal Account Slide Panel -->
+    <x-slide-panel name="internal-account-create" :show="false" maxWidth="2xl">
+        <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900">New Internal Account</h2>
+            <button type="button" @click="$dispatch('close-slide-panel', 'internal-account-create')" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="internal-account-create-form" x-data="{loading:false,showPass:false,async submit(e){e.preventDefault();this.loading=true;document.querySelectorAll('#internal-account-create-form .error-message').forEach(el=>el.remove());const fd=new FormData(e.target);try{const r=await fetch('{{route('internal-accounts.store')}}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{csrf_token()}}','Accept':'application/json'},body:fd});const d=await r.json();if(r.ok){$dispatch('close-slide-panel','internal-account-create');$dispatch('toast',{message:'Internal account created successfully!',type:'success'});setTimeout(()=>window.location.reload(),500);}else if(d.errors){Object.keys(d.errors).forEach(k=>{const i=document.querySelector(`#internal-account-create-form [name='${k}']`);if(i){const w=i.closest('div');const err=document.createElement('p');err.className='error-message mt-2 text-sm text-red-600';err.textContent=d.errors[k][0];w.appendChild(err);}});$dispatch('toast',{message:'Please correct the errors.',type:'error'});}}catch(err){console.error(err);$dispatch('toast',{message:'An error occurred.',type:'error'});}finally{this.loading=false;}}}\" @submit="submit">
+                @csrf
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="nume_cont_aplicatie">Account / Application Name <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="nume_cont_aplicatie" id="nume_cont_aplicatie" required placeholder="e.g., Company Bank Account, AWS Root"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="platforma">Platform <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="platforma" id="platforma" required>
+                                <option value="">Select a platform</option>
+                                @foreach($platforms as $key => $value)
+                                    <option value="{{$key}}">{{$value}}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="url">URL</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="url" name="url" id="url" placeholder="https://example.com/login"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="username">Username / Email</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="username" id="username" placeholder="admin or email@company.com"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="password">Password</x-ui.label>
+                        <div class="mt-2 relative">
+                            <input x-bind:type="showPass?'text':'password'" name="password" id="password" placeholder="Enter password" class="pr-10 block w-full rounded-lg border-slate-300 shadow-sm focus:border-slate-900 focus:ring-slate-900 sm:text-sm"/>
+                            <button type="button" @click="showPass=!showPass" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <div class="flex items-start">
+                            <div class="flex h-6 items-center">
+                                <input id="accesibil_echipei_create" name="accesibil_echipei" type="checkbox" value="1" class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900">
+                            </div>
+                            <div class="ml-3 text-sm leading-6">
+                                <label for="accesibil_echipei_create" class="font-medium text-slate-900">Make accessible to team</label>
+                                <p class="text-slate-500">Allow all team members to view this account (you remain the owner)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="notes">Notes</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.textarea name="notes" id="notes" rows="3" placeholder="Additional information, recovery codes, etc."></x-ui.textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','internal-account-create')">Cancel</x-ui.button>
+            <x-ui.button type="submit" variant="default" form="internal-account-create-form">Create Account</x-ui.button>
+        </div>
+    </x-slide-panel>
+
+    @foreach($accounts as $account)
+    @if($account->isOwner())
+    <x-slide-panel name="internal-account-edit-{{$account->id}}" :show="false" maxWidth="2xl">
+        <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900">Edit Internal Account</h2>
+            <button type="button" @click="$dispatch('close-slide-panel','internal-account-edit-{{$account->id}}')" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="internal-account-edit-form-{{$account->id}}" x-data="{loading:false,showPass:false,async submit(e){e.preventDefault();this.loading=true;document.querySelectorAll('#internal-account-edit-form-{{$account->id}} .error-message').forEach(el=>el.remove());const fd=new FormData(e.target);try{const r=await fetch('{{route('internal-accounts.update',$account)}}',{method:'POST',headers:{'X-CSRF-TOKEN':'{{csrf_token()}}','Accept':'application/json'},body:fd});const d=await r.json();if(r.ok){$dispatch('close-slide-panel','internal-account-edit-{{$account->id}}');$dispatch('toast',{message:'Internal account updated!',type:'success'});setTimeout(()=>window.location.reload(),500);}else if(d.errors){Object.keys(d.errors).forEach(k=>{const i=document.querySelector(`#internal-account-edit-form-{{$account->id}} [name='${k}']`);if(i){const w=i.closest('div');const err=document.createElement('p');err.className='error-message mt-2 text-sm text-red-600';err.textContent=d.errors[k][0];w.appendChild(err);}});$dispatch('toast',{message:'Please correct errors.',type:'error'});}}catch(err){console.error(err);$dispatch('toast',{message:'Error occurred.',type:'error'});}finally{this.loading=false;}}}\" @submit="submit">
+                @csrf @method('PUT')
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="nume_cont_aplicatie_{{$account->id}}">Account / Application Name <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="nume_cont_aplicatie" id="nume_cont_aplicatie_{{$account->id}}" value="{{$account->nume_cont_aplicatie}}" required placeholder="e.g., Company Bank Account, AWS Root"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="platforma_{{$account->id}}">Platform <span class="text-red-500">*</span></x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="platforma" id="platforma_{{$account->id}}" required>
+                                <option value="">Select a platform</option>
+                                @foreach($platforms as $key => $value)
+                                    <option value="{{$key}}" {{$account->platforma==$key?'selected':''}}>{{$value}}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="url_{{$account->id}}">URL</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="url" name="url" id="url_{{$account->id}}" value="{{$account->url}}" placeholder="https://example.com/login"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="username_{{$account->id}}">Username / Email</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="username" id="username_{{$account->id}}" value="{{$account->username}}" placeholder="admin or email@company.com"/>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="password_{{$account->id}}">Password</x-ui.label>
+                        <div class="mt-2 relative">
+                            <input x-bind:type="showPass?'text':'password'" name="password" id="password_{{$account->id}}" placeholder="Leave blank to keep current password" class="pr-10 block w-full rounded-lg border-slate-300 shadow-sm focus:border-slate-900 focus:ring-slate-900 sm:text-sm"/>
+                            <button type="button" @click="showPass=!showPass" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">Leave blank to keep the current password</p>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <div class="flex items-start">
+                            <div class="flex h-6 items-center">
+                                <input id="accesibil_echipei_edit_{{$account->id}}" name="accesibil_echipei" type="checkbox" value="1" {{$account->accesibil_echipei?'checked':''}} class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900">
+                            </div>
+                            <div class="ml-3 text-sm leading-6">
+                                <label for="accesibil_echipei_edit_{{$account->id}}" class="font-medium text-slate-900">Make accessible to team</label>
+                                <p class="text-slate-500">Allow all team members to view this account (you remain the owner)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="notes_{{$account->id}}">Notes</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.textarea name="notes" id="notes_{{$account->id}}" rows="3" placeholder="Additional information, recovery codes, etc.">{{$account->notes}}</x-ui.textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','internal-account-edit-{{$account->id}}')">Cancel</x-ui.button>
+            <x-ui.button type="submit" variant="default" form="internal-account-edit-form-{{$account->id}}">Update Account</x-ui.button>
+        </div>
+    </x-slide-panel>
+    @endif
+    @endforeach
 </x-app-layout>

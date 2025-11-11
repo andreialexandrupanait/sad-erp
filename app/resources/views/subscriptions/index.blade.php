@@ -1,22 +1,16 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ __('Subscriptions') }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Manage all your subscriptions and track upcoming renewals</p>
-            </div>
-            <x-ui.button variant="default" onclick="window.location.href='{{ route('subscriptions.create') }}'">
-                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Add Subscription
-            </x-ui.button>
-        </div>
+    <x-slot name="pageTitle">Abonamente</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="default" @click="$dispatch('open-slide-panel', 'subscription-create')">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            Abonament nou
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
+    <div class="p-6 space-y-6" x-data>
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -198,7 +192,7 @@
                     <h3 class="mt-2 text-sm font-medium text-slate-900">No subscriptions</h3>
                     <p class="mt-1 text-sm text-slate-500">Get started by creating your first subscription.</p>
                     <div class="mt-6">
-                        <x-ui.button variant="default" onclick="window.location.href='{{ route('subscriptions.create') }}'">
+                        <x-ui.button variant="default" @click="$dispatch('open-slide-panel', 'subscription-create')">
                             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
@@ -297,7 +291,7 @@
                                             <x-ui.button
                                                 variant="outline"
                                                 size="sm"
-                                                onclick="window.location.href='{{ route('subscriptions.edit', $subscription) }}'"
+                                                @click="$dispatch('open-slide-panel', 'subscription-edit-{{ $subscription->id }}')"
                                             >
                                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -330,4 +324,361 @@
             @endif
         </x-ui.card>
     </div>
+
+    <!-- Toast Notifications -->
+    <x-toast />
+
+    <!-- Create Subscription Slide Panel -->
+    <x-slide-panel name="subscription-create" :show="false" maxWidth="2xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+            <h2 class="text-2xl font-bold text-slate-900">New Subscription</h2>
+            <button type="button" @click="$dispatch('close-slide-panel', 'subscription-create')" class="text-slate-400 hover:text-slate-600 transition">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto px-8 py-6">
+            <form id="subscription-create-form"
+                x-data="{
+                    billingCycle: 'monthly',
+                    loading: false,
+                    async submit(event) {
+                        event.preventDefault();
+                        this.loading = true;
+
+                        // Clear previous errors
+                        document.querySelectorAll('#subscription-create-form .error-message').forEach(el => el.remove());
+
+                        const formData = new FormData(event.target);
+
+                        try {
+                            const response = await fetch('{{ route('subscriptions.store') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                    'Accept': 'application/json',
+                                },
+                                body: formData
+                            });
+
+                            const data = await response.json();
+
+                            if (response.ok) {
+                                $dispatch('close-slide-panel', 'subscription-create');
+                                $dispatch('toast', { message: 'Subscription created successfully!', type: 'success' });
+                                setTimeout(() => window.location.reload(), 500);
+                            } else {
+                                if (data.errors) {
+                                    Object.keys(data.errors).forEach(key => {
+                                        const input = document.querySelector(`#subscription-create-form [name='${key}']`);
+                                        if (input) {
+                                            const wrapper = input.closest('div');
+                                            const errorDiv = document.createElement('p');
+                                            errorDiv.className = 'error-message mt-2 text-sm text-red-600';
+                                            errorDiv.textContent = data.errors[key][0];
+                                            wrapper.appendChild(errorDiv);
+                                        }
+                                    });
+                                    $dispatch('toast', { message: 'Please correct the errors in the form.', type: 'error' });
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            $dispatch('toast', { message: 'An error occurred. Please try again.', type: 'error' });
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }"
+                @submit="submit"
+            >
+                @csrf
+                <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                    <!-- Vendor Name -->
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="vendor_name">
+                            Vendor Name <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="text" name="vendor_name" id="vendor_name" required
+                                placeholder="e.g., Adobe, Microsoft, Netflix" />
+                        </div>
+                    </div>
+
+                    <!-- Price -->
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="price">
+                            Price (RON) <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="number" step="0.01" name="price" id="price" required
+                                placeholder="0.00" />
+                        </div>
+                    </div>
+
+                    <!-- Billing Cycle -->
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="billing_cycle">
+                            Billing Cycle <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="billing_cycle" id="billing_cycle" required x-model="billingCycle">
+                                @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <!-- Custom Days -->
+                    <div class="sm:col-span-3 field-wrapper" x-show="billingCycle === 'custom'" x-cloak>
+                        <x-ui.label for="custom_days">
+                            Custom Days <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="number" name="custom_days" id="custom_days"
+                                placeholder="e.g., 90 for quarterly" />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">Enter the number of days between renewals</p>
+                    </div>
+
+                    <!-- Start Date -->
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="start_date">
+                            Start Date <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="date" name="start_date" id="start_date" required value="{{ date('Y-m-d') }}" />
+                        </div>
+                    </div>
+
+                    <!-- Next Renewal Date -->
+                    <div class="sm:col-span-3 field-wrapper">
+                        <x-ui.label for="next_renewal_date">
+                            Next Renewal Date <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input type="date" name="next_renewal_date" id="next_renewal_date" required />
+                        </div>
+                        <p class="mt-1 text-xs text-slate-500">The date when the next payment is due</p>
+                    </div>
+
+                    <!-- Status -->
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="status">
+                            Status <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.select name="status" id="status" required>
+                                @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
+                                    <option value="{{ $value }}" {{ $value === 'active' ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </x-ui.select>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div class="sm:col-span-6 field-wrapper">
+                        <x-ui.label for="notes">Notes</x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.textarea name="notes" id="notes" rows="4"
+                                placeholder="Optional notes about this subscription..."></x-ui.textarea>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel', 'subscription-create')">
+                Cancel
+            </x-ui.button>
+            <x-ui.button type="submit" variant="default" form="subscription-create-form">
+                Create Subscription
+            </x-ui.button>
+        </div>
+    </x-slide-panel>
+
+    <!-- Edit Subscription Slide Panels -->
+    @foreach($subscriptions as $subscription)
+        <x-slide-panel name="subscription-edit-{{ $subscription->id }}" :show="false" maxWidth="2xl">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-8 py-6 border-b border-slate-200">
+                <h2 class="text-2xl font-bold text-slate-900">Edit Subscription: {{ $subscription->vendor_name }}</h2>
+                <button type="button" @click="$dispatch('close-slide-panel', 'subscription-edit-{{ $subscription->id }}')" class="text-slate-400 hover:text-slate-600 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto px-8 py-6">
+                <form id="subscription-edit-form-{{ $subscription->id }}"
+                    x-data="{
+                        billingCycle: '{{ $subscription->billing_cycle }}',
+                        loading: false,
+                        async submit(event) {
+                            event.preventDefault();
+                            this.loading = true;
+
+                            // Clear previous errors
+                            document.querySelectorAll('#subscription-edit-form-{{ $subscription->id }} .error-message').forEach(el => el.remove());
+
+                            const formData = new FormData(event.target);
+
+                            try {
+                                const response = await fetch('{{ route('subscriptions.update', $subscription) }}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                        'Accept': 'application/json',
+                                    },
+                                    body: formData
+                                });
+
+                                const data = await response.json();
+
+                                if (response.ok) {
+                                    $dispatch('close-slide-panel', 'subscription-edit-{{ $subscription->id }}');
+                                    $dispatch('toast', { message: 'Subscription updated successfully!', type: 'success' });
+                                    setTimeout(() => window.location.reload(), 500);
+                                } else {
+                                    if (data.errors) {
+                                        Object.keys(data.errors).forEach(key => {
+                                            const input = document.querySelector(`#subscription-edit-form-{{ $subscription->id }} [name='${key}']`);
+                                            if (input) {
+                                                const wrapper = input.closest('div');
+                                                const errorDiv = document.createElement('p');
+                                                errorDiv.className = 'error-message mt-2 text-sm text-red-600';
+                                                errorDiv.textContent = data.errors[key][0];
+                                                wrapper.appendChild(errorDiv);
+                                            }
+                                        });
+                                        $dispatch('toast', { message: 'Please correct the errors in the form.', type: 'error' });
+                                    }
+                                }
+                            } catch (error) {
+                                console.error('Error:', error);
+                                $dispatch('toast', { message: 'An error occurred. Please try again.', type: 'error' });
+                            } finally {
+                                this.loading = false;
+                            }
+                        }
+                    }"
+                    @submit="submit"
+                >
+                    @csrf
+                    @method('PUT')
+                    <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
+                        <!-- Vendor Name -->
+                        <div class="sm:col-span-3 field-wrapper">
+                            <x-ui.label for="vendor_name_edit_{{ $subscription->id }}">
+                                Vendor Name <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.input type="text" name="vendor_name" id="vendor_name_edit_{{ $subscription->id }}" required
+                                    value="{{ $subscription->vendor_name }}" />
+                            </div>
+                        </div>
+
+                        <!-- Price -->
+                        <div class="sm:col-span-3 field-wrapper">
+                            <x-ui.label for="price_edit_{{ $subscription->id }}">
+                                Price (RON) <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.input type="number" step="0.01" name="price" id="price_edit_{{ $subscription->id }}" required
+                                    value="{{ $subscription->price }}" />
+                            </div>
+                        </div>
+
+                        <!-- Billing Cycle -->
+                        <div class="sm:col-span-3 field-wrapper">
+                            <x-ui.label for="billing_cycle_edit_{{ $subscription->id }}">
+                                Billing Cycle <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.select name="billing_cycle" id="billing_cycle_edit_{{ $subscription->id }}" required x-model="billingCycle">
+                                    @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
+                                        <option value="{{ $value }}" {{ $subscription->billing_cycle === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </x-ui.select>
+                            </div>
+                        </div>
+
+                        <!-- Custom Days -->
+                        <div class="sm:col-span-3 field-wrapper" x-show="billingCycle === 'custom'" x-cloak>
+                            <x-ui.label for="custom_days_edit_{{ $subscription->id }}">
+                                Custom Days <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.input type="number" name="custom_days" id="custom_days_edit_{{ $subscription->id }}"
+                                    value="{{ $subscription->custom_days }}" />
+                            </div>
+                        </div>
+
+                        <!-- Start Date -->
+                        <div class="sm:col-span-3 field-wrapper">
+                            <x-ui.label for="start_date_edit_{{ $subscription->id }}">
+                                Start Date <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.input type="date" name="start_date" id="start_date_edit_{{ $subscription->id }}" required
+                                    value="{{ $subscription->start_date->format('Y-m-d') }}" />
+                            </div>
+                        </div>
+
+                        <!-- Next Renewal Date -->
+                        <div class="sm:col-span-3 field-wrapper">
+                            <x-ui.label for="next_renewal_date_edit_{{ $subscription->id }}">
+                                Next Renewal Date <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.input type="date" name="next_renewal_date" id="next_renewal_date_edit_{{ $subscription->id }}" required
+                                    value="{{ $subscription->next_renewal_date->format('Y-m-d') }}" />
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="sm:col-span-6 field-wrapper">
+                            <x-ui.label for="status_edit_{{ $subscription->id }}">
+                                Status <span class="text-red-500">*</span>
+                            </x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.select name="status" id="status_edit_{{ $subscription->id }}" required>
+                                    @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
+                                        <option value="{{ $value }}" {{ $subscription->status === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @endforeach
+                                </x-ui.select>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="sm:col-span-6 field-wrapper">
+                            <x-ui.label for="notes_edit_{{ $subscription->id }}">Notes</x-ui.label>
+                            <div class="mt-2">
+                                <x-ui.textarea name="notes" id="notes_edit_{{ $subscription->id }}" rows="4">{{ $subscription->notes }}</x-ui.textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
+                <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel', 'subscription-edit-{{ $subscription->id }}')">
+                    Cancel
+                </x-ui.button>
+                <x-ui.button type="submit" variant="default" form="subscription-edit-form-{{ $subscription->id }}">
+                    Update Subscription
+                </x-ui.button>
+            </div>
+        </x-slide-panel>
+    @endforeach
 </x-app-layout>

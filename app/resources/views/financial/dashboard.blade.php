@@ -1,31 +1,27 @@
 <x-app-layout>
+    <x-slot name="pageTitle">Financiar</x-slot>
+
+    <x-slot name="headerActions">
+        <form method="GET" class="flex gap-2">
+            <select name="year" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm px-3 py-2">
+                @foreach($availableYears as $availableYear)
+                    <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>
+                        {{ $availableYear }}
+                    </option>
+                @endforeach
+            </select>
+            <select name="month" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm px-3 py-2">
+                <option value="">Toate lunile</option>
+                @for($m = 1; $m <= 12; $m++)
+                    <option value="{{ $m }}" {{ $month == $m ? 'selected' : '' }}>
+                        {{ \Carbon\Carbon::create()->month($m)->format('F') }}
+                    </option>
+                @endfor
+            </select>
+        </form>
+    </x-slot>
+
     <div class="p-6 space-y-6">
-        <!-- Header with Filters -->
-        <div class="flex items-center justify-between">
-            <div>
-                <h1 class="text-2xl font-bold text-slate-900">Tablou de bord financiar</h1>
-                <p class="text-sm text-slate-600 mt-1">Prezentare generală a veniturilor și cheltuielilor</p>
-            </div>
-            <div class="flex gap-3">
-                <form method="GET" class="flex gap-2">
-                    <select name="year" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm">
-                        @foreach($availableYears as $availableYear)
-                            <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>
-                                {{ $availableYear }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <select name="month" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-sm">
-                        <option value="">Toate lunile</option>
-                        @for($m = 1; $m <= 12; $m++)
-                            <option value="{{ $m }}" {{ $month == $m ? 'selected' : '' }}>
-                                {{ \Carbon\Carbon::create()->month($m)->format('F') }}
-                            </option>
-                        @endfor
-                    </select>
-                </form>
-            </div>
-        </div>
 
         <!-- KPI Cards by Currency -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -74,7 +70,7 @@
                         <p class="text-slate-500 text-center py-4">Nu există venituri recente</p>
                     @endforelse
                 </div>
-                <a href="{{ route('financial.venituri.index') }}" class="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <a href="{{ route('financial.revenues.index') }}" class="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
                     Vezi toate veniturile →
                 </a>
             </div>
@@ -98,7 +94,7 @@
                         <p class="text-slate-500 text-center py-4">Nu există cheltuieli recente</p>
                     @endforelse
                 </div>
-                <a href="{{ route('financial.cheltuieli.index') }}" class="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
+                <a href="{{ route('financial.expenses.index') }}" class="block mt-4 text-center text-sm text-primary-600 hover:text-primary-700 font-medium">
                     Vezi toate cheltuielile →
                 </a>
             </div>
@@ -106,10 +102,10 @@
 
         <!-- Quick Actions -->
         <div class="flex gap-3">
-            <a href="{{ route('financial.venituri.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+            <a href="{{ route('financial.revenues.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
                 + Adaugă venit
             </a>
-            <a href="{{ route('financial.cheltuieli.create') }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
+            <a href="{{ route('financial.expenses.create') }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
                 + Adaugă cheltuială
             </a>
             <a href="{{ route('financial.export', $year) }}" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium">

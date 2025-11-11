@@ -75,4 +75,22 @@ class ClientSetting extends Model
     {
         return $query->orderBy('order_index');
     }
+
+    /**
+     * Accessor for 'label' - backwards compatibility with SettingOption
+     * Maps 'name' to 'label'
+     */
+    public function getLabelAttribute(): string
+    {
+        return $this->name;
+    }
+
+    /**
+     * Accessor for 'value' - backwards compatibility with SettingOption
+     * Generates a slug from the name
+     */
+    public function getValueAttribute(): string
+    {
+        return \Illuminate\Support\Str::slug($this->name);
+    }
 }

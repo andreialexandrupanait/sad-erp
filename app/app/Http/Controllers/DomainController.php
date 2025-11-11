@@ -103,6 +103,15 @@ class DomainController extends Controller
 
         $domain = Domain::create($validated);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Domain created successfully!',
+                'domain' => $domain->load('client'),
+            ], 201);
+        }
+
         return redirect()->route('domains.show', $domain)
             ->with('success', 'Domain added successfully.');
     }
@@ -152,6 +161,15 @@ class DomainController extends Controller
         $validated['domain_name'] = strtolower(trim($validated['domain_name']));
 
         $domain->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Domain updated successfully!',
+                'domain' => $domain->fresh()->load('client'),
+            ]);
+        }
 
         return redirect()->route('domains.show', $domain)
             ->with('success', 'Domain updated successfully.');

@@ -71,6 +71,15 @@ class CredentialController extends Controller
 
         $credential = Credential::create($validated);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Credential created successfully!',
+                'credential' => $credential->load('client'),
+            ], 201);
+        }
+
         return redirect()->route('credentials.show', $credential)
             ->with('success', 'Credential created successfully.');
     }
@@ -116,6 +125,15 @@ class CredentialController extends Controller
         }
 
         $credential->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Credential updated successfully!',
+                'credential' => $credential->fresh()->load('client'),
+            ]);
+        }
 
         return redirect()->route('credentials.show', $credential)
             ->with('success', 'Credential updated successfully.');

@@ -71,7 +71,16 @@ class RevenueController extends Controller
             'note' => 'nullable|string',
         ]);
 
-        FinancialRevenue::create($validated);
+        $revenue = FinancialRevenue::create($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Revenue created successfully!',
+                'revenue' => $revenue->load('client'),
+            ], 201);
+        }
 
         return redirect()->route('financial.revenues.index')
             ->with('success', 'Revenue added successfully.');
@@ -106,6 +115,15 @@ class RevenueController extends Controller
         $validated['month'] = $date->month;
 
         $revenue->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Revenue updated successfully!',
+                'revenue' => $revenue->fresh()->load('client'),
+            ]);
+        }
 
         return redirect()->route('financial.revenues.index')
             ->with('success', 'Revenue updated successfully.');

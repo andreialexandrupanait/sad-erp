@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ImportExportController;
 use App\Http\Controllers\CredentialController;
@@ -35,9 +36,9 @@ Route::get('/test-https-detection', function () {
     ]);
 })->name('test.https');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -70,40 +71,47 @@ Route::middleware('auth')->group(function () {
 
     // Settings Module
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+    Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
 
     // Setting Groups API
     Route::post('settings/categories/{category}/groups', [SettingsController::class, 'storeGroup'])->name('settings.groups.store');
     Route::patch('settings/groups/{group}', [SettingsController::class, 'updateGroup'])->name('settings.groups.update');
     Route::delete('settings/groups/{group}', [SettingsController::class, 'deleteGroup'])->name('settings.groups.delete');
 
-    // Setting Options API
+    // Setting Options API (Generic system - for domains, access, financial, subscriptions)
     Route::post('settings/groups/{group}/options', [SettingsController::class, 'storeOption'])->name('settings.options.store');
     Route::patch('settings/options/{option}', [SettingsController::class, 'updateOption'])->name('settings.options.update');
     Route::delete('settings/options/{option}', [SettingsController::class, 'deleteOption'])->name('settings.options.delete');
     Route::post('settings/groups/{group}/options/reorder', [SettingsController::class, 'reorderOptions'])->name('settings.options.reorder');
 
-    // Financial Module (Financiar)
-    Route::prefix('financiar')->name('financial.')->group(function () {
+    // Module-Specific Settings (using *_settings tables)
+    Route::post('settings/client-settings', [\App\Http\Controllers\ClientSettingsController::class, 'store'])->name('settings.client-settings.store');
+    Route::patch('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'update'])->name('settings.client-settings.update');
+    Route::delete('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'destroy'])->name('settings.client-settings.destroy');
+    Route::post('settings/client-settings/reorder', [\App\Http\Controllers\ClientSettingsController::class, 'reorder'])->name('settings.client-settings.reorder');
+
+    // Financial Module
+    Route::prefix('financial')->name('financial.')->group(function () {
         // Dashboard
         Route::get('/', [FinancialDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/istoric/{year}', [FinancialDashboardController::class, 'yearlyReport'])->name('yearly-report');
+        Route::get('/history/{year}', [FinancialDashboardController::class, 'yearlyReport'])->name('yearly-report');
         Route::get('/export/{year}', [FinancialDashboardController::class, 'exportCsv'])->name('export');
 
-        // Revenues (Venituri)
-        Route::resource('venituri', RevenueController::class)->parameters(['venituri' => 'revenue']);
+        // Revenues
+        Route::resource('revenues', RevenueController::class)->parameters(['revenues' => 'revenue']);
 
-        // Expenses (Cheltuieli)
-        Route::resource('cheltuieli', ExpenseController::class)->parameters(['cheltuieli' => 'expense']);
+        // Expenses
+        Route::resource('expenses', ExpenseController::class)->parameters(['expenses' => 'expense']);
 
-        // Files (Fisiere)
-        Route::get('fisiere', [FinancialFileController::class, 'index'])->name('files.index');
-        Route::get('fisiere/create', [FinancialFileController::class, 'create'])->name('files.create');
-        Route::post('fisiere', [FinancialFileController::class, 'store'])->name('files.store');
-        Route::post('fisiere/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
-        Route::get('fisiere/{file}', [FinancialFileController::class, 'show'])->name('files.show');
-        Route::get('fisiere/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');
-        Route::patch('fisiere/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');
-        Route::delete('fisiere/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
+        // Files
+        Route::get('files', [FinancialFileController::class, 'index'])->name('files.index');
+        Route::get('files/create', [FinancialFileController::class, 'create'])->name('files.create');
+        Route::post('files', [FinancialFileController::class, 'store'])->name('files.store');
+        Route::post('files/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
+        Route::get('files/{file}', [FinancialFileController::class, 'show'])->name('files.show');
+        Route::get('files/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');
+        Route::patch('files/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');
+        Route::delete('files/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
     });
 });
 

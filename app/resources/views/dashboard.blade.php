@@ -1,251 +1,249 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ date('H') < 12 ? 'Bună dimineața' : (date('H') < 18 ? 'Bună ziua' : 'Bună seara') }}, {{ auth()->user()->name }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Iată ce se întâmplă cu afacerea ta astăzi.</p>
-            </div>
-        </div>
+    <x-slot name="pageTitle">
+        {{date('H') < 12 ? 'Bună dimineața' : (date('H') < 18 ? 'Bună ziua' : 'Bună seara')}}, {{ auth()->user()->name }}
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
-        <!-- Quick Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Total Clients -->
-            <x-ui.card class="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-slate-800">
-                <x-ui.card-content class="p-6">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300 mb-1">Total Clienți</p>
-                            <p class="text-3xl font-bold mb-2">{{ \App\Models\Client::count() }}</p>
-                        </div>
-                        <div class="flex-shrink-0 w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </x-ui.card-content>
-            </x-ui.card>
+    @php($hideBreadcrumb = true)
 
-            <!-- Active Subscriptions -->
-            <x-ui.card>
-                <x-ui.card-content class="p-6">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Abonamente Active</p>
-                            <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Subscription::where('status', 'active')->count() }}</p>
-                        </div>
-                        <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </x-ui.card-content>
-            </x-ui.card>
+    <x-slot name="headerActions">
+        <x-dashboard.quick-actions />
+    </x-slot>
 
-            <!-- Total Domains -->
-            <x-ui.card>
-                <x-ui.card-content class="p-6">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Total Domenii</p>
-                            <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Domain::count() }}</p>
-                        </div>
-                        <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                            </svg>
-                        </div>
-                    </div>
-                </x-ui.card-content>
-            </x-ui.card>
+    <div class="p-6 space-y-6" x-data>
+        {{-- Key Metrics Row --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <x-widgets.metrics.stat-card
+                title="Clienți activi"
+                :value="$activeClients"
+                :subtitle="'din ' . $totalClients . ' total'"
+                color="blue"
+                :href="route('clients.index')"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
 
-            <!-- Expiring Soon -->
-            <x-ui.card>
-                <x-ui.card-content class="p-6">
-                    <div class="flex items-start justify-between">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600 mb-1">Expiră În Curând</p>
-                            <p class="text-3xl font-bold text-slate-900 mb-2">{{ \App\Models\Domain::where('expiry_date', '<=', now()->addDays(30))->where('expiry_date', '>=', now())->count() }}</p>
-                        </div>
-                        <div class="flex-shrink-0 w-12 h-12 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
-                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        </div>
-                    </div>
-                </x-ui.card-content>
-            </x-ui.card>
+            <x-widgets.metrics.stat-card
+                title="Abonamente"
+                :value="$activeSubscriptions"
+                :subtitle="number_format($monthlySubscriptionCost, 2) . ' RON/lună'"
+                color="green"
+                :href="route('subscriptions.index')"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                title="Domenii"
+                :value="$activeDomains"
+                :subtitle="$expiringDomains->count() > 0 ? $expiringDomains->count() . ' expiră în 30 zile' : 'Toate sunt valide'"
+                :color="$expiringDomains->count() > 0 ? 'orange' : 'purple'"
+                :href="route('domains.index')"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                title="Acces & parole"
+                :value="$totalCredentials"
+                subtitle="credențiale salvate"
+                color="indigo"
+                :href="route('credentials.index')"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
         </div>
 
-        <!-- Two Column Layout -->
+        {{-- Financial Overview --}}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <x-widgets.financial.summary-card
+                title="Venituri luna curentă"
+                :amount="number_format($currentMonthRevenue, 2) . ' RON'"
+                :yearlyAmount="number_format($yearlyRevenue, 2) . ' RON'"
+                type="revenue"
+                :href="route('financial.revenues.index')"
+            />
+
+            <x-widgets.financial.summary-card
+                title="Cheltuieli luna curentă"
+                :amount="number_format($currentMonthExpenses, 2) . ' RON'"
+                :yearlyAmount="number_format($yearlyExpenses, 2) . ' RON'"
+                type="expense"
+                :href="route('financial.expenses.index')"
+            />
+
+            <x-widgets.financial.summary-card
+                title="Profit net luna curentă"
+                :amount="number_format($currentMonthProfit, 2) . ' RON'"
+                :yearlyAmount="number_format($yearlyProfit, 2) . ' RON'"
+                type="profit"
+                :href="route('financial.dashboard')"
+            />
+        </div>
+
+        {{-- Main Content Grid --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Recent Clients -->
-            <div class="lg:col-span-2">
-                <x-ui.card>
-                    <x-ui.card-header>
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-lg font-semibold text-slate-900">Clienți Recenți</h3>
-                            <a href="{{ route('clients.index') }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Vezi toți →</a>
-                        </div>
-                    </x-ui.card-header>
-                    <x-ui.card-content>
-                        @php
-                            $recentClients = \App\Models\Client::latest()->take(5)->get();
-                        @endphp
+            {{-- Left Column: Recent Activity & Top Clients --}}
+            <div class="lg:col-span-2 space-y-6">
+                <x-dashboard.trend-chart :revenueTrend="$revenueTrend" :expenseTrend="$expenseTrend" />
 
-                        @if($recentClients->isEmpty())
-                            <div class="text-center py-8">
-                                <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                <p class="text-slate-500 mb-4">Nu există clienți încă</p>
-                                <x-ui.button variant="default" onclick="window.location.href='{{ route('clients.create') }}'">
-                                    Adaugă primul client
-                                </x-ui.button>
+                {{-- Top Clients --}}
+                <x-widgets.activity.list-card
+                    title="Top clienți"
+                    :items="$topClients"
+                    emptyMessage="Niciun client cu venituri înregistrate"
+                    :viewAllHref="route('clients.index')"
+                >
+                    @foreach($topClients as $index => $client)
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                    {{ $index + 1 }}
+                                </div>
+                                <div>
+                                    <p class="font-medium text-slate-900">{{ $client->display_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ $client->email ?? 'Fără email' }}</p>
+                                </div>
                             </div>
-                        @else
-                            <div class="space-y-3">
-                                @foreach($recentClients as $client)
-                                    <a href="{{ route('clients.show', $client) }}" class="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors group">
-                                        <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center text-white font-medium">
-                                                {{ strtoupper(substr($client->name, 0, 2)) }}
-                                            </div>
-                                            <div>
-                                                <div class="font-medium text-slate-900 group-hover:text-slate-600 transition-colors">{{ $client->name }}</div>
-                                                <div class="text-sm text-slate-500">{{ $client->company ?? $client->email }}</div>
-                                            </div>
-                                        </div>
-                                        <x-ui.badge :variant="$client->status === 'active' ? 'success' : 'secondary'">
-                                            {{ ucfirst($client->status) }}
-                                        </x-ui.badge>
-                                    </a>
-                                @endforeach
+                            <div class="text-right">
+                                <p class="font-semibold text-slate-900">{{ number_format($client->total_revenue, 2) }} RON</p>
+                                <p class="text-xs text-slate-500">venituri totale</p>
                             </div>
-                        @endif
-                    </x-ui.card-content>
-                </x-ui.card>
+                        </div>
+                    @endforeach
+                </x-widgets.activity.list-card>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="lg:col-span-1">
-                <x-ui.card>
-                    <x-ui.card-header>
-                        <h3 class="text-lg font-semibold text-slate-900">Acțiuni Rapide</h3>
-                    </x-ui.card-header>
-                    <x-ui.card-content>
-                        <div class="space-y-3">
-                            <a href="{{ route('clients.create') }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
-                                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
-                                    </svg>
+            {{-- Right Column: Renewals & Alerts --}}
+            <div class="space-y-6">
+                {{-- Expiring Domains --}}
+                @if($expiringDomains->count() > 0)
+                    <x-widgets.alerts.alert-card
+                        title="Domenii expiră în curând"
+                        :items="$expiringDomains"
+                        type="warning"
+                    >
+                        @foreach($expiringDomains->take(5) as $domain)
+                            <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+                                 @click="$dispatch('open-slide-panel', 'domain-edit-{{$domain->id}}')">
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-slate-900 truncate">{{ $domain->domain_name }}</p>
+                                    <p class="text-xs text-slate-500">
+                                        {{ $domain->client ? $domain->client->display_name : 'Fără client' }}
+                                    </p>
                                 </div>
-                                <div>
-                                    <div class="font-medium text-slate-900">Adaugă Client</div>
-                                    <div class="text-sm text-slate-500">Creează client nou</div>
+                                <div class="text-right flex-shrink-0 ml-2">
+                                    <p class="text-xs font-semibold text-orange-700">
+                                        {{ $domain->expiry_date->diffInDays(now()) }} zile
+                                    </p>
+                                    <p class="text-xs text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</p>
                                 </div>
+                            </div>
+                        @endforeach
+                        @if($expiringDomains->count() > 5)
+                            <a href="{{ route('domains.index') }}" class="block mt-3 text-center text-sm text-orange-700 hover:text-orange-900 font-medium">
+                                +{{ $expiringDomains->count() - 5 }} mai multe domenii
                             </a>
+                        @endif
+                    </x-widgets.alerts.alert-card>
+                @endif
 
-                            <a href="{{ route('subscriptions.create') }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
-                                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                    </svg>
+                {{-- Overdue Subscriptions --}}
+                @if($overdueSubscriptions->count() > 0)
+                    <x-widgets.alerts.alert-card
+                        title="Abonamente restante"
+                        :items="$overdueSubscriptions"
+                        type="error"
+                    >
+                        @foreach($overdueSubscriptions->take(5) as $subscription)
+                            <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+                                 @click="$dispatch('open-slide-panel', 'subscription-edit-{{$subscription->id}}')">
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON</p>
                                 </div>
-                                <div>
-                                    <div class="font-medium text-slate-900">Abonament Nou</div>
-                                    <div class="text-sm text-slate-500">Urmărește un abonament</div>
+                                <div class="text-right flex-shrink-0 ml-2">
+                                    <p class="text-xs font-semibold text-red-700">
+                                        Restant {{ abs($subscription->next_renewal_date->diffInDays(now())) }} zile
+                                    </p>
+                                    <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
                                 </div>
-                            </a>
+                            </div>
+                        @endforeach
+                    </x-widgets.alerts.alert-card>
+                @endif
 
-                            <a href="{{ route('domains.create') }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
-                                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                                    </svg>
+                {{-- Upcoming Renewals --}}
+                @if($upcomingRenewals['subscriptions']->count() > 0)
+                    <x-widgets.activity.list-card
+                        title="Reînnoiri următoare"
+                        :items="$upcomingRenewals['subscriptions']"
+                        emptyMessage="Nicio reînnoire în 30 zile"
+                    >
+                        @foreach($upcomingRenewals['subscriptions']->take(5) as $subscription)
+                            <div class="flex items-start justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                <div class="flex-1 min-w-0">
+                                    <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
+                                    <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON / {{ $subscription->billing_cycle }}</p>
                                 </div>
-                                <div>
-                                    <div class="font-medium text-slate-900">Adaugă Domeniu</div>
-                                    <div class="text-sm text-slate-500">Înregistrează domeniu nou</div>
+                                <div class="text-right flex-shrink-0 ml-2">
+                                    <p class="text-xs font-semibold text-blue-700">
+                                        {{ $subscription->next_renewal_date->diffInDays(now()) }} zile
+                                    </p>
+                                    <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
                                 </div>
-                            </a>
+                            </div>
+                        @endforeach
+                    </x-widgets.activity.list-card>
+                @endif
 
-                            <a href="{{ route('credentials.create') }}" class="flex items-center gap-3 p-3 rounded-xl hover:bg-slate-50 transition-colors group">
-                                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center group-hover:bg-slate-200 transition-colors">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <div class="font-medium text-slate-900">Salvează Acces</div>
-                                    <div class="text-sm text-slate-500">Stochează informații acces</div>
-                                </div>
-                            </a>
+                {{-- Recent Clients --}}
+                <x-widgets.activity.list-card
+                    title="Clienți recenți"
+                    :items="$recentClients"
+                    emptyMessage="Niciun client înregistrat"
+                    :viewAllHref="route('clients.index')"
+                >
+                    @foreach($recentClients as $client)
+                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                             onclick="window.location.href='{{ route('clients.show', $client) }}'">
+                            <div class="flex-shrink-0 w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                {{ strtoupper(substr($client->display_name, 0, 2)) }}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-slate-900 truncate">{{ $client->display_name }}</p>
+                                <p class="text-xs text-slate-500">{{ $client->email ?? 'Fără email' }}</p>
+                            </div>
+                            @if($client->status)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ $client->status->status_name }}
+                                </span>
+                            @endif
                         </div>
-                    </x-ui.card-content>
-                </x-ui.card>
+                    @endforeach
+                </x-widgets.activity.list-card>
             </div>
         </div>
-
-        <!-- Alerts & Notifications -->
-        @php
-            $expiringDomains = \App\Models\Domain::where('expiry_date', '<=', now()->addDays(30))
-                ->where('expiry_date', '>=', now())
-                ->orderBy('expiry_date', 'asc')
-                ->take(5)
-                ->get();
-
-            $overdueSubscriptions = \App\Models\Subscription::where('status', 'active')
-                ->where('next_renewal_date', '<', now())
-                ->take(5)
-                ->get();
-        @endphp
-
-        @if($expiringDomains->isNotEmpty() || $overdueSubscriptions->isNotEmpty())
-            <x-ui.card>
-                <x-ui.card-header>
-                    <h3 class="text-lg font-semibold text-slate-900">Alerte & Notificări</h3>
-                </x-ui.card-header>
-                <x-ui.card-content class="p-0">
-                    <div class="divide-y divide-slate-200">
-                        @foreach($expiringDomains as $domain)
-                            <div class="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="font-medium text-slate-900">Domeniul expiră în curând</div>
-                                    <div class="text-sm text-slate-600">{{ $domain->domain_name }} expiră {{ $domain->expiry_date->diffForHumans() }}</div>
-                                </div>
-                                <a href="{{ route('domains.edit', $domain) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Reînnoiește →</a>
-                            </div>
-                        @endforeach
-
-                        @foreach($overdueSubscriptions as $subscription)
-                            <div class="px-6 py-4 flex items-center gap-4 hover:bg-slate-50 transition-colors">
-                                <div class="flex-shrink-0 w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                </div>
-                                <div class="flex-1">
-                                    <div class="font-medium text-slate-900">Abonament expirat</div>
-                                    <div class="text-sm text-slate-600">{{ $subscription->vendor_name }} - {{ abs($subscription->days_until_renewal) }} zile întârziere</div>
-                                </div>
-                                <a href="{{ route('subscriptions.edit', $subscription) }}" class="text-sm text-slate-900 hover:text-slate-600 font-medium transition-colors">Actualizează →</a>
-                            </div>
-                        @endforeach
-                    </div>
-                </x-ui.card-content>
-            </x-ui.card>
-        @endif
     </div>
+
+    {{-- Toast Notifications --}}
+    <x-toast />
+
+    {{-- Slide Panels --}}
+    @include('dashboard.panels')
 </x-app-layout>

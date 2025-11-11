@@ -10,7 +10,7 @@
 
     <div class="px-6 lg:px-8 py-8">
         <x-client-form
-            :statuses="$statuses"
+            :statuses="$clientStatuses"
             :action="route('clients.store')"
             method="POST"
         />

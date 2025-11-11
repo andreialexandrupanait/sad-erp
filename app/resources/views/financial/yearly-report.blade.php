@@ -1,11 +1,13 @@
 <x-app-layout>
+    <x-slot name="pageTitle">Raport {{ $year }}</x-slot>
+
+    <x-slot name="headerActions">
+        <a href="{{ route('financial.export', $year) }}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm font-medium transition-colors">
+            Exportă CSV
+        </a>
+    </x-slot>
+
     <div class="p-6">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-slate-900">Raport financiar anual - {{ $year }}</h1>
-            <a href="{{ route('financial.export', $year) }}" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
-                Exportă CSV
-            </a>
-        </div>
 
         <!-- Monthly Summary Table -->
         <div class="bg-white rounded-lg shadow overflow-hidden mb-6">

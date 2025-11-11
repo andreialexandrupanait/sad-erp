@@ -15,10 +15,7 @@ class ClientController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Client::with(['status', 'revenues']);
-
-        // Get all statuses for filtering
-        $statuses = ClientSetting::active()->ordered()->get();
+        $query = Client::with(['status']);
 
         // Search functionality
         if ($request->filled('search')) {
@@ -49,7 +46,8 @@ class ClientController extends Controller
             $clients = $query->paginate(15)->withQueryString();
         }
 
-        return view('clients.index', compact('clients', 'statuses', 'viewMode'));
+        // Note: $clientStatuses is now automatically available via SettingsComposer
+        return view('clients.index', compact('clients', 'viewMode'));
     }
 
     /**
@@ -57,8 +55,8 @@ class ClientController extends Controller
      */
     public function create()
     {
-        $statuses = ClientSetting::active()->ordered()->get();
-        return view('clients.create', compact('statuses'));
+        // Note: $clientStatuses is now automatically available via SettingsComposer
+        return view('clients.create');
     }
 
     /**
@@ -93,6 +91,15 @@ class ClientController extends Controller
 
         $client = Client::create($validated);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Client created successfully!',
+                'client' => $client->load('status'),
+            ], 201);
+        }
+
         return redirect()
             ->route('clients.show', $client)
             ->with('success', 'Client created successfully!');
@@ -124,8 +131,8 @@ class ClientController extends Controller
      */
     public function edit(Client $client)
     {
-        $statuses = ClientSetting::active()->ordered()->get();
-        return view('clients.edit', compact('client', 'statuses'));
+        // Note: $clientStatuses is now automatically available via SettingsComposer
+        return view('clients.edit', compact('client'));
     }
 
     /**
@@ -159,6 +166,15 @@ class ClientController extends Controller
         $validated['vat_payer'] = $request->has('vat_payer');
 
         $client->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Client updated successfully!',
+                'client' => $client->fresh()->load('status'),
+            ]);
+        }
 
         return redirect()
             ->route('clients.show', $client)

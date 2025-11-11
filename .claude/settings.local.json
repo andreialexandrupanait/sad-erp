@@ -6,7 +6,11 @@
       "Bash(docker compose:*)",
       "Bash(sudo chown:*)",
       "Bash(sudo chmod:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(/tmp/nginx_default.conf)",
+      "Bash(curl:*)",
+      "Bash(git checkout:*)",
+      "Bash(docker exec:*)"
     ],
     "deny": [],
     "ask": []

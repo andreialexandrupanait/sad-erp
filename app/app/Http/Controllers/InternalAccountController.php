@@ -90,6 +90,15 @@ class InternalAccountController extends Controller
 
         $account = InternalAccount::create($validated);
 
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Internal account created successfully!',
+                'account' => $account->load('user'),
+            ], 201);
+        }
+
         return redirect()->route('internal-accounts.show', $account)
             ->with('success', 'Internal account created successfully.');
     }
@@ -153,6 +162,15 @@ class InternalAccountController extends Controller
         }
 
         $internalAccount->update($validated);
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Internal account updated successfully!',
+                'account' => $internalAccount->fresh()->load('user'),
+            ]);
+        }
 
         return redirect()->route('internal-accounts.show', $internalAccount)
             ->with('success', 'Internal account updated successfully.');
