@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClientController;
-use App\Http\Controllers\ClientImportController;
+use App\Http\Controllers\ImportExportController;
 use App\Http\Controllers\CredentialController;
 use App\Http\Controllers\InternalAccountController;
 use App\Http\Controllers\DomainController;
@@ -18,6 +18,23 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Temporary HTTPS test route - DELETE AFTER TESTING
+Route::get('/test-https-detection', function () {
+    return response()->json([
+        'app_url' => config('app.url'),
+        'current_url' => url()->current(),
+        'request_is_secure' => request()->secure(),
+        'request_scheme' => request()->getScheme(),
+        'server_https' => $_SERVER['HTTPS'] ?? 'not set',
+        'x_forwarded_proto' => request()->header('X-Forwarded-Proto'),
+        'x_forwarded_host' => request()->header('X-Forwarded-Host'),
+        'x_forwarded_port' => request()->header('X-Forwarded-Port'),
+        'x_forwarded_for' => request()->header('X-Forwarded-For'),
+        'route_url_example' => route('clients.index'),
+        'asset_url_example' => asset('css/app.css'),
+    ]);
+})->name('test.https');
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -27,15 +44,16 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Centralized Import/Export System
+    Route::get('import-export', [ImportExportController::class, 'index'])->name('import-export.index');
+    Route::get('import-export/{module}', [ImportExportController::class, 'showImportForm'])->name('import-export.import.form');
+    Route::post('import-export/{module}', [ImportExportController::class, 'import'])->name('import-export.import');
+    Route::get('import-export/{module}/template', [ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
+    Route::get('export/{module}', [ImportExportController::class, 'export'])->name('import-export.export');
+
     // Clients Module
     Route::resource('clients', ClientController::class);
     Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
-
-    // Client Import/Export
-    Route::get('clients-import', [ClientImportController::class, 'showImportForm'])->name('clients.import.form');
-    Route::post('clients-import', [ClientImportController::class, 'import'])->name('clients.import');
-    Route::get('clients-import/template', [ClientImportController::class, 'downloadTemplate'])->name('clients.import.template');
-    Route::get('clients-export', [ClientImportController::class, 'export'])->name('clients.export');
 
     // Credentials Module
     Route::resource('credentials', CredentialController::class);
