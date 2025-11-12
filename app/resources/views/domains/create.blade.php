@@ -19,6 +19,8 @@
     <div class="px-6 lg:px-8 py-8">
         <x-domain-form
             :clients="$clients"
+            :registrars="$registrars"
+            :statuses="$statuses"
             :action="route('domains.store')"
             method="POST"
         />

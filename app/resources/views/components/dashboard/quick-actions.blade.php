@@ -39,13 +39,27 @@
 
         return '';
     }
+
+    // Map quick action values to routes
+    function getRouteForAction($actionValue) {
+        $routeMap = [
+            'client-create' => 'clients.create',
+            'domain-create' => 'domains.create',
+            'subscription-create' => 'subscriptions.create',
+            'credential-create' => 'credentials.create',
+            'expense-create' => 'financial.expenses.create',
+            'revenue-create' => 'financial.revenues.create',
+        ];
+
+        return $routeMap[$actionValue] ?? '#';
+    }
 @endphp
 
-<div class="flex items-center gap-2" x-data>
+<div class="flex items-center gap-2">
     @forelse($quickActions ?? [] as $action)
         <button
             type="button"
-            @click="$dispatch('open-slide-panel', '{{ $action->value }}')"
+            onclick="window.location.href='{{ route(getRouteForAction($action->value)) }}'"
             class="{{ getButtonClasses($action->color_class) }}"
             style="{{ getButtonStyle($action->color_class) }}"
             @if(strtolower($action->color_class) !== '#ffffff' && strtolower($action->color_class) !== '#fff')

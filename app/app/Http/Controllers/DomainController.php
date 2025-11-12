@@ -73,9 +73,10 @@ class DomainController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = setting_options('domain_registrars'); // Use dynamic settings
+        $registrars = \App\Models\SettingOption::domainRegistrars()->get();
+        $statuses = \App\Models\SettingOption::domainStatuses()->get();
 
-        return view('domains.create', compact('clients', 'registrars'));
+        return view('domains.create', compact('clients', 'registrars', 'statuses'));
     }
 
     /**
@@ -132,9 +133,10 @@ class DomainController extends Controller
     public function edit(Domain $domain)
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = setting_options('domain_registrars'); // Use dynamic settings
+        $registrars = \App\Models\SettingOption::domainRegistrars()->get();
+        $statuses = \App\Models\SettingOption::domainStatuses()->get();
 
-        return view('domains.edit', compact('domain', 'clients', 'registrars'));
+        return view('domains.edit', compact('domain', 'clients', 'registrars', 'statuses'));
     }
 
     /**

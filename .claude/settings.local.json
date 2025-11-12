@@ -21,7 +21,10 @@
       "Bash(php -r:*)",
       "Bash(docker restart:*)",
       "Bash(docker cp:*)",
-      "Bash(/tmp/NomenclatureController_current.php)"
+      "Bash(/tmp/NomenclatureController_current.php)",
+      "Bash(cat:*)",
+      "Bash(echo:*)",
+      "Bash(/var/www/erp/app/routes/web.php)"
     ],
     "deny": [],
     "ask": []

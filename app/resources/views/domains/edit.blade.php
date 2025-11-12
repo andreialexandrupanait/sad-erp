@@ -22,6 +22,8 @@
         <x-domain-form
             :domain="$domain"
             :clients="$clients"
+            :registrars="$registrars"
+            :statuses="$statuses"
             :action="route('domains.update', $domain)"
             method="PUT"
         />

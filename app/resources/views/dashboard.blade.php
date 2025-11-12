@@ -140,7 +140,7 @@
                     >
                         @foreach($expiringDomains->take(5) as $domain)
                             <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                                 @click="$dispatch('open-slide-panel', 'domain-edit-{{$domain->id}}')">
+                                 onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
                                 <div class="flex-1 min-w-0">
                                     <p class="font-medium text-slate-900 truncate">{{ $domain->domain_name }}</p>
                                     <p class="text-xs text-slate-500">
@@ -172,7 +172,7 @@
                     >
                         @foreach($overdueSubscriptions->take(5) as $subscription)
                             <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                                 @click="$dispatch('open-slide-panel', 'subscription-edit-{{$subscription->id}}')">
+                                 onclick="window.location.href='{{ route('subscriptions.edit', $subscription) }}'">
                                 <div class="flex-1 min-w-0">
                                     <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
                                     <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON</p>
@@ -243,7 +243,4 @@
 
     {{-- Toast Notifications --}}
     <x-toast />
-
-    {{-- Slide Panels --}}
-    @include('dashboard.panels')
 </x-app-layout>
