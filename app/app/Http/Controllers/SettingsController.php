@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class SettingsController extends Controller
 {
     /**
-     * Display the settings page with module-specific settings
+     * Display the application settings page
      */
     public function index()
     {
@@ -26,35 +26,159 @@ class SettingsController extends Controller
             'date_format' => ApplicationSetting::get('date_format', 'd/m/Y'),
         ];
 
-        // Load all settings from unified settings_options table
-        $clientStatuses = SettingOption::clientStatuses()->get();
-        $domainRegistrars = SettingOption::domainRegistrars()->get();
-        $domainStatuses = SettingOption::domainStatuses()->get();
-        $subscriptionBillingCycles = SettingOption::billingCycles()->get();
-        $subscriptionStatuses = SettingOption::subscriptionStatuses()->get();
-        $accessPlatforms = SettingOption::accessPlatforms()->get();
-        $paymentMethods = SettingOption::paymentMethods()->get();
-
-        // Load expense categories
-        $expenseCategories = SettingOption::rootCategories()->active()->ordered()->get();
-
-        // Empty categories for backwards compatibility with view
-        $categories = collect([]);
-
-        return view('settings.index', compact(
-            'appSettings',
-            'clientStatuses',
-            'domainRegistrars',
-            'domainStatuses',
-            'subscriptionBillingCycles',
-            'subscriptionStatuses',
-            'accessPlatforms',
-            'paymentMethods',
-            'expenseCategories',
-            'categories'
-        ));
+        return view('settings.application', compact('appSettings'));
     }
 
+    /**
+     * Display client statuses settings
+     */
+    public function clientStatuses()
+    {
+        $data = SettingOption::clientStatuses()->get();
+        return view('settings.nomenclature', [
+            'category' => 'client_statuses',
+            'title' => 'Status clienti',
+            'description' => 'Gestioneaza statusurile clientilor folosite in aplicatie',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display domain statuses settings
+     */
+    public function domainStatuses()
+    {
+        $data = SettingOption::domainStatuses()->get();
+        return view('settings.nomenclature', [
+            'category' => 'domain_statuses',
+            'title' => 'Status domenii',
+            'description' => 'Gestioneaza statusurile domeniilor',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display subscription statuses settings
+     */
+    public function subscriptionStatuses()
+    {
+        $data = SettingOption::subscriptionStatuses()->get();
+        return view('settings.nomenclature', [
+            'category' => 'subscription_statuses',
+            'title' => 'Status abonamente',
+            'description' => 'Gestioneaza statusurile abonamentelor',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display access platforms settings
+     */
+    public function accessPlatforms()
+    {
+        $data = SettingOption::accessPlatforms()->get();
+        return view('settings.nomenclature', [
+            'category' => 'access_platforms',
+            'title' => 'Categorii platforme',
+            'description' => 'Gestioneaza tipurile de platforme de acces',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display expense categories settings
+     */
+    public function expenseCategories()
+    {
+        $data = SettingOption::rootCategories()->with('children')->active()->ordered()->get();
+        return view('settings.nomenclature', [
+            'category' => 'expense_categories',
+            'title' => 'Categorii cheltuieli',
+            'description' => 'Gestioneaza categoriile de cheltuieli',
+            'data' => $data,
+            'hasColors' => true,
+            'isHierarchical' => true,
+        ]);
+    }
+
+    /**
+     * Display payment methods settings
+     */
+    public function paymentMethods()
+    {
+        $data = SettingOption::paymentMethods()->get();
+        return view('settings.nomenclature', [
+            'category' => 'payment_methods',
+            'title' => 'Metode de plata',
+            'description' => 'Gestioneaza metodele de plata disponibile',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display billing cycles settings
+     */
+    public function billingCycles()
+    {
+        $data = SettingOption::billingCycles()->get();
+        return view('settings.nomenclature', [
+            'category' => 'billing_cycles',
+            'title' => 'Cicluri de facturare',
+            'description' => 'Gestioneaza ciclurile de facturare pentru abonamente',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display domain registrars settings
+     */
+    public function domainRegistrars()
+    {
+        $data = SettingOption::domainRegistrars()->get();
+        return view('settings.nomenclature', [
+            'category' => 'domain_registrars',
+            'title' => 'Registratori de domenii',
+            'description' => 'Gestioneaza registratorii de domenii',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display currencies settings
+     */
+    public function currencies()
+    {
+        $data = SettingOption::currencies()->get();
+        return view('settings.nomenclature', [
+            'category' => 'currencies',
+            'title' => 'Valute',
+            'description' => 'Gestioneaza valutele disponibile in aplicatie',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
+
+    /**
+     * Display dashboard quick actions settings
+     */
+    public function quickActions()
+    {
+        $data = SettingOption::dashboardQuickActions()->get();
+        return view('settings.nomenclature', [
+            'category' => 'dashboard_quick_actions',
+            'title' => 'Quick Actions Dashboard',
+            'description' => 'Gestioneaza butoanele de actiune rapida de pe dashboard',
+            'data' => $data,
+            'hasColors' => true,
+        ]);
+    }
 
     /**
      * Update application settings

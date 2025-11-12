@@ -8,17 +8,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="client-create-form-dashboard"
-            :action="route('clients.store')"
-            method="POST"
-            slidePanel="client-create"
-            successMessage="Client created successfully!"
-        >
-            <x-client-form-fields :statuses="$clientStatuses" idSuffix="_dash" />
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('clients.store') }}" id="client-create-form-dashboard" class="flex-1 overflow-y-auto">
+        @csrf
+        <div class="px-8 py-6">
+            <x-client-form-fields :statuses="$clientStatuses" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','client-create')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="client-create-form-dashboard">Creează Client</x-ui.button>
@@ -35,17 +30,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="domain-create-form-dashboard"
-            :action="route('domains.store')"
-            method="POST"
-            slidePanel="domain-create"
-            successMessage="Domain created successfully!"
-        >
-            <x-domain-form-fields :clients="$clients" idSuffix="_dash" />
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('domains.store') }}" id="domain-create-form-dashboard" class="flex-1 overflow-y-auto">
+        @csrf
+        <div class="px-8 py-6">
+            <x-domain-form-fields :clients="$clients" :registrars="$registrars" :statuses="$domainStatuses" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','domain-create')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="domain-create-form-dashboard">Creează Domeniu</x-ui.button>
@@ -62,19 +52,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="subscription-create-form-dashboard"
-            :action="route('subscriptions.store')"
-            method="POST"
-            slidePanel="subscription-create"
-            successMessage="Subscription created successfully!"
-        >
-            <div x-data="{ billingCycle: 'monthly' }">
-                <x-subscription-form-fields idSuffix="_dash" />
-            </div>
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('subscriptions.store') }}" id="subscription-create-form-dashboard" class="flex-1 overflow-y-auto" x-data="{ billingCycle: 'monthly' }">
+        @csrf
+        <div class="px-8 py-6">
+            <x-subscription-form-fields :billingCycles="$billingCycles" :statuses="$statuses" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','subscription-create')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="subscription-create-form-dashboard">Creează Abonament</x-ui.button>
@@ -91,19 +74,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="credential-create-form-dashboard"
-            :action="route('credentials.store')"
-            method="POST"
-            slidePanel="credential-create"
-            successMessage="Credential created successfully!"
-        >
-            <div x-data="{ showPass: false }">
-                <x-credential-form-fields :clients="$clients" idSuffix="_dash" />
-            </div>
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('credentials.store') }}" id="credential-create-form-dashboard" class="flex-1 overflow-y-auto" x-data="{ showPass: false }">
+        @csrf
+        <div class="px-8 py-6">
+            <x-credential-form-fields :clients="$clients" :platforms="$platforms" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','credential-create')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="credential-create-form-dashboard">Salvează</x-ui.button>
@@ -120,17 +96,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="revenue-create-form-dashboard"
-            :action="route('financial.revenues.store')"
-            method="POST"
-            slidePanel="revenue-create"
-            successMessage="Revenue created successfully!"
-        >
-            <x-revenue-form-fields :clients="$clients" idSuffix="_dash" />
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('financial.revenues.store') }}" id="revenue-create-form-dashboard" class="flex-1 overflow-y-auto">
+        @csrf
+        <div class="px-8 py-6">
+            <x-revenue-form-fields :clients="$clients" :currencies="$currencies" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel', 'revenue-create')">Anulează</x-ui.button>
         <x-ui.button type="submit" form="revenue-create-form-dashboard" variant="default">Salvează venit</x-ui.button>
@@ -147,17 +118,12 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="expense-create-form-dashboard"
-            :action="route('financial.expenses.store')"
-            method="POST"
-            slidePanel="expense-create"
-            successMessage="Expense created successfully!"
-        >
-            <x-expense-form-fields :categories="$expenseCategories" idSuffix="_dash" />
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('financial.expenses.store') }}" id="expense-create-form-dashboard" class="flex-1 overflow-y-auto">
+        @csrf
+        <div class="px-8 py-6">
+            <x-expense-form-fields :categories="$expenseCategories" :currencies="$currencies" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','expense-create')">Anulează</x-ui.button>
         <x-ui.button type="submit" form="expense-create-form-dashboard" variant="default">Salvează cheltuială</x-ui.button>
@@ -175,17 +141,13 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="domain-edit-form-{{$domain->id}}"
-            :action="route('domains.update', $domain)"
-            method="PUT"
-            slidePanel="domain-edit-{{$domain->id}}"
-            successMessage="Domain updated successfully!"
-        >
-            <x-domain-form-fields :domain="$domain" :clients="$clients" idSuffix="_edit_{{$domain->id}}" />
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('domains.update', $domain) }}" id="domain-edit-form-{{$domain->id}}" class="flex-1 overflow-y-auto">
+        @csrf
+        @method('PUT')
+        <div class="px-8 py-6">
+            <x-domain-form-fields :domain="$domain" :clients="$clients" :registrars="$registrars" :statuses="$domainStatuses" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','domain-edit-{{$domain->id}}')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="domain-edit-form-{{$domain->id}}">Actualizează</x-ui.button>
@@ -203,19 +165,13 @@
             </svg>
         </button>
     </div>
-    <div class="flex-1 overflow-y-auto px-8 py-6">
-        <x-ajax-form-wrapper
-            formId="subscription-edit-form-{{$subscription->id}}"
-            :action="route('subscriptions.update', $subscription)"
-            method="PUT"
-            slidePanel="subscription-edit-{{$subscription->id}}"
-            successMessage="Subscription updated successfully!"
-        >
-            <div x-data="{ billingCycle: '{{$subscription->billing_cycle}}' }">
-                <x-subscription-form-fields :subscription="$subscription" idSuffix="_edit_{{$subscription->id}}" />
-            </div>
-        </x-ajax-form-wrapper>
-    </div>
+    <form method="POST" action="{{ route('subscriptions.update', $subscription) }}" id="subscription-edit-form-{{$subscription->id}}" class="flex-1 overflow-y-auto" x-data="{ billingCycle: '{{$subscription->billing_cycle}}' }">
+        @csrf
+        @method('PUT')
+        <div class="px-8 py-6">
+            <x-subscription-form-fields :subscription="$subscription" :billingCycles="$billingCycles" :statuses="$statuses" />
+        </div>
+    </form>
     <div class="flex items-center justify-end gap-x-3 px-8 py-6 border-t border-slate-200 bg-slate-50">
         <x-ui.button type="button" variant="ghost" @click="$dispatch('close-slide-panel','subscription-edit-{{$subscription->id}}')">Cancel</x-ui.button>
         <x-ui.button type="submit" variant="default" form="subscription-edit-form-{{$subscription->id}}">Actualizează</x-ui.button>

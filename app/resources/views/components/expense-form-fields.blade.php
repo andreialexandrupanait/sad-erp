@@ -1,4 +1,4 @@
-@props(['expense' => null, 'categories' => [], 'idSuffix' => ''])
+@props(['expense' => null, 'categories' => [], 'currencies' => [], 'idSuffix' => ''])
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
     <!-- Document Name (Required) -->
@@ -12,6 +12,7 @@
                 name="document_name"
                 id="document_name{{ $idSuffix }}"
                 required
+                placeholder="Enter expense description"
                 value="{{ old('document_name', $expense->document_name ?? '') }}"
             />
         </div>
@@ -29,6 +30,7 @@
                 name="amount"
                 id="amount{{ $idSuffix }}"
                 required
+                placeholder="0.00"
                 value="{{ old('amount', $expense->amount ?? '') }}"
             />
         </div>
@@ -41,8 +43,11 @@
         </x-ui.label>
         <div class="mt-2">
             <x-ui.select name="currency" id="currency{{ $idSuffix }}" required>
-                <option value="RON" {{ old('currency', $expense->currency ?? 'RON') == 'RON' ? 'selected' : '' }}>RON</option>
-                <option value="EUR" {{ old('currency', $expense->currency ?? '') == 'EUR' ? 'selected' : '' }}>EUR</option>
+                @foreach($currencies as $currency)
+                    <option value="{{ $currency->value }}" {{ old('currency', $expense->currency ?? 'RON') == $currency->value ? 'selected' : '' }}>
+                        {{ $currency->label }}
+                    </option>
+                @endforeach
             </x-ui.select>
         </div>
     </div>
@@ -58,6 +63,7 @@
                 name="occurred_at"
                 id="occurred_at{{ $idSuffix }}"
                 required
+                placeholder="YYYY-MM-DD"
                 value="{{ old('occurred_at', $expense ? $expense->occurred_at?->format('Y-m-d') : now()->format('Y-m-d')) }}"
             />
         </div>
@@ -70,9 +76,16 @@
             <x-ui.select name="category_option_id" id="category_option_id{{ $idSuffix }}">
                 <option value="">Selectează categorie (opțional)</option>
                 @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
+                    <optgroup label="{{ $category->name }}">
+                        <option value="{{ $category->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                        @foreach($category->children as $child)
+                            <option value="{{ $child->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $child->id ? 'selected' : '' }}>
+                                &nbsp;&nbsp;└─ {{ $child->name }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </x-ui.select>
         </div>
@@ -82,7 +95,7 @@
     <div class="sm:col-span-6 field-wrapper">
         <x-ui.label for="note{{ $idSuffix }}">Notă</x-ui.label>
         <div class="mt-2">
-            <x-ui.textarea name="note" id="note{{ $idSuffix }}" rows="3">{{ old('note', $expense->note ?? '') }}</x-ui.textarea>
+            <x-ui.textarea name="note" id="note{{ $idSuffix }}" rows="3" placeholder="Additional notes about this expense (optional)">{{ old('note', $expense->note ?? '') }}</x-ui.textarea>
         </div>
     </div>
 </div>

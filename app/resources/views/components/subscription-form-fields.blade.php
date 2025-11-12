@@ -1,4 +1,4 @@
-@props(['subscription' => null, 'idSuffix' => ''])
+@props(['subscription' => null, 'idSuffix' => '', 'billingCycles' => [], 'statuses' => []])
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
     <!-- Vendor Name (Required) -->
@@ -49,9 +49,9 @@
         </x-ui.label>
         <div class="mt-2">
             <x-ui.select name="billing_cycle" id="billing_cycle{{ $idSuffix }}" required x-model="billingCycle">
-                @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
-                    <option value="{{ $value }}" {{ old('billing_cycle', $subscription->billing_cycle ?? 'monthly') === $value ? 'selected' : '' }}>
-                        {{ $label }}
+                @foreach($billingCycles as $cycle)
+                    <option value="{{ $cycle->value }}" {{ old('billing_cycle', $subscription->billing_cycle ?? 'monthly') === $cycle->value ? 'selected' : '' }}>
+                        {{ $cycle->label }}
                     </option>
                 @endforeach
             </x-ui.select>
@@ -92,6 +92,7 @@
                 name="start_date"
                 id="start_date{{ $idSuffix }}"
                 required
+                placeholder="YYYY-MM-DD"
                 value="{{ old('start_date', $subscription ? $subscription->start_date?->format('Y-m-d') : date('Y-m-d')) }}"
             />
         </div>
@@ -111,6 +112,7 @@
                 name="next_renewal_date"
                 id="next_renewal_date{{ $idSuffix }}"
                 required
+                placeholder="YYYY-MM-DD"
                 value="{{ old('next_renewal_date', $subscription ? $subscription->next_renewal_date?->format('Y-m-d') : '') }}"
             />
         </div>
@@ -127,9 +129,9 @@
         </x-ui.label>
         <div class="mt-2">
             <x-ui.select name="status" id="status{{ $idSuffix }}" required>
-                @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
-                    <option value="{{ $value }}" {{ old('status', $subscription->status ?? 'active') === $value ? 'selected' : '' }}>
-                        {{ $label }}
+                @foreach($statuses as $status)
+                    <option value="{{ $status->value }}" {{ old('status', $subscription->status ?? 'active') === $status->value ? 'selected' : '' }}>
+                        {{ $status->label }}
                     </option>
                 @endforeach
             </x-ui.select>

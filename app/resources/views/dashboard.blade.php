@@ -6,7 +6,7 @@
     @php($hideBreadcrumb = true)
 
     <x-slot name="headerActions">
-        <x-dashboard.quick-actions />
+        <x-dashboard.quick-actions :quickActions="$quickActions" />
     </x-slot>
 
     <div class="p-6 space-y-6" x-data>

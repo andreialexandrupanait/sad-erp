@@ -10,6 +10,8 @@
             <x-subscription-form
                 :action="route('subscriptions.store')"
                 method="POST"
+                :billingCycles="$billingCycles"
+                :statuses="$statuses"
             />
         </div>
     </div>

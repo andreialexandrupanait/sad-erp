@@ -14,7 +14,6 @@
         <div class="max-w-4xl mx-auto">
             <x-internal-account-form
                 :account="$internalAccount"
-                :platforms="$platforms"
                 :action="route('internal-accounts.update', $internalAccount)"
                 method="PUT"
             />

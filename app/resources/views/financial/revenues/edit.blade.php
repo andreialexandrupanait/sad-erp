@@ -15,6 +15,7 @@
             <x-revenue-form
                 :revenue="$revenue"
                 :clients="$clients"
+                :currencies="$currencies"
                 :action="route('financial.revenues.update', $revenue)"
                 method="PUT"
             />

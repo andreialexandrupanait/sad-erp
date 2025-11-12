@@ -1,4 +1,4 @@
-@props(['account' => null, 'platforms' => [], 'action', 'method' => 'POST'])
+@props(['account' => null, 'action', 'method' => 'POST'])
 
 <form method="POST" action="{{ $action }}" class="space-y-6" x-data="{ showPass: false }">
     @csrf
@@ -36,14 +36,14 @@
                         Platform <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="platforma" id="platforma" required>
-                            <option value="">Select a platform</option>
-                            @foreach($platforms as $key => $value)
-                                <option value="{{ $key }}" {{ old('platforma', $account->platforma ?? '') == $key ? 'selected' : '' }}>
-                                    {{ $value }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.input
+                            type="text"
+                            name="platforma"
+                            id="platforma"
+                            required
+                            value="{{ old('platforma', $account->platforma ?? '') }}"
+                            placeholder="e.g., Bank Account, CRM System, Email Service"
+                        />
                     </div>
                     @error('platforma')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -92,8 +92,9 @@
                             x-bind:type="showPass ? 'text' : 'password'"
                             name="password"
                             id="password"
+                            value="{{ old('password', $account && isset($account->id) ? '' : '') }}"
                             placeholder="{{ $account ? 'Leave blank to keep current password' : 'Enter password' }}"
-                            class="pr-10 block w-full rounded-lg border-slate-300 shadow-sm focus:border-slate-900 focus:ring-slate-900 sm:text-sm"
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                         <button
                             type="button"

@@ -1,4 +1,4 @@
-@props(['credential' => null, 'clients' => [], 'action', 'method' => 'POST'])
+@props(['credential' => null, 'clients' => [], 'platforms' => [], 'action', 'method' => 'POST'])
 
 <form method="POST" action="{{ $action }}" class="space-y-6" x-data="{ showPass: false }">
     @csrf
@@ -8,7 +8,7 @@
 
     <x-ui.card>
         <x-ui.card-content>
-            <x-credential-form-fields :credential="$credential" :clients="$clients" />
+            <x-credential-form-fields :credential="$credential" :clients="$clients" :platforms="$platforms" />
         </x-ui.card-content>
 
         <div class="flex items-center justify-end gap-x-6 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">

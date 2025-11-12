@@ -1,4 +1,4 @@
-@props(['subscription' => null, 'action', 'method' => 'POST'])
+@props(['subscription' => null, 'action', 'method' => 'POST', 'billingCycles' => [], 'statuses' => []])
 
 <form method="POST" action="{{ $action }}" class="space-y-6" x-data="{ billingCycle: '{{ old('billing_cycle', $subscription->billing_cycle ?? 'monthly') }}' }">
     @csrf
@@ -8,7 +8,7 @@
 
     <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
         <div class="px-4 py-6 sm:p-8">
-            <x-subscription-form-fields :subscription="$subscription" />
+            <x-subscription-form-fields :subscription="$subscription" :billingCycles="$billingCycles" :statuses="$statuses" />
         </div>
 
         <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8">

@@ -82,8 +82,28 @@ class DashboardController extends Controller
             // All clients for dropdowns
             'clients' => Client::with('status')->get(),
 
+            // Client nomenclature for forms
+            'clientStatuses' => SettingOption::clientStatuses()->get(),
+
             // Expense categories for forms
-            'expenseCategories' => SettingOption::active()->ordered()->get(),
+            'expenseCategories' => SettingOption::rootCategories()->with('children')->get(),
+
+            // Subscription nomenclature for forms
+            'billingCycles' => SettingOption::billingCycles()->get(),
+            'statuses' => SettingOption::subscriptionStatuses()->get(),
+
+            // Credential nomenclature for forms
+            'platforms' => SettingOption::accessPlatforms()->get(),
+
+            // Domain nomenclature for forms
+            'registrars' => SettingOption::domainRegistrars()->get(),
+            'domainStatuses' => SettingOption::domainStatuses()->get(),
+
+            // Currency nomenclature for forms
+            'currencies' => SettingOption::currencies()->get(),
+
+            // Dashboard quick actions
+            'quickActions' => SettingOption::dashboardQuickActions()->get(),
         ];
 
         // Calculate profit

@@ -14,6 +14,7 @@
         <div class="max-w-4xl mx-auto">
             <x-revenue-form
                 :clients="$clients"
+                :currencies="$currencies"
                 :action="route('financial.revenues.store')"
                 method="POST"
             />

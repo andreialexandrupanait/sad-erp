@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Financial;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\FinancialRevenue;
 use App\Models\Client;
+use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
 
 class RevenueController extends Controller
@@ -36,6 +38,7 @@ class RevenueController extends Controller
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
         $clients = Client::orderBy('name')->get();
+        $currencies = SettingOption::currencies()->get();
 
         // Available years
         $availableYears = FinancialRevenue::select(DB::raw('DISTINCT year'))
@@ -50,6 +53,7 @@ class RevenueController extends Controller
             'currency',
             'clientId',
             'clients',
+            'currencies',
             'availableYears'
         ));
     }
@@ -57,15 +61,18 @@ class RevenueController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        return view('financial.revenues.create', compact('clients'));
+        $currencies = SettingOption::currencies()->get();
+        return view('financial.revenues.create', compact('clients', 'currencies'));
     }
 
     public function store(Request $request)
     {
+        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'currency' => 'required|in:RON,EUR',
+            'currency' => ['required', Rule::in($validCurrencies)],
             'occurred_at' => 'required|date',
             'client_id' => 'nullable|exists:clients,id',
             'note' => 'nullable|string',
@@ -95,15 +102,18 @@ class RevenueController extends Controller
     public function edit(FinancialRevenue $revenue)
     {
         $clients = Client::orderBy('name')->get();
-        return view('financial.revenues.edit', compact('revenue', 'clients'));
+        $currencies = SettingOption::currencies()->get();
+        return view('financial.revenues.edit', compact('revenue', 'clients', 'currencies'));
     }
 
     public function update(Request $request, FinancialRevenue $revenue)
     {
+        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'currency' => 'required|in:RON,EUR',
+            'currency' => ['required', Rule::in($validCurrencies)],
             'occurred_at' => 'required|date',
             'client_id' => 'nullable|exists:clients,id',
             'note' => 'nullable|string',

@@ -11,6 +11,8 @@
                 :subscription="$subscription"
                 :action="route('subscriptions.update', $subscription)"
                 method="PATCH"
+                :billingCycles="$billingCycles"
+                :statuses="$statuses"
             />
         </div>
     </div>

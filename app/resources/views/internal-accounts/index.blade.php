@@ -315,12 +315,13 @@
                     <div class="sm:col-span-6 field-wrapper">
                         <x-ui.label for="platforma">Platform <span class="text-red-500">*</span></x-ui.label>
                         <div class="mt-2">
-                            <x-ui.select name="platforma" id="platforma" required>
-                                <option value="">Select a platform</option>
-                                @foreach($platforms as $key => $value)
-                                    <option value="{{$key}}">{{$value}}</option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-ui.input
+                                type="text"
+                                name="platforma"
+                                id="platforma"
+                                required
+                                placeholder="e.g., Bank Account, CRM System, Email Service"
+                            />
                         </div>
                     </div>
 
@@ -401,12 +402,14 @@
                     <div class="sm:col-span-6 field-wrapper">
                         <x-ui.label for="platforma_{{$account->id}}">Platform <span class="text-red-500">*</span></x-ui.label>
                         <div class="mt-2">
-                            <x-ui.select name="platforma" id="platforma_{{$account->id}}" required>
-                                <option value="">Select a platform</option>
-                                @foreach($platforms as $key => $value)
-                                    <option value="{{$key}}" {{$account->platforma==$key?'selected':''}}>{{$value}}</option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-ui.input
+                                type="text"
+                                name="platforma"
+                                id="platforma_{{$account->id}}"
+                                required
+                                value="{{$account->platforma}}"
+                                placeholder="e.g., Bank Account, CRM System, Email Service"
+                            />
                         </div>
                     </div>
 

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
+use App\Models\SettingOption;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class SubscriptionController extends Controller
@@ -60,7 +62,11 @@ class SubscriptionController extends Controller
             $request->renewal_range,
         ])->filter()->count();
 
-        return view('subscriptions.index', compact('subscriptions', 'stats', 'activeFilters'));
+        // Get nomenclature data for forms
+        $billingCycles = SettingOption::billingCycles()->get();
+        $statuses = SettingOption::subscriptionStatuses()->get();
+
+        return view('subscriptions.index', compact('subscriptions', 'stats', 'activeFilters', 'billingCycles', 'statuses'));
     }
 
     /**
@@ -68,7 +74,10 @@ class SubscriptionController extends Controller
      */
     public function create()
     {
-        return view('subscriptions.create');
+        $billingCycles = SettingOption::billingCycles()->get();
+        $statuses = SettingOption::subscriptionStatuses()->get();
+
+        return view('subscriptions.create', compact('billingCycles', 'statuses'));
     }
 
     /**
@@ -76,14 +85,17 @@ class SubscriptionController extends Controller
      */
     public function store(Request $request)
     {
+        $validBillingCycles = SettingOption::billingCycles()->pluck('value')->toArray();
+        $validStatuses = SettingOption::subscriptionStatuses()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'vendor_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0|max:999999.99',
-            'billing_cycle' => 'required|in:monthly,annual,custom',
+            'billing_cycle' => ['required', Rule::in($validBillingCycles)],
             'custom_days' => 'nullable|integer|min:1|max:3650|required_if:billing_cycle,custom',
             'start_date' => 'required|date',
             'next_renewal_date' => 'required|date|after_or_equal:start_date',
-            'status' => 'required|in:active,paused,cancelled',
+            'status' => ['required', Rule::in($validStatuses)],
             'notes' => 'nullable|string',
         ]);
 
@@ -117,7 +129,10 @@ class SubscriptionController extends Controller
      */
     public function edit(Subscription $subscription)
     {
-        return view('subscriptions.edit', compact('subscription'));
+        $billingCycles = SettingOption::billingCycles()->get();
+        $statuses = SettingOption::subscriptionStatuses()->get();
+
+        return view('subscriptions.edit', compact('subscription', 'billingCycles', 'statuses'));
     }
 
     /**
@@ -125,14 +140,17 @@ class SubscriptionController extends Controller
      */
     public function update(Request $request, Subscription $subscription)
     {
+        $validBillingCycles = SettingOption::billingCycles()->pluck('value')->toArray();
+        $validStatuses = SettingOption::subscriptionStatuses()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'vendor_name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0|max:999999.99',
-            'billing_cycle' => 'required|in:monthly,annual,custom',
+            'billing_cycle' => ['required', Rule::in($validBillingCycles)],
             'custom_days' => 'nullable|integer|min:1|max:3650|required_if:billing_cycle,custom',
             'start_date' => 'required|date',
             'next_renewal_date' => 'required|date|after_or_equal:start_date',
-            'status' => 'required|in:active,paused,cancelled',
+            'status' => ['required', Rule::in($validStatuses)],
             'notes' => 'nullable|string',
         ]);
 

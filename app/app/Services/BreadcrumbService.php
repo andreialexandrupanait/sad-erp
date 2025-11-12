@@ -53,6 +53,14 @@ class BreadcrumbService
 
         // Settings
         'settings.index' => 'Setări',
+        'settings.client-statuses' => 'Status clienti',
+        'settings.domain-statuses' => 'Status domenii',
+        'settings.subscription-statuses' => 'Status abonamente',
+        'settings.access-platforms' => 'Categorii platforme',
+        'settings.expense-categories' => 'Categorii cheltuieli',
+        'settings.payment-methods' => 'Metode de plata',
+        'settings.billing-cycles' => 'Cicluri de facturare',
+        'settings.domain-registrars' => 'Registratori de domenii',
         'profile.edit' => 'Profil',
     ];
 
@@ -89,16 +97,53 @@ class BreadcrumbService
                 continue;
             }
 
+            $isLastSegment = ($index === count($segments) - 1);
+
+            // Special handling for hierarchical routes (settings and financial sections)
+            // Only apply for routes like settings.client-statuses or financial.revenues.index
+            if ($index === 0 && !$isLastSegment && count($segments) >= 2) {
+                $secondSegment = $segments[1] ?? '';
+
+                // Check if this is a settings or financial route with a non-index child
+                // Skip if the second segment is 'index' or 'dashboard' (those are the parent pages themselves)
+                if (in_array($currentPath, ['settings', 'financial']) &&
+                    !in_array($secondSegment, ['index', 'dashboard'])) {
+
+                    // Check for parent routes
+                    $possibleParentIndex = $currentPath . '.index';
+                    $possibleParentDashboard = $currentPath . '.dashboard';
+
+                    // Add parent breadcrumb if it exists
+                    if (Route::has($possibleParentIndex)) {
+                        $label = self::$routeLabels[$possibleParentIndex] ?? ucfirst($segment);
+                        try {
+                            $breadcrumbs[] = ['label' => $label, 'url' => route($possibleParentIndex)];
+                        } catch (\Exception $e) {
+                            $breadcrumbs[] = ['label' => $label, 'url' => '#'];
+                        }
+                        continue; // Skip normal processing for this segment
+                    } elseif (Route::has($possibleParentDashboard)) {
+                        $label = self::$routeLabels[$possibleParentDashboard] ?? ucfirst($segment);
+                        try {
+                            $breadcrumbs[] = ['label' => $label, 'url' => route($possibleParentDashboard)];
+                        } catch (\Exception $e) {
+                            $breadcrumbs[] = ['label' => $label, 'url' => '#'];
+                        }
+                        continue; // Skip normal processing for this segment
+                    }
+                }
+            }
+
             // Check if we have a route for this path
             if (Route::has($currentPath)) {
                 $label = self::$routeLabels[$currentPath] ?? ucfirst($segment);
 
                 try {
-                    // For the last segment, don't add URL (it's the current page)
-                    if ($index === count($segments) - 1) {
+                    // For the last segment, always add it (current page)
+                    if ($isLastSegment) {
                         $breadcrumbs[] = ['label' => $label, 'url' => route($currentPath)];
                     } else {
-                        // Only add intermediate if it's an index route
+                        // Add intermediate if it's an index route or has no dots
                         if (str_ends_with($currentPath, '.index') || !str_contains($currentPath, '.')) {
                             $breadcrumbs[] = ['label' => $label, 'url' => route($currentPath)];
                         }

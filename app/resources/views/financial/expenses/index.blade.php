@@ -32,15 +32,23 @@
             </select>
             <select name="currency" class="rounded-lg border-slate-300">
                 <option value="">Toate valutele</option>
-                <option value="RON" {{ $currency == 'RON' ? 'selected' : '' }}>RON</option>
-                <option value="EUR" {{ $currency == 'EUR' ? 'selected' : '' }}>EUR</option>
+                @foreach($currencies as $curr)
+                    <option value="{{ $curr->value }}" {{ $currency == $curr->value ? 'selected' : '' }}>{{ $curr->label }}</option>
+                @endforeach
             </select>
             <select name="category_id" class="rounded-lg border-slate-300">
                 <option value="">Toate categoriile</option>
                 @foreach($categories as $category)
-                    <option value="{{ $category->id }}" {{ $categoryId == $category->id ? 'selected' : '' }}>
-                        {{ $category->name }}
-                    </option>
+                    <optgroup label="{{ $category->name }}">
+                        <option value="{{ $category->id }}" {{ $categoryId == $category->id ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                        @foreach($category->children as $child)
+                            <option value="{{ $child->id }}" {{ $categoryId == $child->id ? 'selected' : '' }}>
+                                &nbsp;&nbsp;└─ {{ $child->name }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
             <button type="submit" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">Filtrează</button>
@@ -143,8 +151,9 @@
                         <x-ui.label for="expense_currency_create">Valută <span class="text-red-500">*</span></x-ui.label>
                         <div class="mt-2">
                             <x-ui.select name="currency" id="expense_currency_create" required>
-                                <option value="RON">RON</option>
-                                <option value="EUR">EUR</option>
+                                @foreach($currencies as $curr)
+                                    <option value="{{$curr->value}}">{{$curr->label}}</option>
+                                @endforeach
                             </x-ui.select>
                         </div>
                     </div>
@@ -162,7 +171,12 @@
                             <x-ui.select name="category_option_id" id="expense_category_create">
                                 <option value="">Selectează categorie (opțional)</option>
                                 @foreach($categories as $category)
-                                    <option value="{{$category->id}}">{{$category->name}}</option>
+                                    <optgroup label="{{$category->name}}">
+                                        <option value="{{$category->id}}">{{$category->name}}</option>
+                                        @foreach($category->children as $child)
+                                            <option value="{{$child->id}}">&nbsp;&nbsp;└─ {{$child->name}}</option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </x-ui.select>
                         </div>
@@ -213,8 +227,9 @@
                         <x-ui.label for="expense_currency_edit_{{$expense->id}}">Valută <span class="text-red-500">*</span></x-ui.label>
                         <div class="mt-2">
                             <x-ui.select name="currency" id="expense_currency_edit_{{$expense->id}}" required>
-                                <option value="RON" {{$expense->currency=='RON'?'selected':''}}>RON</option>
-                                <option value="EUR" {{$expense->currency=='EUR'?'selected':''}}>EUR</option>
+                                @foreach($currencies as $curr)
+                                    <option value="{{$curr->value}}" {{$expense->currency==$curr->value?'selected':''}}>{{$curr->label}}</option>
+                                @endforeach
                             </x-ui.select>
                         </div>
                     </div>
@@ -232,7 +247,12 @@
                             <x-ui.select name="category_option_id" id="expense_category_edit_{{$expense->id}}">
                                 <option value="">Selectează categorie (opțional)</option>
                                 @foreach($categories as $category)
-                                    <option value="{{$category->id}}" {{$expense->category_option_id==$category->id?'selected':''}}>{{$category->name}}</option>
+                                    <optgroup label="{{$category->name}}">
+                                        <option value="{{$category->id}}" {{$expense->category_option_id==$category->id?'selected':''}}>{{$category->name}}</option>
+                                        @foreach($category->children as $child)
+                                            <option value="{{$child->id}}" {{$expense->category_option_id==$child->id?'selected':''}}>&&nbsp;&nbsp;└─ {{$child->name}}</option>
+                                        @endforeach
+                                    </optgroup>
                                 @endforeach
                             </x-ui.select>
                         </div>

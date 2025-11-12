@@ -341,27 +341,4 @@ class Subscription extends Model
         ];
     }
 
-    /**
-     * Billing cycle options for dropdowns
-     */
-    public static function billingCycleOptions()
-    {
-        return [
-            'monthly' => 'Monthly',
-            'annual' => 'Annual',
-            'custom' => 'Custom',
-        ];
-    }
-
-    /**
-     * Status options for dropdowns
-     */
-    public static function statusOptions()
-    {
-        return [
-            'active' => 'Active',
-            'paused' => 'Paused',
-            'cancelled' => 'Cancelled',
-        ];
-    }
 }

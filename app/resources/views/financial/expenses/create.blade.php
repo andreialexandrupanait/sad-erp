@@ -14,6 +14,7 @@
         <div class="max-w-4xl mx-auto">
             <x-expense-form
                 :categories="$categories"
+                :currencies="$currencies"
                 :action="route('financial.expenses.store')"
                 method="POST"
             />

@@ -14,6 +14,7 @@
         <div class="max-w-4xl mx-auto">
             <x-credential-form
                 :clients="$clients"
+                :platforms="$platforms"
                 :action="route('credentials.store')"
                 method="POST"
             />

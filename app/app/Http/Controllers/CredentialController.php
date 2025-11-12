@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Credential;
 use App\Models\Client;
+use App\Models\SettingOption;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CredentialController extends Controller
 {
@@ -39,7 +41,7 @@ class CredentialController extends Controller
 
         // Get clients and platforms for filters
         $clients = Client::orderBy('name')->get();
-        $platforms = Credential::PLATFORMS;
+        $platforms = SettingOption::accessPlatforms()->get();
 
         return view('credentials.index', compact('credentials', 'clients', 'platforms'));
     }
@@ -50,7 +52,7 @@ class CredentialController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $platforms = Credential::PLATFORMS;
+        $platforms = SettingOption::accessPlatforms()->get();
 
         return view('credentials.create', compact('clients', 'platforms'));
     }
@@ -60,9 +62,11 @@ class CredentialController extends Controller
      */
     public function store(Request $request)
     {
+        $validPlatforms = SettingOption::accessPlatforms()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'platform' => 'required|string|max:255',
+            'platform' => ['required', Rule::in($validPlatforms)],
             'url' => 'nullable|url|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:500',
@@ -100,7 +104,7 @@ class CredentialController extends Controller
     public function edit(Credential $credential)
     {
         $clients = Client::orderBy('name')->get();
-        $platforms = Credential::PLATFORMS;
+        $platforms = SettingOption::accessPlatforms()->get();
 
         return view('credentials.edit', compact('credential', 'clients', 'platforms'));
     }
@@ -110,9 +114,11 @@ class CredentialController extends Controller
      */
     public function update(Request $request, Credential $credential)
     {
+        $validPlatforms = SettingOption::accessPlatforms()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
-            'platform' => 'required|string|max:255',
+            'platform' => ['required', Rule::in($validPlatforms)],
             'url' => 'nullable|url|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:500',

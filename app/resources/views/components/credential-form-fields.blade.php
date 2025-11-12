@@ -1,4 +1,4 @@
-@props(['credential' => null, 'clients' => [], 'idSuffix' => ''])
+@props(['credential' => null, 'clients' => [], 'platforms' => [], 'idSuffix' => ''])
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
     <!-- Client (Required) -->
@@ -29,9 +29,9 @@
         <div class="mt-2">
             <x-ui.select name="platform" id="platform{{ $idSuffix }}" required>
                 <option value="">Select a platform</option>
-                @foreach(\App\Models\Credential::PLATFORMS as $key => $value)
-                    <option value="{{ $key }}" {{ old('platform', $credential->platform ?? '') == $key ? 'selected' : '' }}>
-                        {{ $value }}
+                @foreach($platforms as $platform)
+                    <option value="{{ $platform->value }}" {{ old('platform', $credential->platform ?? '') == $platform->value ? 'selected' : '' }}>
+                        {{ $platform->label }}
                     </option>
                 @endforeach
             </x-ui.select>
@@ -85,7 +85,7 @@
                 id="password{{ $idSuffix }}"
                 value="{{ old('password', $credential && isset($credential->id) ? '' : '') }}"
                 placeholder="{{ $credential ? 'Leave blank to keep current password' : 'Enter password' }}"
-                class="pr-10 block w-full rounded-lg border-slate-300 shadow-sm focus:border-slate-900 focus:ring-slate-900 sm:text-sm"
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
             <button
                 type="button"

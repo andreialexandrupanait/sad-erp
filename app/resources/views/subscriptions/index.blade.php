@@ -132,9 +132,9 @@
                         <div class="w-full sm:w-44">
                             <x-ui.select name="status">
                                 <option value="">All Statuses</option>
-                                @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
-                                    <option value="{{ $value }}" {{ request('status') === $value ? 'selected' : '' }}>
-                                        {{ $label }}
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>
+                                        {{ $status->label }}
                                     </option>
                                 @endforeach
                             </x-ui.select>
@@ -144,9 +144,9 @@
                         <div class="w-full sm:w-44">
                             <x-ui.select name="billing_cycle">
                                 <option value="">All Cycles</option>
-                                @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
-                                    <option value="{{ $value }}" {{ request('billing_cycle') === $value ? 'selected' : '' }}>
-                                        {{ $label }}
+                                @foreach($billingCycles as $cycle)
+                                    <option value="{{ $cycle->value }}" {{ request('billing_cycle') === $cycle->value ? 'selected' : '' }}>
+                                        {{ $cycle->label }}
                                     </option>
                                 @endforeach
                             </x-ui.select>
@@ -427,8 +427,8 @@
                         </x-ui.label>
                         <div class="mt-2">
                             <x-ui.select name="billing_cycle" id="billing_cycle" required x-model="billingCycle">
-                                @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @foreach($billingCycles as $cycle)
+                                    <option value="{{ $cycle->value }}">{{ $cycle->label }}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>
@@ -474,8 +474,8 @@
                         </x-ui.label>
                         <div class="mt-2">
                             <x-ui.select name="status" id="status" required>
-                                @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
-                                    <option value="{{ $value }}" {{ $value === 'active' ? 'selected' : '' }}>{{ $label }}</option>
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status->value }}" {{ $status->value === 'active' ? 'selected' : '' }}>{{ $status->label }}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>
@@ -605,8 +605,8 @@
                             </x-ui.label>
                             <div class="mt-2">
                                 <x-ui.select name="billing_cycle" id="billing_cycle_edit_{{ $subscription->id }}" required x-model="billingCycle">
-                                    @foreach(\App\Models\Subscription::billingCycleOptions() as $value => $label)
-                                        <option value="{{ $value }}" {{ $subscription->billing_cycle === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @foreach($billingCycles as $cycle)
+                                        <option value="{{ $cycle->value }}" {{ $subscription->billing_cycle === $cycle->value ? 'selected' : '' }}>{{ $cycle->label }}</option>
                                     @endforeach
                                 </x-ui.select>
                             </div>
@@ -652,8 +652,8 @@
                             </x-ui.label>
                             <div class="mt-2">
                                 <x-ui.select name="status" id="status_edit_{{ $subscription->id }}" required>
-                                    @foreach(\App\Models\Subscription::statusOptions() as $value => $label)
-                                        <option value="{{ $value }}" {{ $subscription->status === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                    @foreach($statuses as $status)
+                                        <option value="{{ $status->value }}" {{ $subscription->status === $status->value ? 'selected' : '' }}>{{ $status->label }}</option>
                                     @endforeach
                                 </x-ui.select>
                             </div>

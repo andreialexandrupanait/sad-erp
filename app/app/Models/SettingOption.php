@@ -6,15 +6,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Spatie\EloquentSortable\Sortable;
+use Spatie\EloquentSortable\SortableTrait;
 
-class SettingOption extends Model
+class SettingOption extends Model implements Sortable
 {
-    use SoftDeletes;
+    use SoftDeletes, SortableTrait;
 
     protected $table = 'settings_options';
 
     protected $fillable = [
         'organization_id',
+        'parent_id',
         'category',
         'label',
         'value',
@@ -30,8 +33,15 @@ class SettingOption extends Model
         'is_default' => 'boolean',
     ];
 
+    public $sortable = [
+        'order_column_name' => 'sort_order',
+        'sort_when_creating' => true,
+    ];
+
     protected static function booted()
     {
+        parent::booted();
+
         // Auto-fill organization_id
         static::creating(function ($setting) {
             if (Auth::check() && Auth::user()->organization_id) {
@@ -54,6 +64,16 @@ class SettingOption extends Model
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function parent()
+    {
+        return $this->belongsTo(SettingOption::class, 'parent_id');
+    }
+
+    public function children()
+    {
+        return $this->hasMany(SettingOption::class, 'parent_id')->orderBy('sort_order');
     }
 
     // Scopes by category
@@ -113,6 +133,20 @@ class SettingOption extends Model
                      ->orderBy('sort_order');
     }
 
+    public function scopeCurrencies($query)
+    {
+        return $query->where('category', 'currencies')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeDashboardQuickActions($query)
+    {
+        return $query->where('category', 'dashboard_quick_actions')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
     // Alias for backward compatibility
     public function scopePlatforms($query)
     {
@@ -121,8 +155,10 @@ class SettingOption extends Model
 
     public function scopeRootCategories($query)
     {
-        // For now, all expense categories are root level (no hierarchy in single table)
-        return $this->scopeExpenseCategories($query);
+        return $query->where('category', 'expense_categories')
+                     ->whereNull('parent_id')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
     }
 
     // General scopes

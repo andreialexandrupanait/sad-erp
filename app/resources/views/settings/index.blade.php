@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="pageTitle">Setari</x-slot>
+
     <div class="flex min-h-screen bg-slate-50" x-data="{
         activeSection: '{{ request()->get('section', 'application') }}',
         editingOption: null,
@@ -18,9 +20,14 @@
             const form = optionId ? document.getElementById('edit-form-' + optionId) : document.getElementById('add-form-' + category);
             const formData = new FormData(form);
 
+            // Add category to form data for create operations
+            if (!optionId) {
+                formData.append('category', category);
+            }
+
             let url = optionId
-                ? `/settings/client-settings/${optionId}`
-                : `/settings/client-settings`;
+                ? `/settings/nomenclature/${optionId}`
+                : `/settings/nomenclature`;
             let method = optionId ? 'PATCH' : 'POST';
 
             try {
@@ -32,20 +39,20 @@
                 if (response.ok) {
                     window.location.href = window.location.pathname + '?section=' + this.activeSection;
                 } else {
-                    alert('Error saving option. Please try again.');
+                    alert('Eroare la salvare. Va rugam incercati din nou.');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                alert('Error saving option. Please try again.');
+                alert('Eroare la salvare. Va rugam incercati din nou.');
             } finally {
                 this.isSubmitting = false;
             }
         },
 
         async deleteOption(optionId) {
-            if (!confirm('Are you sure you want to delete this option?')) return;
+            if (!confirm('Sunteti sigur ca doriti sa stergeti aceasta optiune?')) return;
             try {
-                const response = await fetch(`/settings/client-settings/${optionId}`, {
+                const response = await fetch(`/settings/nomenclature/${optionId}`, {
                     method: 'DELETE',
                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' }
                 });
@@ -83,66 +90,66 @@
                         </a>
                     </div>
 
-                    <!-- Nomenclature -->
+                    <!-- Nomenclatoare -->
                     <div>
                         <div class="px-3 mb-2">
-                            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nomenclature</h2>
+                            <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Nomenclatoare</h2>
                         </div>
 
                         <a href="?section=client_statuses"
                            :class="activeSection === 'client_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Client Statuses</span>
+                            <span>Status clienti</span>
                             <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $clientStatuses->count() }}</span>
-                        </a>
-
-                        <a href="?section=domain_registrars"
-                           :class="activeSection === 'domain_registrars' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
-                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Domain Registrars</span>
-                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $domainRegistrars->count() }}</span>
                         </a>
 
                         <a href="?section=domain_statuses"
                            :class="activeSection === 'domain_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Domain Statuses</span>
+                            <span>Status domenii</span>
                             <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $domainStatuses->count() }}</span>
-                        </a>
-
-                        <a href="?section=access_platforms"
-                           :class="activeSection === 'access_platforms' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
-                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Access Platforms</span>
-                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $accessPlatforms->count() }}</span>
-                        </a>
-
-                        <a href="?section=billing_cycles"
-                           :class="activeSection === 'billing_cycles' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
-                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Billing Cycles</span>
-                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $subscriptionBillingCycles->count() }}</span>
                         </a>
 
                         <a href="?section=subscription_statuses"
                            :class="activeSection === 'subscription_statuses' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Subscription Statuses</span>
+                            <span>Status abonamente</span>
                             <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $subscriptionStatuses->count() }}</span>
                         </a>
 
-                        <a href="?section=payment_methods"
-                           :class="activeSection === 'payment_methods' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                        <a href="?section=access_platforms"
+                           :class="activeSection === 'access_platforms' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Payment Methods</span>
-                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $paymentMethods->count() }}</span>
+                            <span>Categorii platforme</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $accessPlatforms->count() }}</span>
                         </a>
 
                         <a href="?section=expense_categories"
                            :class="activeSection === 'expense_categories' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
-                            <span>Expense Categories</span>
+                            <span>Categorii cheltuieli</span>
                             <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $expenseCategories->count() }}</span>
+                        </a>
+
+                        <a href="?section=payment_methods"
+                           :class="activeSection === 'payment_methods' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Metode de plata</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $paymentMethods->count() }}</span>
+                        </a>
+
+                        <a href="?section=billing_cycles"
+                           :class="activeSection === 'billing_cycles' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Cicluri de facturare</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $subscriptionBillingCycles->count() }}</span>
+                        </a>
+
+                        <a href="?section=domain_registrars"
+                           :class="activeSection === 'domain_registrars' ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50'"
+                           class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group">
+                            <span>Registratori de domenii</span>
+                            <span class="text-xs text-slate-400 group-hover:text-slate-600">{{ $domainRegistrars->count() }}</span>
                         </a>
                     </div>
                 </nav>
@@ -153,10 +160,10 @@
         <main class="flex-1 overflow-y-auto">
             <!-- Application Settings Section -->
             <div x-show="activeSection === 'application'" x-cloak>
-                <div class="p-8">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-slate-900">Application Settings</h2>
-                        <p class="text-slate-600 mt-1">Configure your application preferences</p>
+                <div class="p-6">
+                    <div class="mb-4">
+                        <h2 class="text-xl font-bold text-slate-900">Setari aplicatie</h2>
+                        <p class="text-sm text-slate-500 mt-1">Configureaza preferintele aplicatiei</p>
                     </div>
 
                     <div class="bg-white rounded-lg shadow-sm border border-slate-200">
@@ -164,11 +171,11 @@
                             @csrf
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Application Name</label>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Nume aplicatie</label>
                                     <input type="text" name="app_name" value="{{ $appSettings['app_name'] }}" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent">
                                 </div>
                                 <div>
-                                    <label class="block text-sm font-medium text-slate-700 mb-2">Language</label>
+                                    <label class="block text-sm font-medium text-slate-700 mb-2">Limba</label>
                                     <select name="language" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent">
                                         <option value="en" {{ $appSettings['language'] === 'en' ? 'selected' : '' }}>English</option>
                                         <option value="ro" {{ $appSettings['language'] === 'ro' ? 'selected' : '' }}>Română</option>
@@ -177,7 +184,7 @@
                             </div>
                             <div class="flex justify-end">
                                 <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
-                                    Save Changes
+                                    Salveaza modificari
                                 </button>
                             </div>
                         </form>
@@ -188,52 +195,52 @@
             @php
             $nomenclature = [
                 'client_statuses' => [
-                    'title' => 'Client Statuses',
-                    'description' => 'Manage client status options used throughout the application',
+                    'title' => 'Status clienti',
+                    'description' => 'Gestioneaza statusurile clientilor folosite in aplicatie',
                     'data' => $clientStatuses,
                     'has_colors' => true,
                 ],
-                'domain_registrars' => [
-                    'title' => 'Domain Registrars',
-                    'description' => 'Manage domain registrar options',
-                    'data' => $domainRegistrars,
-                    'has_colors' => false,
-                ],
                 'domain_statuses' => [
-                    'title' => 'Domain Statuses',
-                    'description' => 'Manage domain status options',
+                    'title' => 'Status domenii',
+                    'description' => 'Gestioneaza statusurile domeniilor',
                     'data' => $domainStatuses,
                     'has_colors' => false,
                 ],
-                'access_platforms' => [
-                    'title' => 'Access Platforms',
-                    'description' => 'Manage access platform types',
-                    'data' => $accessPlatforms,
-                    'has_colors' => false,
-                ],
-                'billing_cycles' => [
-                    'title' => 'Billing Cycles',
-                    'description' => 'Manage subscription billing cycle options',
-                    'data' => $subscriptionBillingCycles,
-                    'has_colors' => false,
-                ],
                 'subscription_statuses' => [
-                    'title' => 'Subscription Statuses',
-                    'description' => 'Manage subscription status options',
+                    'title' => 'Status abonamente',
+                    'description' => 'Gestioneaza statusurile abonamentelor',
                     'data' => $subscriptionStatuses,
                     'has_colors' => false,
                 ],
-                'payment_methods' => [
-                    'title' => 'Payment Methods',
-                    'description' => 'Manage payment method options',
-                    'data' => $paymentMethods,
+                'access_platforms' => [
+                    'title' => 'Categorii platforme',
+                    'description' => 'Gestioneaza tipurile de platforme de acces',
+                    'data' => $accessPlatforms,
                     'has_colors' => false,
                 ],
                 'expense_categories' => [
-                    'title' => 'Expense Categories',
-                    'description' => 'Manage expense category options',
+                    'title' => 'Categorii cheltuieli',
+                    'description' => 'Gestioneaza categoriile de cheltuieli',
                     'data' => $expenseCategories,
                     'has_colors' => true,
+                ],
+                'payment_methods' => [
+                    'title' => 'Metode de plata',
+                    'description' => 'Gestioneaza metodele de plata disponibile',
+                    'data' => $paymentMethods,
+                    'has_colors' => false,
+                ],
+                'billing_cycles' => [
+                    'title' => 'Cicluri de facturare',
+                    'description' => 'Gestioneaza ciclurile de facturare pentru abonamente',
+                    'data' => $subscriptionBillingCycles,
+                    'has_colors' => false,
+                ],
+                'domain_registrars' => [
+                    'title' => 'Registratori de domenii',
+                    'description' => 'Gestioneaza registratorii de domenii',
+                    'data' => $domainRegistrars,
+                    'has_colors' => false,
                 ],
             ];
             @endphp
@@ -241,40 +248,35 @@
             <!-- Nomenclature Sections -->
             @foreach($nomenclature as $key => $section)
                 <div x-show="activeSection === '{{ $key }}'" x-cloak>
-                    <div class="p-8">
-                        <div class="mb-6">
-                            <h2 class="text-2xl font-bold text-slate-900">{{ $section['title'] }}</h2>
-                            <p class="text-slate-600 mt-1">{{ $section['description'] }}</p>
+                    <div class="p-6">
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-bold text-slate-900">{{ $section['title'] }}</h2>
+                                <p class="text-sm text-slate-500 mt-1">{{ $section['data']->count() }} optiuni</p>
+                            </div>
+                            <button @click="addingToGroup = addingToGroup === '{{ $key }}' ? null : '{{ $key }}'"
+                                    class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-show="addingToGroup !== '{{ $key }}'">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                <span x-show="addingToGroup !== '{{ $key }}'">Adauga optiune</span>
+                                <span x-show="addingToGroup === '{{ $key }}'">Anuleaza</span>
+                            </button>
                         </div>
 
                         <div class="bg-white rounded-lg shadow-sm border border-slate-200">
-                            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                                <div>
-                                    <h3 class="text-lg font-semibold text-slate-900">Options</h3>
-                                    <p class="text-sm text-slate-500 mt-1">{{ $section['data']->count() }} option(s)</p>
-                                </div>
-                                @if($key === 'client_statuses')
-                                <button @click="addingToGroup = addingToGroup === '{{ $key }}' ? null : '{{ $key }}'"
-                                        class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
-                                    <span x-show="addingToGroup !== '{{ $key }}'">Add Option</span>
-                                    <span x-show="addingToGroup === '{{ $key }}'">Cancel</span>
-                                </button>
-                                @endif
-                            </div>
-
                             <div class="p-6">
-                                <!-- Add Form (Only for client_statuses) -->
-                                @if($key === 'client_statuses')
+                                <!-- Add Form (For all nomenclature types) -->
                                 <div x-show="addingToGroup === '{{ $key }}'" x-cloak class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <form id="add-form-{{ $key }}" @submit.prevent="saveOption('{{ $key }}')">
                                         <div class="flex gap-3 items-start">
                                             <div class="flex-1">
-                                                <input type="text" name="label" placeholder="Label (e.g., Active)" required
+                                                <input type="text" name="label" placeholder="Nume (ex: Activ)" required
                                                        @input="$el.form.querySelector('[name=value]').value = slugify($el.value)"
                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-slate-900 focus:border-transparent">
                                             </div>
                                             <div class="flex-1">
-                                                <input type="text" name="value" placeholder="Value (auto-generated)" required
+                                                <input type="text" name="value" placeholder="Valoare (auto-generata)" required
                                                        class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-slate-900 focus:border-transparent">
                                             </div>
                                             @if($section['has_colors'])
@@ -284,31 +286,28 @@
                                             @endif
                                             <div class="flex gap-2 flex-shrink-0">
                                                 <button type="submit" :disabled="isSubmitting" class="px-4 py-2 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
-                                                    Save
+                                                    Salveaza
                                                 </button>
                                                 <button type="button" @click="addingToGroup = null" class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
-                                                    Cancel
+                                                    Anuleaza
                                                 </button>
                                             </div>
                                         </div>
                                     </form>
                                 </div>
-                                @endif
 
                                 <!-- Options Table -->
                                 <div class="overflow-x-auto">
                                     <table class="w-full">
                                         <thead>
                                             <tr class="border-b border-slate-200">
-                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Label</th>
-                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Value</th>
+                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Nume</th>
+                                                <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase">Valoare</th>
                                                 @if($section['has_colors'])
-                                                    <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Color</th>
+                                                    <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Culoare</th>
                                                 @endif
                                                 <th class="text-left py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-20">Status</th>
-                                                @if($key === 'client_statuses')
-                                                <th class="text-right py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-24">Actions</th>
-                                                @endif
+                                                <th class="text-right py-3 px-2 text-xs font-semibold text-slate-600 uppercase w-24">Actiuni</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -359,11 +358,10 @@
                                                     <td class="py-3 px-2">
                                                         <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
                                                             {{ $option->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
-                                                            {{ $option->is_active ? 'Active' : 'Inactive' }}
+                                                            {{ $option->is_active ? 'Activ' : 'Inactiv' }}
                                                         </span>
                                                     </td>
 
-                                                    @if($key === 'client_statuses')
                                                     <td class="py-3 px-2 text-right">
                                                         <template x-if="!editing">
                                                             <div class="flex justify-end gap-2">
@@ -383,20 +381,19 @@
                                                             <div class="flex justify-end gap-2">
                                                                 <form id="edit-form-{{ $option->id }}" @submit.prevent="saveOption('{{ $key }}', {{ $option->id }})" class="contents"></form>
                                                                 <button type="submit" form="edit-form-{{ $option->id }}" class="px-3 py-1 text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 rounded">
-                                                                    Save
+                                                                    Salveaza
                                                                 </button>
                                                                 <button @click="editing = false" class="px-3 py-1 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded">
-                                                                    Cancel
+                                                                    Anuleaza
                                                                 </button>
                                                             </div>
                                                         </template>
                                                     </td>
-                                                    @endif
                                                 </tr>
                                             @empty
                                                 <tr>
-                                                    <td colspan="{{ $section['has_colors'] ? ($key === 'client_statuses' ? '5' : '4') : ($key === 'client_statuses' ? '4' : '3') }}" class="py-8 text-center text-slate-500">
-                                                        No options available.
+                                                    <td colspan="{{ $section['has_colors'] ? '5' : '4' }}" class="py-8 text-center text-slate-500">
+                                                        Nu exista optiuni disponibile.
                                                     </td>
                                                 </tr>
                                             @endforelse

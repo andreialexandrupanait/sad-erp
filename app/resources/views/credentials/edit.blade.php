@@ -15,6 +15,7 @@
             <x-credential-form
                 :credential="$credential"
                 :clients="$clients"
+                :platforms="$platforms"
                 :action="route('credentials.update', $credential)"
                 method="PUT"
             />

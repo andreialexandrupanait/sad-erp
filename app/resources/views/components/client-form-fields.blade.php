@@ -12,6 +12,7 @@
                 name="name"
                 id="name{{ $idSuffix }}"
                 required
+                placeholder="Enter client name"
                 value="{{ old('name', $client->name ?? '') }}"
             />
         </div>
@@ -28,6 +29,7 @@
                 type="text"
                 name="company_name"
                 id="company_name{{ $idSuffix }}"
+                placeholder="Enter company name (optional)"
                 value="{{ old('company_name', $client->company_name ?? '') }}"
             />
         </div>
@@ -102,6 +104,7 @@
                 type="text"
                 name="contact_person"
                 id="contact_person{{ $idSuffix }}"
+                placeholder="Enter contact person name (optional)"
                 value="{{ old('contact_person', $client->contact_person ?? '') }}"
             />
         </div>
@@ -136,6 +139,7 @@
                 type="email"
                 name="email"
                 id="email{{ $idSuffix }}"
+                placeholder="email@example.com"
                 value="{{ old('email', $client->email ?? '') }}"
             />
         </div>
@@ -152,6 +156,7 @@
                 type="text"
                 name="phone"
                 id="phone{{ $idSuffix }}"
+                placeholder="+40 XXX XXX XXX"
                 value="{{ old('phone', $client->phone ?? '') }}"
             />
         </div>
@@ -164,7 +169,7 @@
     <div class="sm:col-span-6 field-wrapper">
         <x-ui.label for="address{{ $idSuffix }}">Address</x-ui.label>
         <div class="mt-2">
-            <x-ui.textarea name="address" id="address{{ $idSuffix }}" rows="3">{{ old('address', $client->address ?? '') }}</x-ui.textarea>
+            <x-ui.textarea name="address" id="address{{ $idSuffix }}" rows="3" placeholder="Enter full address (optional)">{{ old('address', $client->address ?? '') }}</x-ui.textarea>
         </div>
         @error('address')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -195,7 +200,7 @@
     <div class="sm:col-span-6 field-wrapper">
         <x-ui.label for="notes{{ $idSuffix }}">Notes</x-ui.label>
         <div class="mt-2">
-            <x-ui.textarea name="notes" id="notes{{ $idSuffix }}" rows="4">{{ old('notes', $client->notes ?? '') }}</x-ui.textarea>
+            <x-ui.textarea name="notes" id="notes{{ $idSuffix }}" rows="4" placeholder="Additional notes about this client (optional)">{{ old('notes', $client->notes ?? '') }}</x-ui.textarea>
         </div>
         @error('notes')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

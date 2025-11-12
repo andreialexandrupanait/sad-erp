@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Financial;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\FinancialExpense;
 use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,8 @@ class ExpenseController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
-        $categories = SettingOption::active()->ordered()->get();
+        $categories = SettingOption::rootCategories()->with('children')->get();
+        $currencies = SettingOption::currencies()->get();
 
         // Available years
         $availableYears = FinancialExpense::select(DB::raw('DISTINCT year'))
@@ -50,24 +52,28 @@ class ExpenseController extends Controller
             'currency',
             'categoryId',
             'categories',
+            'currencies',
             'availableYears'
         ));
     }
 
     public function create()
     {
-        $categories = SettingOption::active()->ordered()->get();
-        return view('financial.expenses.create', compact('categories'));
+        $categories = SettingOption::rootCategories()->with('children')->get();
+        $currencies = SettingOption::currencies()->get();
+        return view('financial.expenses.create', compact('categories', 'currencies'));
     }
 
     public function store(Request $request)
     {
+        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'currency' => 'required|in:RON,EUR',
+            'currency' => ['required', Rule::in($validCurrencies)],
             'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:settings_categories,id',
+            'category_option_id' => 'nullable|exists:settings_options,id',
             'note' => 'nullable|string',
         ]);
 
@@ -94,18 +100,21 @@ class ExpenseController extends Controller
 
     public function edit(FinancialExpense $expense)
     {
-        $categories = SettingOption::active()->ordered()->get();
-        return view('financial.expenses.edit', compact('expense', 'categories'));
+        $categories = SettingOption::rootCategories()->with('children')->get();
+        $currencies = SettingOption::currencies()->get();
+        return view('financial.expenses.edit', compact('expense', 'categories', 'currencies'));
     }
 
     public function update(Request $request, FinancialExpense $expense)
     {
+        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
+
         $validated = $request->validate([
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
-            'currency' => 'required|in:RON,EUR',
+            'currency' => ['required', Rule::in($validCurrencies)],
             'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:settings_categories,id',
+            'category_option_id' => 'nullable|exists:settings_options,id',
             'note' => 'nullable|string',
         ]);
 

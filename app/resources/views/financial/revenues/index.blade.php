@@ -32,8 +32,9 @@
             </select>
             <select name="currency" class="rounded-lg border-slate-300">
                 <option value="">Toate valutele</option>
-                <option value="RON" {{ $currency == 'RON' ? 'selected' : '' }}>RON</option>
-                <option value="EUR" {{ $currency == 'EUR' ? 'selected' : '' }}>EUR</option>
+                @foreach($currencies as $curr)
+                    <option value="{{ $curr->value }}" {{ $currency == $curr->value ? 'selected' : '' }}>{{ $curr->label }}</option>
+                @endforeach
             </select>
             <button type="submit" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">Filtrează</button>
         </form>
@@ -186,8 +187,9 @@
                         <x-ui.label for="currency_create">Valută <span class="text-red-500">*</span></x-ui.label>
                         <div class="mt-2">
                             <x-ui.select name="currency" id="currency_create" required>
-                                <option value="RON">RON</option>
-                                <option value="EUR">EUR</option>
+                                @foreach($currencies as $currency)
+                                    <option value="{{ $currency->value }}">{{ $currency->label }}</option>
+                                @endforeach
                             </x-ui.select>
                         </div>
                     </div>

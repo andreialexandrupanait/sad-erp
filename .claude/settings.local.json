@@ -16,7 +16,12 @@
       "Bash(chmod:*)",
       "Bash(mkdir:*)",
       "Bash(find:*)",
-      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep \"\"\"\"use App\\\\\\\\Models\\\\\\\\SettingOption;\"\"\"\" {}')"
+      "Bash(xargs -I {} sh -c 'echo \"\"\"\"=== {} ===\"\"\"\" && grep \"\"\"\"use App\\\\\\\\Models\\\\\\\\SettingOption;\"\"\"\" {}')",
+      "Bash(docker ps:*)",
+      "Bash(php -r:*)",
+      "Bash(docker restart:*)",
+      "Bash(docker cp:*)",
+      "Bash(/tmp/NomenclatureController_current.php)"
     ],
     "deny": [],
     "ask": []

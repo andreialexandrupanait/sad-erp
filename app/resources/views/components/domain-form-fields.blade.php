@@ -1,4 +1,4 @@
-@props(['domain' => null, 'clients' => [], 'idSuffix' => ''])
+@props(['domain' => null, 'clients' => [], 'registrars' => [], 'statuses' => [], 'idSuffix' => ''])
 
 <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">
     <!-- Domain Name (Required) -->
@@ -45,9 +45,9 @@
         <div class="mt-2">
             <x-ui.select name="registrar" id="registrar{{ $idSuffix }}">
                 <option value="">Select registrar</option>
-                @foreach(\App\Models\Domain::REGISTRARS as $key => $value)
-                    <option value="{{ $key }}" {{ old('registrar', $domain->registrar ?? '') == $key ? 'selected' : '' }}>
-                        {{ $value }}
+                @foreach($registrars as $registrar)
+                    <option value="{{ $registrar->value }}" {{ old('registrar', $domain->registrar ?? '') == $registrar->value ? 'selected' : '' }}>
+                        {{ $registrar->label }}
                     </option>
                 @endforeach
             </x-ui.select>
@@ -65,6 +65,7 @@
                 type="date"
                 name="registration_date"
                 id="registration_date{{ $idSuffix }}"
+                placeholder="YYYY-MM-DD"
                 value="{{ old('registration_date', $domain ? $domain->registration_date?->format('Y-m-d') : '') }}"
             />
         </div>
@@ -84,6 +85,7 @@
                 name="expiry_date"
                 id="expiry_date{{ $idSuffix }}"
                 required
+                placeholder="YYYY-MM-DD"
                 value="{{ old('expiry_date', $domain ? $domain->expiry_date?->format('Y-m-d') : '') }}"
             />
         </div>
@@ -117,10 +119,14 @@
         </x-ui.label>
         <div class="mt-2">
             <x-ui.select name="status" id="status{{ $idSuffix }}" required>
-                <option value="Active" {{ old('status', $domain->status ?? 'Active') == 'Active' ? 'selected' : '' }}>Active</option>
-                <option value="Expiring" {{ old('status', $domain->status ?? '') == 'Expiring' ? 'selected' : '' }}>Expiring</option>
-                <option value="Expired" {{ old('status', $domain->status ?? '') == 'Expired' ? 'selected' : '' }}>Expired</option>
-                <option value="Suspended" {{ old('status', $domain->status ?? '') == 'Suspended' ? 'selected' : '' }}>Suspended</option>
+                @php
+                    $defaultStatus = $statuses->first()?->value ?? 'activ';
+                @endphp
+                @foreach($statuses as $status)
+                    <option value="{{ $status->value }}" {{ old('status', $domain->status ?? $defaultStatus) == $status->value ? 'selected' : '' }}>
+                        {{ $status->label }}
+                    </option>
+                @endforeach
             </x-ui.select>
         </div>
         @error('status')

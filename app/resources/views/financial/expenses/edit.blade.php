@@ -15,6 +15,7 @@
             <x-expense-form
                 :expense="$expense"
                 :categories="$categories"
+                :currencies="$currencies"
                 :action="route('financial.expenses.update', $expense)"
                 method="PUT"
             />

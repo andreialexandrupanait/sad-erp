@@ -73,11 +73,23 @@ Route::middleware('auth')->group(function () {
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
 
-    // Module-Specific Settings Routes
-    Route::post('settings/client-settings', [\App\Http\Controllers\ClientSettingsController::class, 'store'])->name('settings.client-settings.store');
-    Route::patch('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'update'])->name('settings.client-settings.update');
-    Route::delete('settings/client-settings/{setting}', [\App\Http\Controllers\ClientSettingsController::class, 'destroy'])->name('settings.client-settings.destroy');
-    Route::post('settings/client-settings/reorder', [\App\Http\Controllers\ClientSettingsController::class, 'reorder'])->name('settings.client-settings.reorder');
+    // Nomenclature Settings Pages (Individual routes for each section)
+    Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');
+    Route::get('settings/domain-statuses', [SettingsController::class, 'domainStatuses'])->name('settings.domain-statuses');
+    Route::get('settings/subscription-statuses', [SettingsController::class, 'subscriptionStatuses'])->name('settings.subscription-statuses');
+    Route::get('settings/access-platforms', [SettingsController::class, 'accessPlatforms'])->name('settings.access-platforms');
+    Route::get('settings/expense-categories', [SettingsController::class, 'expenseCategories'])->name('settings.expense-categories');
+    Route::get('settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('settings.payment-methods');
+    Route::get('settings/billing-cycles', [SettingsController::class, 'billingCycles'])->name('settings.billing-cycles');
+    Route::get('settings/domain-registrars', [SettingsController::class, 'domainRegistrars'])->name('settings.domain-registrars');
+    Route::get('settings/currencies', [SettingsController::class, 'currencies'])->name('settings.currencies');
+    Route::get('settings/quick-actions', [SettingsController::class, 'quickActions'])->name('settings.quick-actions');
+
+    // Nomenclature CRUD Operations (Generic for all nomenclature types)
+    Route::post('settings/nomenclature', [\App\Http\Controllers\NomenclatureController::class, 'store'])->name('settings.nomenclature.store');
+    Route::patch('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'update'])->name('settings.nomenclature.update');
+    Route::delete('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'destroy'])->name('settings.nomenclature.destroy');
+    Route::post('settings/nomenclature/reorder', [\App\Http\Controllers\NomenclatureController::class, 'reorder'])->name('settings.nomenclature.reorder');
 
     // Financial Module
     Route::prefix('financial')->name('financial.')->group(function () {

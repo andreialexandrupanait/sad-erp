@@ -32,23 +32,6 @@ class Domain extends Model
         'auto_renew' => 'boolean',
     ];
 
-    // Common registrars
-    public const REGISTRARS = [
-        'GoDaddy' => 'GoDaddy',
-        'Namecheap' => 'Namecheap',
-        'Google Domains' => 'Google Domains',
-        'Cloudflare' => 'Cloudflare',
-        'Name.com' => 'Name.com',
-        'Hover' => 'Hover',
-        'Domain.com' => 'Domain.com',
-        'Dynadot' => 'Dynadot',
-        'Gandi' => 'Gandi',
-        'NameSilo' => 'NameSilo',
-        '1&1 IONOS' => '1&1 IONOS',
-        'Network Solutions' => 'Network Solutions',
-        'Other' => 'Other',
-    ];
-
     // Expiry thresholds
     public const EXPIRY_WARNING_DAYS = 30;
 

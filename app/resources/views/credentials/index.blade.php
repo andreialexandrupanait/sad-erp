@@ -60,9 +60,9 @@
                         <div class="w-full sm:w-48">
                             <x-ui.select name="platform">
                                 <option value="">All Platforms</option>
-                                @foreach ($platforms as $key => $value)
-                                    <option value="{{ $key }}" {{ request('platform') == $key ? 'selected' : '' }}>
-                                        {{ $value }}
+                                @foreach ($platforms as $platform)
+                                    <option value="{{ $platform->value }}" {{ request('platform') == $platform->value ? 'selected' : '' }}>
+                                        {{ $platform->label }}
                                     </option>
                                 @endforeach
                             </x-ui.select>
@@ -238,8 +238,8 @@
                         <div class="mt-2">
                             <x-ui.select id="platform" name="platform" required>
                                 <option value="">Select platform</option>
-                                @foreach($platforms as $key=>$value)
-                                    <option value="{{$key}}">{{$value}}</option>
+                                @foreach($platforms as $platform)
+                                    <option value="{{$platform->value}}">{{$platform->label}}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>
@@ -316,8 +316,8 @@
                         <div class="mt-2">
                             <x-ui.select id="platform_{{$credential->id}}" name="platform" required>
                                 <option value="">Select platform</option>
-                                @foreach($platforms as $key=>$value)
-                                    <option value="{{$key}}" {{$credential->platform==$key?'selected':''}}>{{$value}}</option>
+                                @foreach($platforms as $platform)
+                                    <option value="{{$platform->value}}" {{$credential->platform==$platform->value?'selected':''}}>{{$platform->label}}</option>
                                 @endforeach
                             </x-ui.select>
                         </div>
