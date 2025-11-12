@@ -1,7 +1,7 @@
 @props([
     'title',
     'items',
-    'emptyMessage' => 'Niciun element',
+    'emptyMessage' => __('No items'),
     'viewAllHref' => null,
 ])
 
@@ -9,7 +9,7 @@
     <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
         <h3 class="text-base font-semibold text-slate-900">{{ $title }}</h3>
         @if($viewAllHref)
-            <a href="{{ $viewAllHref }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">Vezi toți →</a>
+            <a href="{{ $viewAllHref }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
         @endif
     </div>
     <div class="p-6">

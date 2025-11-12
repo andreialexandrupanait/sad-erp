@@ -14,25 +14,25 @@
         @method('put')
 
         <div>
-            <x-input-label for="update_password_current_password" :value="__('Current Password')" />
-            <x-text-input id="update_password_current_password" name="current_password" type="password" class="mt-1 block w-full" autocomplete="current-password" />
+            <x-ui.label for="update_password_current_password">{{ __('Current Password') }}</x-ui.label>
+            <x-ui.input id="update_password_current_password" name="current_password" type="password" placeholder="{{ __('Enter current password') }}" autocomplete="current-password" />
             <x-input-error :messages="$errors->updatePassword->get('current_password')" class="mt-2" />
         </div>
 
         <div>
-            <x-input-label for="update_password_password" :value="__('New Password')" />
-            <x-text-input id="update_password_password" name="password" type="password" class="mt-1 block w-full" autocomplete="new-password" />
+            <x-ui.label for="update_password_password">{{ __('New Password') }}</x-ui.label>
+            <x-ui.input id="update_password_password" name="password" type="password" placeholder="{{ __('Enter new password') }}" autocomplete="new-password" />
             <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
         </div>
 
         <div>
-            <x-input-label for="update_password_password_confirmation" :value="__('Confirm Password')" />
-            <x-text-input id="update_password_password_confirmation" name="password_confirmation" type="password" class="mt-1 block w-full" autocomplete="new-password" />
+            <x-ui.label for="update_password_password_confirmation">{{ __('Confirm Password') }}</x-ui.label>
+            <x-ui.input id="update_password_password_confirmation" name="password_confirmation" type="password" placeholder="{{ __('Confirm new password') }}" autocomplete="new-password" />
             <x-input-error :messages="$errors->updatePassword->get('password_confirmation')" class="mt-2" />
         </div>
 
         <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
+            <x-ui.button type="submit" variant="default">{{ __('Save') }}</x-ui.button>
 
             @if (session('status') === 'password-updated')
                 <p

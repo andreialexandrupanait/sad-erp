@@ -12,7 +12,7 @@
                 <!-- Name (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="name">
-                        Name <span class="text-red-500">*</span>
+                        {{ __('Name') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -20,7 +20,7 @@
                             name="name"
                             id="name"
                             required
-                            placeholder="Enter client name"
+                            placeholder="{{ __('Enter client name') }}"
                             value="{{ old('name', $client->name ?? '') }}"
                         />
                     </div>
@@ -31,13 +31,13 @@
 
                 <!-- Company Name -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="company_name">Company Name</x-ui.label>
+                    <x-ui.label for="company_name">{{ __('Company Name') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
                             name="company_name"
                             id="company_name"
-                            placeholder="Enter company name (optional)"
+                            placeholder="{{ __('Enter company name (optional)') }}"
                             value="{{ old('company_name', $client->company_name ?? '') }}"
                         />
                     </div>
@@ -48,14 +48,14 @@
 
                 <!-- Tax ID (CUI) with Auto-fill -->
                 <div class="sm:col-span-3 field-wrapper" x-data="{ loading: false }">
-                    <x-ui.label for="tax_id">Tax ID (CUI)</x-ui.label>
+                    <x-ui.label for="tax_id">{{ __('Tax ID (CUI)') }}</x-ui.label>
                     <div class="mt-2 relative">
                         <x-ui.input
                             type="text"
                             name="tax_id"
                             id="tax_id"
                             value="{{ old('tax_id', $client->tax_id ?? '') }}"
-                            placeholder="e.g., RO12345678"
+                            placeholder="{{ __('e.g., RO12345678') }}"
                             @blur="if ($event.target.value && !document.getElementById('company_name').value) {
                                 loading = true;
                                 fetch(`https://api.openapi.ro/api/companies/${$event.target.value.replace('RO', '')}`)
@@ -81,7 +81,7 @@
                             </svg>
                         </div>
                     </div>
-                    <p class="mt-1 text-xs text-slate-500">Company details will be auto-filled from ANAF if available</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('Company details will be auto-filled from ANAF if available') }}</p>
                     @error('tax_id')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -89,14 +89,14 @@
 
                 <!-- Registration Number -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="registration_number">Registration Number</x-ui.label>
+                    <x-ui.label for="registration_number">{{ __('Registration Number') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
                             name="registration_number"
                             id="registration_number"
                             value="{{ old('registration_number', $client->registration_number ?? '') }}"
-                            placeholder="e.g., J40/1234/2020"
+                            placeholder="{{ __('e.g., J40/1234/2020') }}"
                         />
                     </div>
                     @error('registration_number')
@@ -106,13 +106,13 @@
 
                 <!-- Contact Person -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="contact_person">Contact Person</x-ui.label>
+                    <x-ui.label for="contact_person">{{ __('Contact Person') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
                             name="contact_person"
                             id="contact_person"
-                            placeholder="Enter contact person name (optional)"
+                            placeholder="{{ __('Enter contact person name (optional)') }}"
                             value="{{ old('contact_person', $client->contact_person ?? '') }}"
                         />
                     </div>
@@ -123,10 +123,10 @@
 
                 <!-- Status -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="status_id">Status</x-ui.label>
+                    <x-ui.label for="status_id">{{ __('Status') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="status_id" id="status_id">
-                            <option value="">Select status</option>
+                            <option value="">{{ __('Select status') }}</option>
                             @foreach($statuses as $status)
                                 <option value="{{ $status->id }}" {{ old('status_id', $client->status_id ?? '') == $status->id ? 'selected' : '' }}>
                                     {{ $status->name }}
@@ -141,13 +141,13 @@
 
                 <!-- Email -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="email">Email</x-ui.label>
+                    <x-ui.label for="email">{{ __('Email') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="email"
                             name="email"
                             id="email"
-                            placeholder="email@example.com"
+                            placeholder="{{ __('email@example.com') }}"
                             value="{{ old('email', $client->email ?? '') }}"
                         />
                     </div>
@@ -158,13 +158,13 @@
 
                 <!-- Phone -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="phone">Phone</x-ui.label>
+                    <x-ui.label for="phone">{{ __('Phone') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
                             name="phone"
                             id="phone"
-                            placeholder="+40 XXX XXX XXX"
+                            placeholder="{{ __('+40 XXX XXX XXX') }}"
                             value="{{ old('phone', $client->phone ?? '') }}"
                         />
                     </div>
@@ -175,9 +175,9 @@
 
                 <!-- Address -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="address">Address</x-ui.label>
+                    <x-ui.label for="address">{{ __('Address') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.textarea name="address" id="address" rows="3" placeholder="Enter full address (optional)">{{ old('address', $client->address ?? '') }}</x-ui.textarea>
+                        <x-ui.textarea name="address" id="address" rows="3" placeholder="{{ __('Enter full address (optional)') }}">{{ old('address', $client->address ?? '') }}</x-ui.textarea>
                     </div>
                     @error('address')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -198,17 +198,17 @@
                             >
                         </div>
                         <div class="ml-3 text-sm leading-6">
-                            <label for="vat_payer" class="font-medium text-slate-900">VAT Payer</label>
-                            <p class="text-slate-500">Check if this client is registered as a VAT payer</p>
+                            <label for="vat_payer" class="font-medium text-slate-900">{{ __('VAT Payer') }}</label>
+                            <p class="text-slate-500">{{ __('Check if this client is registered as a VAT payer') }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Notes -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="notes">Notes</x-ui.label>
+                    <x-ui.label for="notes">{{ __('Notes') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.textarea name="notes" id="notes" rows="4" placeholder="Additional notes about this client (optional)">{{ old('notes', $client->notes ?? '') }}</x-ui.textarea>
+                        <x-ui.textarea name="notes" id="notes" rows="4" placeholder="{{ __('Additional notes about this client (optional)') }}">{{ old('notes', $client->notes ?? '') }}</x-ui.textarea>
                     </div>
                     @error('notes')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -219,10 +219,10 @@
 
         <div class="flex items-center justify-end gap-x-6 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">
             <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('clients.index') }}'">
-                Cancel
+                {{ __('Cancel') }}
             </x-ui.button>
             <x-ui.button type="submit" variant="default">
-                {{ $client ? 'Update Client' : 'Create Client' }}
+                {{ $client ? __('Update Client') : __('Create Client') }}
             </x-ui.button>
         </div>
     </x-ui.card>

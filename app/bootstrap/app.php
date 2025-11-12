@@ -20,6 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
                      Request::HEADER_X_FORWARDED_PORT |
                      Request::HEADER_X_FORWARDED_PROTO
         );
+
+        // Set application locale based on settings
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

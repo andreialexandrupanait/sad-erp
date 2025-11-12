@@ -1,18 +1,22 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="px-6 lg:px-8 py-8">
-            <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                {{ __('Create New Client') }}
-            </h2>
-            <p class="mt-2 text-sm text-slate-600">Add a new client to your database</p>
-        </div>
+    <x-slot name="pageTitle">Adaugă client</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="outline" onclick="window.location.href='{{ route('clients.index') }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Înapoi
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8">
-        <x-client-form
-            :statuses="$clientStatuses"
-            :action="route('clients.store')"
-            method="POST"
-        />
+    <div class="p-6">
+        <div class="max-w-4xl mx-auto">
+            <x-client-form
+                :statuses="$clientStatuses"
+                :action="route('clients.store')"
+                method="POST"
+            />
+        </div>
     </div>
 </x-app-layout>

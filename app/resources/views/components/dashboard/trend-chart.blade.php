@@ -3,15 +3,15 @@
 <x-ui.card>
     <x-ui.card-header>
         <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-slate-900">Tendință lunară</h3>
+            <h3 class="text-lg font-semibold text-slate-900">{{ __('Monthly trend') }}</h3>
             <div class="flex items-center gap-4 text-xs">
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-slate-600">Venituri</span>
+                    <span class="text-slate-600">{{ __('Revenue') }}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span class="text-slate-600">Cheltuieli</span>
+                    <span class="text-slate-600">{{ __('Expenses') }}</span>
                 </div>
             </div>
         </div>
@@ -30,11 +30,11 @@
                         @endphp
                         <div class="w-full bg-green-500 rounded-t transition-all hover:bg-green-600"
                              style="height: {{ $revenueHeight }}%"
-                             title="Venituri: {{ $month['formatted'] }}">
+                             title="{{ __('Revenue') }}: {{ $month['formatted'] }}">
                         </div>
                         <div class="w-full bg-red-500 rounded-t transition-all hover:bg-red-600"
                              style="height: {{ $expenseHeight }}%"
-                             title="Cheltuieli: {{ $expenseTrend[$index]['formatted'] }}">
+                             title="{{ __('Expenses') }}: {{ $expenseTrend[$index]['formatted'] }}">
                         </div>
                     </div>
                     <span class="text-xs text-slate-600 font-medium">{{ $month['month'] }}</span>

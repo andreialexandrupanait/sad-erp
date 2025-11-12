@@ -48,7 +48,7 @@ class InternalAccountController extends Controller
         $accounts = $query->paginate(15);
 
         // Get platforms for filter
-        $platforms = InternalAccount::PLATFORMS;
+        $platforms = setting_options('access_platforms');
 
         // Statistics
         $stats = [
@@ -66,7 +66,7 @@ class InternalAccountController extends Controller
      */
     public function create()
     {
-        $platforms = InternalAccount::PLATFORMS;
+        $platforms = setting_options('access_platforms');
         return view('internal-accounts.create', compact('platforms'));
     }
 
@@ -128,7 +128,7 @@ class InternalAccountController extends Controller
             abort(403, 'Only the account owner can edit this record.');
         }
 
-        $platforms = InternalAccount::PLATFORMS;
+        $platforms = setting_options('access_platforms');
 
         return view('internal-accounts.edit', compact('internalAccount', 'platforms'));
     }

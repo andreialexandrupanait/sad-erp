@@ -12,7 +12,7 @@
                 <!-- Vendor Name (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="vendor_name">
-                        Vendor Name <span class="text-red-500">*</span>
+                        {{ __('Vendor Name') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -21,7 +21,7 @@
                             id="vendor_name"
                             required
                             value="{{ old('vendor_name', $subscription->vendor_name ?? '') }}"
-                            placeholder="e.g., Adobe, Microsoft, Netflix"
+                            placeholder="{{ __('e.g., Adobe, Microsoft, Netflix') }}"
                         />
                     </div>
                     @error('vendor_name')
@@ -32,7 +32,7 @@
                 <!-- Price (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="price">
-                        Price (RON) <span class="text-red-500">*</span>
+                        {{ __('Price (RON)') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -42,7 +42,7 @@
                             id="price"
                             required
                             value="{{ old('price', $subscription->price ?? '') }}"
-                            placeholder="0.00"
+                            placeholder="{{ __('0.00') }}"
                         />
                     </div>
                     @error('price')
@@ -53,7 +53,7 @@
                 <!-- Billing Cycle (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="billing_cycle">
-                        Billing Cycle <span class="text-red-500">*</span>
+                        {{ __('Billing Cycle') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="billing_cycle" id="billing_cycle" required x-model="billingCycle">
@@ -72,7 +72,7 @@
                 <!-- Custom Days (only if billing_cycle is 'custom') -->
                 <div class="sm:col-span-3 field-wrapper" x-show="billingCycle === 'custom'" x-cloak>
                     <x-ui.label for="custom_days">
-                        Custom Days <span class="text-red-500">*</span>
+                        {{ __('Custom Days') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -80,10 +80,10 @@
                             name="custom_days"
                             id="custom_days"
                             value="{{ old('custom_days', $subscription->custom_days ?? '') }}"
-                            placeholder="e.g., 90 for quarterly"
+                            placeholder="{{ __('e.g., 90 for quarterly') }}"
                         />
                     </div>
-                    <p class="mt-1 text-xs text-slate-500">Enter the number of days between renewals (e.g., 90 for quarterly)</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('Enter the number of days between renewals (e.g., 90 for quarterly)') }}</p>
                     @error('custom_days')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -92,7 +92,7 @@
                 <!-- Start Date (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="start_date">
-                        Start Date <span class="text-red-500">*</span>
+                        {{ __('Start Date') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -100,7 +100,7 @@
                             name="start_date"
                             id="start_date"
                             required
-                            placeholder="YYYY-MM-DD"
+                            placeholder="{{ __('YYYY-MM-DD') }}"
                             value="{{ old('start_date', $subscription ? $subscription->start_date?->format('Y-m-d') : date('Y-m-d')) }}"
                         />
                     </div>
@@ -112,7 +112,7 @@
                 <!-- Next Renewal Date (Required) -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="next_renewal_date">
-                        Next Renewal Date <span class="text-red-500">*</span>
+                        {{ __('Next Renewal Date') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -120,11 +120,11 @@
                             name="next_renewal_date"
                             id="next_renewal_date"
                             required
-                            placeholder="YYYY-MM-DD"
+                            placeholder="{{ __('YYYY-MM-DD') }}"
                             value="{{ old('next_renewal_date', $subscription ? $subscription->next_renewal_date?->format('Y-m-d') : '') }}"
                         />
                     </div>
-                    <p class="mt-1 text-xs text-slate-500">The date when the next payment is due</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ __('The date when the next payment is due') }}</p>
                     @error('next_renewal_date')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
@@ -133,7 +133,7 @@
                 <!-- Status (Required) -->
                 <div class="sm:col-span-6 field-wrapper">
                     <x-ui.label for="status">
-                        Status <span class="text-red-500">*</span>
+                        {{ __('Status') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="status" id="status" required>
@@ -151,9 +151,9 @@
 
                 <!-- Notes -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="notes">Notes</x-ui.label>
+                    <x-ui.label for="notes">{{ __('Notes') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.textarea name="notes" id="notes" rows="4" placeholder="Optional notes about this subscription...">{{ old('notes', $subscription->notes ?? '') }}</x-ui.textarea>
+                        <x-ui.textarea name="notes" id="notes" rows="4" placeholder="{{ __('Optional notes about this subscription...') }}">{{ old('notes', $subscription->notes ?? '') }}</x-ui.textarea>
                     </div>
                     @error('notes')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -163,9 +163,9 @@
         </div>
 
         <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8">
-            <a href="{{ route('subscriptions.index') }}" class="text-sm font-semibold leading-6 text-gray-900">Cancel</a>
+            <a href="{{ route('subscriptions.index') }}" class="text-sm font-semibold leading-6 text-gray-900">{{ __('Cancel') }}</a>
             <button type="submit" class="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
-                {{ $subscription ? 'Update Subscription' : 'Create Subscription' }}
+                {{ $subscription ? __('Update Subscription') : __('Create Subscription') }}
             </button>
         </div>
     </div>

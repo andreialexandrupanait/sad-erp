@@ -1,21 +1,19 @@
 <x-app-layout>
-    <x-slot name="pageTitle">
-        {{date('H') < 12 ? 'Bună dimineața' : (date('H') < 18 ? 'Bună ziua' : 'Bună seara')}}, {{ auth()->user()->name }}
-    </x-slot>
-
-    @php($hideBreadcrumb = true)
+    <x-slot name="pageTitle">{{date('H') < 12 ? __('Good morning') : (date('H') < 18 ? __('Good afternoon') : __('Good evening'))}}, {{ auth()->user()->name }}</x-slot>
 
     <x-slot name="headerActions">
         <x-dashboard.quick-actions :quickActions="$quickActions" />
     </x-slot>
 
+    @php($hideBreadcrumb = true)
+
     <div class="p-6 space-y-6" x-data>
         {{-- Key Metrics Row --}}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <x-widgets.metrics.stat-card
-                title="Clienți activi"
+                :title="__('Active Clients')"
                 :value="$activeClients"
-                :subtitle="'din ' . $totalClients . ' total'"
+                :subtitle="__('out of :total total', ['total' => $totalClients])"
                 color="blue"
                 :href="route('clients.index')"
             >
@@ -27,9 +25,9 @@
             </x-widgets.metrics.stat-card>
 
             <x-widgets.metrics.stat-card
-                title="Abonamente"
+                :title="__('Subscriptions')"
                 :value="$activeSubscriptions"
-                :subtitle="number_format($monthlySubscriptionCost, 2) . ' RON/lună'"
+                :subtitle="number_format($monthlySubscriptionCost, 2) . ' ' . __('RON/month')"
                 color="green"
                 :href="route('subscriptions.index')"
             >
@@ -41,9 +39,9 @@
             </x-widgets.metrics.stat-card>
 
             <x-widgets.metrics.stat-card
-                title="Domenii"
+                :title="__('Domains')"
                 :value="$activeDomains"
-                :subtitle="$expiringDomains->count() > 0 ? $expiringDomains->count() . ' expiră în 30 zile' : 'Toate sunt valide'"
+                :subtitle="$expiringDomains->count() > 0 ? $expiringDomains->count() . ' ' . __('expire in 30 days') : __('All are valid')"
                 :color="$expiringDomains->count() > 0 ? 'orange' : 'purple'"
                 :href="route('domains.index')"
             >
@@ -55,9 +53,9 @@
             </x-widgets.metrics.stat-card>
 
             <x-widgets.metrics.stat-card
-                title="Acces & parole"
+                :title="__('Access & Credentials')"
                 :value="$totalCredentials"
-                subtitle="credențiale salvate"
+                :subtitle="__('credentials saved')"
                 color="indigo"
                 :href="route('credentials.index')"
             >
@@ -72,7 +70,7 @@
         {{-- Financial Overview --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <x-widgets.financial.summary-card
-                title="Venituri luna curentă"
+                :title="__('Current Month Revenue')"
                 :amount="number_format($currentMonthRevenue, 2) . ' RON'"
                 :yearlyAmount="number_format($yearlyRevenue, 2) . ' RON'"
                 type="revenue"
@@ -80,7 +78,7 @@
             />
 
             <x-widgets.financial.summary-card
-                title="Cheltuieli luna curentă"
+                :title="__('Current Month Expenses')"
                 :amount="number_format($currentMonthExpenses, 2) . ' RON'"
                 :yearlyAmount="number_format($yearlyExpenses, 2) . ' RON'"
                 type="expense"
@@ -88,7 +86,7 @@
             />
 
             <x-widgets.financial.summary-card
-                title="Profit net luna curentă"
+                :title="__('Current Month Net Profit')"
                 :amount="number_format($currentMonthProfit, 2) . ' RON'"
                 :yearlyAmount="number_format($yearlyProfit, 2) . ' RON'"
                 type="profit"
@@ -104,9 +102,9 @@
 
                 {{-- Top Clients --}}
                 <x-widgets.activity.list-card
-                    title="Top clienți"
+                    :title="__('Top Clients')"
                     :items="$topClients"
-                    emptyMessage="Niciun client cu venituri înregistrate"
+                    :emptyMessage="__('No clients with recorded revenue')"
                     :viewAllHref="route('clients.index')"
                 >
                     @foreach($topClients as $index => $client)
@@ -117,12 +115,12 @@
                                 </div>
                                 <div>
                                     <p class="font-medium text-slate-900">{{ $client->display_name }}</p>
-                                    <p class="text-xs text-slate-500">{{ $client->email ?? 'Fără email' }}</p>
+                                    <p class="text-xs text-slate-500">{{ $client->email ?? __('No email') }}</p>
                                 </div>
                             </div>
                             <div class="text-right">
                                 <p class="font-semibold text-slate-900">{{ number_format($client->total_revenue, 2) }} RON</p>
-                                <p class="text-xs text-slate-500">venituri totale</p>
+                                <p class="text-xs text-slate-500">{{ __('total revenue') }}</p>
                             </div>
                         </div>
                     @endforeach
@@ -134,7 +132,7 @@
                 {{-- Expiring Domains --}}
                 @if($expiringDomains->count() > 0)
                     <x-widgets.alerts.alert-card
-                        title="Domenii expiră în curând"
+                        :title="__('Domains Expiring Soon')"
                         :items="$expiringDomains"
                         type="warning"
                     >
@@ -144,12 +142,12 @@
                                 <div class="flex-1 min-w-0">
                                     <p class="font-medium text-slate-900 truncate">{{ $domain->domain_name }}</p>
                                     <p class="text-xs text-slate-500">
-                                        {{ $domain->client ? $domain->client->display_name : 'Fără client' }}
+                                        {{ $domain->client ? $domain->client->display_name : __('No client') }}
                                     </p>
                                 </div>
                                 <div class="text-right flex-shrink-0 ml-2">
                                     <p class="text-xs font-semibold text-orange-700">
-                                        {{ $domain->expiry_date->diffInDays(now()) }} zile
+                                        {{ $domain->expiry_date->diffInDays(now()) }} {{ __('days') }}
                                     </p>
                                     <p class="text-xs text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</p>
                                 </div>
@@ -157,7 +155,7 @@
                         @endforeach
                         @if($expiringDomains->count() > 5)
                             <a href="{{ route('domains.index') }}" class="block mt-3 text-center text-sm text-orange-700 hover:text-orange-900 font-medium">
-                                +{{ $expiringDomains->count() - 5 }} mai multe domenii
+                                +{{ $expiringDomains->count() - 5 }} {{ __('more domains') }}
                             </a>
                         @endif
                     </x-widgets.alerts.alert-card>
@@ -166,7 +164,7 @@
                 {{-- Overdue Subscriptions --}}
                 @if($overdueSubscriptions->count() > 0)
                     <x-widgets.alerts.alert-card
-                        title="Abonamente restante"
+                        :title="__('Overdue Subscriptions')"
                         :items="$overdueSubscriptions"
                         type="error"
                     >
@@ -179,7 +177,7 @@
                                 </div>
                                 <div class="text-right flex-shrink-0 ml-2">
                                     <p class="text-xs font-semibold text-red-700">
-                                        Restant {{ abs($subscription->next_renewal_date->diffInDays(now())) }} zile
+                                        {{ __('Overdue') }} {{ abs($subscription->next_renewal_date->diffInDays(now())) }} {{ __('days') }}
                                     </p>
                                     <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
                                 </div>
@@ -191,9 +189,9 @@
                 {{-- Upcoming Renewals --}}
                 @if($upcomingRenewals['subscriptions']->count() > 0)
                     <x-widgets.activity.list-card
-                        title="Reînnoiri următoare"
+                        :title="__('Upcoming Renewals')"
                         :items="$upcomingRenewals['subscriptions']"
-                        emptyMessage="Nicio reînnoire în 30 zile"
+                        :emptyMessage="__('No renewals in 30 days')"
                     >
                         @foreach($upcomingRenewals['subscriptions']->take(5) as $subscription)
                             <div class="flex items-start justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
@@ -203,7 +201,7 @@
                                 </div>
                                 <div class="text-right flex-shrink-0 ml-2">
                                     <p class="text-xs font-semibold text-blue-700">
-                                        {{ $subscription->next_renewal_date->diffInDays(now()) }} zile
+                                        {{ $subscription->next_renewal_date->diffInDays(now()) }} {{ __('days') }}
                                     </p>
                                     <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
                                 </div>
@@ -214,9 +212,9 @@
 
                 {{-- Recent Clients --}}
                 <x-widgets.activity.list-card
-                    title="Clienți recenți"
+                    :title="__('Recent Clients')"
                     :items="$recentClients"
-                    emptyMessage="Niciun client înregistrat"
+                    :emptyMessage="__('No registered clients')"
                     :viewAllHref="route('clients.index')"
                 >
                     @foreach($recentClients as $client)
@@ -227,7 +225,7 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <p class="font-medium text-slate-900 truncate">{{ $client->display_name }}</p>
-                                <p class="text-xs text-slate-500">{{ $client->email ?? 'Fără email' }}</p>
+                                <p class="text-xs text-slate-500">{{ $client->email ?? __('No email') }}</p>
                             </div>
                             @if($client->status)
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">

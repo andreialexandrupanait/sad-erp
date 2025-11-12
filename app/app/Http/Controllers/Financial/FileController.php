@@ -307,6 +307,52 @@ class FileController extends Controller
     }
 
     /**
+     * Download all files for a specific month as a ZIP archive
+     */
+    public function downloadMonthlyZip($year, $month)
+    {
+        // Get all files for the specified month
+        $files = FinancialFile::where('an', $year)
+            ->where('luna', $month)
+            ->get();
+
+        if ($files->isEmpty()) {
+            return redirect()->back()->with('error', 'Nu există fișiere pentru luna selectată.');
+        }
+
+        // Create a temporary file for the ZIP
+        $zipFileName = "financiar_{$year}_{$month}_" . now()->format('YmdHis') . ".zip";
+        $zipPath = storage_path("app/temp/{$zipFileName}");
+
+        // Ensure temp directory exists
+        if (!file_exists(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        // Create ZIP archive
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
+        }
+
+        // Add files to ZIP, organized by type
+        foreach ($files as $file) {
+            if (Storage::exists($file->file_path)) {
+                $filePath = Storage::path($file->file_path);
+                $tip = $file->tip ?? 'general';
+
+                // Add file to ZIP in folder structure: type/filename
+                $zip->addFile($filePath, "{$tip}/{$file->file_name}");
+            }
+        }
+
+        $zip->close();
+
+        // Download and delete the temporary ZIP file
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    /**
      * Sanitize file name for storage
      */
     private function sanitizeFileName($name)

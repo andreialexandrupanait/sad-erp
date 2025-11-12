@@ -45,6 +45,6 @@
         </div>
     </div>
     @if($yearlyAmount)
-        <p class="text-xs {{ $iconColor }}">Total anual: {{ $yearlyAmount }}</p>
+        <p class="text-xs {{ $iconColor }}">{{ __('Total annual') }}: {{ $yearlyAmount }}</p>
     @endif
 </div>

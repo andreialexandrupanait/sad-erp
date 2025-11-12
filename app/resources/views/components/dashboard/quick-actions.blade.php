@@ -80,6 +80,6 @@
         </button>
     @empty
         {{-- Fallback if no quick actions are configured --}}
-        <p class="text-sm text-slate-500">No quick actions configured</p>
+        <p class="text-sm text-slate-500">{{ __('No quick actions configured') }}</p>
     @endforelse
 </div>

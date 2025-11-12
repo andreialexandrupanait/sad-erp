@@ -102,15 +102,24 @@
 
         <!-- Quick Actions -->
         <div class="flex gap-3">
-            <a href="{{ route('financial.revenues.create') }}" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
-                + Adaugă venit
-            </a>
-            <a href="{{ route('financial.expenses.create') }}" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
-                + Adaugă cheltuială
-            </a>
-            <a href="{{ route('financial.export', $year) }}" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700 font-medium">
+            <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.revenues.create') }}'">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Adaugă venit
+            </x-ui.button>
+            <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.expenses.create') }}'">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Adaugă cheltuială
+            </x-ui.button>
+            <x-ui.button variant="outline" onclick="window.location.href='{{ route('financial.export', $year) }}'">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                </svg>
                 Exportă CSV
-            </a>
+            </x-ui.button>
         </div>
     </div>
 </x-app-layout>

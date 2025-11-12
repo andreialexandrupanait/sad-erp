@@ -6,19 +6,32 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Models\FinancialExpense;
+use App\Models\FinancialFile;
 use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ExpenseController extends Controller
 {
     public function index(Request $request)
     {
-        $year = $request->get('year', now()->year);
-        $month = $request->get('month');
-        $currency = $request->get('currency');
-        $categoryId = $request->get('category_id');
+        // Get filter values from request or session, with defaults
+        $year = $request->get('year', session('financial.filters.year', now()->year));
+        $month = $request->get('month', session('financial.filters.month'));
+        $currency = $request->get('currency', session('financial.filters.currency'));
+        $categoryId = $request->get('category_id', session('financial.filters.category_id'));
 
-        $expenses = FinancialExpense::with('category')
+        // Store filter values in session for persistence
+        session([
+            'financial.filters.year' => $year,
+            'financial.filters.month' => $month,
+            'financial.filters.currency' => $currency,
+            'financial.filters.category_id' => $categoryId,
+        ]);
+
+        $expenses = FinancialExpense::with(['category', 'files'])
+            ->withCount('files')
             ->forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
@@ -36,6 +49,46 @@ class ExpenseController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
+        // Calculate year totals (entire year, regardless of month filter)
+        $yearTotals = FinancialExpense::forYear($year)
+            ->when($currency, fn($q) => $q->where('currency', $currency))
+            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->groupBy('currency')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+
+        // Calculate current month totals (always for current month)
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+        $monthTotals = FinancialExpense::where('year', $currentYear)
+            ->where('month', $currentMonth)
+            ->when($currency, fn($q) => $q->where('currency', $currency))
+            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->groupBy('currency')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+
+        // Count total records
+        $recordCount = FinancialExpense::forYear($year)
+            ->when($month, fn($q) => $q->where('month', $month))
+            ->when($currency, fn($q) => $q->where('currency', $currency))
+            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->count();
+
+        // Category breakdown for current filter
+        $categoryBreakdown = FinancialExpense::forYear($year)
+            ->when($month, fn($q) => $q->where('month', $month))
+            ->when($currency, fn($q) => $q->where('currency', $currency))
+            ->whereNotNull('category_option_id')
+            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+            ->groupBy('category_option_id')
+            ->with('category')
+            ->get()
+            ->sortByDesc('total')
+            ->take(5);
+
         $categories = SettingOption::rootCategories()->with('children')->get();
         $currencies = SettingOption::currencies()->get();
 
@@ -44,16 +97,33 @@ class ExpenseController extends Controller
             ->orderByDesc('year')
             ->pluck('year');
 
+        // Get months with transactions for the selected year (with transaction count and total amount)
+        $monthsWithTransactions = FinancialExpense::forYear($year)
+            ->when($currency, fn($q) => $q->where('currency', $currency))
+            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->select('month', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
+            ->groupBy('month')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->month => [
+                'count' => $item->count,
+                'total' => $item->total
+            ]]);
+
         return view('financial.expenses.index', compact(
             'expenses',
             'totals',
+            'yearTotals',
+            'monthTotals',
+            'recordCount',
+            'categoryBreakdown',
             'year',
             'month',
             'currency',
             'categoryId',
             'categories',
             'currencies',
-            'availableYears'
+            'availableYears',
+            'monthsWithTransactions'
         ));
     }
 
@@ -75,16 +145,24 @@ class ExpenseController extends Controller
             'occurred_at' => 'required|date',
             'category_option_id' => 'nullable|exists:settings_options,id',
             'note' => 'nullable|string',
+            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
         ]);
 
         $expense = FinancialExpense::create($validated);
+
+        // Handle file uploads
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $this->uploadFile($file, $expense);
+            }
+        }
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Expense created successfully!',
-                'expense' => $expense->load('category'),
+                'expense' => $expense->load('category', 'files'),
             ], 201);
         }
 
@@ -100,6 +178,7 @@ class ExpenseController extends Controller
 
     public function edit(FinancialExpense $expense)
     {
+        $expense->load('files');
         $categories = SettingOption::rootCategories()->with('children')->get();
         $currencies = SettingOption::currencies()->get();
         return view('financial.expenses.edit', compact('expense', 'categories', 'currencies'));
@@ -116,6 +195,9 @@ class ExpenseController extends Controller
             'occurred_at' => 'required|date',
             'category_option_id' => 'nullable|exists:settings_options,id',
             'note' => 'nullable|string',
+            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
+            'delete_files' => 'nullable|array',
+            'delete_files.*' => 'integer|exists:financial_files,id',
         ]);
 
         // Update year and month based on occurred_at
@@ -125,12 +207,34 @@ class ExpenseController extends Controller
 
         $expense->update($validated);
 
+        // Handle file deletions
+        if ($request->has('delete_files')) {
+            foreach ($request->input('delete_files') as $fileId) {
+                $file = FinancialFile::find($fileId);
+                if ($file && $file->entity_id === $expense->id && $file->entity_type === FinancialExpense::class) {
+                    // Delete physical file
+                    if (Storage::exists($file->file_path)) {
+                        Storage::delete($file->file_path);
+                    }
+                    // Delete database record
+                    $file->delete();
+                }
+            }
+        }
+
+        // Handle new file uploads
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $this->uploadFile($file, $expense);
+            }
+        }
+
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Expense updated successfully!',
-                'expense' => $expense->fresh()->load('category'),
+                'expense' => $expense->fresh()->load('category', 'files'),
             ]);
         }
 
@@ -144,5 +248,61 @@ class ExpenseController extends Controller
 
         return redirect()->route('financial.expenses.index')
             ->with('success', 'Expense deleted successfully.');
+    }
+
+    /**
+     * Upload a file and attach it to the expense
+     */
+    private function uploadFile($file, FinancialExpense $expense)
+    {
+        $originalName = $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+
+        // Get year and month from expense
+        $year = $expense->year;
+        $month = $expense->month;
+        $tip = 'plata'; // Expense files
+
+        // Generate standardized file name
+        $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
+        $uniqueId = Str::uuid()->toString();
+        $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+
+        // Storage path: /year/month/type/filename
+        $storagePath = "financial_files/{$year}/{$month}/{$tip}";
+
+        // Store file
+        $path = $file->storeAs($storagePath, $newFileName, 'local');
+
+        // Create database record
+        FinancialFile::create([
+            'file_name' => $originalName,
+            'file_path' => $path,
+            'file_type' => $file->getClientMimeType(),
+            'mime_type' => $file->getMimeType(),
+            'file_size' => $file->getSize(),
+            'entity_type' => FinancialExpense::class,
+            'entity_id' => $expense->id,
+            'an' => $year,
+            'luna' => $month,
+            'tip' => $tip,
+        ]);
+    }
+
+    /**
+     * Sanitize filename for storage
+     */
+    private function sanitizeFileName($filename)
+    {
+        // Remove accents
+        $filename = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $filename);
+        // Keep only alphanumeric, dash, underscore
+        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $filename);
+        // Remove consecutive dashes
+        $filename = preg_replace('/-+/', '-', $filename);
+        // Trim dashes from ends
+        $filename = trim($filename, '-');
+
+        return $filename ?: 'file';
     }
 }

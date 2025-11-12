@@ -1,16 +1,16 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ __('Add Internal Account') }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Create a new internal account or application credential</p>
-            </div>
-        </div>
+    <x-slot name="pageTitle">{{ __('Add Internal Account') }}</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="outline" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            {{ __('Back') }}
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8">
+    <div class="p-6">
         <div class="max-w-4xl mx-auto">
             <x-internal-account-form
                 :action="route('internal-accounts.store')"

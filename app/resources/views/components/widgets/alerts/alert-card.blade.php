@@ -2,7 +2,7 @@
     'title',
     'items',
     'type' => 'warning', // warning, error, info
-    'emptyMessage' => 'Niciun element',
+    'emptyMessage' => __('No items'),
 ])
 
 @php

@@ -11,7 +11,7 @@
                         @else
                             <x-application-logo class="block h-9 w-auto fill-current text-gray-800 dark:text-gray-200" />
                         @endif
-                        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ $globalAppSettings['app_name'] ?? 'ERP System' }}</span>
+                        <span class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ $globalAppSettings['app_name'] ?? __('ERP System') }}</span>
                     </a>
                 </div>
 

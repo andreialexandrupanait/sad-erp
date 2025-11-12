@@ -13,7 +13,7 @@
                 <!-- Account/Application Name (Required) -->
                 <div class="sm:col-span-6 field-wrapper">
                     <x-ui.label for="nume_cont_aplicatie">
-                        Account / Application Name <span class="text-red-500">*</span>
+                        {{ __('Account / Application Name') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -22,7 +22,7 @@
                             id="nume_cont_aplicatie"
                             required
                             value="{{ old('nume_cont_aplicatie', $account->nume_cont_aplicatie ?? '') }}"
-                            placeholder="e.g., Company Bank Account, AWS Root"
+                            placeholder="{{ __('Account or application name placeholder') }}"
                         />
                     </div>
                     @error('nume_cont_aplicatie')
@@ -33,7 +33,7 @@
                 <!-- Platform (Required) -->
                 <div class="sm:col-span-6 field-wrapper">
                     <x-ui.label for="platforma">
-                        Platform <span class="text-red-500">*</span>
+                        {{ __('Platform') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -42,7 +42,7 @@
                             id="platforma"
                             required
                             value="{{ old('platforma', $account->platforma ?? '') }}"
-                            placeholder="e.g., Bank Account, CRM System, Email Service"
+                            placeholder="{{ __('Platform placeholder') }}"
                         />
                     </div>
                     @error('platforma')
@@ -52,14 +52,14 @@
 
                 <!-- URL -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="url">URL</x-ui.label>
+                    <x-ui.label for="url">{{ __('URL') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="url"
                             name="url"
                             id="url"
                             value="{{ old('url', $account->url ?? '') }}"
-                            placeholder="https://example.com/login"
+                            placeholder="{{ __('URL placeholder') }}"
                         />
                     </div>
                     @error('url')
@@ -69,14 +69,14 @@
 
                 <!-- Username/Email -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="username">Username / Email</x-ui.label>
+                    <x-ui.label for="username">{{ __('Username / Email') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
                             name="username"
                             id="username"
                             value="{{ old('username', $account->username ?? '') }}"
-                            placeholder="admin or email@company.com"
+                            placeholder="{{ __('Username placeholder') }}"
                         />
                     </div>
                     @error('username')
@@ -86,14 +86,14 @@
 
                 <!-- Password -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="password">Password</x-ui.label>
+                    <x-ui.label for="password">{{ __('Password') }}</x-ui.label>
                     <div class="mt-2 relative">
                         <input
                             x-bind:type="showPass ? 'text' : 'password'"
                             name="password"
                             id="password"
                             value="{{ old('password', $account && isset($account->id) ? '' : '') }}"
-                            placeholder="{{ $account ? 'Leave blank to keep current password' : 'Enter password' }}"
+                            placeholder="{{ $account ? __('Password placeholder edit') : __('Password placeholder create') }}"
                             class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-sm ring-offset-white file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                         />
                         <button
@@ -108,7 +108,7 @@
                         </button>
                     </div>
                     @if($account)
-                        <p class="mt-1 text-xs text-slate-500">Leave blank to keep the current password</p>
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Leave blank to keep the current password') }}</p>
                     @endif
                     @error('password')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -129,17 +129,17 @@
                             >
                         </div>
                         <div class="ml-3 text-sm leading-6">
-                            <label for="accesibil_echipei" class="font-medium text-slate-900">Make accessible to team</label>
-                            <p class="text-slate-500">Allow all team members to view this account (you remain the owner)</p>
+                            <label for="accesibil_echipei" class="font-medium text-slate-900">{{ __('Make accessible to team') }}</label>
+                            <p class="text-slate-500">{{ __('Allow all team members to view this account') }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Notes -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="notes">Notes</x-ui.label>
+                    <x-ui.label for="notes">{{ __('Notes') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.textarea name="notes" id="notes" rows="3" placeholder="Additional information, recovery codes, etc.">{{ old('notes', $account->notes ?? '') }}</x-ui.textarea>
+                        <x-ui.textarea name="notes" id="notes" rows="3" placeholder="{{ __('Additional information placeholder') }}">{{ old('notes', $account->notes ?? '') }}</x-ui.textarea>
                     </div>
                     @error('notes')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -151,10 +151,10 @@
 
         <div class="flex items-center justify-end gap-x-6 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">
             <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
-                Cancel
+                {{ __('Cancel') }}
             </x-ui.button>
             <x-ui.button type="submit" variant="default">
-                {{ $account ? 'Update Account' : 'Create Account' }}
+                {{ $account ? __('Update Account') : __('Create Account') }}
             </x-ui.button>
         </div>
     </x-ui.card>

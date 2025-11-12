@@ -1,12 +1,17 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Edit Subscription') }}: {{ $subscription->vendor_name }}
-        </h2>
+    <x-slot name="pageTitle">Editează abonament</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="outline" onclick="window.location.href='{{ route('subscriptions.index') }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Înapoi
+        </x-ui.button>
     </x-slot>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="p-6">
+        <div class="max-w-4xl mx-auto">
             <x-subscription-form
                 :subscription="$subscription"
                 :action="route('subscriptions.update', $subscription)"

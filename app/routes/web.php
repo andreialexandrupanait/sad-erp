@@ -109,6 +109,7 @@ Route::middleware('auth')->group(function () {
         Route::get('files/create', [FinancialFileController::class, 'create'])->name('files.create');
         Route::post('files', [FinancialFileController::class, 'store'])->name('files.store');
         Route::post('files/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
+        Route::get('files/download-monthly-zip/{year}/{month}', [FinancialFileController::class, 'downloadMonthlyZip'])->name('files.download-monthly-zip');
         Route::get('files/{file}', [FinancialFileController::class, 'show'])->name('files.show');
         Route::get('files/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');
         Route::patch('files/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');

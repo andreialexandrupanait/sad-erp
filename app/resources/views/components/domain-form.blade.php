@@ -12,7 +12,7 @@
                 <!-- Domain Name (Required) -->
                 <div class="sm:col-span-6 field-wrapper">
                     <x-ui.label for="domain_name">
-                        Domain Name <span class="text-red-500">*</span>
+                        {{ __('Domain Name') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -21,7 +21,7 @@
                             id="domain_name"
                             required
                             value="{{ old('domain_name', $domain->domain_name ?? '') }}"
-                            placeholder="example.com"
+                            placeholder="{{ __('example.com') }}"
                         />
                     </div>
                     @error('domain_name')
@@ -31,10 +31,10 @@
 
                 <!-- Client -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="client_id">Client (Optional)</x-ui.label>
+                    <x-ui.label for="client_id">{{ __('Client (Optional)') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="client_id" id="client_id">
-                            <option value="">No Client</option>
+                            <option value="">{{ __('No Client') }}</option>
                             @foreach($clients as $client)
                                 <option value="{{ $client->id }}" {{ old('client_id', $domain->client_id ?? '') == $client->id ? 'selected' : '' }}>
                                     {{ $client->display_name }}
@@ -49,10 +49,10 @@
 
                 <!-- Registrar -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="registrar">Registrar</x-ui.label>
+                    <x-ui.label for="registrar">{{ __('Registrar') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="registrar" id="registrar">
-                            <option value="">Select registrar</option>
+                            <option value="">{{ __('Select registrar') }}</option>
                             @foreach($registrars as $registrar)
                                 <option value="{{ $registrar->value }}" {{ old('registrar', $domain->registrar ?? '') == $registrar->value ? 'selected' : '' }}>
                                     {{ $registrar->label }}
@@ -67,13 +67,13 @@
 
                 <!-- Registration Date -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="registration_date">Registration Date</x-ui.label>
+                    <x-ui.label for="registration_date">{{ __('Registration Date') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="date"
                             name="registration_date"
                             id="registration_date"
-                            placeholder="YYYY-MM-DD"
+                            placeholder="{{ __('YYYY-MM-DD') }}"
                             value="{{ old('registration_date', $domain ? $domain->registration_date?->format('Y-m-d') : '') }}"
                         />
                     </div>
@@ -85,7 +85,7 @@
                 <!-- Expiry Date -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="expiry_date">
-                        Expiry Date <span class="text-red-500">*</span>
+                        {{ __('Expiry Date') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
@@ -93,7 +93,7 @@
                             name="expiry_date"
                             id="expiry_date"
                             required
-                            placeholder="YYYY-MM-DD"
+                            placeholder="{{ __('YYYY-MM-DD') }}"
                             value="{{ old('expiry_date', $domain ? $domain->expiry_date?->format('Y-m-d') : '') }}"
                         />
                     </div>
@@ -104,7 +104,7 @@
 
                 <!-- Annual Cost -->
                 <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="annual_cost">Annual Cost ($)</x-ui.label>
+                    <x-ui.label for="annual_cost">{{ __('Annual Cost ($)') }}</x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="number"
@@ -112,7 +112,7 @@
                             name="annual_cost"
                             id="annual_cost"
                             value="{{ old('annual_cost', $domain->annual_cost ?? '') }}"
-                            placeholder="15.00"
+                            placeholder="{{ __('15.00') }}"
                         />
                     </div>
                     @error('annual_cost')
@@ -123,7 +123,7 @@
                 <!-- Status -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="status">
-                        Status <span class="text-red-500">*</span>
+                        {{ __('Status') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.select name="status" id="status" required>
@@ -156,17 +156,17 @@
                             >
                         </div>
                         <div class="ml-3 text-sm leading-6">
-                            <label for="auto_renew" class="font-medium text-slate-900">Auto-renew enabled</label>
-                            <p class="text-slate-500">Domain will automatically renew before expiry</p>
+                            <label for="auto_renew" class="font-medium text-slate-900">{{ __('Auto-renew enabled') }}</label>
+                            <p class="text-slate-500">{{ __('Domain will automatically renew before expiry') }}</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Notes -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="notes">Notes</x-ui.label>
+                    <x-ui.label for="notes">{{ __('Notes') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.textarea name="notes" id="notes" rows="3" placeholder="Additional information about this domain...">{{ old('notes', $domain->notes ?? '') }}</x-ui.textarea>
+                        <x-ui.textarea name="notes" id="notes" rows="3" placeholder="{{ __('Additional information about this domain...') }}">{{ old('notes', $domain->notes ?? '') }}</x-ui.textarea>
                     </div>
                     @error('notes')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -177,10 +177,10 @@
 
         <div class="flex items-center justify-end gap-x-6 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">
             <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('domains.index') }}'">
-                Cancel
+                {{ __('Cancel') }}
             </x-ui.button>
             <x-ui.button type="submit" variant="default">
-                {{ $domain ? 'Update Domain' : 'Create Domain' }}
+                {{ $domain ? __('Update Domain') : __('Create Domain') }}
             </x-ui.button>
         </div>
     </x-ui.card>

@@ -5,17 +5,17 @@
                 <h2 class="text-3xl font-bold tracking-tight text-slate-900">
                     {{ $credential->display_name }}
                 </h2>
-                <p class="mt-2 text-sm text-slate-600">Credential details and access information</p>
+                <p class="mt-2 text-sm text-slate-600">{{ __('Credential details and access information') }}</p>
             </div>
             <div class="flex gap-2">
                 <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.edit', $credential) }}'">
                     <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
-                    Edit
+                    {{ __('Edit') }}
                 </x-ui.button>
                 <x-ui.button variant="outline" onclick="window.location.href='{{ route('credentials.index') }}'">
-                    Back to List
+                    {{ __('Back') }}
                 </x-ui.button>
             </div>
         </div>
@@ -35,12 +35,12 @@
         <!-- Credential Details -->
         <x-ui.card>
             <x-ui.card-header>
-                <h3 class="text-lg font-semibold text-slate-900">Credential Information</h3>
+                <h3 class="text-lg font-semibold text-slate-900">{{ __('Credential Information') }}</h3>
             </x-ui.card-header>
             <x-ui.card-content>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Client</label>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Client') }}</label>
                         <p class="mt-1.5 text-slate-900">
                             <a href="{{ route('clients.show', $credential->client) }}" class="text-slate-900 hover:text-slate-600 font-medium underline">
                                 {{ $credential->client->display_name }}
@@ -49,7 +49,7 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Platform</label>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Platform') }}</label>
                         <div class="mt-1.5">
                             <x-ui.badge variant="secondary">
                                 {{ $credential->platform }}
@@ -59,7 +59,7 @@
 
                     @if ($credential->url)
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-500">URL</label>
+                            <label class="block text-sm font-medium text-slate-500">{{ __('URL') }}</label>
                             <p class="mt-1.5 text-slate-900">
                                 <a href="{{ $credential->url }}" target="_blank" class="text-slate-600 hover:text-slate-900 underline break-all">
                                     {{ $credential->url }}
@@ -70,7 +70,7 @@
 
                     @if ($credential->username)
                         <div>
-                            <label class="block text-sm font-medium text-slate-500">Username / Email</label>
+                            <label class="block text-sm font-medium text-slate-500">{{ __('Username / Email') }}</label>
                             <div class="mt-1.5 flex items-center gap-2">
                                 <p class="text-slate-900 font-medium">{{ $credential->username }}</p>
                                 <button onclick="copyToClipboard('{{ $credential->username }}')" class="text-slate-500 hover:text-slate-700 transition-colors">
@@ -84,7 +84,7 @@
 
                     @if ($credential->password)
                         <div>
-                            <label class="block text-sm font-medium text-slate-500">Password</label>
+                            <label class="block text-sm font-medium text-slate-500">{{ __('Password') }}</label>
                             <div class="mt-1.5 flex items-center gap-2">
                                 <p id="password-display" class="text-slate-900 font-mono font-medium">{{ $credential->masked_password }}</p>
                                 <button onclick="togglePassword()" class="text-slate-600 hover:text-slate-900 transition-colors">
@@ -103,31 +103,31 @@
                     @endif
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Last Accessed</label>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Last Accessed') }}</label>
                         <p class="mt-1.5 text-slate-900">
-                            {{ $credential->last_accessed_at ? $credential->last_accessed_at->format('M d, Y H:i') : 'Never' }}
+                            {{ $credential->last_accessed_at ? $credential->last_accessed_at->format('M d, Y H:i') : __('Never') }}
                         </p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Access Count</label>
-                        <p class="mt-1.5 text-slate-900 font-semibold">{{ $credential->access_count }} times</p>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Access Count') }}</label>
+                        <p class="mt-1.5 text-slate-900 font-semibold">{{ $credential->access_count }} {{ __('times') }}</p>
                     </div>
 
                     @if ($credential->notes)
                         <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-slate-500">Notes</label>
+                            <label class="block text-sm font-medium text-slate-500">{{ __('Notes') }}</label>
                             <p class="mt-1.5 text-slate-900 whitespace-pre-line">{{ $credential->notes }}</p>
                         </div>
                     @endif
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Created</label>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Created') }}</label>
                         <p class="mt-1.5 text-slate-700 text-sm">{{ $credential->created_at->format('M d, Y H:i') }}</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-slate-500">Last Updated</label>
+                        <label class="block text-sm font-medium text-slate-500">{{ __('Last Updated') }}</label>
                         <p class="mt-1.5 text-slate-700 text-sm">{{ $credential->updated_at->format('M d, Y H:i') }}</p>
                     </div>
                 </div>
@@ -138,7 +138,7 @@
         @if ($credential->url)
             <x-ui.card>
                 <x-ui.card-header>
-                    <h3 class="text-lg font-semibold text-slate-900">Quick Actions</h3>
+                    <h3 class="text-lg font-semibold text-slate-900">{{ __('Quick Actions') }}</h3>
                 </x-ui.card-header>
                 <x-ui.card-content>
                     <div class="flex flex-wrap gap-3">
@@ -146,7 +146,7 @@
                             <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
-                            Open Platform
+                            {{ __('Open Platform') }}
                         </x-ui.button>
                     </div>
                 </x-ui.card-content>

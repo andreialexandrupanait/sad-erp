@@ -1,12 +1,12 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Abonamente</x-slot>
+    <x-slot name="pageTitle">{{ __('Subscriptions') }}</x-slot>
 
     <x-slot name="headerActions">
         <x-ui.button variant="default" onclick="window.location.href='{{ route('subscriptions.create') }}'">
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Abonament nou
+            {{ __('Add Subscription') }}
         </x-ui.button>
     </x-slot>
 
@@ -37,9 +37,9 @@
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300">Monthly Cost</p>
+                            <p class="text-sm font-medium text-slate-300">{{ __('Monthly Cost') }}</p>
                             <p class="mt-2 text-3xl font-bold">{{ number_format($stats['monthly_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-400">RON per month</p>
+                            <p class="mt-1 text-xs text-slate-400">RON {{ __('per month') }}</p>
                         </div>
                         <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,9 +55,9 @@
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">Annual Cost</p>
+                            <p class="text-sm font-medium text-slate-600">{{ __('Annual Cost') }}</p>
                             <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($stats['annual_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-500">RON per year</p>
+                            <p class="mt-1 text-xs text-slate-500">RON {{ __('per year') }}</p>
                         </div>
                         <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-50">
                             <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -73,9 +73,9 @@
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">Active</p>
+                            <p class="text-sm font-medium text-slate-600">{{ __('Active') }}</p>
                             <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['active'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">subscriptions</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ __('subscriptions') }}</p>
                         </div>
                         <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-50">
                             <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,9 +91,9 @@
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">Upcoming</p>
+                            <p class="text-sm font-medium text-slate-600">{{ __('Upcoming') }}</p>
                             <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['upcoming_renewals'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">next 30 days</p>
+                            <p class="mt-1 text-xs text-slate-500">{{ __('next 30 days') }}</p>
                         </div>
                         <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50">
                             <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,7 +122,7 @@
                                     type="text"
                                     name="search"
                                     value="{{ request('search') }}"
-                                    placeholder="Search by vendor name..."
+                                    placeholder="{{ __('Search subscriptions') }}"
                                     class="pl-10"
                                 />
                             </div>
@@ -131,7 +131,7 @@
                         <!-- Status Filter -->
                         <div class="w-full sm:w-44">
                             <x-ui.select name="status">
-                                <option value="">All Statuses</option>
+                                <option value="">{{ __('All Statuses') }}</option>
                                 @foreach($statuses as $status)
                                     <option value="{{ $status->value }}" {{ request('status') === $status->value ? 'selected' : '' }}>
                                         {{ $status->label }}
@@ -143,7 +143,7 @@
                         <!-- Billing Cycle Filter -->
                         <div class="w-full sm:w-44">
                             <x-ui.select name="billing_cycle">
-                                <option value="">All Cycles</option>
+                                <option value="">{{ __('All Billing Cycles') }}</option>
                                 @foreach($billingCycles as $cycle)
                                     <option value="{{ $cycle->value }}" {{ request('billing_cycle') === $cycle->value ? 'selected' : '' }}>
                                         {{ $cycle->label }}
@@ -155,11 +155,11 @@
                         <!-- Renewal Range Filter -->
                         <div class="w-full sm:w-48">
                             <x-ui.select name="renewal_range">
-                                <option value="">All Renewals</option>
-                                <option value="overdue" {{ request('renewal_range') === 'overdue' ? 'selected' : '' }}>Overdue</option>
-                                <option value="urgent" {{ request('renewal_range') === 'urgent' ? 'selected' : '' }}>0-7 days</option>
-                                <option value="warning" {{ request('renewal_range') === 'warning' ? 'selected' : '' }}>8-14 days</option>
-                                <option value="normal" {{ request('renewal_range') === 'normal' ? 'selected' : '' }}>>14 days</option>
+                                <option value="">{{ __('All Renewals') }}</option>
+                                <option value="overdue" {{ request('renewal_range') === 'overdue' ? 'selected' : '' }}>{{ __('Overdue') }}</option>
+                                <option value="urgent" {{ request('renewal_range') === 'urgent' ? 'selected' : '' }}>0-7 {{ __('days') }}</option>
+                                <option value="warning" {{ request('renewal_range') === 'warning' ? 'selected' : '' }}>8-14 {{ __('days') }}</option>
+                                <option value="normal" {{ request('renewal_range') === 'normal' ? 'selected' : '' }}>>14 {{ __('days') }}</option>
                             </x-ui.select>
                         </div>
 
@@ -169,11 +169,11 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                                 </svg>
-                                Filter
+                                {{ __('Filter') }}
                             </x-ui.button>
                             @if($activeFilters > 0)
                                 <x-ui.button variant="outline" onclick="window.location.href='{{ route('subscriptions.index') }}'">
-                                    Clear
+                                    {{ __('Clear') }}
                                 </x-ui.button>
                             @endif
                         </div>
@@ -189,14 +189,14 @@
                     <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                     </svg>
-                    <h3 class="mt-2 text-sm font-medium text-slate-900">No subscriptions</h3>
-                    <p class="mt-1 text-sm text-slate-500">Get started by creating your first subscription.</p>
+                    <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No subscriptions') }}</h3>
+                    <p class="mt-1 text-sm text-slate-500">{{ __('Get started by creating your first subscription') }}</p>
                     <div class="mt-6">
                         <x-ui.button variant="default" onclick="window.location.href='{{ route('subscriptions.create') }}'">
                             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
-                            Add Subscription
+                            {{ __('Add Subscription') }}
                         </x-ui.button>
                     </div>
                 </div>
@@ -205,12 +205,12 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <x-ui.table-head>Vendor</x-ui.table-head>
-                                <x-ui.table-head>Price</x-ui.table-head>
-                                <x-ui.table-head>Cycle</x-ui.table-head>
-                                <x-ui.table-head>Next Renewal</x-ui.table-head>
-                                <x-ui.table-head>Status</x-ui.table-head>
-                                <x-ui.table-head class="text-right">Actions</x-ui.table-head>
+                                <x-ui.table-head>{{ __('Vendor Name') }}</x-ui.table-head>
+                                <x-ui.table-head>{{ __('Price (RON)') }}</x-ui.table-head>
+                                <x-ui.table-head>{{ __('Billing Cycle') }}</x-ui.table-head>
+                                <x-ui.table-head>{{ __('Next Renewal Date') }}</x-ui.table-head>
+                                <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
+                                <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
                             </tr>
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
@@ -264,9 +264,9 @@
                                                 default => 'default',
                                             };
                                             $statusLabel = match($subscription->status) {
-                                                'active' => 'Active',
-                                                'paused' => 'Paused',
-                                                'cancelled' => 'Cancelled',
+                                                'active' => __('Active'),
+                                                'paused' => __('Paused'),
+                                                'cancelled' => __('Cancelled'),
                                                 default => ucfirst($subscription->status),
                                             };
                                         @endphp
@@ -286,7 +286,7 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
-                                                View
+                                                {{ __('View') }}
                                             </x-ui.button>
                                             <x-ui.button
                                                 variant="outline"
@@ -296,16 +296,16 @@
                                                 <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
-                                                Edit
+                                                {{ __('Edit') }}
                                             </x-ui.button>
-                                            <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this subscription?');">
+                                            <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this subscription?') }}');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <x-ui.button type="submit" variant="destructive" size="sm">
                                                     <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                     </svg>
-                                                    Delete
+                                                    {{ __('Delete') }}
                                                 </x-ui.button>
                                             </form>
                                         </div>

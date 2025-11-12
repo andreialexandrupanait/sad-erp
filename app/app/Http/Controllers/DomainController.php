@@ -84,11 +84,14 @@ class DomainController extends Controller
      */
     public function store(Request $request)
     {
+        // Get valid status values from database
+        $validStatuses = \App\Models\SettingOption::domainStatuses()->pluck('value')->implode(',');
+
         $validated = $request->validate([
             'domain_name' => 'required|string|max:255|unique:domains,domain_name',
             'client_id' => 'nullable|exists:clients,id',
             'registrar' => 'nullable|string|max:255',
-            'status' => 'required|in:Active,Expiring,Expired,Suspended',
+            'status' => 'required|in:' . $validStatuses,
             'registration_date' => 'nullable|date',
             'expiry_date' => 'required|date',
             'annual_cost' => 'nullable|numeric|min:0',
@@ -144,11 +147,14 @@ class DomainController extends Controller
      */
     public function update(Request $request, Domain $domain)
     {
+        // Get valid status values from database
+        $validStatuses = \App\Models\SettingOption::domainStatuses()->pluck('value')->implode(',');
+
         $validated = $request->validate([
             'domain_name' => 'required|string|max:255|unique:domains,domain_name,' . $domain->id,
             'client_id' => 'nullable|exists:clients,id',
             'registrar' => 'nullable|string|max:255',
-            'status' => 'required|in:Active,Expiring,Expired,Suspended',
+            'status' => 'required|in:' . $validStatuses,
             'registration_date' => 'nullable|date',
             'expiry_date' => 'required|date',
             'annual_cost' => 'nullable|numeric|min:0',

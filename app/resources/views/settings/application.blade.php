@@ -27,6 +27,13 @@
                             </select>
                         </div>
                     </div>
+
+                    <!-- Hidden fields for required validation -->
+                    <input type="hidden" name="theme_mode" value="{{ $appSettings['theme_mode'] }}">
+                    <input type="hidden" name="primary_color" value="{{ $appSettings['primary_color'] }}">
+                    <input type="hidden" name="timezone" value="{{ $appSettings['timezone'] }}">
+                    <input type="hidden" name="date_format" value="{{ $appSettings['date_format'] }}">
+
                     <div class="flex justify-end">
                         <button type="submit" class="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 transition-colors">
                             Salveaza modificari
