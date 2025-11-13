@@ -107,6 +107,13 @@
                                                 </div>
                                             </div>
                                             <div class="flex items-center gap-2 ml-4">
+                                                <!-- View/Preview -->
+                                                <a href="{{ route('financial.files.show', $file) }}" target="_blank" class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors" title="{{ __('View') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                </a>
                                                 <!-- Download -->
                                                 <a href="{{ route('financial.files.download', $file) }}" class="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors" title="{{ __('Download') }}">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +121,7 @@
                                                     </svg>
                                                 </a>
                                                 <!-- Copy Link -->
-                                                <button type="button" onclick="copyToClipboard('{{ route('financial.files.download', $file) }}')" class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors" title="{{ __('Copy link') }}">
+                                                <button type="button" onclick="copyToClipboard('{{ route('financial.files.show', $file) }}')" class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors" title="{{ __('Copy link') }}">
                                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                                     </svg>

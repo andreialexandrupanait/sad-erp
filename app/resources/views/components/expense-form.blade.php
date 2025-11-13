@@ -214,12 +214,21 @@ function fileUploader(existingFilesData) {
         handleFileSelect(event) {
             const files = Array.from(event.target.files);
             this.addFiles(files);
-            event.target.value = ''; // Reset input
+            // Don't reset the input - keep files for form submission
         },
 
         handleDrop(event) {
             const files = Array.from(event.dataTransfer.files);
             this.addFiles(files);
+            // Need to programmatically add files to the file input
+            const input = document.getElementById('file-upload');
+            const dataTransfer = new DataTransfer();
+
+            // Add dropped files to DataTransfer
+            files.forEach(file => dataTransfer.items.add(file));
+
+            // Set the files to the input
+            input.files = dataTransfer.files;
         },
 
         addFiles(files) {
@@ -244,6 +253,11 @@ function fileUploader(existingFilesData) {
 
         removeNewFile(index) {
             this.newFiles.splice(index, 1);
+            // Also update the actual file input
+            const input = document.getElementById('file-upload');
+            const dataTransfer = new DataTransfer();
+            this.newFiles.forEach(file => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
         },
 
         removeExistingFile(fileId) {

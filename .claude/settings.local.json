@@ -24,7 +24,10 @@
       "Bash(/tmp/NomenclatureController_current.php)",
       "Bash(cat:*)",
       "Bash(echo:*)",
-      "Bash(/var/www/erp/app/routes/web.php)"
+      "Bash(/var/www/erp/app/routes/web.php)",
+      "Bash(for key in \"Profit Margin\" \"Month-over-Month Growth\" \"Subscription Costs\" \"Domain Management\" \"Revenue Concentration\" \"Renewal Costs\")",
+      "Bash(do echo \"=== $key ===\")",
+      "Bash(done)"
     ],
     "deny": [],
     "ask": []

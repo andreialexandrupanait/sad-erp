@@ -47,6 +47,13 @@ return [
             'report' => false,
         ],
 
+        'financial' => [
+            'driver' => 'local',
+            'root' => storage_path('app/financial_files'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

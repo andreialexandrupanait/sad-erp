@@ -179,11 +179,11 @@ class FileController extends Controller
      */
     public function download(FinancialFile $file)
     {
-        if (!Storage::exists($file->file_path)) {
+        if (!Storage::disk('financial')->exists($file->file_path)) {
             abort(404, 'Fișierul nu a fost găsit.');
         }
 
-        return Storage::download($file->file_path, $file->file_name);
+        return Storage::disk('financial')->download($file->file_path, $file->file_name);
     }
 
     /**
@@ -191,14 +191,14 @@ class FileController extends Controller
      */
     public function show(FinancialFile $file)
     {
-        if (!Storage::exists($file->file_path)) {
+        if (!Storage::disk('financial')->exists($file->file_path)) {
             abort(404, 'Fișierul nu a fost găsit.');
         }
 
         $mimeType = $file->mime_type ?? $file->file_type ?? 'application/octet-stream';
 
         return response()->file(
-            Storage::path($file->file_path),
+            Storage::disk('financial')->path($file->file_path),
             [
                 'Content-Type' => $mimeType,
                 'Content-Disposition' => 'inline; filename="' . $file->file_name . '"'
@@ -337,8 +337,8 @@ class FileController extends Controller
 
         // Add files to ZIP, organized by type
         foreach ($files as $file) {
-            if (Storage::exists($file->file_path)) {
-                $filePath = Storage::path($file->file_path);
+            if (Storage::disk('financial')->exists($file->file_path)) {
+                $filePath = Storage::disk('financial')->path($file->file_path);
                 $tip = $file->tip ?? 'general';
 
                 // Add file to ZIP in folder structure: type/filename

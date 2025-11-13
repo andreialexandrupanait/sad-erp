@@ -189,5 +189,8 @@
 
         <!-- Toast Notifications -->
         <x-toast />
+
+        <!-- Scripts Stack -->
+        @stack('scripts')
     </body>
 </html>

@@ -2,12 +2,37 @@
     <x-slot name="pageTitle">Cheltuieli</x-slot>
 
     <x-slot name="headerActions">
-        <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.expenses.create') }}'">
-            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            Adaugă cheltuială
-        </x-ui.button>
+        <div class="flex items-center gap-3">
+            <form method="GET" id="filterForm" class="flex items-center gap-3">
+                <input type="hidden" name="month" value="{{ $month }}">
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-slate-700">{{ __('An') }}:</label>
+                    <x-ui.select name="year" onchange="this.form.submit()">
+                        @foreach($availableYears as $availableYear)
+                            <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>{{ $availableYear }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-slate-700">{{ __('Valută') }}:</label>
+                    <x-ui.select name="currency" onchange="this.form.submit()">
+                        <option value="">{{ __('Toate') }}</option>
+                        @foreach($currencies as $curr)
+                            <option value="{{ $curr->value }}" {{ $currency == $curr->value ? 'selected' : '' }}>{{ $curr->label }}</option>
+                        @endforeach
+                    </x-ui.select>
+                </div>
+            </form>
+
+            <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.expenses.create') }}'">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Adaugă cheltuială
+            </x-ui.button>
+        </div>
     </x-slot>
 
     <div class="p-6" x-data>
@@ -18,43 +43,82 @@
             </div>
         @endif
 
-        <!-- Filters -->
-        <form method="GET" id="filterForm" class="mb-6 space-y-4">
-            <div class="flex gap-2 flex-wrap">
-                <select name="year" class="rounded-lg border-slate-300" onchange="this.form.submit()">
-                    @foreach($availableYears as $availableYear)
-                        <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>{{ $availableYear }}</option>
-                    @endforeach
-                </select>
-                <select name="currency" class="rounded-lg border-slate-300">
-                    <option value="">Toate valutele</option>
-                    <option value="RON" {{ $currency == 'RON' ? 'selected' : '' }}>RON</option>
-                    <option value="EUR" {{ $currency == 'EUR' ? 'selected' : '' }}>EUR</option>
-                </select>
-                <select name="category_id" class="rounded-lg border-slate-300">
-                    <option value="">Toate categoriile</option>
-                    @foreach($categories as $category)
-                        <option value="{{ $category->id }}" {{ $categoryId == $category->id ? 'selected' : '' }}>
-                            {{ $category->option_label }}
-                        </option>
-                    @endforeach
-                </select>
-                <button type="submit" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">Filtrează</button>
+        <!-- Widgets Container -->
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Widget 1: Filtered Total -->
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-xs font-medium text-slate-500 uppercase">
+                            @if($month)
+                                @php
+                                    $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+                                @endphp
+                                {{ __('Total pentru') }} {{ $romanianMonths[$month - 1] }}
+                            @else
+                                {{ __('Total an') }} {{ $year }}
+                            @endif
+                        </p>
+                        <div class="mt-2">
+                            @if($filteredTotals->count() > 0)
+                                <p class="text-lg font-bold text-red-700">
+                                    @foreach($filteredTotals as $curr => $total)
+                                        {{ number_format($total, 2) }} {{ $curr }}@if(!$loop->last) / @endif
+                                    @endforeach
+                                </p>
+                            @else
+                                <p class="text-lg font-bold text-slate-400">0.00</p>
+                            @endif
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            {{ $currency ?: __('Toate valutele') }}
+                        </p>
+                    </div>
+                    <div class="p-3 bg-red-50 rounded-full">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                </div>
             </div>
 
-            <!-- Visual Month Selector -->
-            <div class="bg-white rounded-lg shadow p-4">
+            <!-- Widget 2: Yearly Total (RON Only) -->
+            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <p class="text-xs font-medium text-slate-500 uppercase">{{ __('Total pe an') }} {{ $year }}</p>
+                        <div class="mt-2">
+                            <p class="text-lg font-bold text-blue-700">{{ number_format($yearTotalsRonOnly, 2) }} RON</p>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">{{ __('Doar RON') }}</p>
+                    </div>
+                    <div class="p-3 bg-blue-50 rounded-full">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Month Selector -->
+        <div class="mb-6 bg-white rounded-lg shadow p-4">
+            <form method="GET" id="monthForm">
+                <!-- Keep year and currency hidden to maintain filter state -->
+                <input type="hidden" name="year" value="{{ $year }}">
+                <input type="hidden" name="currency" value="{{ $currency }}">
+
                 <div class="flex items-center justify-between mb-3">
-                    <h3 class="text-sm font-medium text-slate-700">Selectează luna</h3>
+                    <h3 class="text-sm font-medium text-slate-700">{{ __('Selectează luna') }}</h3>
                     @if($month)
-                        <button type="button" onclick="document.getElementById('month-input').value = ''; document.getElementById('filterForm').submit();" class="text-xs text-slate-500 hover:text-slate-700">
-                            Toate lunile
+                        <button type="button" onclick="document.getElementById('month-input').value = ''; document.getElementById('monthForm').submit();" class="text-xs text-slate-500 hover:text-slate-700">
+                            {{ __('Toate lunile') }}
                         </button>
                     @endif
                 </div>
                 <input type="hidden" name="month" id="month-input" value="{{ $month }}">
                 <div class="grid grid-cols-6 gap-2 sm:grid-cols-12">
-                    @foreach(['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'] as $index => $monthName)
+                    @foreach(['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'] as $index => $monthName)
                         @php
                             $monthNum = $index + 1;
                             $hasTransactions = isset($monthsWithTransactions[$monthNum]);
@@ -64,7 +128,7 @@
                         <div class="relative group">
                             <button
                                 type="button"
-                                onclick="document.getElementById('month-input').value = '{{ $monthNum }}'; document.getElementById('filterForm').submit();"
+                                onclick="document.getElementById('month-input').value = '{{ $monthNum }}'; document.getElementById('monthForm').submit();"
                                 class="w-full relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
                                     {{ $isSelected ? 'border-red-500 bg-red-50 text-red-700 font-semibold' : ($hasTransactions ? 'border-slate-200 bg-slate-50 hover:border-red-300 hover:bg-red-50' : 'border-slate-100 bg-white text-slate-400') }}"
                                 title="{{ $hasTransactions ? $transactionCount . ' ' . __('transactions') : __('No items') }}"
@@ -80,101 +144,10 @@
                                     </span>
                                 @endif
                             </button>
-                            @if($hasTransactions)
-                                <a href="{{ route('financial.files.download-monthly-zip', ['year' => $year, 'month' => $monthNum]) }}"
-                                   class="absolute -bottom-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-600 hover:bg-blue-700 text-white rounded-full p-1.5 shadow-lg z-10"
-                                   title="{{ __('Download') }} ZIP"
-                                   onclick="event.stopPropagation();">
-                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                                    </svg>
-                                </a>
-                            @endif
                         </div>
                     @endforeach
                 </div>
-            </div>
-        </form>
-
-        <!-- Enhanced Widgets -->
-        <div class="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <!-- Current Filter Total -->
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase">{{ $month ? __('Month Total') : __('Year Total') }}</p>
-                        <div class="mt-2 space-y-1">
-                            @forelse($totals as $curr => $total)
-                                <p class="text-lg font-bold text-red-700">{{ number_format($total, 2) }} {{ $curr }}</p>
-                            @empty
-                                <p class="text-lg font-bold text-slate-400">0.00</p>
-                            @endforelse
-                        </div>
-                    </div>
-                    <div class="p-3 bg-red-50 rounded-full">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Year Total -->
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase">{{ __('Year') }} {{ $year }}</p>
-                        <div class="mt-2 space-y-1">
-                            @forelse($yearTotals as $curr => $total)
-                                <p class="text-lg font-bold text-blue-700">{{ number_format($total, 2) }} {{ $curr }}</p>
-                            @empty
-                                <p class="text-lg font-bold text-slate-400">0.00</p>
-                            @endforelse
-                        </div>
-                    </div>
-                    <div class="p-3 bg-blue-50 rounded-full">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Current Month Total -->
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-indigo-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase">{{ \Carbon\Carbon::now()->format('F Y') }}</p>
-                        <div class="mt-2 space-y-1">
-                            @forelse($monthTotals as $curr => $total)
-                                <p class="text-lg font-bold text-indigo-700">{{ number_format($total, 2) }} {{ $curr }}</p>
-                            @empty
-                                <p class="text-lg font-bold text-slate-400">0.00</p>
-                            @endforelse
-                        </div>
-                    </div>
-                    <div class="p-3 bg-indigo-50 rounded-full">
-                        <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Record Count -->
-            <div class="bg-white rounded-lg shadow p-4 border-l-4 border-slate-500">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-slate-500 uppercase">{{ __('Records') }}</p>
-                        <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($recordCount) }}</p>
-                    </div>
-                    <div class="p-3 bg-slate-50 rounded-full">
-                        <svg class="w-6 h-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
 
         <!-- Category Breakdown Widget -->
@@ -210,100 +183,139 @@
         @endif
 
         <!-- Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
-            <table class="min-w-full">
-                <thead class="bg-slate-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Date') }}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Document') }}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Category') }}</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Amount') }}</th>
-                        <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">{{ __('Files') }}</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Actions') }}</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-200">
-                    @forelse($expenses as $expense)
-                        <tr class="hover:bg-slate-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm">{{ $expense->occurred_at->format('d M Y') }}</td>
-                            <td class="px-6 py-4 text-sm font-medium">{{ $expense->document_name }}</td>
-                            <td class="px-6 py-4 text-sm">
-                                @if($expense->category)
-                                    <span class="px-2 py-1 rounded text-xs {{ $expense->category->badge_class }}">
-                                        {{ $expense->category->option_label }}
-                                    </span>
-                                @else
-                                    -
-                                @endif
-                            </td>
-                            <td class="px-6 py-4 text-sm font-bold text-red-600">{{ number_format($expense->amount, 2) }} {{ $expense->currency }}</td>
+        <x-ui.card>
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                <p class="text-sm text-slate-600">
+                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
+                    @if($month)
+                        @php
+                            $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+                        @endphp
+                        <span class="text-slate-500">{{ __('pentru') }} {{ $romanianMonths[$month - 1] }} {{ $year }}</span>
+                    @else
+                        <span class="text-slate-500">{{ __('pentru anul') }} {{ $year }}</span>
+                    @endif
+                </p>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full caption-bottom text-sm">
+                    <thead class="[&_tr]:border-b">
+                        <tr class="border-b transition-colors hover:bg-slate-50/50">
+                            <x-ui.table-head>{{ __('Date') }}</x-ui.table-head>
+                            <x-ui.table-head>{{ __('Document') }}</x-ui.table-head>
+                            <x-ui.table-head>{{ __('Category') }}</x-ui.table-head>
+                            <x-ui.table-head>{{ __('Amount') }}</x-ui.table-head>
+                            <x-ui.table-head class="text-center">{{ __('Files') }}</x-ui.table-head>
+                            <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
+                        </tr>
+                    </thead>
+                    <tbody class="[&_tr:last-child]:border-0">
+                        @forelse($expenses as $expense)
+                            <x-ui.table-row>
+                                <x-ui.table-cell>
+                                    <div class="text-sm text-slate-900">{{ $expense->occurred_at->format('d M Y') }}</div>
+                                </x-ui.table-cell>
+                                <x-ui.table-cell>
+                                    <div class="text-sm font-medium text-slate-900">{{ $expense->document_name }}</div>
+                                </x-ui.table-cell>
+                                <x-ui.table-cell>
+                                    @if($expense->category)
+                                        <span class="px-2 py-1 rounded text-xs {{ $expense->category->badge_class }}">
+                                            {{ $expense->category->option_label }}
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-slate-400">—</span>
+                                    @endif
+                                </x-ui.table-cell>
+                                <x-ui.table-cell>
+                                    <div class="text-sm font-bold text-red-600">{{ number_format($expense->amount, 2) }} {{ $expense->currency }}</div>
+                                </x-ui.table-cell>
 
-                            <!-- Files Column -->
-                            <td class="px-6 py-4 text-center">
-                                @if($expense->files_count > 0)
-                                    <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                        </svg>
-                                        {{ $expense->files_count }}
-                                    </span>
-                                @else
-                                    <span class="text-slate-400 text-xs">-</span>
-                                @endif
-                            </td>
-
-                            <!-- Actions Column -->
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <!-- View -->
-                                    <a href="{{ route('financial.expenses.show', $expense) }}" class="text-slate-600 hover:text-slate-900" title="{{ __('View') }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                        </svg>
-                                    </a>
-
-                                    <!-- Edit -->
-                                    <a href="{{ route('financial.expenses.edit', $expense) }}" class="text-blue-600 hover:text-blue-900" title="{{ __('Edit') }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                        </svg>
-                                    </a>
-
-                                    <!-- Download files -->
+                                <!-- Files Column -->
+                                <x-ui.table-cell class="text-center">
                                     @if($expense->files_count > 0)
-                                        <a href="{{ route('financial.files.index', ['year' => $expense->year, 'month' => $expense->month, 'tip' => 'plata']) }}" class="text-green-600 hover:text-green-900" title="{{ __('Download') }}">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ $expense->files_count }}
+                                        </span>
+                                    @else
+                                        <span class="text-slate-400 text-xs">—</span>
+                                    @endif
+                                </x-ui.table-cell>
+
+                                <!-- Actions Column -->
+                                <x-ui.table-cell class="text-right">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <!-- View -->
+                                        <a href="{{ route('financial.expenses.show', $expense) }}" class="text-slate-600 hover:text-slate-900 transition-colors" title="{{ __('View') }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
                                         </a>
-                                    @endif
 
-                                    <!-- Delete -->
-                                    <form method="POST" action="{{ route('financial.expenses.destroy', $expense) }}" class="inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900" title="{{ __('Delete') }}">
+                                        <!-- Edit -->
+                                        <a href="{{ route('financial.expenses.edit', $expense) }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="{{ __('Edit') }}">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </a>
+
+                                        <!-- Download files -->
+                                        @if($expense->files_count > 0)
+                                            @if($expense->files_count == 1)
+                                                <a href="{{ route('financial.files.download', $expense->files->first()) }}" class="text-green-600 hover:text-green-900 transition-colors" title="{{ __('Download') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                    </svg>
+                                                </a>
+                                            @else
+                                                <a href="{{ route('financial.expenses.show', $expense) }}#files" class="text-green-600 hover:text-green-900 transition-colors" title="{{ __('View files') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                                    </svg>
+                                                </a>
+                                            @endif
+                                        @endif
+
+                                        <!-- Delete -->
+                                        <form method="POST" action="{{ route('financial.expenses.destroy', $expense) }}" class="inline" onsubmit="return confirm('{{ __('Are you sure?') }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-red-900 transition-colors" title="{{ __('Delete') }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
                                         </button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-slate-500">{{ __('No expenses') }}</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+                                        </form>
+                                    </div>
+                                </x-ui.table-cell>
+                            </x-ui.table-row>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="px-6 py-16 text-center">
+                                    <div class="text-slate-500">
+                                        <svg class="mx-auto h-12 w-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                        <p class="text-sm">{{ __('No expenses') }}</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-        <div class="mt-4">
-            {{ $expenses->links() }}
-        </div>
+            <!-- Pagination -->
+            @if($expenses->hasPages())
+                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    {{ $expenses->links() }}
+                </div>
+            @endif
+        </x-ui.card>
     </div>
 
     <!-- Toast Notifications -->

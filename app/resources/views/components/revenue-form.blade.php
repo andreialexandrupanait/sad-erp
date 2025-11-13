@@ -136,7 +136,7 @@
                              @dragover.prevent="$el.classList.add('border-blue-500', 'bg-blue-50')"
                              @dragleave.prevent="$el.classList.remove('border-blue-500', 'bg-blue-50')"
                              @drop.prevent="handleDrop($event); $el.classList.remove('border-blue-500', 'bg-blue-50')">
-                            <input type="file" name="files[]" id="file-upload" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.zip,.rar" class="hidden" @change="handleFileSelect($event)">
+                            <input type="file" name="files[]" id="file-upload" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.zip,.rar" class="hidden" @change="handleFileSelect">
                             <label for="file-upload" class="cursor-pointer">
                                 <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -207,12 +207,21 @@ function fileUploader(existingFilesData) {
         handleFileSelect(event) {
             const files = Array.from(event.target.files);
             this.addFiles(files);
-            event.target.value = ''; // Reset input
+            // Don't reset the input - keep files for form submission
         },
 
         handleDrop(event) {
             const files = Array.from(event.dataTransfer.files);
             this.addFiles(files);
+            // Need to programmatically add files to the file input
+            const input = document.getElementById('file-upload');
+            const dataTransfer = new DataTransfer();
+
+            // Add dropped files to DataTransfer
+            files.forEach(file => dataTransfer.items.add(file));
+
+            // Set the files to the input
+            input.files = dataTransfer.files;
         },
 
         addFiles(files) {
@@ -237,6 +246,11 @@ function fileUploader(existingFilesData) {
 
         removeNewFile(index) {
             this.newFiles.splice(index, 1);
+            // Also update the actual file input
+            const input = document.getElementById('file-upload');
+            const dataTransfer = new DataTransfer();
+            this.newFiles.forEach(file => dataTransfer.items.add(file));
+            input.files = dataTransfer.files;
         },
 
         removeExistingFile(fileId) {

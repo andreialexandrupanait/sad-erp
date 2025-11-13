@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
 use App\Models\SettingOption;
+use App\Charts\MonthlyFinancialChart;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -14,77 +15,92 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $year = $request->get('year', now()->year);
-        $month = $request->get('month');
+        // Get year from request or session, default to current year
+        $year = $request->get('year', session('financial.filters.year', now()->year));
 
-        // Build query for revenues
-        $revenuesQuery = FinancialRevenue::query()->forYear($year);
-        $expensesQuery = FinancialExpense::query()->forYear($year);
+        // Store year in session for consistency across financial pages
+        session(['financial.filters.year' => $year]);
 
-        if ($month) {
-            $revenuesQuery->where('month', $month);
-            $expensesQuery->where('month', $month);
+        // Calculate yearly totals by currency
+        $yearlyRevenueRON = FinancialRevenue::forYear($year)->where('currency', 'RON')->sum('amount');
+        $yearlyRevenueEUR = FinancialRevenue::forYear($year)->where('currency', 'EUR')->sum('amount');
+        $yearlyRevenueTotal = $yearlyRevenueRON + $yearlyRevenueEUR;
+
+        $yearlyExpenseRON = FinancialExpense::forYear($year)->where('currency', 'RON')->sum('amount');
+        $yearlyExpenseEUR = FinancialExpense::forYear($year)->where('currency', 'EUR')->sum('amount');
+        $yearlyExpenseTotal = $yearlyExpenseRON + $yearlyExpenseEUR;
+
+        $yearlyProfitRON = $yearlyRevenueRON - $yearlyExpenseRON;
+        $yearlyProfitEUR = $yearlyRevenueEUR - $yearlyExpenseEUR;
+        $yearlyProfitTotal = $yearlyRevenueTotal - $yearlyExpenseTotal;
+
+        // Monthly data for charts (12 months, RON only)
+        $monthlyRevenuesData = FinancialRevenue::forYear($year)
+            ->where('currency', 'RON')
+            ->select('month', DB::raw('SUM(amount) as total'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->month => $item->total]);
+
+        $monthlyExpensesData = FinancialExpense::forYear($year)
+            ->where('currency', 'RON')
+            ->select('month', DB::raw('SUM(amount) as total'))
+            ->groupBy('month')
+            ->orderBy('month')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->month => $item->total]);
+
+        // Prepare chart data for all 12 months (RON only)
+        $romanianMonths = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
+        $chartRevenuesRON = [];
+        $chartExpensesRON = [];
+
+        for ($month = 1; $month <= 12; $month++) {
+            $revenueAmount = $monthlyRevenuesData->get($month, 0);
+            $expenseAmount = $monthlyExpensesData->get($month, 0);
+
+            $chartRevenuesRON[] = [
+                'month' => $romanianMonths[$month - 1],
+                'amount' => $revenueAmount,
+                'formatted' => number_format($revenueAmount, 2),
+            ];
+
+            $chartExpensesRON[] = [
+                'month' => $romanianMonths[$month - 1],
+                'amount' => $expenseAmount,
+                'formatted' => number_format($expenseAmount, 2),
+            ];
         }
 
-        // Calculate totals by currency
-        $revenueTotals = (clone $revenuesQuery)
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        // Calculate common max value for both charts to ensure proper scaling
+        $maxRevenueAmount = collect($chartRevenuesRON)->max('amount') ?: 0;
+        $maxExpenseAmount = collect($chartExpensesRON)->max('amount') ?: 0;
+        $commonMaxValue = max($maxRevenueAmount, $maxExpenseAmount);
 
-        $expenseTotals = (clone $expensesQuery)
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        // Add 10% padding to the max value for better visualization
+        $commonMaxValue = $commonMaxValue * 1.1;
 
-        // Calculate profit by currency
-        $currencies = collect(['RON', 'EUR']);
-        $profitTotals = $currencies->mapWithKeys(function($currency) use ($revenueTotals, $expenseTotals) {
-            $revenue = $revenueTotals->get($currency, 0);
-            $expense = $expenseTotals->get($currency, 0);
-            return [$currency => $revenue - $expense];
-        });
+        // Create Chart.js charts using the MonthlyFinancialChart class
+        $revenueChart = MonthlyFinancialChart::createMonthlyChart($chartRevenuesRON, 'revenue', $commonMaxValue);
+        $expenseChart = MonthlyFinancialChart::createMonthlyChart($chartExpensesRON, 'expense', $commonMaxValue);
 
-        // Monthly data for charts (last 12 months or current year)
-        $monthlyRevenues = FinancialRevenue::forYear($year)
-            ->select('month', 'currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('month', 'currency')
-            ->orderBy('month')
-            ->get()
-            ->groupBy('currency');
+        // Monthly breakdown table data (all 12 months with RON values)
+        $monthlyBreakdown = [];
+        $fullMonthNames = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
 
-        $monthlyExpenses = FinancialExpense::forYear($year)
-            ->select('month', 'currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('month', 'currency')
-            ->orderBy('month')
-            ->get()
-            ->groupBy('currency');
+        for ($month = 1; $month <= 12; $month++) {
+            $revenueRON = $monthlyRevenuesData->get($month, 0);
+            $expenseRON = $monthlyExpensesData->get($month, 0);
 
-        // Expenses by category
-        $expensesByCategory = FinancialExpense::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->with('category')
-            ->select('category_option_id', DB::raw('SUM(amount) as total'), 'currency')
-            ->groupBy('category_option_id', 'currency')
-            ->get()
-            ->groupBy('currency');
-
-        // Recent transactions
-        $recentRevenues = FinancialRevenue::with('client')
-            ->forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->latest('occurred_at')
-            ->take(5)
-            ->get();
-
-        $recentExpenses = FinancialExpense::with('category')
-            ->forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->latest('occurred_at')
-            ->take(5)
-            ->get();
+            $monthlyBreakdown[] = [
+                'month' => $month,
+                'month_name' => $fullMonthNames[$month - 1],
+                'revenues_ron' => $revenueRON,
+                'expenses_ron' => $expenseRON,
+                'profit_ron' => $revenueRON - $expenseRON,
+            ];
+        }
 
         // Available years for filter
         $availableYears = FinancialRevenue::select(DB::raw('DISTINCT year'))
@@ -94,17 +110,20 @@ class DashboardController extends Controller
 
         return view('financial.dashboard', compact(
             'year',
-            'month',
-            'revenueTotals',
-            'expenseTotals',
-            'profitTotals',
-            'monthlyRevenues',
-            'monthlyExpenses',
-            'expensesByCategory',
-            'recentRevenues',
-            'recentExpenses',
-            'availableYears',
-            'currencies'
+            'yearlyRevenueRON',
+            'yearlyRevenueEUR',
+            'yearlyRevenueTotal',
+            'yearlyExpenseRON',
+            'yearlyExpenseEUR',
+            'yearlyExpenseTotal',
+            'yearlyProfitRON',
+            'yearlyProfitEUR',
+            'yearlyProfitTotal',
+            'revenueChart',
+            'expenseChart',
+            'commonMaxValue',
+            'monthlyBreakdown',
+            'availableYears'
         ));
     }
 

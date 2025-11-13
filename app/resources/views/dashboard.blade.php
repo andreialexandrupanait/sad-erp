@@ -9,7 +9,7 @@
 
     <div class="p-6 space-y-6" x-data>
         {{-- Key Metrics Row --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <x-widgets.metrics.stat-card
                 :title="__('Active Clients')"
                 :value="$activeClients"
@@ -68,7 +68,7 @@
         </div>
 
         {{-- Financial Overview --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <x-widgets.financial.summary-card
                 :title="__('Current Month Revenue')"
                 :amount="number_format($currentMonthRevenue, 2) . ' RON'"
@@ -94,148 +94,161 @@
             />
         </div>
 
-        {{-- Main Content Grid --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {{-- Left Column: Recent Activity & Top Clients --}}
-            <div class="lg:col-span-2 space-y-6">
-                <x-dashboard.trend-chart :revenueTrend="$revenueTrend" :expenseTrend="$expenseTrend" />
+        {{-- Monthly Trend & Top Clients Row (50/50) --}}
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {{-- Monthly Trend Chart --}}
+            <x-dashboard.financial-trend-chart
+                :yearlyRevenueTrend="$yearlyRevenueTrend"
+                :yearlyExpenseTrend="$yearlyExpenseTrend"
+                :yearlyProfitTrend="$yearlyProfitTrend"
+            />
 
-                {{-- Top Clients --}}
-                <x-widgets.activity.list-card
-                    :title="__('Top Clients')"
-                    :items="$topClients"
-                    :emptyMessage="__('No clients with recorded revenue')"
-                    :viewAllHref="route('clients.index')"
-                >
-                    @foreach($topClients as $index => $client)
-                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                            <div class="flex items-center gap-3">
-                                <div class="flex-shrink-0 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                    {{ $index + 1 }}
-                                </div>
-                                <div>
-                                    <p class="font-medium text-slate-900">{{ $client->display_name }}</p>
-                                    <p class="text-xs text-slate-500">{{ $client->email ?? __('No email') }}</p>
-                                </div>
+            {{-- Top Clients --}}
+            <x-widgets.activity.list-card
+                :title="__('Top Clients')"
+                :items="$topClients"
+                :emptyMessage="__('No clients with recorded revenue')"
+                :viewAllHref="route('clients.index')"
+            >
+                @foreach($topClients as $index => $client)
+                    <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                                {{ $index + 1 }}
                             </div>
-                            <div class="text-right">
-                                <p class="font-semibold text-slate-900">{{ number_format($client->total_revenue, 2) }} RON</p>
-                                <p class="text-xs text-slate-500">{{ __('total revenue') }}</p>
-                            </div>
-                        </div>
-                    @endforeach
-                </x-widgets.activity.list-card>
-            </div>
-
-            {{-- Right Column: Renewals & Alerts --}}
-            <div class="space-y-6">
-                {{-- Expiring Domains --}}
-                @if($expiringDomains->count() > 0)
-                    <x-widgets.alerts.alert-card
-                        :title="__('Domains Expiring Soon')"
-                        :items="$expiringDomains"
-                        type="warning"
-                    >
-                        @foreach($expiringDomains->take(5) as $domain)
-                            <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                                 onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-slate-900 truncate">{{ $domain->domain_name }}</p>
-                                    <p class="text-xs text-slate-500">
-                                        {{ $domain->client ? $domain->client->display_name : __('No client') }}
-                                    </p>
-                                </div>
-                                <div class="text-right flex-shrink-0 ml-2">
-                                    <p class="text-xs font-semibold text-orange-700">
-                                        {{ $domain->expiry_date->diffInDays(now()) }} {{ __('days') }}
-                                    </p>
-                                    <p class="text-xs text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</p>
-                                </div>
-                            </div>
-                        @endforeach
-                        @if($expiringDomains->count() > 5)
-                            <a href="{{ route('domains.index') }}" class="block mt-3 text-center text-sm text-orange-700 hover:text-orange-900 font-medium">
-                                +{{ $expiringDomains->count() - 5 }} {{ __('more domains') }}
-                            </a>
-                        @endif
-                    </x-widgets.alerts.alert-card>
-                @endif
-
-                {{-- Overdue Subscriptions --}}
-                @if($overdueSubscriptions->count() > 0)
-                    <x-widgets.alerts.alert-card
-                        :title="__('Overdue Subscriptions')"
-                        :items="$overdueSubscriptions"
-                        type="error"
-                    >
-                        @foreach($overdueSubscriptions->take(5) as $subscription)
-                            <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
-                                 onclick="window.location.href='{{ route('subscriptions.edit', $subscription) }}'">
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
-                                    <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON</p>
-                                </div>
-                                <div class="text-right flex-shrink-0 ml-2">
-                                    <p class="text-xs font-semibold text-red-700">
-                                        {{ __('Overdue') }} {{ abs($subscription->next_renewal_date->diffInDays(now())) }} {{ __('days') }}
-                                    </p>
-                                    <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </x-widgets.alerts.alert-card>
-                @endif
-
-                {{-- Upcoming Renewals --}}
-                @if($upcomingRenewals['subscriptions']->count() > 0)
-                    <x-widgets.activity.list-card
-                        :title="__('Upcoming Renewals')"
-                        :items="$upcomingRenewals['subscriptions']"
-                        :emptyMessage="__('No renewals in 30 days')"
-                    >
-                        @foreach($upcomingRenewals['subscriptions']->take(5) as $subscription)
-                            <div class="flex items-start justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                                <div class="flex-1 min-w-0">
-                                    <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
-                                    <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON / {{ $subscription->billing_cycle }}</p>
-                                </div>
-                                <div class="text-right flex-shrink-0 ml-2">
-                                    <p class="text-xs font-semibold text-blue-700">
-                                        {{ $subscription->next_renewal_date->diffInDays(now()) }} {{ __('days') }}
-                                    </p>
-                                    <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
-                                </div>
-                            </div>
-                        @endforeach
-                    </x-widgets.activity.list-card>
-                @endif
-
-                {{-- Recent Clients --}}
-                <x-widgets.activity.list-card
-                    :title="__('Recent Clients')"
-                    :items="$recentClients"
-                    :emptyMessage="__('No registered clients')"
-                    :viewAllHref="route('clients.index')"
-                >
-                    @foreach($recentClients as $client)
-                        <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                             onclick="window.location.href='{{ route('clients.show', $client) }}'">
-                            <div class="flex-shrink-0 w-10 h-10 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                                {{ strtoupper(substr($client->display_name, 0, 2)) }}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="font-medium text-slate-900 truncate">{{ $client->display_name }}</p>
+                            <div>
+                                <p class="font-medium text-slate-900">{{ $client->display_name }}</p>
                                 <p class="text-xs text-slate-500">{{ $client->email ?? __('No email') }}</p>
                             </div>
-                            @if($client->status)
-                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    {{ $client->status->status_name }}
-                                </span>
-                            @endif
+                        </div>
+                        <div class="text-right">
+                            <p class="font-semibold text-slate-900">{{ number_format($client->total_revenue, 2) }} RON</p>
+                            <p class="text-xs text-slate-500">{{ __('total revenue') }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </x-widgets.activity.list-card>
+        </div>
+
+        {{-- Business Analytics Row (5 widgets) --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            <x-dashboard.profit-margin-widget
+                :currentMonthProfitMargin="$currentMonthProfitMargin"
+                :yearlyProfitMargin="$yearlyProfitMargin"
+            />
+
+            <x-dashboard.growth-metrics-widget
+                :revenueGrowth="$revenueGrowth"
+                :expenseGrowth="$expenseGrowth"
+                :clientGrowth="$clientGrowth"
+                :newClientsThisMonth="$newClientsThisMonth"
+                :newClientsLastMonth="$newClientsLastMonth"
+            />
+
+            <x-dashboard.subscription-cost-widget
+                :monthlySubscriptionCost="$monthlySubscriptionCost"
+                :annualProjectedCost="$annualProjectedCost"
+                :activeSubscriptionsCount="$activeSubscriptionsCount"
+                :pausedSubscriptionsCount="$pausedSubscriptionsCount"
+                :cancelledSubscriptionsCount="$cancelledSubscriptionsCount"
+            />
+
+            <x-dashboard.domain-widget
+                :expiringDomains="$expiringDomains"
+                :domainRenewals30Days="$domainRenewals30Days"
+                :domainRenewals60Days="$domainRenewals60Days"
+                :domainRenewals90Days="$domainRenewals90Days"
+            />
+
+            <x-dashboard.revenue-concentration-widget
+                :revenueConcentration="$revenueConcentration"
+                :topThreeClientsRevenue="$topThreeClientsRevenue"
+                :yearlyRevenue="$yearlyRevenue"
+            />
+        </div>
+
+        {{-- Alerts & Renewals --}}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {{-- Overdue Subscriptions --}}
+            @if($overdueSubscriptions->count() > 0)
+                <x-widgets.alerts.alert-card
+                    :title="__('Overdue Subscriptions')"
+                    :items="$overdueSubscriptions"
+                    type="error"
+                >
+                    @foreach($overdueSubscriptions->take(5) as $subscription)
+                        <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+                             onclick="window.location.href='{{ route('subscriptions.edit', $subscription) }}'">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
+                                <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON</p>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-semibold text-red-700">
+                                    {{ __('Overdue') }} {{ abs($subscription->next_renewal_date->diffInDays(now())) }} {{ __('days') }}
+                                </p>
+                                <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                </x-widgets.alerts.alert-card>
+            @endif
+
+            {{-- Upcoming Renewals --}}
+            @if($upcomingRenewals['subscriptions']->count() > 0)
+                <x-widgets.activity.list-card
+                    :title="__('Upcoming Renewals')"
+                    :items="$upcomingRenewals['subscriptions']"
+                    :emptyMessage="__('No renewals in 30 days')"
+                >
+                    @foreach($upcomingRenewals['subscriptions']->take(5) as $subscription)
+                        <div class="flex items-start justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-slate-900 truncate">{{ $subscription->vendor_name }}</p>
+                                <p class="text-xs text-slate-500">{{ number_format($subscription->price, 2) }} RON / {{ $subscription->billing_cycle }}</p>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-semibold text-blue-700">
+                                    {{ $subscription->next_renewal_date->diffInDays(now()) }} {{ __('days') }}
+                                </p>
+                                <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
+                            </div>
                         </div>
                     @endforeach
                 </x-widgets.activity.list-card>
-            </div>
+            @endif
+
+            {{-- Expiring Domains (positioned last as requested) --}}
+            @if($expiringDomains->count() > 0)
+                <x-widgets.alerts.alert-card
+                    :title="__('Domains Expiring Soon')"
+                    :items="$expiringDomains"
+                    type="warning"
+                >
+                    @foreach($expiringDomains->take(5) as $domain)
+                        <div class="flex items-start justify-between p-3 bg-white rounded-lg hover:shadow-sm transition-shadow cursor-pointer"
+                             onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
+                            <div class="flex-1 min-w-0">
+                                <p class="font-medium text-slate-900 truncate">{{ $domain->domain_name }}</p>
+                                <p class="text-xs text-slate-500">
+                                    {{ $domain->client ? $domain->client->display_name : __('No client') }}
+                                </p>
+                            </div>
+                            <div class="text-right flex-shrink-0 ml-2">
+                                <p class="text-xs font-semibold text-orange-700">
+                                    {{ $domain->expiry_date->diffInDays(now()) }} {{ __('days') }}
+                                </p>
+                                <p class="text-xs text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</p>
+                            </div>
+                        </div>
+                    @endforeach
+                    @if($expiringDomains->count() > 5)
+                        <a href="{{ route('domains.index') }}" class="block mt-3 text-center text-sm text-orange-700 hover:text-orange-900 font-medium">
+                            +{{ $expiringDomains->count() - 5 }} {{ __('more domains') }}
+                        </a>
+                    @endif
+                </x-widgets.alerts.alert-card>
+            @endif
         </div>
     </div>
 

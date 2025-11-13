@@ -18,7 +18,7 @@ class ExpenseController extends Controller
     {
         // Get filter values from request or session, with defaults
         $year = $request->get('year', session('financial.filters.year', now()->year));
-        $month = $request->get('month', session('financial.filters.month'));
+        $month = $request->get('month', session('financial.filters.month', now()->month));
         $currency = $request->get('currency', session('financial.filters.currency'));
         $categoryId = $request->get('category_id', session('financial.filters.category_id'));
 
@@ -39,8 +39,8 @@ class ExpenseController extends Controller
             ->latest('occurred_at')
             ->paginate(15);
 
-        // Calculate totals by currency for current filter
-        $totals = FinancialExpense::forYear($year)
+        // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
+        $filteredTotals = FinancialExpense::forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
@@ -49,26 +49,11 @@ class ExpenseController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
-        // Calculate year totals (entire year, regardless of month filter)
-        $yearTotals = FinancialExpense::forYear($year)
-            ->when($currency, fn($q) => $q->where('currency', $currency))
+        // Widget 2: Calculate YEARLY totals (RON only, always full year)
+        $yearTotalsRonOnly = FinancialExpense::forYear($year)
+            ->where('currency', 'RON')
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
-
-        // Calculate current month totals (always for current month)
-        $currentMonth = now()->month;
-        $currentYear = now()->year;
-        $monthTotals = FinancialExpense::where('year', $currentYear)
-            ->where('month', $currentMonth)
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+            ->sum('amount');
 
         // Count total records
         $recordCount = FinancialExpense::forYear($year)
@@ -111,9 +96,8 @@ class ExpenseController extends Controller
 
         return view('financial.expenses.index', compact(
             'expenses',
-            'totals',
-            'yearTotals',
-            'monthTotals',
+            'filteredTotals',
+            'yearTotalsRonOnly',
             'recordCount',
             'categoryBreakdown',
             'year',
@@ -261,22 +245,39 @@ class ExpenseController extends Controller
         // Get year and month from expense
         $year = $expense->year;
         $month = $expense->month;
-        $tip = 'plata'; // Expense files
+        $monthName = $this->getRomanianMonthName($month);
+        $tip = 'Plati'; // Expense files folder
 
-        // Generate standardized file name
-        $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
-        $uniqueId = Str::uuid()->toString();
-        $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+        // Generate file name: DD.MM - Document Name.ext
+        $date = $expense->occurred_at;
+        $day = $date->format('d');
+        $monthNum = $date->format('m');
+        $documentName = $expense->document_name;
 
-        // Storage path: /year/month/type/filename
-        $storagePath = "financial_files/{$year}/{$month}/{$tip}";
+        $newFileName = "{$day}.{$monthNum} - {$documentName}.{$extension}";
 
-        // Store file
-        $path = $file->storeAs($storagePath, $newFileName, 'local');
+        // Storage path: /year/month_name/type/
+        $storagePath = "{$year}/{$monthName}/{$tip}";
+
+        // Check if file already exists and add suffix if needed
+        $finalFileName = $newFileName;
+        $counter = 1;
+        while (\Storage::disk('financial')->exists("{$storagePath}/{$finalFileName}")) {
+            $finalFileName = "{$day}.{$monthNum} - {$documentName} ({$counter}).{$extension}";
+            $counter++;
+        }
+
+        // Show warning if duplicate exists
+        if ($counter > 1) {
+            session()->flash('warning', "A file with this name already exists. Saved as: {$finalFileName}");
+        }
+
+        // Store file using the 'financial' disk
+        $path = $file->storeAs($storagePath, $finalFileName, 'financial');
 
         // Create database record
         FinancialFile::create([
-            'file_name' => $originalName,
+            'file_name' => $finalFileName,
             'file_path' => $path,
             'file_type' => $file->getClientMimeType(),
             'mime_type' => $file->getMimeType(),
@@ -285,8 +286,31 @@ class ExpenseController extends Controller
             'entity_id' => $expense->id,
             'an' => $year,
             'luna' => $month,
-            'tip' => $tip,
+            'tip' => 'plata',
         ]);
+    }
+
+    /**
+     * Get Romanian month name
+     */
+    private function getRomanianMonthName($monthNumber)
+    {
+        $months = [
+            1 => 'Ianuarie',
+            2 => 'Februarie',
+            3 => 'Martie',
+            4 => 'Aprilie',
+            5 => 'Mai',
+            6 => 'Iunie',
+            7 => 'Iulie',
+            8 => 'August',
+            9 => 'Septembrie',
+            10 => 'Octombrie',
+            11 => 'Noiembrie',
+            12 => 'Decembrie',
+        ];
+
+        return $months[$monthNumber] ?? 'Unknown';
     }
 
     /**
