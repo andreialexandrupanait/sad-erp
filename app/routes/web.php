@@ -55,6 +55,7 @@ Route::middleware('auth')->group(function () {
     // Clients Module
     Route::resource('clients', ClientController::class);
     Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
+    Route::patch('clients/{client}/reorder', [ClientController::class, 'reorder'])->name('clients.reorder');
 
     // Credentials Module
     Route::resource('credentials', CredentialController::class);
@@ -67,6 +68,7 @@ Route::middleware('auth')->group(function () {
 
     // Subscriptions Module (Abonamente)
     Route::resource('subscriptions', SubscriptionController::class);
+    Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
     Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
 
     // Settings Module
@@ -109,6 +111,7 @@ Route::middleware('auth')->group(function () {
         Route::get('files/create', [FinancialFileController::class, 'create'])->name('files.create');
         Route::post('files', [FinancialFileController::class, 'store'])->name('files.store');
         Route::post('files/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
+        Route::get('files/download-yearly-zip/{year}', [FinancialFileController::class, 'downloadYearlyZip'])->name('files.download-yearly-zip');
         Route::get('files/download-monthly-zip/{year}/{month}', [FinancialFileController::class, 'downloadMonthlyZip'])->name('files.download-monthly-zip');
         Route::get('files/{file}', [FinancialFileController::class, 'show'])->name('files.show');
         Route::get('files/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');

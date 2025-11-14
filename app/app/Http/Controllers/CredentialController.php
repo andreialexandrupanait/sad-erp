@@ -33,11 +33,18 @@ class CredentialController extends Controller
         }
 
         // Sort
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
+        $sortBy = $request->get('sort', 'created_at');
+        $sortDir = $request->get('dir', 'desc');
 
-        $credentials = $query->paginate(15);
+        // Validate sort column
+        $allowedSortColumns = ['client_id', 'platform', 'username', 'created_at', 'updated_at'];
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'created_at';
+        }
+
+        $query->orderBy($sortBy, $sortDir);
+
+        $credentials = $query->paginate(15)->withQueryString();
 
         // Get clients and platforms for filters
         $clients = Client::orderBy('name')->get();

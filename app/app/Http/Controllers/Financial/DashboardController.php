@@ -102,11 +102,9 @@ class DashboardController extends Controller
             ];
         }
 
-        // Available years for filter
-        $availableYears = FinancialRevenue::select(DB::raw('DISTINCT year'))
-            ->union(FinancialExpense::select(DB::raw('DISTINCT year')))
-            ->orderByDesc('year')
-            ->pluck('year');
+        // Available years for filter - show all years from 2019 to present
+        $currentYear = now()->year;
+        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
 
         return view('financial.dashboard', compact(
             'year',

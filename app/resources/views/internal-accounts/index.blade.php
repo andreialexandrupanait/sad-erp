@@ -132,17 +132,13 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <x-ui.table-head>
-                                    <a href="{{ route('internal-accounts.index', array_merge(request()->all(), ['sort' => 'nume_cont_aplicatie', 'dir' => request('sort') == 'nume_cont_aplicatie' && request('dir') == 'asc' ? 'desc' : 'asc'])) }}" class="hover:underline">
-                                        {{ __('Account Name') }}
-                                    </a>
-                                </x-ui.table-head>
-                                <x-ui.table-head>{{ __('URL') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Username') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Password') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Access') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Owner') }}</x-ui.table-head>
-                                <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
+                                <x-ui.sortable-header column="nume_cont_aplicatie" label="{{ __('Account Name') }}" />
+                                <x-ui.sortable-header column="url" label="{{ __('URL') }}" />
+                                <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
+                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Access') }}</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Owner') }}</th>
+                                <th class="h-12 px-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
@@ -239,43 +235,12 @@
                                         </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <x-ui.button
-                                                variant="secondary"
-                                                size="sm"
-                                                onclick="window.location.href='{{ route('internal-accounts.show', $account) }}'"
-                                            >
-                                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                                {{ __('View') }}
-                                            </x-ui.button>
-                                            @if ($account->isOwner())
-                                                <x-ui.button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onclick="window.location.href='{{ route('internal-accounts.edit', $account) }}'"
-                                                >
-                                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                    </svg>
-                                                    {{ __('Edit') }}
-                                                </x-ui.button>
-                                                <form action="{{ route('internal-accounts.destroy', $account) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this internal account?') }}');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <x-ui.button type="submit" variant="destructive" size="sm">
-                                                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                        </svg>
-                                                        {{ __('Delete') }}
-                                                    </x-ui.button>
-                                                </form>
-                                            @else
-                                                <span class="text-sm text-slate-400">{{ __('View Only') }}</span>
-                                            @endif
-                                        </div>
+                                        <x-table-actions
+                                            :viewUrl="route('internal-accounts.show', $account)"
+                                            :editUrl="$account->isOwner() ? route('internal-accounts.edit', $account) : null"
+                                            :deleteAction="$account->isOwner() ? route('internal-accounts.destroy', $account) : null"
+                                            :deleteConfirm="__('Are you sure you want to delete this internal account?')"
+                                        />
                                     </x-ui.table-cell>
                                 </x-ui.table-row>
                             @endforeach

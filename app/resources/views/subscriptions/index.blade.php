@@ -205,11 +205,11 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <x-ui.table-head>{{ __('Vendor Name') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Price (RON)') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Billing Cycle') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Next Renewal Date') }}</x-ui.table-head>
-                                <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
+                                <x-ui.sortable-header column="vendor_name" label="{{ __('Vendor Name') }}" />
+                                <x-ui.sortable-header column="price" label="{{ __('Price (RON)') }}" class="text-right" />
+                                <x-ui.sortable-header column="billing_cycle" label="{{ __('Billing Cycle') }}" />
+                                <x-ui.sortable-header column="next_renewal_date" label="{{ __('Next Renewal Date') }}" />
+                                <x-ui.sortable-header column="status" label="{{ __('Status') }}" />
                                 <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
                             </tr>
                         </thead>
@@ -221,7 +221,7 @@
                                             {{ $subscription->vendor_name }}
                                         </a>
                                     </x-ui.table-cell>
-                                    <x-ui.table-cell>
+                                    <x-ui.table-cell class="text-right">
                                         <div class="text-sm font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} <span class="text-slate-500 font-normal">RON</span></div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
@@ -249,59 +249,37 @@
                                         </x-ui.badge>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
-                                        @php
-                                            $statusBadgeVariant = match($subscription->status) {
-                                                'active' => 'success',
-                                                'paused' => 'warning',
-                                                'cancelled' => 'secondary',
-                                                default => 'default',
-                                            };
-                                            $statusLabel = match($subscription->status) {
-                                                'active' => __('Active'),
-                                                'paused' => __('Paused'),
-                                                'cancelled' => __('Cancelled'),
-                                                default => ucfirst($subscription->status),
-                                            };
-                                        @endphp
-                                        <x-ui.badge variant="{{ $statusBadgeVariant }}">
-                                            <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="3"/></svg>
-                                            {{ $statusLabel }}
-                                        </x-ui.badge>
+                                        <div x-data="{ editing: false, status: '{{ $subscription->status }}' }">
+                                            <!-- Display Mode -->
+                                            <div x-show="!editing"
+                                                 @click="editing = true"
+                                                 class="cursor-pointer inline-block"
+                                                 title="Click pentru a schimba statusul">
+                                                <x-subscription-status-badge :status="$subscription->status" />
+                                            </div>
+
+                                            <!-- Edit Mode -->
+                                            <div x-show="editing" x-cloak class="inline-block">
+                                                <select
+                                                    x-model="status"
+                                                    @change="updateSubscriptionStatus({{ $subscription->id }}, status); editing = false"
+                                                    @blur="editing = false"
+                                                    class="text-xs px-2 py-1 rounded border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                    x-init="$nextTick(() => { if (editing) $el.focus() })">
+                                                    <option value="active" {{ $subscription->status == 'active' ? 'selected' : '' }}>Activă</option>
+                                                    <option value="paused" {{ $subscription->status == 'paused' ? 'selected' : '' }}>Suspendată</option>
+                                                    <option value="cancelled" {{ $subscription->status == 'cancelled' ? 'selected' : '' }}>Anulată</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
-                                        <div class="flex items-center justify-end gap-2">
-                                            <x-ui.button
-                                                variant="secondary"
-                                                size="sm"
-                                                onclick="window.location.href='{{ route('subscriptions.show', $subscription) }}'"
-                                            >
-                                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                </svg>
-                                                {{ __('View') }}
-                                            </x-ui.button>
-                                            <x-ui.button
-                                                variant="outline"
-                                                size="sm"
-                                                onclick="window.location.href='{{ route('subscriptions.edit', $subscription) }}'"
-                                            >
-                                                <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                </svg>
-                                                {{ __('Edit') }}
-                                            </x-ui.button>
-                                            <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" class="inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this subscription?') }}');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <x-ui.button type="submit" variant="destructive" size="sm">
-                                                    <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                                                    </svg>
-                                                    {{ __('Delete') }}
-                                                </x-ui.button>
-                                            </form>
-                                        </div>
+                                        <x-table-actions
+                                            :viewUrl="route('subscriptions.show', $subscription)"
+                                            :editUrl="route('subscriptions.edit', $subscription)"
+                                            :deleteAction="route('subscriptions.destroy', $subscription)"
+                                            :deleteConfirm="__('Are you sure you want to delete this subscription?')"
+                                        />
                                     </x-ui.table-cell>
                                 </x-ui.table-row>
                             @endforeach
@@ -320,4 +298,43 @@
 
     <!-- Toast Notifications -->
     <x-toast />
+
+    <script>
+        function updateSubscriptionStatus(subscriptionId, status) {
+            console.log('updateSubscriptionStatus called', { subscriptionId, status });
+
+            fetch(`/subscriptions/${subscriptionId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ status: status })
+            })
+            .then(response => {
+                console.log('Response received', { status: response.status, ok: response.ok });
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Response data:', data);
+                if (data.success) {
+                    console.log('Status updated successfully, reloading page');
+                    // Reload the page to show updated status badge with correct colors
+                    window.location.reload();
+                } else {
+                    alert('Eroare la actualizarea statusului. Încercați din nou.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+                alert('Eroare la actualizarea statusului: ' + error.message);
+            });
+        }
+    </script>
 </x-app-layout>

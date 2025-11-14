@@ -38,15 +38,15 @@ class SubscriptionController extends Controller
         }
 
         // Sorting
-        $sortField = $request->get('sort', 'next_renewal_date');
-        $sortDirection = $request->get('direction', 'asc');
+        $sortBy = $request->get('sort', 'next_renewal_date');
+        $sortDir = $request->get('dir', 'asc');
 
         $allowedSorts = ['vendor_name', 'price', 'billing_cycle', 'next_renewal_date', 'status', 'created_at'];
-        if (!in_array($sortField, $allowedSorts)) {
-            $sortField = 'next_renewal_date';
+        if (!in_array($sortBy, $allowedSorts)) {
+            $sortBy = 'next_renewal_date';
         }
 
-        $query->orderBy($sortField, $sortDirection);
+        $query->orderBy($sortBy, $sortDir);
 
         // Paginate
         $subscriptions = $query->paginate(15)->withQueryString();
@@ -177,6 +177,41 @@ class SubscriptionController extends Controller
 
         return redirect()->route('subscriptions.index')
             ->with('success', 'Subscription updated successfully.');
+    }
+
+    /**
+     * Update subscription status (for AJAX requests)
+     */
+    public function updateStatus(Request $request, Subscription $subscription)
+    {
+        \Log::info('updateStatus called', [
+            'subscription_id' => $subscription->id,
+            'current_status' => $subscription->status,
+            'request_data' => $request->all(),
+        ]);
+
+        // Validate against the actual ENUM values in the database
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['active', 'paused', 'cancelled'])],
+        ]);
+
+        \Log::info('Validation passed', ['validated_data' => $validated]);
+
+        $oldStatus = $subscription->status;
+        $subscription->update($validated);
+        $newStatus = $subscription->fresh()->status;
+
+        \Log::info('Status updated', [
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Subscription status updated successfully!',
+            'old_status' => $oldStatus,
+            'new_status' => $newStatus,
+        ]);
     }
 
     /**

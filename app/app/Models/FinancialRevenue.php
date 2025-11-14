@@ -109,6 +109,6 @@ class FinancialRevenue extends Model
 
     public function getMonthNameAttribute()
     {
-        return \Carbon\Carbon::create()->month($this->month)->translatedFormat('F');
+        return \Carbon\Carbon::create()->setMonth($this->month)->translatedFormat('F');
     }
 }

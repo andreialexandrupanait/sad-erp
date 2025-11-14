@@ -30,14 +30,23 @@ class ExpenseController extends Controller
             'financial.filters.category_id' => $categoryId,
         ]);
 
+        // Sorting
+        $sortBy = $request->get('sort', 'occurred_at');
+        $sortDir = $request->get('dir', 'desc');
+        $allowedColumns = ['occurred_at', 'amount', 'document_name', 'category_option_id', 'currency', 'created_at'];
+        if (!in_array($sortBy, $allowedColumns)) {
+            $sortBy = 'occurred_at';
+        }
+
         $expenses = FinancialExpense::with(['category', 'files'])
             ->withCount('files')
             ->forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->latest('occurred_at')
-            ->paginate(15);
+            ->orderBy($sortBy, $sortDir)
+            ->paginate(15)
+            ->withQueryString();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialExpense::forYear($year)
@@ -77,10 +86,9 @@ class ExpenseController extends Controller
         $categories = SettingOption::rootCategories()->with('children')->get();
         $currencies = SettingOption::currencies()->get();
 
-        // Available years
-        $availableYears = FinancialExpense::select(DB::raw('DISTINCT year'))
-            ->orderByDesc('year')
-            ->pluck('year');
+        // Available years - show all years from 2019 to present
+        $currentYear = now()->year;
+        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
 
         // Get months with transactions for the selected year (with transaction count and total amount)
         $monthsWithTransactions = FinancialExpense::forYear($year)

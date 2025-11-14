@@ -17,14 +17,25 @@ class FileController extends Controller
      */
     public function index(Request $request)
     {
-        $year = $request->get('year', now()->year);
-        $month = $request->get('month');
+        // Get filter values from request or session, with defaults
+        $year = (int) $request->get('year', session('financial.filters.year', now()->year));
+        $month = $request->has('month') ? ($request->get('month') ? (int) $request->get('month') : null) : null;
         $tip = $request->get('tip'); // incasare, plata, extrase, general
 
-        // Get available years for the filter
-        $availableYears = FinancialFile::selectRaw('DISTINCT an as year')
-            ->orderBy('year', 'desc')
-            ->pluck('year');
+        // Store filter values in session for persistence (only if explicitly set)
+        if ($request->has('year')) {
+            session(['financial.filters.year' => $year]);
+        }
+        if ($request->has('month')) {
+            session(['financial.filters.month' => $month]);
+        }
+        if ($request->has('tip')) {
+            session(['financial.filters.tip' => $tip]);
+        }
+
+        // Get available years for the filter - all years from 2019 to current year
+        $currentYear = now()->year;
+        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
 
         // Build the query
         $filesQuery = FinancialFile::with('entity')
@@ -40,51 +51,74 @@ class FileController extends Controller
 
         $files = $filesQuery->latest()->paginate(50);
 
-        // Get summary for tree view
-        $summary = $this->getFileSummary($year);
+        // Get summary for tree view - all years
+        $allYearsSummary = $this->getAllYearsSummary($availableYears);
 
+        // Handle AJAX requests - return JSON for SPA-like navigation
+        if ($request->wantsJson()) {
+            return response()->json([
+                'year' => $year,
+                'month' => $month,
+                'tip' => $tip,
+                'files' => $files->items(),
+                'pagination' => [
+                    'current_page' => $files->currentPage(),
+                    'last_page' => $files->lastPage(),
+                    'per_page' => $files->perPage(),
+                    'total' => $files->total(),
+                    'links' => $files->links()->render(),
+                ],
+                'allYearsSummary' => $allYearsSummary,
+            ]);
+        }
+
+        // Regular page load - return full view
         return view('financial.files.index', compact(
             'files',
             'year',
             'month',
             'tip',
             'availableYears',
-            'summary'
+            'allYearsSummary'
         ));
     }
 
     /**
-     * Get file summary organized by year/month/type
+     * Get file summary for all years organized by year/month/type
      */
-    private function getFileSummary($year)
+    private function getAllYearsSummary($availableYears)
     {
-        $data = FinancialFile::where('an', $year)
-            ->selectRaw('luna, tip, COUNT(*) as count')
-            ->groupBy('luna', 'tip')
+        $data = FinancialFile::selectRaw('an, luna, tip, COUNT(*) as count')
+            ->groupBy('an', 'luna', 'tip')
             ->get();
 
-        $summary = [];
+        $allSummary = [];
 
-        for ($month = 1; $month <= 12; $month++) {
-            $summary[$month] = [
-                'incasare' => 0,
-                'plata' => 0,
-                'extrase' => 0,
-                'total' => 0,
-            ];
+        foreach ($availableYears as $year) {
+            $allSummary[$year] = [];
 
-            foreach ($data as $item) {
-                if ($item->luna == $month) {
-                    $tip = $item->tip ?? 'general';
-                    if (isset($summary[$month][$tip])) {
-                        $summary[$month][$tip] = $item->count;
+            for ($month = 1; $month <= 12; $month++) {
+                $allSummary[$year][$month] = [
+                    'incasare' => 0,
+                    'plata' => 0,
+                    'extrase' => 0,
+                    'general' => 0,
+                    'total' => 0,
+                ];
+
+                foreach ($data as $item) {
+                    if ($item->an == $year && $item->luna == $month) {
+                        $tip = $item->tip ?? 'general';
+                        if (isset($allSummary[$year][$month][$tip])) {
+                            $allSummary[$year][$month][$tip] = $item->count;
+                        }
+                        $allSummary[$year][$month]['total'] += $item->count;
                     }
-                    $summary[$month]['total'] += $item->count;
                 }
             }
         }
 
-        return $summary;
+        return $allSummary;
     }
 
     /**
@@ -311,6 +345,10 @@ class FileController extends Controller
      */
     public function downloadMonthlyZip($year, $month)
     {
+        // Cast parameters to integers
+        $year = (int) $year;
+        $month = (int) $month;
+
         // Get all files for the specified month
         $files = FinancialFile::where('an', $year)
             ->where('luna', $month)
@@ -320,8 +358,12 @@ class FileController extends Controller
             return redirect()->back()->with('error', 'Nu există fișiere pentru luna selectată.');
         }
 
-        // Create a temporary file for the ZIP
-        $zipFileName = "financiar_{$year}_{$month}_" . now()->format('YmdHis') . ".zip";
+        // Get month name in English for the filename
+        $monthName = \Carbon\Carbon::create()->setMonth($month)->locale('en')->format('F');
+        $monthPadded = str_pad($month, 2, '0', STR_PAD_LEFT);
+
+        // Create a temporary file for the ZIP with format: XX - Month.zip
+        $zipFileName = "{$monthPadded} - {$monthName}.zip";
         $zipPath = storage_path("app/temp/{$zipFileName}");
 
         // Ensure temp directory exists
@@ -341,8 +383,74 @@ class FileController extends Controller
                 $filePath = Storage::disk('financial')->path($file->file_path);
                 $tip = $file->tip ?? 'general';
 
+                // Map database tip values to Romanian folder names
+                $folderName = match($tip) {
+                    'incasare' => 'Incasari',
+                    'plata' => 'Plati',
+                    'extrase' => 'Extrase',
+                    default => 'General',
+                };
+
                 // Add file to ZIP in folder structure: type/filename
-                $zip->addFile($filePath, "{$tip}/{$file->file_name}");
+                $zip->addFile($filePath, "{$folderName}/{$file->file_name}");
+            }
+        }
+
+        $zip->close();
+
+        // Download and delete the temporary ZIP file
+        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Download all files for a specific year as a ZIP archive
+     */
+    public function downloadYearlyZip($year)
+    {
+        // Cast parameter to integer
+        $year = (int) $year;
+
+        // Get all files for the specified year
+        $files = FinancialFile::where('an', $year)->get();
+
+        if ($files->isEmpty()) {
+            return redirect()->back()->with('error', 'Nu există fișiere pentru anul selectat.');
+        }
+
+        // Create a temporary file for the ZIP with format: Year.zip
+        $zipFileName = "{$year}.zip";
+        $zipPath = storage_path("app/temp/{$zipFileName}");
+
+        // Ensure temp directory exists
+        if (!file_exists(storage_path('app/temp'))) {
+            mkdir(storage_path('app/temp'), 0755, true);
+        }
+
+        // Create ZIP archive
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
+        }
+
+        // Add files to ZIP, organized by month/type
+        foreach ($files as $file) {
+            if (Storage::disk('financial')->exists($file->file_path)) {
+                $filePath = Storage::disk('financial')->path($file->file_path);
+                $month = $file->luna;
+                $monthName = \Carbon\Carbon::create()->setMonth($month)->locale('en')->format('F');
+                $monthPadded = str_pad($month, 2, '0', STR_PAD_LEFT);
+                $tip = $file->tip ?? 'general';
+
+                // Map database tip values to Romanian folder names
+                $folderName = match($tip) {
+                    'incasare' => 'Incasari',
+                    'plata' => 'Plati',
+                    'extrase' => 'Extrase',
+                    default => 'General',
+                };
+
+                // Add file to ZIP in folder structure: XX - Month/Type/filename
+                $zip->addFile($filePath, "{$monthPadded} - {$monthName}/{$folderName}/{$file->file_name}");
             }
         }
 

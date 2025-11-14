@@ -31,14 +31,23 @@ class RevenueController extends Controller
             'financial.filters.client_id' => $clientId,
         ]);
 
+        // Sorting
+        $sortBy = $request->get('sort', 'occurred_at');
+        $sortDir = $request->get('dir', 'desc');
+        $allowedColumns = ['occurred_at', 'amount', 'document_name', 'client_id', 'currency', 'created_at'];
+        if (!in_array($sortBy, $allowedColumns)) {
+            $sortBy = 'occurred_at';
+        }
+
         $revenues = FinancialRevenue::with(['client', 'files'])
             ->withCount('files')
             ->forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->latest('occurred_at')
-            ->paginate(15);
+            ->orderBy($sortBy, $sortDir)
+            ->paginate(15)
+            ->withQueryString();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialRevenue::forYear($year)
@@ -66,10 +75,9 @@ class RevenueController extends Controller
         $clients = Client::orderBy('name')->get();
         $currencies = SettingOption::currencies()->get();
 
-        // Available years
-        $availableYears = FinancialRevenue::select(DB::raw('DISTINCT year'))
-            ->orderByDesc('year')
-            ->pluck('year');
+        // Available years - show all years from 2019 to present
+        $currentYear = now()->year;
+        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
 
         // Get months with transactions for the selected year (with transaction count and total amount)
         $monthsWithTransactions = FinancialRevenue::forYear($year)

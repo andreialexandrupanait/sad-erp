@@ -30,24 +30,30 @@ class ClientController extends Controller
         // Get view mode (default: table)
         $viewMode = $request->get('view', 'table');
 
+        // Get group by status flag (only for table view)
+        $groupByStatus = $request->get('group_by_status', false) && $viewMode === 'table';
+
         // Sort based on view mode
         if ($viewMode === 'kanban') {
             $query->ordered();
         } else {
-            $sortField = $request->get('sort', 'created_at');
-            $sortDirection = $request->get('direction', 'desc');
-            $query->orderBy($sortField, $sortDirection);
+            $sortBy = $request->get('sort', 'created_at');
+            $sortDir = $request->get('dir', 'desc');
+            $query->orderBy($sortBy, $sortDir);
         }
 
         // For kanban view, group by status
         if ($viewMode === 'kanban') {
             $clients = $query->get()->groupBy('status_id');
+        } elseif ($groupByStatus) {
+            // For grouped table view
+            $clients = $query->get()->groupBy('status_id');
         } else {
-            $clients = $query->paginate(15)->withQueryString();
+            $clients = $query->paginate(50)->withQueryString();
         }
 
         // Note: $clientStatuses is now automatically available via SettingsComposer
-        return view('clients.index', compact('clients', 'viewMode'));
+        return view('clients.index', compact('clients', 'viewMode', 'groupByStatus'));
     }
 
     /**
@@ -209,6 +215,23 @@ class ClientController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Client status updated successfully!',
+        ]);
+    }
+
+    /**
+     * Update client order index (for kanban reordering)
+     */
+    public function reorder(Request $request, Client $client)
+    {
+        $validated = $request->validate([
+            'order_index' => 'required|integer|min:0',
+        ]);
+
+        $client->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Client order updated successfully!',
         ]);
     }
 

@@ -33,14 +33,14 @@ class InternalAccountController extends Controller
         $sortOrder = $request->get('dir', 'desc');
 
         // Validate sort column
-        $allowedSortColumns = ['nume_cont_aplicatie', 'created_at', 'updated_at'];
+        $allowedSortColumns = ['nume_cont_aplicatie', 'url', 'username', 'created_at', 'updated_at'];
         if (!in_array($sortBy, $allowedSortColumns)) {
             $sortBy = 'created_at';
         }
 
         $query->orderBy($sortBy, $sortOrder);
 
-        $accounts = $query->paginate(15);
+        $accounts = $query->paginate(15)->withQueryString();
 
         // Statistics
         $stats = [

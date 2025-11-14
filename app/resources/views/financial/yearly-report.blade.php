@@ -26,7 +26,7 @@
                     @for($month = 1; $month <= 12; $month++)
                         <tr>
                             <td class="px-6 py-4 text-sm font-medium">
-                                {{ \Carbon\Carbon::create()->month($month)->format('F') }}
+                                {{ \Carbon\Carbon::create()->setMonth($month)->format('F') }}
                             </td>
                             <td class="px-6 py-4 text-sm text-right text-green-600">
                                 {{ number_format($monthlySummary[$month]['revenues_ron'], 2) }}

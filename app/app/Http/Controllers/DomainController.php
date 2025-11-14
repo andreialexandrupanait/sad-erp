@@ -47,7 +47,7 @@ class DomainController extends Controller
 
         $query->orderBy($sortBy, $sortOrder);
 
-        $domains = $query->paginate(15);
+        $domains = $query->paginate(15)->withQueryString();
 
         // Get data for filters
         $clients = Client::orderBy('name')->get();
