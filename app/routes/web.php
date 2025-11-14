@@ -16,7 +16,7 @@ use App\Http\Controllers\Financial\FileController as FinancialFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 // Temporary HTTPS test route - DELETE AFTER TESTING
@@ -74,6 +74,13 @@ Route::middleware('auth')->group(function () {
     // Settings Module
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
+
+    // Business Settings (NEW)
+    Route::get('settings/business-info', [SettingsController::class, 'businessInfo'])->name('settings.business-info');
+    Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
+    Route::get('settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
+    Route::post('settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
+    Route::post('settings/notifications/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.notifications.test-email');
 
     // Nomenclature Settings Pages (Individual routes for each section)
     Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');

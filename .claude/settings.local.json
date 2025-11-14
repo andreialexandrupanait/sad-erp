@@ -27,7 +27,10 @@
       "Bash(/var/www/erp/app/routes/web.php)",
       "Bash(for key in \"Profit Margin\" \"Month-over-Month Growth\" \"Subscription Costs\" \"Domain Management\" \"Revenue Concentration\" \"Renewal Costs\")",
       "Bash(do echo \"=== $key ===\")",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(test:*)",
+      "Bash(/dev/null -exec du -h {} +)",
+      "Bash(ln:*)"
     ],
     "deny": [],
     "ask": []

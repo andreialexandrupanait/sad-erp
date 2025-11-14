@@ -244,13 +244,11 @@ class RevenueController extends Controller
         $monthName = $this->getRomanianMonthName($month);
         $tip = 'Incasari'; // Revenue files folder
 
-        // Generate file name: DD.MM - Document Name.ext
-        $date = $revenue->occurred_at;
-        $day = $date->format('d');
-        $monthNum = $date->format('m');
+        // Generate file name: Factura + Document Name.ext (without date)
         $documentName = $revenue->document_name;
 
-        $newFileName = "{$day}.{$monthNum} - {$documentName}.{$extension}";
+        // Always add "Factura " prefix
+        $newFileName = "Factura {$documentName}.{$extension}";
 
         // Storage path: /year/month_name/type/
         $storagePath = "{$year}/{$monthName}/{$tip}";
@@ -259,7 +257,7 @@ class RevenueController extends Controller
         $finalFileName = $newFileName;
         $counter = 1;
         while (\Storage::disk('financial')->exists("{$storagePath}/{$finalFileName}")) {
-            $finalFileName = "{$day}.{$monthNum} - {$documentName} ({$counter}).{$extension}";
+            $finalFileName = "{$documentName} ({$counter}).{$extension}";
             $counter++;
         }
 

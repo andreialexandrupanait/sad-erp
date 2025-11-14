@@ -235,4 +235,156 @@ class SettingsController extends Controller
 
         return redirect()->route('settings.index')->with('success', 'Application settings updated successfully!');
     }
+
+    /**
+     * Business Information Settings (Placeholder)
+     */
+    public function businessInfo()
+    {
+        return view('settings.coming-soon', [
+            'title' => 'Business Information',
+            'description' => 'Configure your company details, VAT number, address, and contact information.'
+        ]);
+    }
+
+    /**
+     * Invoice Settings (Placeholder)
+     */
+    public function invoiceSettings()
+    {
+        return view('settings.coming-soon', [
+            'title' => 'Invoice Settings',
+            'description' => 'Configure invoice numbering, tax rates, payment terms, and invoice templates.'
+        ]);
+    }
+
+    /**
+     * Notification Settings
+     */
+    public function notifications()
+    {
+        $notificationSettings = [
+            // Master toggle
+            'notifications_enabled' => ApplicationSetting::get('notifications_enabled', false),
+
+            // Individual notifications
+            'notify_domain_expiry' => ApplicationSetting::get('notify_domain_expiry', true),
+            'notify_subscription_renewal' => ApplicationSetting::get('notify_subscription_renewal', true),
+            'notify_new_client' => ApplicationSetting::get('notify_new_client', false),
+            'notify_payment_received' => ApplicationSetting::get('notify_payment_received', false),
+            'notify_monthly_summary' => ApplicationSetting::get('notify_monthly_summary', false),
+
+            // Timing
+            'domain_expiry_days_before' => ApplicationSetting::get('domain_expiry_days_before', 30),
+            'subscription_renewal_days' => ApplicationSetting::get('subscription_renewal_days', 7),
+            'monthly_summary_day' => ApplicationSetting::get('monthly_summary_day', 1),
+
+            // Recipients
+            'notification_email_primary' => ApplicationSetting::get('notification_email_primary', auth()->user()->email ?? ''),
+            'notification_email_cc' => ApplicationSetting::get('notification_email_cc', ''),
+
+            // SMTP
+            'smtp_enabled' => ApplicationSetting::get('smtp_enabled', false),
+            'smtp_host' => ApplicationSetting::get('smtp_host', ''),
+            'smtp_port' => ApplicationSetting::get('smtp_port', 587),
+            'smtp_username' => ApplicationSetting::get('smtp_username', ''),
+            'smtp_password' => ApplicationSetting::get('smtp_password', ''),
+            'smtp_encryption' => ApplicationSetting::get('smtp_encryption', 'tls'),
+            'smtp_from_email' => ApplicationSetting::get('smtp_from_email', ''),
+            'smtp_from_name' => ApplicationSetting::get('smtp_from_name', ApplicationSetting::get('app_name', 'ERP System')),
+        ];
+
+        return view('settings.notifications', compact('notificationSettings'));
+    }
+
+    /**
+     * Update Notification Settings
+     */
+    public function updateNotifications(Request $request)
+    {
+        $validated = $request->validate([
+            'notifications_enabled' => 'nullable|boolean',
+            'notify_domain_expiry' => 'nullable|boolean',
+            'notify_subscription_renewal' => 'nullable|boolean',
+            'notify_new_client' => 'nullable|boolean',
+            'notify_payment_received' => 'nullable|boolean',
+            'notify_monthly_summary' => 'nullable|boolean',
+            'domain_expiry_days_before' => 'required|integer|min:1|max:365',
+            'subscription_renewal_days' => 'required|integer|min:1|max:90',
+            'monthly_summary_day' => 'required|integer|min:1|max:28',
+            'notification_email_primary' => 'required|email|max:255',
+            'notification_email_cc' => 'nullable|string|max:500',
+            'smtp_enabled' => 'nullable|boolean',
+            'smtp_host' => 'nullable|required_if:smtp_enabled,1|string|max:255',
+            'smtp_port' => 'nullable|required_if:smtp_enabled,1|integer|min:1|max:65535',
+            'smtp_username' => 'nullable|required_if:smtp_enabled,1|string|max:255',
+            'smtp_password' => 'nullable|string|max:255',
+            'smtp_encryption' => 'nullable|string|in:tls,ssl,none',
+            'smtp_from_email' => 'nullable|required_if:smtp_enabled,1|email|max:255',
+            'smtp_from_name' => 'nullable|string|max:255',
+        ]);
+
+        // Convert checkbox values (null means unchecked = false)
+        $booleanFields = [
+            'notifications_enabled',
+            'notify_domain_expiry',
+            'notify_subscription_renewal',
+            'notify_new_client',
+            'notify_payment_received',
+            'notify_monthly_summary',
+            'smtp_enabled'
+        ];
+
+        foreach ($booleanFields as $field) {
+            $validated[$field] = isset($validated[$field]) && $validated[$field] == '1';
+        }
+
+        // Save all settings
+        foreach ($validated as $key => $value) {
+            $type = 'string';
+
+            if (in_array($key, $booleanFields)) {
+                $type = 'boolean';
+            } elseif (in_array($key, ['smtp_port', 'domain_expiry_days_before', 'subscription_renewal_days', 'monthly_summary_day'])) {
+                $type = 'integer';
+            }
+
+            // Encrypt password before storing
+            if ($key === 'smtp_password' && !empty($value)) {
+                $value = encrypt($value);
+            }
+
+            ApplicationSetting::set($key, $value, $type);
+        }
+
+        return redirect()->route('settings.notifications')
+            ->with('success', 'Notification settings updated successfully!');
+    }
+
+    /**
+     * Send test email
+     */
+    public function sendTestEmail(Request $request)
+    {
+        $request->validate([
+            'test_email' => 'required|email',
+        ]);
+
+        try {
+            \Mail::raw('This is a test email from your ERP system. If you received this, your email configuration is working correctly!', function ($message) use ($request) {
+                $message->to($request->test_email)
+                    ->subject('Test Email from ERP System');
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test email sent successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test email: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

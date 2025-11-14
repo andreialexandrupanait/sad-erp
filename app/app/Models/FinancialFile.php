@@ -88,10 +88,22 @@ class FinancialFile extends Model
             }
         });
 
-        // Delete physical file when model is deleted
+        // Delete physical file and related entity when model is deleted
         static::deleted(function ($file) {
+            // Delete the physical file from storage
             if ($file->file_path && Storage::exists($file->file_path)) {
                 Storage::delete($file->file_path);
+            }
+
+            // Force delete the related transaction (revenue or expense) to permanently remove it
+            if ($file->entity_type && $file->entity_id) {
+                // Load entity without global scopes to ensure we can delete it
+                $entityClass = $file->entity_type;
+                $entity = $entityClass::withTrashed()->find($file->entity_id);
+
+                if ($entity) {
+                    $entity->forceDelete();
+                }
             }
         });
     }
