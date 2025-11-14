@@ -30,26 +30,6 @@
                     @enderror
                 </div>
 
-                <!-- Platform (Required) -->
-                <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="platforma">
-                        {{ __('Platform') }} <span class="text-red-500">*</span>
-                    </x-ui.label>
-                    <div class="mt-2">
-                        <x-ui.input
-                            type="text"
-                            name="platforma"
-                            id="platforma"
-                            required
-                            value="{{ old('platforma', $account->platforma ?? '') }}"
-                            placeholder="{{ __('Platform placeholder') }}"
-                        />
-                    </div>
-                    @error('platforma')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                    @enderror
-                </div>
-
                 <!-- URL -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="url">{{ __('URL') }}</x-ui.label>

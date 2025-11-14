@@ -1,16 +1,7 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ __('Import / Export') }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Centralized data import and export for all modules</p>
-            </div>
-        </div>
-    </x-slot>
+    <x-slot name="pageTitle">{{ __('Import / Export') }}</x-slot>
 
-    <div class="px-6 lg:px-8 py-8">
+    <div class="p-6">
         <!-- Success Message -->
         @if (session('success'))
             <x-ui.alert variant="success" class="mb-6">

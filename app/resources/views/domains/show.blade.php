@@ -1,30 +1,22 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ __('Domain Name') }}: {{ $domain->domain_name }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">{{ __('View domain details and information') }}</p>
-            </div>
-            <div class="flex gap-2">
-                <x-ui.button variant="default" onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    {{ __('Edit') }}
-                </x-ui.button>
-                <x-ui.button variant="outline" onclick="window.location.href='{{ route('domains.index') }}'">
-                    <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    {{ __('Back to Domains') }}
-                </x-ui.button>
-            </div>
-        </div>
+    <x-slot name="pageTitle">{{ $domain->domain_name }}</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="default" onclick="window.location.href='{{ route('domains.edit', $domain) }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            {{ __('Edit') }}
+        </x-ui.button>
+        <x-ui.button variant="outline" onclick="window.location.href='{{ route('domains.index') }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            {{ __('Back to Domains') }}
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
+    <div class="p-6 space-y-6">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">

@@ -77,23 +77,6 @@
                 </div>
             </div>
 
-            <!-- Unique Platforms -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('Unique Platforms') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['unique_platforms'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ __('different platforms') }}</p>
-                        </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-50">
-                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Search and Filters -->
@@ -117,18 +100,6 @@
                                     class="pl-10"
                                 />
                             </div>
-                        </div>
-
-                        <!-- Platform Filter -->
-                        <div class="w-full sm:w-48">
-                            <x-ui.select name="platform">
-                                <option value="">{{ __('All Platforms') }}</option>
-                                @foreach ($platforms as $key => $value)
-                                    <option value="{{ $key }}" {{ request('platform') == $key ? 'selected' : '' }}>
-                                        {{ $value }}
-                                    </option>
-                                @endforeach
-                            </x-ui.select>
                         </div>
 
                         <!-- Ownership Filter -->
@@ -166,11 +137,7 @@
                                         {{ __('Account Name') }}
                                     </a>
                                 </x-ui.table-head>
-                                <x-ui.table-head>
-                                    <a href="{{ route('internal-accounts.index', array_merge(request()->all(), ['sort' => 'platforma', 'dir' => request('sort') == 'platforma' && request('dir') == 'asc' ? 'desc' : 'asc'])) }}" class="hover:underline">
-                                        {{ __('Platform') }}
-                                    </a>
-                                </x-ui.table-head>
+                                <x-ui.table-head>{{ __('URL') }}</x-ui.table-head>
                                 <x-ui.table-head>{{ __('Username') }}</x-ui.table-head>
                                 <x-ui.table-head>{{ __('Password') }}</x-ui.table-head>
                                 <x-ui.table-head>{{ __('Access') }}</x-ui.table-head>
@@ -180,25 +147,79 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach ($accounts as $account)
-                                <x-ui.table-row>
+                                <x-ui.table-row x-data="{ showPassword{{ $account->id }}: false }">
                                     <x-ui.table-cell>
                                         <div class="text-sm font-medium text-slate-900">
                                             {{ $account->nume_cont_aplicatie }}
                                         </div>
                                     </x-ui.table-cell>
+
+                                    <!-- URL Column -->
                                     <x-ui.table-cell>
-                                        <div class="text-sm text-slate-700">
-                                            {{ $account->platforma }}
-                                        </div>
+                                        @if($account->url)
+                                            <a href="{{ $account->url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-600 hover:text-blue-800 hover:underline flex items-center gap-1">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                                </svg>
+                                                <span class="truncate max-w-[150px]" title="{{ $account->url }}">{{ parse_url($account->url, PHP_URL_HOST) }}</span>
+                                            </a>
+                                        @else
+                                            <span class="text-sm text-slate-400">-</span>
+                                        @endif
                                     </x-ui.table-cell>
+
+                                    <!-- Username with Copy -->
                                     <x-ui.table-cell>
-                                        <div class="text-sm text-slate-700">
-                                            {{ $account->username ?? '-' }}
-                                        </div>
+                                        @if($account->username)
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm text-slate-700">{{ $account->username }}</span>
+                                                <button
+                                                    onclick="copyToClipboard('{{ $account->username }}', 'Username')"
+                                                    class="text-slate-400 hover:text-slate-600 transition-colors"
+                                                    title="{{ __('Copy username') }}"
+                                                >
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        @else
+                                            <span class="text-sm text-slate-400">-</span>
+                                        @endif
                                     </x-ui.table-cell>
+
+                                    <!-- Password with Toggle and Copy -->
                                     <x-ui.table-cell>
-                                        <div class="text-sm text-slate-500 font-mono">
-                                            {{ $account->masked_password }}
+                                        <div class="flex items-center gap-2">
+                                            <span
+                                                class="text-sm font-mono"
+                                                :class="showPassword{{ $account->id }} ? 'text-slate-700' : 'text-slate-500'"
+                                                x-text="showPassword{{ $account->id }} ? '{{ $account->password }}' : '{{ $account->masked_password }}'"
+                                            ></span>
+                                            <button
+                                                @click="showPassword{{ $account->id }} = !showPassword{{ $account->id }}"
+                                                class="text-slate-400 hover:text-slate-600 transition-colors"
+                                                :title="showPassword{{ $account->id }} ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'"
+                                            >
+                                                <svg x-show="!showPassword{{ $account->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                                <svg x-show="showPassword{{ $account->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                                </svg>
+                                            </button>
+                                            <button
+                                                x-show="showPassword{{ $account->id }}"
+                                                onclick="copyToClipboard('{{ $account->password }}', 'Password')"
+                                                class="text-slate-400 hover:text-slate-600 transition-colors"
+                                                title="{{ __('Copy password') }}"
+                                                style="display: none;"
+                                            >
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
@@ -290,4 +311,33 @@
 
     <!-- Toast Notifications -->
     <x-toast />
+
+    @push('scripts')
+    <script>
+        function copyToClipboard(text, label) {
+            if (!text) {
+                console.warn('Nothing to copy');
+                return;
+            }
+
+            navigator.clipboard.writeText(text).then(function() {
+                // Show success toast
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: {
+                        type: 'success',
+                        message: (label || 'Text') + ' copied to clipboard!'
+                    }
+                }));
+            }).catch(function(err) {
+                console.error('Failed to copy:', err);
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: {
+                        type: 'error',
+                        message: 'Failed to copy to clipboard'
+                    }
+                }));
+            });
+        }
+    </script>
+    @endpush
 </x-app-layout>

@@ -143,6 +143,7 @@ return [
     'Enter company name (optional)' => 'Introduceți numele companiei (opțional)',
     'e.g., RO12345678' => 'ex. RO12345678',
     'Company details will be auto-filled from ANAF if available' => 'Detaliile companiei vor fi completate automat din ANAF dacă sunt disponibile',
+    'For clients without CUI, use "-" or leave empty' => 'Pentru clienți fără CUI, folosiți "-" sau lăsați gol',
     'Registration Number' => 'Nr. Reg. Com.',
     'e.g., J40/1234/2020' => 'ex. J40/1234/2020',
     'Enter contact person name (optional)' => 'Introduceți numele persoanei de contact (opțional)',

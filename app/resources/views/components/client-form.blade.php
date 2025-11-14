@@ -82,6 +82,7 @@
                         </div>
                     </div>
                     <p class="mt-1 text-xs text-slate-500">{{ __('Company details will be auto-filled from ANAF if available') }}</p>
+                    <p class="mt-1 text-xs text-slate-400 italic">{{ __('For clients without CUI, use "-" or leave empty') }}</p>
                     @error('tax_id')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror

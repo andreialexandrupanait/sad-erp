@@ -217,16 +217,9 @@
                             @foreach($subscriptions as $subscription)
                                 <x-ui.table-row>
                                     <x-ui.table-cell>
-                                        <div class="flex items-center">
-                                            <div class="flex-shrink-0 h-10 w-10 bg-gradient-to-br from-slate-400 to-slate-600 rounded-lg flex items-center justify-center">
-                                                <span class="text-white text-sm font-bold">{{ strtoupper(substr($subscription->vendor_name, 0, 2)) }}</span>
-                                            </div>
-                                            <div class="ml-4">
-                                                <a href="{{ route('subscriptions.show', $subscription) }}" class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors">
-                                                    {{ $subscription->vendor_name }}
-                                                </a>
-                                            </div>
-                                        </div>
+                                        <a href="{{ route('subscriptions.show', $subscription) }}" class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors">
+                                            {{ $subscription->vendor_name }}
+                                        </a>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="text-sm font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} <span class="text-slate-500 font-normal">RON</span></div>

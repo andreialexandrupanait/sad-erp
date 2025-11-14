@@ -1,32 +1,24 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ $internalAccount->nume_cont_aplicatie }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">Internal account details and credentials</p>
-            </div>
-            <div class="flex gap-2">
-                @if ($internalAccount->isOwner())
-                    <x-ui.button variant="outline" onclick="window.location.href='{{ route('internal-accounts.edit', $internalAccount) }}'">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                        </svg>
-                        Edit
-                    </x-ui.button>
-                @endif
-                <x-ui.button variant="secondary" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
-                    </svg>
-                    Back to List
-                </x-ui.button>
-            </div>
-        </div>
+    <x-slot name="pageTitle">{{ $internalAccount->nume_cont_aplicatie }}</x-slot>
+
+    <x-slot name="headerActions">
+        @if ($internalAccount->isOwner())
+            <x-ui.button variant="outline" onclick="window.location.href='{{ route('internal-accounts.edit', $internalAccount) }}'">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Edit
+            </x-ui.button>
+        @endif
+        <x-ui.button variant="secondary" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to List
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
+    <div class="p-6 space-y-6">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -57,12 +49,6 @@
                             <div>
                                 <x-ui.label class="text-slate-500">Account Name</x-ui.label>
                                 <p class="mt-1 text-slate-900 font-medium">{{ $internalAccount->nume_cont_aplicatie }}</p>
-                            </div>
-
-                            <!-- Platform -->
-                            <div>
-                                <x-ui.label class="text-slate-500">Platform</x-ui.label>
-                                <p class="mt-1 text-slate-900">{{ $internalAccount->platforma }}</p>
                             </div>
 
                             <!-- URL -->

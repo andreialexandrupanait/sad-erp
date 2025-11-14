@@ -71,6 +71,9 @@ class Subscription extends Model
      */
     public function getDaysUntilRenewalAttribute()
     {
+        // Don't calculate days for paused or cancelled subscriptions
+        if ($this->status !== 'active') return null;
+
         if (!$this->next_renewal_date) return null;
         return Carbon::now()->startOfDay()->diffInDays($this->next_renewal_date->startOfDay(), false);
     }
@@ -80,6 +83,9 @@ class Subscription extends Model
      */
     public function getRenewalUrgencyAttribute()
     {
+        // No urgency for non-active subscriptions
+        if ($this->status !== 'active') return 'paused';
+
         $days = $this->days_until_renewal;
 
         if ($days === null) return 'unknown';
@@ -103,6 +109,8 @@ class Subscription extends Model
                 return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
             case 'normal':
                 return 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+            case 'paused':
+                return 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300';
             default:
                 return 'bg-gray-100 text-gray-800';
         }
@@ -122,6 +130,8 @@ class Subscription extends Model
                 return '🟡';
             case 'normal':
                 return '🟢';
+            case 'paused':
+                return '⏸️';
             default:
                 return '';
         }
@@ -132,16 +142,24 @@ class Subscription extends Model
      */
     public function getRenewalTextAttribute()
     {
+        // For paused/cancelled subscriptions, show status instead of renewal date
+        if ($this->status === 'paused') {
+            return 'Suspendat';
+        }
+        if ($this->status === 'cancelled') {
+            return 'Anulat';
+        }
+
         $days = $this->days_until_renewal;
 
-        if ($days === null) return 'Unknown';
+        if ($days === null) return 'Necunoscut';
         if ($days < 0) {
             $daysOverdue = abs($days);
-            return "Overdue by {$daysOverdue} " . ($daysOverdue === 1 ? 'day' : 'days');
+            return "Expirat cu {$daysOverdue} " . ($daysOverdue === 1 ? 'zi' : 'zile');
         }
-        if ($days === 0) return 'Renews today';
-        if ($days === 1) return 'Renews tomorrow';
-        return "Renews in {$days} days";
+        if ($days === 0) return 'Se reînnoiește azi';
+        if ($days === 1) return 'Se reînnoiește mâine';
+        return "Se reînnoiește în {$days} zile";
     }
 
     /**
@@ -222,7 +240,7 @@ class Subscription extends Model
     /**
      * Update renewal date and log the change
      */
-    public function updateRenewalDate($newDate, $reason = 'Manual update')
+    public function updateRenewalDate($newDate, $reason = 'Actualizare manuală')
     {
         $oldDate = $this->next_renewal_date;
 
@@ -234,7 +252,7 @@ class Subscription extends Model
         if (class_exists(SubscriptionLog::class)) {
             SubscriptionLog::create([
                 'subscription_id' => $this->id,
-                'user_id' => $this->user_id,
+                'organization_id' => $this->user->organization_id ?? 1,
                 'old_renewal_date' => $oldDate,
                 'new_renewal_date' => $newDate,
                 'change_reason' => $reason,
@@ -265,10 +283,10 @@ class Subscription extends Model
             if (class_exists(SubscriptionLog::class)) {
                 SubscriptionLog::create([
                     'subscription_id' => $this->id,
-                    'user_id' => $this->user_id,
+                    'organization_id' => $this->user->organization_id ?? 1,
                     'old_renewal_date' => $oldDate,
                     'new_renewal_date' => $newDate,
-                    'change_reason' => 'Auto-advanced overdue renewal',
+                    'change_reason' => 'Reînnoire automată abonament expirat',
                     'changed_by_user_id' => null, // System action
                     'changed_at' => now(),
                 ]);
@@ -292,8 +310,10 @@ class Subscription extends Model
             ->get()
             ->sum(function ($subscription) {
                 switch ($subscription->billing_cycle) {
+                    case 'lunar':
                     case 'monthly':
                         return $subscription->price;
+                    case 'anual':
                     case 'annual':
                         return $subscription->price / 12;
                     case 'custom':
@@ -310,8 +330,10 @@ class Subscription extends Model
             ->get()
             ->sum(function ($subscription) {
                 switch ($subscription->billing_cycle) {
+                    case 'lunar':
                     case 'monthly':
                         return $subscription->price * 12;
+                    case 'anual':
                     case 'annual':
                         return $subscription->price;
                     case 'custom':

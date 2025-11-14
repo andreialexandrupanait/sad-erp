@@ -16,7 +16,6 @@ class InternalAccount extends Model
         'organization_id',
         'user_id',
         'nume_cont_aplicatie',
-        'platforma',
         'url',
         'username',
         'password',
@@ -26,31 +25,6 @@ class InternalAccount extends Model
 
     protected $casts = [
         'accesibil_echipei' => 'boolean',
-    ];
-
-    // Platform options - internal business tools and services
-    public const PLATFORMS = [
-        'Bank Account' => 'Bank Account',
-        'Payment Gateway' => 'Payment Gateway',
-        'Accounting Software' => 'Accounting Software',
-        'CRM System' => 'CRM System',
-        'Email Service' => 'Email Service',
-        'Cloud Storage' => 'Cloud Storage',
-        'Domain Registrar' => 'Domain Registrar',
-        'Hosting Provider' => 'Hosting Provider',
-        'SSL Certificate' => 'SSL Certificate',
-        'Analytics Tool' => 'Analytics Tool',
-        'Project Management' => 'Project Management',
-        'HR Software' => 'HR Software',
-        'Invoicing System' => 'Invoicing System',
-        'API Service' => 'API Service',
-        'Database Service' => 'Database Service',
-        'Backup Service' => 'Backup Service',
-        'Security Tool' => 'Security Tool',
-        'Communication Tool' => 'Communication Tool',
-        'Design Software' => 'Design Software',
-        'Development Tool' => 'Development Tool',
-        'Other' => 'Other',
     ];
 
     /**
@@ -160,21 +134,9 @@ class InternalAccount extends Model
     {
         return $query->where(function ($q) use ($search) {
             $q->where('nume_cont_aplicatie', 'like', "%{$search}%")
-              ->orWhere('platforma', 'like', "%{$search}%")
               ->orWhere('username', 'like', "%{$search}%")
               ->orWhere('url', 'like', "%{$search}%");
         });
-    }
-
-    /**
-     * Filter by platform
-     */
-    public function scopePlatform($query, $platform)
-    {
-        if (!empty($platform)) {
-            return $query->where('platforma', $platform);
-        }
-        return $query;
     }
 
     /**
@@ -200,11 +162,11 @@ class InternalAccount extends Model
     }
 
     /**
-     * Get display name with platform
+     * Get display name
      */
     public function getDisplayNameAttribute()
     {
-        return $this->nume_cont_aplicatie . ' (' . $this->platforma . ')';
+        return $this->nume_cont_aplicatie;
     }
 
     /**

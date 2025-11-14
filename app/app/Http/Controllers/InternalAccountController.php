@@ -19,11 +19,6 @@ class InternalAccountController extends Controller
             $query->search($request->search);
         }
 
-        // Filter by platform
-        if ($request->has('platform') && $request->platform != '') {
-            $query->platform($request->platform);
-        }
-
         // Filter by ownership
         if ($request->has('ownership') && $request->ownership != '') {
             if ($request->ownership === 'mine') {
@@ -38,7 +33,7 @@ class InternalAccountController extends Controller
         $sortOrder = $request->get('dir', 'desc');
 
         // Validate sort column
-        $allowedSortColumns = ['nume_cont_aplicatie', 'platforma', 'created_at', 'updated_at'];
+        $allowedSortColumns = ['nume_cont_aplicatie', 'created_at', 'updated_at'];
         if (!in_array($sortBy, $allowedSortColumns)) {
             $sortBy = 'created_at';
         }
@@ -47,18 +42,14 @@ class InternalAccountController extends Controller
 
         $accounts = $query->paginate(15);
 
-        // Get platforms for filter
-        $platforms = setting_options('access_platforms');
-
         // Statistics
         $stats = [
             'total_accounts' => InternalAccount::count(),
             'my_accounts' => InternalAccount::ownedByMe()->count(),
             'team_accounts' => InternalAccount::teamAccessible(true)->count(),
-            'unique_platforms' => InternalAccount::distinct('platforma')->count('platforma'),
         ];
 
-        return view('internal-accounts.index', compact('accounts', 'platforms', 'stats'));
+        return view('internal-accounts.index', compact('accounts', 'stats'));
     }
 
     /**
@@ -66,8 +57,7 @@ class InternalAccountController extends Controller
      */
     public function create()
     {
-        $platforms = setting_options('access_platforms');
-        return view('internal-accounts.create', compact('platforms'));
+        return view('internal-accounts.create');
     }
 
     /**
@@ -77,7 +67,6 @@ class InternalAccountController extends Controller
     {
         $validated = $request->validate([
             'nume_cont_aplicatie' => 'required|string|max:255',
-            'platforma' => 'required|string|max:255',
             'url' => 'nullable|url|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:500',
@@ -128,9 +117,7 @@ class InternalAccountController extends Controller
             abort(403, 'Only the account owner can edit this record.');
         }
 
-        $platforms = setting_options('access_platforms');
-
-        return view('internal-accounts.edit', compact('internalAccount', 'platforms'));
+        return view('internal-accounts.edit', compact('internalAccount'));
     }
 
     /**
@@ -145,7 +132,6 @@ class InternalAccountController extends Controller
 
         $validated = $request->validate([
             'nume_cont_aplicatie' => 'required|string|max:255',
-            'platforma' => 'required|string|max:255',
             'url' => 'nullable|url|max:255',
             'username' => 'nullable|string|max:255',
             'password' => 'nullable|string|max:500',

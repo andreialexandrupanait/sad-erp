@@ -71,8 +71,15 @@ class ClientController extends Controller
                 'nullable',
                 'string',
                 'max:100',
-                Rule::unique('clients')->where(function ($query) {
-                    return $query->where('user_id', auth()->id());
+                Rule::unique('clients')->where(function ($query) use ($request) {
+                    // Only check uniqueness if tax_id is not NULL or '-'
+                    $taxId = $request->input('tax_id');
+                    if ($taxId !== null && $taxId !== '' && $taxId !== '-') {
+                        return $query->where('user_id', auth()->id())
+                                     ->where('tax_id', '!=', '-')
+                                     ->whereNotNull('tax_id');
+                    }
+                    return $query->whereRaw('1 = 0'); // Never match if tax_id is NULL or '-'
                 }),
             ],
             'registration_number' => 'nullable|string|max:255',
@@ -147,8 +154,15 @@ class ClientController extends Controller
                 'nullable',
                 'string',
                 'max:100',
-                Rule::unique('clients')->where(function ($query) {
-                    return $query->where('user_id', auth()->id());
+                Rule::unique('clients')->where(function ($query) use ($request) {
+                    // Only check uniqueness if tax_id is not NULL or '-'
+                    $taxId = $request->input('tax_id');
+                    if ($taxId !== null && $taxId !== '' && $taxId !== '-') {
+                        return $query->where('user_id', auth()->id())
+                                     ->where('tax_id', '!=', '-')
+                                     ->whereNotNull('tax_id');
+                    }
+                    return $query->whereRaw('1 = 0'); // Never match if tax_id is NULL or '-'
                 })->ignore($client->id),
             ],
             'registration_number' => 'nullable|string|max:255',

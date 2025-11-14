@@ -1,24 +1,16 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="px-6 lg:px-8 py-8">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                        {{ __('Import Clients') }}
-                    </h2>
-                    <p class="mt-2 text-sm text-slate-600">Upload a CSV file to import multiple clients at once</p>
-                </div>
-                <x-ui.button variant="ghost" onclick="window.location.href='{{ route('clients.index') }}'">
-                    <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Back to Clients
-                </x-ui.button>
-            </div>
-        </div>
+    <x-slot name="pageTitle">{{ __('Import Clients') }}</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="ghost" onclick="window.location.href='{{ route('clients.index') }}'">
+            <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Clients
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8">
+    <div class="p-6">
         <div class="max-w-3xl mx-auto">
             <!-- Instructions Card -->
             <x-ui.card class="mb-6">

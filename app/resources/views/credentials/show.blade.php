@@ -1,27 +1,19 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center px-6 lg:px-8 py-8">
-            <div>
-                <h2 class="text-3xl font-bold tracking-tight text-slate-900">
-                    {{ $credential->display_name }}
-                </h2>
-                <p class="mt-2 text-sm text-slate-600">{{ __('Credential details and access information') }}</p>
-            </div>
-            <div class="flex gap-2">
-                <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.edit', $credential) }}'">
-                    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    {{ __('Edit') }}
-                </x-ui.button>
-                <x-ui.button variant="outline" onclick="window.location.href='{{ route('credentials.index') }}'">
-                    {{ __('Back') }}
-                </x-ui.button>
-            </div>
-        </div>
+    <x-slot name="pageTitle">{{ $credential->display_name }}</x-slot>
+
+    <x-slot name="headerActions">
+        <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.edit', $credential) }}'">
+            <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            {{ __('Edit') }}
+        </x-ui.button>
+        <x-ui.button variant="outline" onclick="window.location.href='{{ route('credentials.index') }}'">
+            {{ __('Back') }}
+        </x-ui.button>
     </x-slot>
 
-    <div class="px-6 lg:px-8 py-8 space-y-6">
+    <div class="p-6 space-y-6">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
