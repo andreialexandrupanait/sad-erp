@@ -41,7 +41,110 @@
         <!-- Alpine Collapse Plugin -->
         <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 
+        <!-- Tom Select for searchable dropdowns -->
+        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
         <!-- Custom Styles for smooth transitions -->
+        <style>
+            /* Tom Select custom styling to match Tailwind design */
+            .ts-wrapper.single .ts-control {
+                background: white;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem;
+                padding: 0.625rem 0.75rem;
+                font-size: 0.875rem;
+                line-height: 1.25rem;
+                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+                min-height: 42px;
+            }
+
+            /* Hide all inputs in main control */
+            .ts-wrapper.single .ts-control input,
+            .ts-wrapper.single .ts-control .items-placeholder,
+            .ts-wrapper.single .ts-control .dropdown-input-wrap {
+                display: none !important;
+            }
+
+            .ts-wrapper.single .ts-control {
+                cursor: pointer;
+            }
+
+            .ts-dropdown {
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                margin-top: 0.25rem;
+                padding: 0;
+            }
+
+            /* Search input container in dropdown */
+            .ts-dropdown .ts-control {
+                padding: 0.75rem;
+                border-bottom: 1px solid #e2e8f0;
+                background: white;
+            }
+
+            /* Search input styling */
+            .ts-dropdown .ts-control input {
+                border: 2px solid var(--primary-color) !important;
+                border-radius: 0.5rem;
+                padding: 0.625rem 0.875rem;
+                width: 100%;
+                font-size: 0.875rem;
+                outline: none;
+                background: white;
+                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+            }
+
+            .ts-dropdown .ts-control input::placeholder {
+                color: #94a3b8;
+            }
+
+            .ts-dropdown .ts-control input:focus {
+                border-color: var(--primary-color);
+                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+            }
+
+            /* Dropdown content (options list) */
+            .ts-dropdown .ts-dropdown-content {
+                max-height: 300px;
+                overflow-y: auto;
+                padding: 0.25rem 0;
+            }
+
+            /* Options styling */
+            .ts-dropdown .option {
+                padding: 0.625rem 0.875rem;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .ts-dropdown .option:hover,
+            .ts-dropdown .option.active {
+                background-color: #f8fafc;
+                color: #0f172a;
+            }
+
+            .ts-dropdown .option.selected {
+                background-color: #eff6ff;
+                color: var(--primary-color);
+                font-weight: 500;
+            }
+
+            /* Colored dots before client/category names */
+            .ts-dropdown .option::before {
+                content: '';
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background-color: currentColor;
+                opacity: 0.6;
+            }
+        </style>
+
         <style>
             * {
                 scroll-behavior: smooth;

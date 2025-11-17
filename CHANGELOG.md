@@ -80,6 +80,32 @@ For detailed historical progress, see archived documents in `app/docs/archive/20
   - Create email templates
 - Complete Business Information Settings page
 - Complete Invoice Settings page
+- **SmartBill Integration** - Automated invoice import:
+  - Install SmartBill Laravel package (necenzurat/smartbill)
+  - Create service to fetch invoices from SmartBill API
+  - Auto-import missing clients from SmartBill
+  - Transform and import invoices as revenues
+  - CLI command: `php artisan smartbill:import --from-date=X --to-date=Y`
+  - Preview mode to see what would be imported
+  - Handles ~500 invoices with client auto-creation
+  - Estimated time: 7-10 hours
+- **Task Management Module** - ClickUp-like task system:
+  - **Structure**: Spaces → Folders → Lists (linked to Clients) → Tasks
+  - **Default Spaces**: Simplead, FEAA Galati (ability to add more)
+  - **Client Integration**: Auto-create list when client added (prompt for folder assignment)
+  - **Task Fields**: Name, Service, Due date, Status, Time tracked, Amount, Total amount (auto-calculated)
+  - **Services Nomenclature**: Manage services with default hourly rates
+  - **Client-specific Rates**: Override rates per client per service
+  - **Auto-calculation**: Total amount = (time_tracked / 60) * hourly_rate
+  - **Views**:
+    - Everything view (all tasks from all lists)
+    - Per-client list view
+    - Kanban board (drag & drop by status)
+  - **Status Integration**: Use existing client statuses from nomenclature
+  - **Sidebar**: New "Task Management" section (before Financial)
+  - **Custom Fields**: Extensible column system for future additions
+  - **Database**: 7 new tables (spaces, folders, lists, tasks, services, client_service_rates, custom_fields)
+  - Estimated time: 12-16 hours
 
 ### Medium Priority
 - Implement log rotation strategy

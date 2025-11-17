@@ -125,10 +125,12 @@
                                         </div>
                                     </div>
                                 </template>
-                                <template x-for="fileId in filesToDelete">
-                                    <input type="hidden" name="delete_files[]" :value="fileId">
-                                </template>
                             </div>
+                        </template>
+
+                        <!-- Hidden inputs for files marked for deletion - must be outside x-if block -->
+                        <template x-for="fileId in filesToDelete">
+                            <input type="hidden" name="delete_files[]" :value="fileId">
                         </template>
 
                         <!-- File Upload Area -->
@@ -269,4 +271,37 @@ function fileUploader(existingFilesData) {
         }
     };
 }
+
+// Initialize Tom Select for client dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('client_id')) {
+        const tomSelect = new TomSelect('#client_id', {
+            placeholder: '{{ __("Selectează client (opțional)") }}',
+            allowEmptyOption: true,
+            controlInput: null,
+            plugins: {
+                'clear_button': {},
+                'dropdown_input': {}
+            },
+            maxOptions: null,
+            render: {
+                no_results: function(data, escape) {
+                    return '<div style="padding: 12px; text-align: center; color: #94a3b8;">{{ __("Nu s-au găsit rezultate") }}</div>';
+                }
+            }
+        });
+
+        // Force hide any placeholder inputs in the control
+        setTimeout(() => {
+            const wrapper = tomSelect.wrapper;
+            const controlInputs = wrapper.querySelectorAll('.ts-control input');
+            controlInputs.forEach(input => {
+                input.style.display = 'none';
+                input.style.visibility = 'hidden';
+                input.style.position = 'absolute';
+                input.style.left = '-9999px';
+            });
+        }, 100);
+    }
+});
 </script>

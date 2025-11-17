@@ -170,7 +170,7 @@
                     <thead class="[&_tr]:border-b">
                         <tr class="border-b transition-colors hover:bg-slate-50/50">
                             <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
-                            <x-ui.sortable-header column="document_name" label="{{ __('Document') }}" />
+                            <x-ui.sortable-header column="document_name" label="{{ __('Factura') }}" />
                             <x-ui.sortable-header column="client_id" label="{{ __('Client') }}" />
                             <x-ui.sortable-header column="amount" label="{{ __('Amount') }}" class="text-right" />
                             <x-ui.table-head class="text-center">{{ __('Files') }}</x-ui.table-head>

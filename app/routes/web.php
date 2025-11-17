@@ -9,6 +9,8 @@ use App\Http\Controllers\InternalAccountController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskServiceController;
 use App\Http\Controllers\Financial\DashboardController as FinancialDashboardController;
 use App\Http\Controllers\Financial\RevenueController;
 use App\Http\Controllers\Financial\ExpenseController;
@@ -70,6 +72,15 @@ Route::middleware('auth')->group(function () {
     Route::resource('subscriptions', SubscriptionController::class);
     Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
     Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
+
+    // Task Management Module
+    Route::resource('tasks', TaskController::class);
+    Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
+    Route::patch('tasks/{task}/time', [TaskController::class, 'updateTime'])->name('tasks.update-time');
+    Route::patch('tasks/{task}/position', [TaskController::class, 'updatePosition'])->name('tasks.update-position');
+
+    // Task Services Management
+    Route::resource('task-services', TaskServiceController::class);
 
     // Settings Module
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');

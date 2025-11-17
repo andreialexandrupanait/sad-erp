@@ -162,7 +162,7 @@
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-3 flex-1 min-w-0">
                                 <span class="px-2 py-1 rounded text-xs {{ $item->category->badge_class ?? 'bg-slate-100 text-slate-700' }}">
-                                    {{ $item->category->option_label ?? __('Uncategorized') }}
+                                    {{ $item->category->label ?? __('Uncategorized') }}
                                 </span>
                                 <span class="text-xs text-slate-500">{{ $item->count }} {{ __('transactions') }}</span>
                             </div>
@@ -221,7 +221,7 @@
                                 <x-ui.table-cell>
                                     @if($expense->category)
                                         <span class="px-2 py-1 rounded text-xs {{ $expense->category->badge_class }}">
-                                            {{ $expense->category->option_label }}
+                                            {{ $expense->category->label }}
                                         </span>
                                     @else
                                         <span class="text-sm text-slate-400">—</span>

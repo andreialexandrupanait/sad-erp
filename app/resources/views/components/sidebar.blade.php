@@ -55,6 +55,32 @@
         <!-- Divider -->
         <div class="border-t border-slate-200 my-4"></div>
 
+        <!-- Task Management Section -->
+        <div class="mb-4">
+            <div class="px-3 mb-2">
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider">{{ __('Task Management') }}</h3>
+            </div>
+            <div class="space-y-1">
+                <a href="{{ route('tasks.index') }}"
+                   class="flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {{ request()->routeIs('tasks.*') ? 'bg-slate-100 text-slate-900 border-l-2 border-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                    </svg>
+                    {{ __('Tasks') }}
+                </a>
+                <a href="{{ route('task-services.index') }}"
+                   class="flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 {{ request()->routeIs('task-services.*') ? 'bg-slate-100 text-slate-900 border-l-2 border-slate-900' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }}">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    {{ __('Services') }}
+                </a>
+            </div>
+        </div>
+
+        <!-- Divider -->
+        <div class="border-t border-slate-200 my-4"></div>
+
         <!-- Accounting Section -->
         <div class="mb-4">
             <div class="px-3 mb-2">

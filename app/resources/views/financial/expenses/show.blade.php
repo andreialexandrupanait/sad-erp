@@ -55,7 +55,7 @@
                                 <p class="mt-1">
                                     @if($expense->category)
                                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm {{ $expense->category->badge_class }}">
-                                            {{ $expense->category->option_label }}
+                                            {{ $expense->category->label }}
                                         </span>
                                     @else
                                         <span class="text-slate-400">-</span>

@@ -209,7 +209,7 @@
                             </div>
                             <div class="text-right flex-shrink-0 ml-2">
                                 <p class="text-xs font-semibold text-blue-700">
-                                    {{ $subscription->next_renewal_date->diffInDays(now()) }} {{ __('days') }}
+                                    {{ now()->startOfDay()->diffInDays($subscription->next_renewal_date->startOfDay(), false) }} {{ __('days') }}
                                 </p>
                                 <p class="text-xs text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</p>
                             </div>
@@ -236,7 +236,7 @@
                             </div>
                             <div class="text-right flex-shrink-0 ml-2">
                                 <p class="text-xs font-semibold text-orange-700">
-                                    {{ $domain->expiry_date->diffInDays(now()) }} {{ __('days') }}
+                                    {{ now()->startOfDay()->diffInDays($domain->expiry_date->startOfDay(), false) }} {{ __('days') }}
                                 </p>
                                 <p class="text-xs text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</p>
                             </div>

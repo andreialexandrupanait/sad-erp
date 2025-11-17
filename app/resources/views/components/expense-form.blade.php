@@ -84,16 +84,19 @@
                         <x-ui.select name="category_option_id" id="category_option_id">
                             <option value="">{{ __('Selectează categorie (opțional)') }}</option>
                             @foreach($categories as $category)
-                                <optgroup label="{{ $category->name }}">
+                                @if($category->children->count() > 0)
+                                    <optgroup label="{{ $category->name }}">
+                                        @foreach($category->children as $child)
+                                            <option value="{{ $child->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $child->id ? 'selected' : '' }}>
+                                                {{ $child->name }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @else
                                     <option value="{{ $category->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $category->id ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
-                                    @foreach($category->children as $child)
-                                        <option value="{{ $child->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $child->id ? 'selected' : '' }}>
-                                            &nbsp;&nbsp;└─ {{ $child->name }}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
+                                @endif
                             @endforeach
                         </x-ui.select>
                     </div>
@@ -132,10 +135,12 @@
                                         </div>
                                     </div>
                                 </template>
-                                <template x-for="fileId in filesToDelete">
-                                    <input type="hidden" name="delete_files[]" :value="fileId">
-                                </template>
                             </div>
+                        </template>
+
+                        <!-- Hidden inputs for files marked for deletion - must be outside x-if block -->
+                        <template x-for="fileId in filesToDelete">
+                            <input type="hidden" name="delete_files[]" :value="fileId">
                         </template>
 
                         <!-- File Upload Area -->
@@ -143,7 +148,7 @@
                              @dragover.prevent="$el.classList.add('border-blue-500', 'bg-blue-50')"
                              @dragleave.prevent="$el.classList.remove('border-blue-500', 'bg-blue-50')"
                              @drop.prevent="handleDrop($event); $el.classList.remove('border-blue-500', 'bg-blue-50')">
-                            <input type="file" name="files[]" id="file-upload" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.zip,.rar" class="hidden" @change="handleFileSelect($event)">
+                            <input type="file" name="files[]" id="file-upload" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.zip,.rar" class="hidden" @change="handleFileSelect">
                             <label for="file-upload" class="cursor-pointer">
                                 <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -213,7 +218,9 @@ function fileUploader(existingFilesData) {
 
         handleFileSelect(event) {
             const files = Array.from(event.target.files);
+            console.log(`handleFileSelect: Received ${files.length} files`, files);
             this.addFiles(files);
+            console.log(`handleFileSelect: newFiles array now has ${this.newFiles.length} files`);
             // Don't reset the input - keep files for form submission
         },
 
@@ -238,17 +245,23 @@ function fileUploader(existingFilesData) {
                                 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                                 'application/zip', 'application/x-rar-compressed'];
 
+            console.log(`addFiles: Processing ${files.length} files`);
             files.forEach(file => {
+                console.log(`addFiles: Checking file "${file.name}" (type: ${file.type}, size: ${file.size})`);
                 if (file.size > maxSize) {
+                    console.warn(`addFiles: File "${file.name}" rejected - too large (${file.size} bytes)`);
                     alert(`${file.name} is too large. Maximum size is 10MB.`);
                     return;
                 }
                 if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpe?g|png|docx?|xlsx?|zip|rar)$/i)) {
+                    console.warn(`addFiles: File "${file.name}" rejected - unsupported type (${file.type})`);
                     alert(`${file.name} has an unsupported file type.`);
                     return;
                 }
+                console.log(`addFiles: File "${file.name}" accepted`);
                 this.newFiles.push(file);
             });
+            console.log(`addFiles: Total files in newFiles array: ${this.newFiles.length}`);
         },
 
         removeNewFile(index) {
@@ -276,4 +289,43 @@ function fileUploader(existingFilesData) {
         }
     };
 }
+
+// Initialize Tom Select for category dropdown
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('category_option_id')) {
+        const tomSelect = new TomSelect('#category_option_id', {
+            placeholder: '{{ __("Selectează categorie (opțional)") }}',
+            allowEmptyOption: true,
+            controlInput: null,
+            plugins: {
+                'clear_button': {},
+                'dropdown_input': {}
+            },
+            maxOptions: null,
+            render: {
+                optgroup_header: function(data, escape) {
+                    return '<div class="optgroup-header" style="font-weight: 600; padding: 8px 12px; background: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">' + escape(data.label) + '</div>';
+                },
+                option: function(data, escape) {
+                    return '<div style="padding: 8px 12px;">' + escape(data.text) + '</div>';
+                },
+                no_results: function(data, escape) {
+                    return '<div style="padding: 12px; text-align: center; color: #94a3b8;">{{ __("Nu s-au găsit rezultate") }}</div>';
+                }
+            }
+        });
+
+        // Force hide any placeholder inputs in the control
+        setTimeout(() => {
+            const wrapper = tomSelect.wrapper;
+            const controlInputs = wrapper.querySelectorAll('.ts-control input');
+            controlInputs.forEach(input => {
+                input.style.display = 'none';
+                input.style.visibility = 'hidden';
+                input.style.position = 'absolute';
+                input.style.left = '-9999px';
+            });
+        }, 100);
+    }
+});
 </script>

@@ -204,9 +204,9 @@ class ExpenseController extends Controller
             foreach ($request->input('delete_files') as $fileId) {
                 $file = FinancialFile::find($fileId);
                 if ($file && $file->entity_id === $expense->id && $file->entity_type === FinancialExpense::class) {
-                    // Delete physical file
-                    if (Storage::exists($file->file_path)) {
-                        Storage::delete($file->file_path);
+                    // Delete physical file from 'financial' disk
+                    if (Storage::disk('financial')->exists($file->file_path)) {
+                        Storage::disk('financial')->delete($file->file_path);
                     }
                     // Delete database record
                     $file->delete();
