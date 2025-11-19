@@ -1,4 +1,4 @@
-@props(['task' => null, 'action', 'method' => 'POST', 'lists' => [], 'services' => [], 'users' => [], 'selectedListId' => null])
+@props(['task' => null, 'action', 'method' => 'POST', 'lists' => [], 'services' => [], 'users' => [], 'taskStatuses' => [], 'selectedListId' => null])
 
 <form method="POST" action="{{ $action }}" class="space-y-6" x-data="{
     listId: '{{ old('list_id', $task->list_id ?? $selectedListId ?? '') }}',
@@ -92,7 +92,7 @@
                         <div class="mt-2">
                             <x-ui.select name="status_id" id="status_id" required>
                                 <option value="">{{ __('Select status') }}</option>
-                                @foreach($clientStatuses as $status)
+                                @foreach($taskStatuses as $status)
                                     <option value="{{ $status->id }}" {{ old('status_id', $task->status_id ?? '') == $status->id ? 'selected' : '' }}>
                                         {{ $status->label }}
                                     </option>

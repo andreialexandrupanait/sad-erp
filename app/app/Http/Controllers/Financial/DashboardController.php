@@ -106,6 +106,16 @@ class DashboardController extends Controller
         $currentYear = now()->year;
         $availableYears = collect(range(2019, $currentYear))->reverse()->values();
 
+        // Category breakdown for expense categories (top 8)
+        $categoryBreakdown = FinancialExpense::forYear($year)
+            ->whereNotNull('category_option_id')
+            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+            ->groupBy('category_option_id')
+            ->with('category')
+            ->get()
+            ->sortByDesc('total')
+            ->take(8);
+
         return view('financial.dashboard', compact(
             'year',
             'yearlyRevenueRON',
@@ -121,7 +131,8 @@ class DashboardController extends Controller
             'expenseChart',
             'commonMaxValue',
             'monthlyBreakdown',
-            'availableYears'
+            'availableYears',
+            'categoryBreakdown'
         ));
     }
 

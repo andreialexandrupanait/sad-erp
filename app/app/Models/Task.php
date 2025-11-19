@@ -18,6 +18,8 @@ class Task extends Model
         'assigned_to',
         'service_id',
         'status_id',
+        'priority_id',
+        'parent_task_id',
         'name',
         'description',
         'due_date',
@@ -34,6 +36,8 @@ class Task extends Model
         'assigned_to' => 'integer',
         'service_id' => 'integer',
         'status_id' => 'integer',
+        'priority_id' => 'integer',
+        'parent_task_id' => 'integer',
         'time_tracked' => 'integer',
         'amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
@@ -104,6 +108,33 @@ class Task extends Model
     public function customFields()
     {
         return $this->hasMany(TaskCustomField::class);
+    }
+
+    public function priority()
+    {
+        return $this->belongsTo(SettingsOption::class, 'priority_id');
+    }
+
+    // Subtask relationships
+    public function parentTask()
+    {
+        return $this->belongsTo(Task::class, 'parent_task_id');
+    }
+
+    public function subtasks()
+    {
+        return $this->hasMany(Task::class, 'parent_task_id')->ordered();
+    }
+
+    // Comments and attachments
+    public function comments()
+    {
+        return $this->hasMany(TaskComment::class)->with('user')->latest();
+    }
+
+    public function attachments()
+    {
+        return $this->hasMany(TaskAttachment::class)->with('user')->latest();
     }
 
     // Scopes

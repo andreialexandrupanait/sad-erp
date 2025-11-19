@@ -1,6 +1,71 @@
 <x-app-layout>
     <x-slot name="pageTitle">Fișiere</x-slot>
 
+    <!-- Define Alpine components BEFORE they are used -->
+    <script>
+        // File upload manager - must be defined before Alpine initializes
+        window.fileUploadManager = function() {
+            return {
+                newFiles: [],
+
+                handleFileSelect(event) {
+                    const files = Array.from(event.target.files);
+                    this.addFiles(files);
+                },
+
+                handleDrop(event) {
+                    const files = Array.from(event.dataTransfer.files);
+                    this.addFiles(files);
+                },
+
+                addFiles(files) {
+                    const maxSize = 10 * 1024 * 1024;
+                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png',
+                                        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                        'application/zip', 'application/x-rar-compressed', 'application/x-zip-compressed'];
+
+                    files.forEach(file => {
+                        if (file.size > maxSize) {
+                            alert(`${file.name} este prea mare. Dimensiunea maximă este 10MB.`);
+                            return;
+                        }
+                        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpe?g|png|docx?|xlsx?|zip|rar)$/i)) {
+                            alert(`${file.name} are un tip de fișier neacceptat.`);
+                            return;
+                        }
+                        if (!this.newFiles.find(f => f.name === file.name && f.size === file.size)) {
+                            this.newFiles.push(file);
+                        }
+                    });
+                    this.syncFileInput();
+                },
+
+                removeNewFile(index) {
+                    this.newFiles.splice(index, 1);
+                    this.syncFileInput();
+                },
+
+                syncFileInput() {
+                    const input = document.getElementById('file-upload-financial');
+                    if (input) {
+                        const dataTransfer = new DataTransfer();
+                        this.newFiles.forEach(file => dataTransfer.items.add(file));
+                        input.files = dataTransfer.files;
+                    }
+                },
+
+                formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+                }
+            };
+        };
+    </script>
+
     <div class="h-full flex flex-col bg-slate-50" x-data="fileTree()">
         <!-- Mobile Navigation -->
         <div class="lg:hidden bg-white border-b border-slate-200" x-data="{ mobileMenuOpen: false }">
@@ -491,7 +556,7 @@
                                                     <div class="flex items-center">
                                                         <span class="text-2xl mr-3">{{ $file->icon }}</span>
                                                         <div>
-                                                            <div class="text-sm font-medium text-slate-900">{{ $file->file_name }}</div>
+                                                            <div class="text-sm font-medium text-slate-900">{{ pathinfo($file->file_name, PATHINFO_FILENAME) }}</div>
                                                             @if($file->entity)
                                                                 <div class="text-xs text-slate-500">
                                                                     @if($file->entity instanceof \App\Models\FinancialRevenue)
@@ -574,10 +639,11 @@
     </div>
 
     <!-- Upload Modal -->
-    <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full">
-            <div class="flex items-center justify-between p-6 border-b border-slate-200">
-                <h3 class="text-lg font-semibold text-slate-900">Încarcă fișier nou</h3>
+    <div id="uploadModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+         x-data="window.fileUploadManager()">
+        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between p-6 border-b border-slate-200 sticky top-0 bg-white z-10">
+                <h3 class="text-lg font-semibold text-slate-900">Încarcă fișiere noi</h3>
                 <button onclick="document.getElementById('uploadModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -593,10 +659,52 @@
                 @endif
 
                 <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">Selectează fișier</label>
-                    <input type="file" name="file" required
-                           class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100">
-                    <p class="mt-2 text-xs text-slate-500">PDF, JPG, PNG, DOC, DOCX, XLS, XLSX, ZIP, RAR (max 10MB)</p>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">Selectează fișiere</label>
+
+                    <!-- Drag & Drop Zone -->
+                    <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-slate-400 transition-colors"
+                         @dragover.prevent="$el.classList.add('border-blue-500', 'bg-blue-50')"
+                         @dragleave.prevent="$el.classList.remove('border-blue-500', 'bg-blue-50')"
+                         @drop.prevent="handleDrop($event); $el.classList.remove('border-blue-500', 'bg-blue-50')">
+                        <input type="file" name="files[]" id="file-upload-financial" multiple
+                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.zip,.rar"
+                               class="hidden" @change="handleFileSelect">
+                        <label for="file-upload-financial" class="cursor-pointer">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                            </svg>
+                            <div class="mt-2">
+                                <span class="text-sm font-medium text-slate-900">Click pentru a încărca</span>
+                                <span class="text-sm text-slate-500"> sau trage și plasează aici</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">PDF, DOC, XLS, JPG, PNG, ZIP până la 10MB per fișier</p>
+                        </label>
+                    </div>
+
+                    <!-- Files Preview -->
+                    <template x-if="newFiles.length > 0">
+                        <div class="mt-4 space-y-2">
+                            <p class="text-sm font-medium text-slate-700">Fișiere selectate (<span x-text="newFiles.length"></span>):</p>
+                            <template x-for="(file, index) in newFiles" :key="index">
+                                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <svg class="w-5 h-5 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                        </svg>
+                                        <div class="min-w-0">
+                                            <p class="text-sm font-medium text-slate-900 truncate" x-text="file.name"></p>
+                                            <p class="text-xs text-slate-500" x-text="formatFileSize(file.size)"></p>
+                                        </div>
+                                    </div>
+                                    <button type="button" @click="removeNewFile(index)" class="text-red-600 hover:text-red-800 flex-shrink-0 ml-2">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
                 </div>
 
                 @if(!$tip)
@@ -611,13 +719,15 @@
                     </div>
                 @endif
 
-                <div class="flex justify-end gap-3 pt-4">
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200">
                     <button type="button" onclick="document.getElementById('uploadModal').classList.add('hidden')"
                             class="px-4 py-2 text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
                         Anulează
                     </button>
-                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                        Încarcă fișier
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                            :disabled="newFiles.length === 0"
+                            :class="{ 'opacity-50 cursor-not-allowed': newFiles.length === 0 }">
+                        <span x-text="newFiles.length === 0 ? 'Selectează fișiere' : 'Încarcă ' + newFiles.length + (newFiles.length === 1 ? ' fișier' : ' fișiere')"></span>
                     </button>
                 </div>
             </form>
@@ -992,7 +1102,7 @@
                         html += `
                             <tr class="hover:bg-slate-50 transition-colors">
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-slate-900">${file.file_name}</div>
+                                    <div class="text-sm font-medium text-slate-900">${file.file_name.replace(/\.[^/.]+$/, '')}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     ${tipBadges[file.tip] || tipBadges.general}

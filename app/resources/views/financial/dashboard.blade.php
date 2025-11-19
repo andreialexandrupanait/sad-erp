@@ -106,8 +106,8 @@
             </div>
         </div>
 
-        <!-- Monthly Charts Section - Chart.js with Common Scale -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Charts Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Revenue Chart (RON Only) -->
             <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
                 <h3 class="text-base font-semibold text-slate-900 mb-4">Venituri (pe luni)</h3>
@@ -123,6 +123,9 @@
                     {!! $expenseChart->container() !!}
                 </div>
             </div>
+
+            <!-- Expense Category Breakdown -->
+            <x-dashboard.expense-category-chart :categoryData="$categoryBreakdown" :year="$year" />
         </div>
 
         <!-- Monthly Breakdown Table -->

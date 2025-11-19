@@ -1,31 +1,30 @@
 @props(['yearlyRevenueTrend', 'yearlyExpenseTrend', 'yearlyProfitTrend'])
 
-<x-ui.card>
-    <x-ui.card-header>
-        <div class="flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-slate-900">{{ __('Tendință lunară') }}</h3>
-            <div class="flex items-center gap-4 text-xs">
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span class="text-slate-600">{{ __('Venituri') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span class="text-slate-600">{{ __('Cheltuieli') }}</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span class="text-slate-600">{{ __('Profit Net') }}</span>
-                </div>
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <h3 class="text-base font-semibold text-slate-900">{{ __('app.Monthly Trend') }}</h3>
+        <a href="{{ route('financial.dashboard') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('app.View all') }} →</a>
+    </div>
+    <div class="p-6">
+        <div class="flex items-center justify-center gap-4 text-xs mb-4">
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span class="text-slate-600">{{ __('app.Revenue') }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span class="text-slate-600">{{ __('app.Expenses') }}</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <span class="text-slate-600">{{ __('app.Net Profit') }}</span>
             </div>
         </div>
-    </x-ui.card-header>
-    <x-ui.card-content>
         <div style="height: 320px;">
             <canvas id="financialTrendChart"></canvas>
         </div>
-    </x-ui.card-content>
-</x-ui.card>
+    </div>
+</div>
 
 @push('scripts')
 <!-- Chart.js Library -->
@@ -43,7 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: {!! json_encode(array_column($yearlyRevenueTrend, 'month')) !!},
             datasets: [
                 {
-                    label: 'Venituri',
+                    label: '{{ __("app.Revenue") }}',
                     data: {!! json_encode(array_column($yearlyRevenueTrend, 'amount')) !!},
                     borderColor: 'rgb(34, 197, 94)',
                     backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -57,7 +56,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointBorderWidth: 2,
                 },
                 {
-                    label: 'Cheltuieli',
+                    label: '{{ __("app.Expenses") }}',
                     data: {!! json_encode(array_column($yearlyExpenseTrend, 'amount')) !!},
                     borderColor: 'rgb(239, 68, 68)',
                     backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -71,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     pointBorderWidth: 2,
                 },
                 {
-                    label: 'Profit Net',
+                    label: '{{ __("app.Net Profit") }}',
                     data: {!! json_encode(array_column($yearlyProfitTrend, 'amount')) !!},
                     borderColor: 'rgb(59, 130, 246)',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',

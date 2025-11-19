@@ -93,6 +93,26 @@ class FinancialFile extends Model
             // Delete the physical file from storage using the 'financial' disk
             if ($file->file_path && Storage::disk('financial')->exists($file->file_path)) {
                 Storage::disk('financial')->delete($file->file_path);
+
+                // Auto-delete empty parent folders
+                $disk = Storage::disk('financial');
+                $directory = dirname($file->file_path);
+
+                // Recursively check and delete empty folders
+                // Stop at root or when encountering a non-empty folder
+                while ($directory && $directory !== '.' && $directory !== '/' && $directory !== '') {
+                    $files = $disk->files($directory);
+                    $subdirs = $disk->directories($directory);
+
+                    // If folder is completely empty (no files and no subdirectories), delete it
+                    if (empty($files) && empty($subdirs)) {
+                        $disk->deleteDirectory($directory);
+                        $directory = dirname($directory);
+                    } else {
+                        // Folder is not empty, stop cleanup
+                        break;
+                    }
+                }
             }
         });
     }

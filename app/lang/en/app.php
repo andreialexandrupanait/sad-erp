@@ -453,4 +453,13 @@ return [
     'Diversified' => 'Diversified',
     'Top 3 Revenue' => 'Top 3 Revenue',
     'Total Revenue' => 'Total Revenue',
+    'Expenses by Category' => 'Expenses by Category',
+    'Uncategorized' => 'Uncategorized',
+    'No data available' => 'No data available',
+    'Monthly Trend' => 'Monthly Trend',
+    'Net Profit' => 'Net Profit',
+    'day' => 'day',
+    'more' => 'more',
+    'No email' => 'No email',
+    'No renewals in the next 30 days' => 'No renewals in the next 30 days',
 ];

@@ -196,6 +196,16 @@ class DashboardController extends Controller
             : 0;
         $data['topThreeClientsRevenue'] = $topClientsRevenue;
 
+        // 6. Expense Category Breakdown (current year, top 8)
+        $data['categoryBreakdown'] = FinancialExpense::where('year', now()->year)
+            ->whereNotNull('category_option_id')
+            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+            ->groupBy('category_option_id')
+            ->with('category')
+            ->get()
+            ->sortByDesc('total')
+            ->take(8);
+
         return view('dashboard', $data);
     }
 

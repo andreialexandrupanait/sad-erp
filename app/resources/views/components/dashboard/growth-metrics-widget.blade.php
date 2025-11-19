@@ -1,16 +1,11 @@
 @props(['revenueGrowth', 'expenseGrowth', 'clientGrowth', 'newClientsThisMonth', 'newClientsLastMonth'])
 
-<div class="bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-shadow p-5">
-    <div class="flex items-start justify-between mb-4">
-        <div class="flex-1">
-            <p class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{{ __('app.Month-over-Month Growth') }}</p>
-        </div>
-        <div class="flex-shrink-0 w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"/>
-            </svg>
-        </div>
+<div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200">
+        <h3 class="text-base font-semibold text-slate-900">{{ __('app.Month-over-Month Growth') }}</h3>
+        <a href="{{ route('financial.dashboard') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
     </div>
+    <div class="p-6">
 
     <div class="space-y-3">
         {{-- Revenue Growth --}}
@@ -73,5 +68,6 @@
                 @endif
             </div>
         </div>
+    </div>
     </div>
 </div>

@@ -62,7 +62,7 @@
                             <div class="w-full sm:w-48">
                                 <x-ui.select name="status_id">
                                     <option value="">{{ __('All Statuses') }}</option>
-                                    @foreach($clientStatuses as $status)
+                                    @foreach($taskStatuses as $status)
                                         <option value="{{ $status->id }}" {{ request('status_id') == $status->id ? 'selected' : '' }}>
                                             {{ $status->label }}
                                         </option>
@@ -312,7 +312,7 @@
         <!-- Kanban View -->
         @if($viewMode === 'kanban')
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" x-data="taskKanbanBoard()">
-                @foreach($clientStatuses as $status)
+                @foreach($taskStatuses as $status)
                     <x-ui.card>
                         <x-ui.card-header>
                             <div class="flex items-center justify-between">

@@ -147,6 +147,20 @@ class SettingOption extends Model implements Sortable
                      ->orderBy('sort_order');
     }
 
+    public function scopeTaskStatuses($query)
+    {
+        return $query->where('category', 'task_statuses')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
+    public function scopeTaskPriorities($query)
+    {
+        return $query->where('category', 'task_priorities')
+                     ->where('is_active', true)
+                     ->orderBy('sort_order');
+    }
+
     // Alias for backward compatibility
     public function scopePlatforms($query)
     {

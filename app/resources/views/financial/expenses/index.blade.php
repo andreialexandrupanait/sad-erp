@@ -150,38 +150,6 @@
             </form>
         </div>
 
-        <!-- Category Breakdown Widget -->
-        @if($categoryBreakdown->isNotEmpty())
-            <div class="mb-6 bg-white rounded-lg shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-slate-900">{{ __('Top Expense Categories') }}</h3>
-                    <span class="text-xs text-slate-500">{{ $month ? __('Month') : __('Year') }} {{ $year }}</span>
-                </div>
-                <div class="space-y-3">
-                    @foreach($categoryBreakdown as $item)
-                        <div class="flex items-center justify-between">
-                            <div class="flex items-center gap-3 flex-1 min-w-0">
-                                <span class="px-2 py-1 rounded text-xs {{ $item->category->badge_class ?? 'bg-slate-100 text-slate-700' }}">
-                                    {{ $item->category->label ?? __('Uncategorized') }}
-                                </span>
-                                <span class="text-xs text-slate-500">{{ $item->count }} {{ __('transactions') }}</span>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-sm font-bold text-red-600">{{ number_format($item->total, 2) }}</p>
-                            </div>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-full h-2">
-                            @php
-                                $maxTotal = $categoryBreakdown->first()->total;
-                                $percentage = $maxTotal > 0 ? ($item->total / $maxTotal) * 100 : 0;
-                            @endphp
-                            <div class="bg-red-500 h-2 rounded-full" style="width: {{ $percentage }}%"></div>
-                        </div>
-                    @endforeach
-                </div>
-            </div>
-        @endif
-
         <!-- Table -->
         <x-ui.card>
             <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">

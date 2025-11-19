@@ -138,17 +138,14 @@ class FileController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
+            'files' => 'required|array',
+            'files.*' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
             'entity_type' => 'nullable|string|in:App\Models\FinancialRevenue,App\Models\FinancialExpense',
             'entity_id' => 'nullable|integer',
             'tip' => 'nullable|string|in:incasare,plata,extrase,general',
             'an' => 'nullable|integer',
             'luna' => 'nullable|integer|between:1,12',
         ]);
-
-        $file = $request->file('file');
-        $originalName = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension();
 
         // Determine year, month, and type
         $year = $validated['an'] ?? now()->year;
@@ -171,41 +168,77 @@ class FileController extends Controller
             }
         }
 
-        // Generate standardized file name
-        $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
-        $uniqueId = Str::uuid()->toString();
-        $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+        $uploadedFiles = [];
 
-        // Storage path: /year/month/type/filename
-        $storagePath = "{$year}/{$month}/{$tip}/{$newFileName}";
+        // Get Romanian month name for folder structure
+        $monthName = $this->getRomanianMonthName($month);
 
-        // Store file
-        $path = $file->storeAs('financial_files/' . dirname($storagePath), basename($storagePath), 'local');
+        // Process each uploaded file
+        foreach ($request->file('files') as $file) {
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
 
-        // Create database record
-        $financialFile = FinancialFile::create([
-            'file_name' => $originalName,
-            'file_path' => $path,
-            'file_type' => $file->getClientMimeType(),
-            'mime_type' => $file->getMimeType(),
-            'file_size' => $file->getSize(),
-            'entity_type' => $validated['entity_type'] ?? null,
-            'entity_id' => $validated['entity_id'] ?? null,
-            'an' => $year,
-            'luna' => $month,
-            'tip' => $tip,
-        ]);
+            // Auto-rename bank statements for better readability
+            $displayName = $originalName;
+            $newFileName = null;
+
+            if ($tip === 'extrase') {
+                $generatedName = $this->generateBankStatementName($originalName);
+                if ($generatedName) {
+                    $displayName = $generatedName . '.' . $extension;
+                    // Use the exact friendly name for server file (no sanitization, no UUID)
+                    $newFileName = $displayName;
+                }
+            }
+
+            // If not a bank statement or rename failed, use standard naming
+            if (!$newFileName) {
+                $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
+                $uniqueId = Str::uuid()->toString();
+                $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+            }
+
+            // Map database tip values to Romanian folder names
+            $folderName = match($tip) {
+                'incasare' => 'Incasari',
+                'plata' => 'Plati',
+                'extrase' => 'Extrase',
+                default => 'General',
+            };
+
+            // Storage path: /year/MonthName/FolderName/filename (matching existing structure)
+            $storagePath = "{$year}/{$monthName}/{$folderName}/{$newFileName}";
+
+            // Store file using the 'financial' disk (which already points to storage/app/financial_files)
+            $path = $file->storeAs(dirname($storagePath), basename($storagePath), 'financial');
+
+            // Create database record
+            $financialFile = FinancialFile::create([
+                'file_name' => $displayName,
+                'file_path' => $path,
+                'file_type' => $file->getClientMimeType(),
+                'mime_type' => $file->getMimeType(),
+                'file_size' => $file->getSize(),
+                'entity_type' => $validated['entity_type'] ?? null,
+                'entity_id' => $validated['entity_id'] ?? null,
+                'an' => $year,
+                'luna' => $month,
+                'tip' => $tip,
+            ]);
+
+            $uploadedFiles[] = $financialFile;
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'file' => $financialFile,
-                'message' => 'Fișier încărcat cu succes',
+                'files' => $uploadedFiles,
+                'message' => count($uploadedFiles) . ' ' . (count($uploadedFiles) === 1 ? 'fișier încărcat' : 'fișiere încărcate') . ' cu succes',
             ]);
         }
 
         return redirect()->route('financial.files.index', ['year' => $year, 'month' => $month])
-            ->with('success', 'Fișier încărcat cu succes');
+            ->with('success', count($uploadedFiles) . ' ' . (count($uploadedFiles) === 1 ? 'fișier încărcat' : 'fișiere încărcate') . ' cu succes');
     }
 
     /**
@@ -247,6 +280,7 @@ class FileController extends Controller
     {
         $year = $file->an;
         $month = $file->luna;
+        $tip = $file->tip;
 
         $file->delete(); // Physical file deletion is handled in the model
 
@@ -257,7 +291,7 @@ class FileController extends Controller
             ]);
         }
 
-        return redirect()->route('financial.files.index', ['year' => $year, 'month' => $month])
+        return redirect()->route('financial.files.index', ['year' => $year, 'month' => $month, 'tip' => $tip])
             ->with('success', 'Fișier șters cu succes');
     }
 
@@ -313,16 +347,44 @@ class FileController extends Controller
             $tip = 'plata';
         }
 
-        // Generate file name
-        $sanitizedName = $this->sanitizeFileName(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
-        $uniqueId = Str::uuid()->toString();
-        $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+        // Get Romanian month name for folder structure
+        $monthName = $this->getRomanianMonthName($month);
 
-        $storagePath = "{$year}/{$month}/{$tip}/{$newFileName}";
-        $path = $file->storeAs('financial_files/' . dirname($storagePath), basename($storagePath), 'local');
+        // Auto-rename bank statements for better readability
+        $originalName = $file->getClientOriginalName();
+        $displayName = $originalName;
+        $newFileName = null;
+
+        if ($tip === 'extrase') {
+            $generatedName = $this->generateBankStatementName($originalName);
+            if ($generatedName) {
+                $displayName = $generatedName . '.' . $extension;
+                // Use the exact friendly name for server file (no sanitization, no UUID)
+                $newFileName = $displayName;
+            }
+        }
+
+        // If not a bank statement or rename failed, use standard naming
+        if (!$newFileName) {
+            $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
+            $uniqueId = Str::uuid()->toString();
+            $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
+        }
+
+        // Map database tip values to Romanian folder names
+        $folderName = match($tip) {
+            'incasare' => 'Incasari',
+            'plata' => 'Plati',
+            'extrase' => 'Extrase',
+            default => 'General',
+        };
+
+        // Storage path: /year/MonthName/FolderName/filename (matching existing structure)
+        $storagePath = "{$year}/{$monthName}/{$folderName}/{$newFileName}";
+        $path = $file->storeAs(dirname($storagePath), basename($storagePath), 'financial');
 
         $financialFile = FinancialFile::create([
-            'file_name' => $file->getClientOriginalName(),
+            'file_name' => $displayName,
             'file_path' => $path,
             'file_type' => $file->getClientMimeType(),
             'mime_type' => $file->getMimeType(),
@@ -364,7 +426,7 @@ class FileController extends Controller
 
         // Create a temporary file for the ZIP with format: XX - Month.zip
         $zipFileName = "{$monthPadded} - {$monthName}.zip";
-        $zipPath = storage_path("app/temp/{$zipFileName}");
+        $tempZipPath = storage_path("app/temp/{$zipFileName}");
 
         // Ensure temp directory exists
         if (!file_exists(storage_path('app/temp'))) {
@@ -373,14 +435,13 @@ class FileController extends Controller
 
         // Create ZIP archive
         $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
         }
 
         // Add files to ZIP, organized by type
         foreach ($files as $file) {
             if (Storage::disk('financial')->exists($file->file_path)) {
-                $filePath = Storage::disk('financial')->path($file->file_path);
                 $tip = $file->tip ?? 'general';
 
                 // Map database tip values to Romanian folder names
@@ -391,15 +452,17 @@ class FileController extends Controller
                     default => 'General',
                 };
 
-                // Add file to ZIP in folder structure: type/filename
-                $zip->addFile($filePath, "{$folderName}/{$file->file_name}");
+                // Get file contents and add to ZIP using addFromString for better folder structure support
+                $fileContents = Storage::disk('financial')->get($file->file_path);
+                $internalPath = "{$folderName}/{$file->file_name}";
+                $zip->addFromString($internalPath, $fileContents);
             }
         }
 
         $zip->close();
 
         // Download and delete the temporary ZIP file
-        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 
     /**
@@ -419,7 +482,7 @@ class FileController extends Controller
 
         // Create a temporary file for the ZIP with format: Year.zip
         $zipFileName = "{$year}.zip";
-        $zipPath = storage_path("app/temp/{$zipFileName}");
+        $tempZipPath = storage_path("app/temp/{$zipFileName}");
 
         // Ensure temp directory exists
         if (!file_exists(storage_path('app/temp'))) {
@@ -428,14 +491,13 @@ class FileController extends Controller
 
         // Create ZIP archive
         $zip = new \ZipArchive();
-        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
             return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
         }
 
         // Add files to ZIP, organized by month/type
         foreach ($files as $file) {
             if (Storage::disk('financial')->exists($file->file_path)) {
-                $filePath = Storage::disk('financial')->path($file->file_path);
                 $month = $file->luna;
                 $monthName = \Carbon\Carbon::create()->setMonth($month)->locale('en')->format('F');
                 $monthPadded = str_pad($month, 2, '0', STR_PAD_LEFT);
@@ -449,15 +511,17 @@ class FileController extends Controller
                     default => 'General',
                 };
 
-                // Add file to ZIP in folder structure: XX - Month/Type/filename
-                $zip->addFile($filePath, "{$monthPadded} - {$monthName}/{$folderName}/{$file->file_name}");
+                // Get file contents and add to ZIP using addFromString for better folder structure support
+                $fileContents = Storage::disk('financial')->get($file->file_path);
+                $internalPath = "{$monthPadded} - {$monthName}/{$folderName}/{$file->file_name}";
+                $zip->addFromString($internalPath, $fileContents);
             }
         }
 
         $zip->close();
 
         // Download and delete the temporary ZIP file
-        return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
     }
 
     /**
@@ -475,5 +539,62 @@ class FileController extends Controller
         $name = Str::limit($name, 100, '');
 
         return $name ?: 'file';
+    }
+
+    /**
+     * Get Romanian month name from month number
+     */
+    private function getRomanianMonthName($monthNumber)
+    {
+        $months = [
+            1 => 'Ianuarie',
+            2 => 'Februarie',
+            3 => 'Martie',
+            4 => 'Aprilie',
+            5 => 'Mai',
+            6 => 'Iunie',
+            7 => 'Iulie',
+            8 => 'August',
+            9 => 'Septembrie',
+            10 => 'Octombrie',
+            11 => 'Noiembrie',
+            12 => 'Decembrie',
+        ];
+
+        return $months[$monthNumber] ?? 'Unknown';
+    }
+
+    /**
+     * Generate friendly name for bank statement files
+     * Converts: Extrase_RO82BTRLEURCRT0512531701_2025-10-01_2025-10-31_SIMPLEAD_S_R_L
+     * To: 10.2025 - Cont curent EUR
+     */
+    private function generateBankStatementName($originalFilename)
+    {
+        // Only process files that match the bank export pattern
+        if (!str_starts_with($originalFilename, 'Extrase_')) {
+            return null; // Not a bank statement, keep original name
+        }
+
+        // Extract currency from IBAN in filename
+        $currency = 'RON'; // Default to RON
+        if (preg_match('/EUR/i', $originalFilename)) {
+            $currency = 'EUR';
+        } elseif (preg_match('/USD/i', $originalFilename)) {
+            $currency = 'USD';
+        } elseif (preg_match('/GBP/i', $originalFilename)) {
+            $currency = 'GBP';
+        }
+
+        // Extract month and year from date range pattern: _YYYY-MM-DD_
+        if (preg_match('/_(\d{4})-(\d{2})-\d{2}_/', $originalFilename, $matches)) {
+            $year = $matches[1];
+            $month = $matches[2];
+
+            return "{$month}.{$year} - Cont curent {$currency}";
+        }
+
+        // Pattern not matched, keep original name
+        return null;
     }
 }

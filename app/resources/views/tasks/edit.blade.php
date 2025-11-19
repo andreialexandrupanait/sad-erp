@@ -17,6 +17,7 @@
                 :lists="$lists"
                 :services="$services"
                 :users="$users"
+                :taskStatuses="$taskStatuses"
                 :action="route('tasks.update', $task)"
                 method="PATCH"
             />

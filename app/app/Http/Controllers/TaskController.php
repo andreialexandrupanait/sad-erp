@@ -73,9 +73,9 @@ class TaskController extends Controller
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
-        $clientStatuses = SettingOption::clientStatuses()->ordered()->get();
+        $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
 
-        return view('tasks.index', compact('tasks', 'viewMode', 'lists', 'services', 'users', 'clientStatuses'));
+        return view('tasks.index', compact('tasks', 'viewMode', 'lists', 'services', 'users', 'taskStatuses'));
     }
 
     /**
@@ -88,11 +88,12 @@ class TaskController extends Controller
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
+        $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
 
         // Pre-select list if provided
         $selectedListId = $request->get('list_id');
 
-        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId'));
+        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId', 'taskStatuses'));
     }
 
     /**
@@ -157,8 +158,9 @@ class TaskController extends Controller
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
+        $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
 
-        return view('tasks.edit', compact('task', 'lists', 'services', 'users'));
+        return view('tasks.edit', compact('task', 'lists', 'services', 'users', 'taskStatuses'));
     }
 
     /**

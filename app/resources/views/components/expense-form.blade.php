@@ -296,7 +296,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const tomSelect = new TomSelect('#category_option_id', {
             placeholder: '{{ __("Selectează categorie (opțional)") }}',
             allowEmptyOption: true,
-            controlInput: null,
             plugins: {
                 'clear_button': {},
                 'dropdown_input': {}
@@ -312,20 +311,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 no_results: function(data, escape) {
                     return '<div style="padding: 12px; text-align: center; color: #94a3b8;">{{ __("Nu s-au găsit rezultate") }}</div>';
                 }
+            },
+            onInitialize: function() {
+                // Hide the control input elegantly with CSS
+                const controlInput = this.control_input;
+                if (controlInput) {
+                    controlInput.style.position = 'absolute';
+                    controlInput.style.opacity = '0';
+                    controlInput.style.width = '0';
+                    controlInput.style.height = '0';
+                    controlInput.style.padding = '0';
+                    controlInput.style.border = 'none';
+                    controlInput.setAttribute('tabindex', '-1');
+                }
             }
         });
-
-        // Force hide any placeholder inputs in the control
-        setTimeout(() => {
-            const wrapper = tomSelect.wrapper;
-            const controlInputs = wrapper.querySelectorAll('.ts-control input');
-            controlInputs.forEach(input => {
-                input.style.display = 'none';
-                input.style.visibility = 'hidden';
-                input.style.position = 'absolute';
-                input.style.left = '-9999px';
-            });
-        }, 100);
     }
 });
 </script>
