@@ -209,29 +209,95 @@
                                             <div class="text-sm text-slate-500">{{ $client->tax_id ?: '—' }}</div>
                                         </x-ui.table-cell>
                                         <x-ui.table-cell>
-                                            <div x-data="{ editing: false, statusId: {{ $client->status_id ?? 'null' }} }">
+                                            <div x-data="{
+                                                open: false,
+                                                saving: false,
+                                                statusId: {{ $client->status_id ?? 'null' }},
+                                                currentStatus: {{ $client->status_id ?? 'null' }}
+                                            }"
+                                            @click.away="open = false"
+                                            class="relative group">
                                                 <!-- Display Mode -->
-                                                <div x-show="!editing"
-                                                     @click="editing = true"
-                                                     class="cursor-pointer inline-block"
-                                                     title="Click to change status">
-                                                    <x-client-status-badge :status="$client->status" />
+                                                <div x-show="!saving"
+                                                     @click="open = !open"
+                                                     class="inline-block"
+                                                     title="{{ $client->status ? __('Click to change status') : __('Click to set status') }}">
+                                                    <x-client-status-badge :status="$client->status" :editable="true" />
                                                 </div>
 
-                                                <!-- Edit Mode -->
-                                                <div x-show="editing" x-cloak class="inline-block">
-                                                    <select
-                                                        x-model="statusId"
-                                                        @change="updateStatus({{ $client->id }}, statusId); editing = false"
-                                                        @blur="editing = false"
-                                                        class="text-xs px-2 py-1 rounded border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                                        x-init="$nextTick(() => { if (editing) $el.focus() })">
+                                                <!-- Saving State -->
+                                                <div x-show="saving" x-cloak class="inline-flex items-center gap-2 px-3 py-1 text-xs text-blue-600">
+                                                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    <span>{{ __('Saving...') }}</span>
+                                                </div>
+
+                                                <!-- ClickUp-Style Dropdown -->
+                                                <div x-show="open"
+                                                     x-cloak
+                                                     x-transition:enter="transition ease-out duration-100"
+                                                     x-transition:enter-start="transform opacity-0 scale-95"
+                                                     x-transition:enter-end="transform opacity-100 scale-100"
+                                                     x-transition:leave="transition ease-in duration-75"
+                                                     x-transition:leave-start="transform opacity-100 scale-100"
+                                                     x-transition:leave-end="transform opacity-0 scale-95"
+                                                     class="absolute z-50 mt-1 w-56 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                                     style="left: 0;">
+                                                    <div class="p-2 max-h-64 overflow-y-auto">
+                                                        <div class="px-2 py-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                                            {{ __('Change Status') }}
+                                                        </div>
                                                         @foreach($clientStatuses as $status)
-                                                            <option value="{{ $status->id }}" {{ $client->status_id == $status->id ? 'selected' : '' }}>
-                                                                {{ $status->name }}
-                                                            </option>
+                                                            <button
+                                                                type="button"
+                                                                @click="
+                                                                    open = false;
+                                                                    saving = true;
+                                                                    updateStatusInline('{{ $client->slug }}', {{ $status->id }}, $el, function(success) {
+                                                                        saving = false;
+                                                                        if (success) {
+                                                                            statusId = {{ $status->id }};
+                                                                            currentStatus = {{ $status->id }};
+                                                                        }
+                                                                    });
+                                                                "
+                                                                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-md transition-colors {{ $client->status_id == $status->id ? 'bg-slate-50' : '' }}">
+                                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                                      style="background-color: {{ $status->color_background }}; color: {{ $status->color_text }};">
+                                                                    {{ $status->name }}
+                                                                </span>
+                                                                @if($client->status_id == $status->id)
+                                                                    <svg class="ml-auto w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                    </svg>
+                                                                @endif
+                                                            </button>
                                                         @endforeach
-                                                    </select>
+                                                        @if($client->status_id)
+                                                            <hr class="my-2 border-slate-200">
+                                                            <button
+                                                                type="button"
+                                                                @click="
+                                                                    open = false;
+                                                                    saving = true;
+                                                                    updateStatusInline('{{ $client->slug }}', null, $el, function(success) {
+                                                                        saving = false;
+                                                                        if (success) {
+                                                                            statusId = null;
+                                                                            currentStatus = null;
+                                                                        }
+                                                                    });
+                                                                "
+                                                                class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                                </svg>
+                                                                {{ __('Clear Status') }}
+                                                            </button>
+                                                        @endif
+                                                    </div>
                                                 </div>
                                             </div>
                                         </x-ui.table-cell>
@@ -297,29 +363,95 @@
                                                 <div class="text-sm text-slate-500">{{ $client->tax_id ?: '—' }}</div>
                                             </x-ui.table-cell>
                                             <x-ui.table-cell>
-                                                <div x-data="{ editing: false, statusId: {{ $client->status_id ?? 'null' }} }">
+                                                <div x-data="{
+                                                    open: false,
+                                                    saving: false,
+                                                    statusId: {{ $client->status_id ?? 'null' }},
+                                                    currentStatus: {{ $client->status_id ?? 'null' }}
+                                                }"
+                                                @click.away="open = false"
+                                                class="relative group">
                                                     <!-- Display Mode -->
-                                                    <div x-show="!editing"
-                                                         @click="editing = true"
-                                                         class="cursor-pointer inline-block"
-                                                         title="Click to change status">
-                                                        <x-client-status-badge :status="$client->status" />
+                                                    <div x-show="!saving"
+                                                         @click="open = !open"
+                                                         class="inline-block"
+                                                         title="{{ $client->status ? __('Click to change status') : __('Click to set status') }}">
+                                                        <x-client-status-badge :status="$client->status" :editable="true" />
                                                     </div>
 
-                                                    <!-- Edit Mode -->
-                                                    <div x-show="editing" x-cloak class="inline-block">
-                                                        <select
-                                                            x-model="statusId"
-                                                            @change="updateStatus({{ $client->id }}, statusId); editing = false"
-                                                            @blur="editing = false"
-                                                            class="text-xs px-2 py-1 rounded border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                                            x-init="$nextTick(() => { if (editing) $el.focus() })">
+                                                    <!-- Saving State -->
+                                                    <div x-show="saving" x-cloak class="inline-flex items-center gap-2 px-3 py-1 text-xs text-blue-600">
+                                                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                        <span>{{ __('Saving...') }}</span>
+                                                    </div>
+
+                                                    <!-- ClickUp-Style Dropdown -->
+                                                    <div x-show="open"
+                                                         x-cloak
+                                                         x-transition:enter="transition ease-out duration-100"
+                                                         x-transition:enter-start="transform opacity-0 scale-95"
+                                                         x-transition:enter-end="transform opacity-100 scale-100"
+                                                         x-transition:leave="transition ease-in duration-75"
+                                                         x-transition:leave-start="transform opacity-100 scale-100"
+                                                         x-transition:leave-end="transform opacity-0 scale-95"
+                                                         class="absolute z-50 mt-1 w-56 rounded-lg bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                                         style="left: 0;">
+                                                        <div class="p-2 max-h-64 overflow-y-auto">
+                                                            <div class="px-2 py-1.5 text-xs font-medium text-slate-500 uppercase tracking-wider">
+                                                                {{ __('Change Status') }}
+                                                            </div>
                                                             @foreach($clientStatuses as $status)
-                                                                <option value="{{ $status->id }}" {{ $client->status_id == $status->id ? 'selected' : '' }}>
-                                                                    {{ $status->name }}
-                                                                </option>
+                                                                <button
+                                                                    type="button"
+                                                                    @click="
+                                                                        open = false;
+                                                                        saving = true;
+                                                                        updateStatusInline('{{ $client->slug }}', {{ $status->id }}, $el, function(success) {
+                                                                            saving = false;
+                                                                            if (success) {
+                                                                                statusId = {{ $status->id }};
+                                                                                currentStatus = {{ $status->id }};
+                                                                            }
+                                                                        });
+                                                                    "
+                                                                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 rounded-md transition-colors {{ $client->status_id == $status->id ? 'bg-slate-50' : '' }}">
+                                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                                          style="background-color: {{ $status->color_background }}; color: {{ $status->color_text }};">
+                                                                        {{ $status->name }}
+                                                                    </span>
+                                                                    @if($client->status_id == $status->id)
+                                                                        <svg class="ml-auto w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                        </svg>
+                                                                    @endif
+                                                                </button>
                                                             @endforeach
-                                                        </select>
+                                                            @if($client->status_id)
+                                                                <hr class="my-2 border-slate-200">
+                                                                <button
+                                                                    type="button"
+                                                                    @click="
+                                                                        open = false;
+                                                                        saving = true;
+                                                                        updateStatusInline('{{ $client->slug }}', null, $el, function(success) {
+                                                                            saving = false;
+                                                                            if (success) {
+                                                                                statusId = null;
+                                                                                currentStatus = null;
+                                                                            }
+                                                                        });
+                                                                    "
+                                                                    class="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                                    </svg>
+                                                                    {{ __('Clear Status') }}
+                                                                </button>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </x-ui.table-cell>
@@ -593,26 +725,71 @@
             });
         }
 
-        function updateStatus(clientId, statusId) {
-            fetch(`/clients/${clientId}/status`, {
+        /**
+         * Update client status with inline feedback (no page reload)
+         */
+        function updateStatusInline(clientSlug, statusId, selectElement, callback) {
+            fetch(`/clients/${clientSlug}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ status_id: statusId })
+                body: JSON.stringify({ status_id: statusId || null })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload the page to show updated status badge color
-                    window.location.reload();
+                    // Show success feedback
+                    const row = selectElement.closest('tr') || selectElement.closest('[x-data]');
+                    if (row) {
+                        row.classList.add('bg-green-50');
+                        setTimeout(() => {
+                            row.classList.remove('bg-green-50');
+                        }, 1500);
+                    }
+
+                    // Reload page to update badge colors and counts
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
+
+                    callback(true);
+                } else {
+                    throw new Error(data.message || 'Failed to update status');
                 }
             })
             .catch(error => {
                 console.error('Error updating status:', error);
-                alert('Error updating status. Please try again.');
+
+                // Show error feedback
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'fixed top-4 right-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg shadow-lg z-50';
+                errorDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>${error.message || '{{ __("Error updating status. Please try again.") }}'}</span>
+                    </div>
+                `;
+                document.body.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 3000);
+
+                callback(false);
+            });
+        }
+
+        /**
+         * Legacy function for compatibility (redirects to new inline function)
+         * @param {string} clientSlug - The client's slug (not ID)
+         */
+        function updateStatus(clientSlug, statusId) {
+            updateStatusInline(clientSlug, statusId, document.body, function(success) {
+                if (success) {
+                    window.location.reload();
+                }
             });
         }
     </script>

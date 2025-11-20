@@ -121,6 +121,17 @@ Route::middleware('auth')->group(function () {
     Route::post('settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
     Route::post('settings/notifications/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.notifications.test-email');
 
+    // Smartbill Integration Settings
+    Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\SmartbillController::class, 'index'])->name('index');
+        Route::post('/credentials', [\App\Http\Controllers\Settings\SmartbillController::class, 'updateCredentials'])->name('credentials.update');
+        Route::post('/test-connection', [\App\Http\Controllers\Settings\SmartbillController::class, 'testConnection'])->name('test-connection');
+        Route::get('/import', [\App\Http\Controllers\Settings\SmartbillController::class, 'showImportForm'])->name('import');
+        Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])->name('import.process');
+        Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
+        Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
+    });
+
     // Nomenclature Settings Pages (Individual routes for each section)
     Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');
     Route::get('settings/domain-statuses', [SettingsController::class, 'domainStatuses'])->name('settings.domain-statuses');

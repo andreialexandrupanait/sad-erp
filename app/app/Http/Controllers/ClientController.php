@@ -207,14 +207,16 @@ class ClientController extends Controller
     public function updateStatus(Request $request, Client $client)
     {
         $validated = $request->validate([
-            'status_id' => 'required|exists:settings_options,id',
+            'status_id' => 'nullable|exists:settings_options,id',
         ]);
 
-        $client->update($validated);
+        // Update the status
+        $client->status_id = $validated['status_id'] ?? null;
+        $client->save();
 
         return response()->json([
             'success' => true,
-            'message' => 'Client status updated successfully!',
+            'message' => __('Client status updated successfully!'),
         ]);
     }
 

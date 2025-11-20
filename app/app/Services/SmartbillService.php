@@ -202,16 +202,29 @@ class SmartbillService
     public function testConnection()
     {
         try {
-            $result = $this->makeRequest('GET', '/series?cif=' . urlencode($this->cif) . '&type=f');
+            // Try to fetch taxes list - this is the simplest endpoint that validates credentials
+            // Using the correct endpoint from official Smartbill package: /tax (not /taxes)
+            $result = $this->makeRequest('GET', '/tax?cif=' . urlencode($this->cif));
             return [
                 'success' => true,
-                'message' => 'Successfully connected to Smartbill API',
+                'message' => 'Successfully connected to Smartbill API. Your credentials are working correctly.',
                 'data' => $result,
             ];
         } catch (Exception $e) {
+            $errorMessage = $e->getMessage();
+
+            // Parse common Smartbill errors for better user feedback
+            if (str_contains($errorMessage, 'nu mai este disponibila in Cloud')) {
+                $errorMessage = 'The CIF ' . $this->cif . ' is not available in Smartbill Cloud. Please verify: 1) Your CIF is correct, 2) You have an active Smartbill Cloud subscription, 3) Your API access is enabled in Smartbill settings.';
+            } elseif (str_contains($errorMessage, 'Unauthorized') || str_contains($errorMessage, '401')) {
+                $errorMessage = 'Invalid username or API token. Please check your credentials in your Smartbill account at: https://cloud.smartbill.ro/core/integrari/';
+            } elseif (str_contains($errorMessage, 'Not Found') || str_contains($errorMessage, '404')) {
+                $errorMessage = 'Smartbill API endpoint not found. The API may have changed or your account may not have access to this endpoint.';
+            }
+
             return [
                 'success' => false,
-                'message' => 'Failed to connect to Smartbill API: ' . $e->getMessage(),
+                'message' => $errorMessage,
             ];
         }
     }

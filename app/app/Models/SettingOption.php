@@ -225,4 +225,63 @@ class SettingOption extends Model implements Sortable
 
         return $colorMap[$this->color_class] ?? $colorMap['slate'];
     }
+
+    /**
+     * Generate a light background color from the main color
+     */
+    public function getColorBackgroundAttribute()
+    {
+        if (!$this->color_class || !str_starts_with($this->color_class, '#')) {
+            return '#F3F4F6'; // Default gray-100
+        }
+
+        // Convert hex to lighter shade for background (90% lighter)
+        return $this->adjustBrightness($this->color_class, 0.9);
+    }
+
+    /**
+     * Generate a dark text color from the main color
+     */
+    public function getColorTextAttribute()
+    {
+        if (!$this->color_class || !str_starts_with($this->color_class, '#')) {
+            return '#1F2937'; // Default gray-800
+        }
+
+        // Convert hex to darker shade for text (40% darker)
+        return $this->adjustBrightness($this->color_class, -0.4);
+    }
+
+    /**
+     * Adjust the brightness of a hex color
+     *
+     * @param string $hex Hex color code (e.g., '#3B82F6')
+     * @param float $percent Percentage to adjust (-1.0 to 1.0, negative darkens, positive lightens)
+     * @return string Adjusted hex color
+     */
+    private function adjustBrightness($hex, $percent)
+    {
+        // Remove # if present
+        $hex = ltrim($hex, '#');
+
+        // Convert to RGB
+        $r = hexdec(substr($hex, 0, 2));
+        $g = hexdec(substr($hex, 2, 2));
+        $b = hexdec(substr($hex, 4, 2));
+
+        // Adjust brightness
+        if ($percent > 0) {
+            // Lighten: move towards white (255)
+            $r = min(255, $r + (255 - $r) * $percent);
+            $g = min(255, $g + (255 - $g) * $percent);
+            $b = min(255, $b + (255 - $b) * $percent);
+        } else {
+            // Darken: move towards black (0)
+            $r = max(0, $r + $r * $percent);
+            $g = max(0, $g + $g * $percent);
+            $b = max(0, $b + $b * $percent);
+        }
+
+        return sprintf("#%02x%02x%02x", round($r), round($g), round($b));
+    }
 }
