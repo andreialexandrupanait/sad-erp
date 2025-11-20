@@ -15,6 +15,7 @@ use App\Http\Controllers\Financial\DashboardController as FinancialDashboardCont
 use App\Http\Controllers\Financial\RevenueController;
 use App\Http\Controllers\Financial\ExpenseController;
 use App\Http\Controllers\Financial\FileController as FinancialFileController;
+use App\Http\Controllers\Financial\ImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -79,6 +80,33 @@ Route::middleware('auth')->group(function () {
     Route::patch('tasks/{task}/time', [TaskController::class, 'updateTime'])->name('tasks.update-time');
     Route::patch('tasks/{task}/position', [TaskController::class, 'updatePosition'])->name('tasks.update-position');
 
+    // Task Side Panel & ClickUp-style features
+    Route::get('tasks/{task}/details', [TaskController::class, 'getDetails'])->name('tasks.details');
+    Route::patch('tasks/{task}/quick-update', [TaskController::class, 'quickUpdate'])->name('tasks.quick-update');
+    Route::post('tasks/{task}/subtasks', [TaskController::class, 'addSubtask'])->name('tasks.subtasks.store');
+    Route::patch('tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggle-status');
+    Route::post('tasks/{task}/comments', [TaskController::class, 'addComment'])->name('tasks.comments.store');
+    Route::delete('tasks/comments/{comment}', [TaskController::class, 'deleteComment'])->name('tasks.comments.destroy');
+    Route::post('tasks/{task}/attachments', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.store');
+    Route::get('tasks/attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])->name('tasks.attachments.download');
+    Route::delete('tasks/attachments/{attachment}', [TaskController::class, 'deleteAttachment'])->name('tasks.attachments.destroy');
+
+    // Task Hierarchy Management (Spaces, Folders, Lists)
+    Route::post('task-spaces', [\App\Http\Controllers\TaskSpaceController::class, 'store'])->name('task-spaces.store');
+    Route::patch('task-spaces/{space}', [\App\Http\Controllers\TaskSpaceController::class, 'update'])->name('task-spaces.update');
+    Route::delete('task-spaces/{space}', [\App\Http\Controllers\TaskSpaceController::class, 'destroy'])->name('task-spaces.destroy');
+    Route::patch('task-spaces/{space}/position', [\App\Http\Controllers\TaskSpaceController::class, 'updatePosition'])->name('task-spaces.update-position');
+
+    Route::post('task-folders', [\App\Http\Controllers\TaskFolderController::class, 'store'])->name('task-folders.store');
+    Route::patch('task-folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'update'])->name('task-folders.update');
+    Route::delete('task-folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'destroy'])->name('task-folders.destroy');
+    Route::patch('task-folders/{folder}/position', [\App\Http\Controllers\TaskFolderController::class, 'updatePosition'])->name('task-folders.update-position');
+
+    Route::post('task-lists', [\App\Http\Controllers\TaskListController::class, 'store'])->name('task-lists.store');
+    Route::patch('task-lists/{list}', [\App\Http\Controllers\TaskListController::class, 'update'])->name('task-lists.update');
+    Route::delete('task-lists/{list}', [\App\Http\Controllers\TaskListController::class, 'destroy'])->name('task-lists.destroy');
+    Route::patch('task-lists/{list}/position', [\App\Http\Controllers\TaskListController::class, 'updatePosition'])->name('task-lists.update-position');
+
     // Task Services Management
     Route::resource('task-services', TaskServiceController::class);
 
@@ -119,9 +147,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/export/{year}', [FinancialDashboardController::class, 'exportCsv'])->name('export');
 
         // Revenues
+        Route::get('revenues/import', [ImportController::class, 'showRevenueImportForm'])->name('revenues.import');
+        Route::post('revenues/import', [ImportController::class, 'importRevenues'])->name('revenues.import.post');
+        Route::get('revenues/import/template', [ImportController::class, 'downloadRevenueTemplate'])->name('revenues.import.template');
         Route::resource('revenues', RevenueController::class)->parameters(['revenues' => 'revenue']);
 
         // Expenses
+        Route::get('expenses/import', [ImportController::class, 'showExpenseImportForm'])->name('expenses.import');
+        Route::post('expenses/import', [ImportController::class, 'importExpenses'])->name('expenses.import.post');
+        Route::get('expenses/import/template', [ImportController::class, 'downloadExpenseTemplate'])->name('expenses.import.template');
         Route::resource('expenses', ExpenseController::class)->parameters(['expenses' => 'expense']);
 
         // Files

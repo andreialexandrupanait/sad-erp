@@ -2,7 +2,7 @@
     <x-slot name="pageTitle">{{ __('Import Revenues') }}</x-slot>
 
     <x-slot name="headerActions">
-        <x-ui.button variant="ghost" onclick="window.location.href='{{ route('financial.venituri.index') }}'">
+        <x-ui.button variant="ghost" onclick="window.location.href='{{ route('financial.revenues.index') }}'">
             <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
@@ -20,10 +20,10 @@
                 <x-ui.card-content>
                     <div class="space-y-4 text-sm text-slate-600">
                         <div>
-                            <h4 class="font-medium text-slate-900 mb-2">CSV Format Requirements:</h4>
+                            <h4 class="font-medium text-slate-900 mb-2">File Format Requirements:</h4>
                             <ul class="list-disc list-inside space-y-1 ml-2">
-                                <li>File must be in CSV format (.csv or .txt)</li>
-                                <li>Maximum file size: 2MB</li>
+                                <li>Supported formats: CSV (.csv, .txt), Excel (.xls, .xlsx)</li>
+                                <li>Maximum file size: 5MB</li>
                                 <li>First row must contain column headers</li>
                                 <li>Required columns: document_name, amount, currency, occurred_at</li>
                             </ul>
@@ -39,6 +39,21 @@
                                 <code class="px-2 py-1 bg-slate-100 rounded text-xs">client_name</code>
                                 <code class="px-2 py-1 bg-slate-100 rounded text-xs">note</code>
                             </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h4 class="font-medium text-blue-900 mb-2 flex items-center">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Smartbill Integration
+                            </h4>
+                            <ul class="list-disc list-inside space-y-1 ml-2 text-sm text-blue-800">
+                                <li>Automatically detects Smartbill CSV exports</li>
+                                <li>Stores invoice series and numbers for reference</li>
+                                <li>Can download invoice PDFs directly from Smartbill API</li>
+                                <li>Smartbill columns: Serie, Numar, CIF</li>
+                            </ul>
                         </div>
 
                         <div>
@@ -57,10 +72,10 @@
             <x-ui.card class="mb-6">
                 <x-ui.card-content class="flex items-center justify-between">
                     <div>
-                        <h3 class="text-sm font-medium text-slate-900">Download CSV Template</h3>
-                        <p class="text-sm text-slate-600 mt-1">Get a pre-formatted template with example data</p>
+                        <h3 class="text-sm font-medium text-slate-900">Download Template</h3>
+                        <p class="text-sm text-slate-600 mt-1">Get a pre-formatted CSV template with example data (works for reference - you can upload Smartbill XLS directly)</p>
                     </div>
-                    <x-ui.button variant="outline" onclick="window.location.href='{{ route('financial.venituri.import.template') }}'">
+                    <x-ui.button variant="outline" onclick="window.location.href='{{ route('financial.revenues.import.template') }}'">
                         <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -75,17 +90,17 @@
                     <h3 class="text-lg font-semibold text-slate-900">Upload CSV File</h3>
                 </x-ui.card-header>
                 <x-ui.card-content>
-                    <form method="POST" action="{{ route('financial.venituri.import') }}" enctype="multipart/form-data" class="space-y-6">
+                    <form method="POST" action="{{ route('financial.revenues.import.post') }}" enctype="multipart/form-data" class="space-y-6">
                         @csrf
 
                         <div>
-                            <x-ui.label for="csv_file">CSV File</x-ui.label>
+                            <x-ui.label for="csv_file">Import File (CSV or Excel)</x-ui.label>
                             <div class="mt-2">
                                 <input
                                     type="file"
                                     name="csv_file"
                                     id="csv_file"
-                                    accept=".csv,.txt"
+                                    accept=".csv,.txt,.xls,.xlsx"
                                     required
                                     class="block w-full text-sm text-slate-900 border border-slate-300 rounded-lg cursor-pointer bg-slate-50 focus:outline-none focus:border-slate-900 focus:ring-1 focus:ring-slate-900 file:mr-4 file:py-2 file:px-4 file:rounded-l-lg file:border-0 file:text-sm file:font-semibold file:bg-slate-900 file:text-white hover:file:bg-slate-800"
                                 />
@@ -95,8 +110,25 @@
                             @enderror
                         </div>
 
+                        <!-- Smartbill PDF Download Option -->
+                        <div class="flex items-start">
+                            <div class="flex h-6 items-center">
+                                <input
+                                    type="checkbox"
+                                    name="download_smartbill_pdfs"
+                                    id="download_smartbill_pdfs"
+                                    value="1"
+                                    class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                >
+                            </div>
+                            <div class="ml-3 text-sm leading-6">
+                                <label for="download_smartbill_pdfs" class="font-medium text-slate-900">Download invoice PDFs from Smartbill</label>
+                                <p class="text-slate-500">For Smartbill exports, automatically download and attach invoice PDFs using the Smartbill API. Requires Smartbill credentials to be configured.</p>
+                            </div>
+                        </div>
+
                         <div class="flex items-center justify-end gap-x-4 pt-4 border-t border-slate-200">
-                            <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('financial.venituri.index') }}'">
+                            <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('financial.revenues.index') }}'">
                                 Cancel
                             </x-ui.button>
                             <x-ui.button type="submit" variant="default">

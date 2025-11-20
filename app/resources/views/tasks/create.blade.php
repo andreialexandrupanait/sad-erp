@@ -17,6 +17,7 @@
                 :services="$services"
                 :users="$users"
                 :taskStatuses="$taskStatuses"
+                :taskPriorities="$taskPriorities"
                 :selectedListId="$selectedListId"
                 :action="route('tasks.store')"
                 method="POST"

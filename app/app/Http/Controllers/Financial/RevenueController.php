@@ -46,8 +46,7 @@ class RevenueController extends Controller
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($clientId, fn($q) => $q->where('client_id', $clientId))
             ->orderBy($sortBy, $sortDir)
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialRevenue::forYear($year)
@@ -59,11 +58,13 @@ class RevenueController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
-        // Widget 2: Calculate YEARLY totals (RON only, always full year)
-        $yearTotalsRonOnly = FinancialRevenue::forYear($year)
-            ->where('currency', 'RON')
+        // Widget 2: Calculate YEARLY totals (all currencies, always full year)
+        $yearTotals = FinancialRevenue::forYear($year)
             ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->sum('amount');
+            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->groupBy('currency')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
         // Count total records
         $recordCount = FinancialRevenue::forYear($year)
@@ -94,7 +95,7 @@ class RevenueController extends Controller
         return view('financial.revenues.index', compact(
             'revenues',
             'filteredTotals',
-            'yearTotalsRonOnly',
+            'yearTotals',
             'recordCount',
             'year',
             'month',

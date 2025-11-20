@@ -72,7 +72,7 @@
                             id="occurred_at"
                             required
                             placeholder="{{ __('YYYY-MM-DD') }}"
-                            value="{{ old('occurred_at', $expense ? $expense->occurred_at?->format('Y-m-d') : now()->format('Y-m-d')) }}"
+                            value="{{ old('occurred_at', $expense ? $expense->occurred_at?->format('Y-m-d') : (request('month') && request('year') ? request('year') . '-' . str_pad(request('month'), 2, '0', STR_PAD_LEFT) . '-01' : now()->format('Y-m-d'))) }}"
                         />
                     </div>
                 </div>
@@ -290,41 +290,20 @@ function fileUploader(existingFilesData) {
     };
 }
 
-// Initialize Tom Select for category dropdown
+// Initialize Choices.js for category dropdown
 document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('category_option_id')) {
-        const tomSelect = new TomSelect('#category_option_id', {
-            placeholder: '{{ __("Selectează categorie (opțional)") }}',
-            allowEmptyOption: true,
-            plugins: {
-                'clear_button': {},
-                'dropdown_input': {}
-            },
-            maxOptions: null,
-            render: {
-                optgroup_header: function(data, escape) {
-                    return '<div class="optgroup-header" style="font-weight: 600; padding: 8px 12px; background: #f8fafc; color: #475569; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">' + escape(data.label) + '</div>';
-                },
-                option: function(data, escape) {
-                    return '<div style="padding: 8px 12px;">' + escape(data.text) + '</div>';
-                },
-                no_results: function(data, escape) {
-                    return '<div style="padding: 12px; text-align: center; color: #94a3b8;">{{ __("Nu s-au găsit rezultate") }}</div>';
-                }
-            },
-            onInitialize: function() {
-                // Hide the control input elegantly with CSS
-                const controlInput = this.control_input;
-                if (controlInput) {
-                    controlInput.style.position = 'absolute';
-                    controlInput.style.opacity = '0';
-                    controlInput.style.width = '0';
-                    controlInput.style.height = '0';
-                    controlInput.style.padding = '0';
-                    controlInput.style.border = 'none';
-                    controlInput.setAttribute('tabindex', '-1');
-                }
-            }
+    const categorySelect = document.getElementById('category_option_id');
+    if (categorySelect) {
+        new Choices(categorySelect, {
+            searchEnabled: true,
+            searchPlaceholderValue: '{{ __("Caută categorie...") }}',
+            itemSelectText: '',
+            shouldSort: false,
+            removeItemButton: true,
+            noResultsText: '{{ __("Nu s-au găsit rezultate") }}',
+            noChoicesText: '{{ __("Nu există opțiuni") }}',
+            placeholderValue: '{{ __("Selectează categorie (opțional)") }}',
+            searchResultLimit: 100
         });
     }
 });

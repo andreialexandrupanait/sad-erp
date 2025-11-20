@@ -45,8 +45,7 @@ class ExpenseController extends Controller
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
             ->orderBy($sortBy, $sortDir)
-            ->paginate(15)
-            ->withQueryString();
+            ->get();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialExpense::forYear($year)
@@ -58,11 +57,13 @@ class ExpenseController extends Controller
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
-        // Widget 2: Calculate YEARLY totals (RON only, always full year)
-        $yearTotalsRonOnly = FinancialExpense::forYear($year)
-            ->where('currency', 'RON')
+        // Widget 2: Calculate YEARLY totals (all currencies, always full year)
+        $yearTotals = FinancialExpense::forYear($year)
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->sum('amount');
+            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->groupBy('currency')
+            ->get()
+            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
 
         // Count total records
         $recordCount = FinancialExpense::forYear($year)
@@ -105,7 +106,7 @@ class ExpenseController extends Controller
         return view('financial.expenses.index', compact(
             'expenses',
             'filteredTotals',
-            'yearTotalsRonOnly',
+            'yearTotals',
             'recordCount',
             'categoryBreakdown',
             'year',

@@ -102,7 +102,7 @@ class Task extends Model
 
     public function status()
     {
-        return $this->belongsTo(SettingsOption::class, 'status_id');
+        return $this->belongsTo(SettingOption::class, 'status_id');
     }
 
     public function customFields()
@@ -112,7 +112,7 @@ class Task extends Model
 
     public function priority()
     {
-        return $this->belongsTo(SettingsOption::class, 'priority_id');
+        return $this->belongsTo(SettingOption::class, 'priority_id');
     }
 
     // Subtask relationships

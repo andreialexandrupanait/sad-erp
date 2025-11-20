@@ -22,6 +22,11 @@ class FinancialRevenue extends Model
         'year',
         'month',
         'note',
+        'smartbill_invoice_number',
+        'smartbill_series',
+        'smartbill_client_cif',
+        'smartbill_imported_at',
+        'smartbill_raw_data',
     ];
 
     protected $casts = [
@@ -29,6 +34,8 @@ class FinancialRevenue extends Model
         'occurred_at' => 'date',
         'year' => 'integer',
         'month' => 'integer',
+        'smartbill_imported_at' => 'datetime',
+        'smartbill_raw_data' => 'array',
     ];
 
     protected static function booted()

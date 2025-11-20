@@ -47,6 +47,11 @@ class TaskController extends Controller
             $query->where('service_id', $request->service_id);
         }
 
+        // Filter by priority
+        if ($request->filled('priority_id')) {
+            $query->where('priority_id', $request->priority_id);
+        }
+
         // Get view mode (default: table)
         $viewMode = $request->get('view', 'table');
 
@@ -73,9 +78,21 @@ class TaskController extends Controller
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
+        $clients = \App\Models\Client::orderBy('name')->get();
         $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
+        $taskPriorities = SettingOption::taskPriorities()->ordered()->get();
 
-        return view('tasks.index', compact('tasks', 'viewMode', 'lists', 'services', 'users', 'taskStatuses'));
+        // Load hierarchy for sidebar
+        $spaces = \App\Models\TaskSpace::with(['folders.lists' => function($query) {
+            $query->withCount('tasks');
+        }])->ordered()->get();
+
+        // Get current list for breadcrumb
+        $currentList = $request->filled('list_id')
+            ? TaskList::with('folder.space', 'client')->find($request->list_id)
+            : null;
+
+        return view('tasks.index', compact('tasks', 'viewMode', 'lists', 'services', 'users', 'clients', 'taskStatuses', 'taskPriorities', 'spaces', 'currentList'));
     }
 
     /**
@@ -89,11 +106,12 @@ class TaskController extends Controller
                      ->orderBy('name')
                      ->get();
         $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
+        $taskPriorities = SettingOption::taskPriorities()->ordered()->get();
 
         // Pre-select list if provided
         $selectedListId = $request->get('list_id');
 
-        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId', 'taskStatuses'));
+        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId', 'taskStatuses', 'taskPriorities'));
     }
 
     /**
@@ -108,6 +126,7 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'service_id' => 'nullable|exists:task_services,id',
             'status_id' => 'required|exists:settings_options,id',
+            'priority_id' => 'nullable|exists:settings_options,id',
             'due_date' => 'nullable|date',
             'time_tracked' => 'nullable|integer|min:0',
             'amount' => 'nullable|numeric|min:0',
@@ -133,6 +152,16 @@ class TaskController extends Controller
 
         $task = Task::create($validated);
 
+        // Handle AJAX requests from inline creator
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'task' => $task->load('list.client', 'status', 'priority', 'assignedUser', 'service'),
+                'message' => __('Task created successfully.')
+            ]);
+        }
+
+        // Traditional form submission
         return redirect()
             ->route('tasks.index')
             ->with('success', __('Task created successfully.'));
@@ -159,8 +188,9 @@ class TaskController extends Controller
                      ->orderBy('name')
                      ->get();
         $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
+        $taskPriorities = SettingOption::taskPriorities()->ordered()->get();
 
-        return view('tasks.edit', compact('task', 'lists', 'services', 'users', 'taskStatuses'));
+        return view('tasks.edit', compact('task', 'lists', 'services', 'users', 'taskStatuses', 'taskPriorities'));
     }
 
     /**
@@ -250,6 +280,203 @@ class TaskController extends Controller
         return response()->json([
             'success' => true,
             'message' => __('Task position updated successfully.'),
+        ]);
+    }
+
+    /**
+     * Get task details for side panel (AJAX)
+     */
+    public function getDetails(Task $task)
+    {
+        $task->load([
+            'list.client',
+            'status',
+            'priority',
+            'assignedUser',
+            'service',
+            'subtasks.status',
+            'subtasks.assignedUser',
+            'comments.user',
+            'comments.replies.user',
+            'attachments.user'
+        ]);
+
+        return response()->json($task);
+    }
+
+    /**
+     * Quick update single field (AJAX)
+     */
+    public function quickUpdate(Request $request, Task $task)
+    {
+        $allowedFields = [
+            'name', 'description', 'status_id', 'priority_id', 'list_id',
+            'assigned_to', 'due_date', 'time_tracked', 'amount'
+        ];
+
+        $data = $request->only($allowedFields);
+
+        // Validate based on field
+        $rules = [];
+        foreach ($data as $field => $value) {
+            switch ($field) {
+                case 'name':
+                    $rules[$field] = 'required|string|max:255';
+                    break;
+                case 'status_id':
+                case 'priority_id':
+                    $rules[$field] = 'nullable|exists:settings_options,id';
+                    break;
+                case 'list_id':
+                    $rules[$field] = 'required|exists:task_lists,id';
+                    break;
+                case 'assigned_to':
+                    $rules[$field] = 'nullable|exists:users,id';
+                    break;
+                case 'due_date':
+                    $rules[$field] = 'nullable|date';
+                    break;
+                case 'time_tracked':
+                    $rules[$field] = 'nullable|integer|min:0';
+                    break;
+                case 'amount':
+                    $rules[$field] = 'nullable|numeric|min:0';
+                    break;
+            }
+        }
+
+        $validated = $request->validate($rules);
+        $task->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'task' => $task->fresh()
+        ]);
+    }
+
+    /**
+     * Add subtask (AJAX)
+     */
+    public function addSubtask(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $subtask = Task::create([
+            'parent_task_id' => $task->id,
+            'list_id' => $task->list_id,
+            'name' => $validated['name'],
+            'status_id' => $task->status_id, // Inherit parent status
+        ]);
+
+        $subtask->load('status', 'assignedUser');
+
+        return response()->json($subtask);
+    }
+
+    /**
+     * Toggle subtask status (AJAX)
+     */
+    public function toggleStatus(Task $task)
+    {
+        $completedStatus = \App\Models\SettingOption::taskStatuses()
+            ->where('value', 'completed')
+            ->first();
+
+        $todoStatus = \App\Models\SettingOption::taskStatuses()
+            ->where('value', 'todo')
+            ->first();
+
+        if ($task->status_id == $completedStatus?->id) {
+            $task->update(['status_id' => $todoStatus?->id]);
+        } else {
+            $task->update(['status_id' => $completedStatus?->id]);
+        }
+
+        $task->load('status', 'assignedUser');
+
+        return response()->json($task);
+    }
+
+    /**
+     * Add comment to task (AJAX)
+     */
+    public function addComment(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'comment' => 'required|string',
+            'parent_comment_id' => 'nullable|exists:task_comments,id',
+        ]);
+
+        $comment = $task->comments()->create($validated);
+        $comment->load('user', 'replies.user');
+
+        return response()->json($comment);
+    }
+
+    /**
+     * Delete comment (AJAX)
+     */
+    public function deleteComment(\App\Models\TaskComment $comment)
+    {
+        $comment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Comment deleted successfully.'),
+        ]);
+    }
+
+    /**
+     * Upload attachment (AJAX)
+     */
+    public function uploadAttachment(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'file' => 'required|file|max:10240', // 10MB max
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('task-attachments', 'public');
+
+        $attachment = $task->attachments()->create([
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $path,
+            'file_type' => $file->getMimeType(),
+            'file_size' => $file->getSize(),
+        ]);
+
+        $attachment->load('user');
+
+        return response()->json($attachment);
+    }
+
+    /**
+     * Download attachment
+     */
+    public function downloadAttachment(\App\Models\TaskAttachment $attachment)
+    {
+        if (!\Storage::disk('public')->exists($attachment->file_path)) {
+            abort(404);
+        }
+
+        return \Storage::disk('public')->download(
+            $attachment->file_path,
+            $attachment->file_name
+        );
+    }
+
+    /**
+     * Delete attachment (AJAX)
+     */
+    public function deleteAttachment(\App\Models\TaskAttachment $attachment)
+    {
+        $attachment->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Attachment deleted successfully.'),
         ]);
     }
 }

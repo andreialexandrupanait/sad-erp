@@ -331,7 +331,7 @@
                             @endif
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            @for($m = 1; $m <= 12; $m++)
+                            @for($m = 12; $m >= 1; $m--)
                                 @php
                                     $monthName = \Carbon\Carbon::create()->setMonth($m)->locale('ro')->isoFormat('MMMM');
                                     $monthData = $allYearsSummary[$year][$m] ?? ['incasare' => 0, 'plata' => 0, 'extrase' => 0, 'total' => 0];
@@ -893,7 +893,7 @@
 
                     const monthNames = ['', 'ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
 
-                    for (let m = 1; m <= 12; m++) {
+                    for (let m = 12; m >= 1; m--) {
                         const monthData = data.allYearsSummary[data.year]?.[m] || {incasare: 0, plata: 0, extrase: 0, total: 0};
                         const hasFiles = monthData.total > 0;
                         const monthName = monthNames[m];

@@ -41,107 +41,133 @@
         <!-- Alpine Collapse Plugin -->
         <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 
-        <!-- Tom Select for searchable dropdowns -->
-        <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css" rel="stylesheet">
-        <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+        <!-- Choices.js for searchable dropdowns -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
 
         <!-- Custom Styles for smooth transitions -->
         <style>
-            /* Tom Select custom styling to match Tailwind design */
-            .ts-wrapper.single .ts-control {
+            /* Choices.js custom styling to match Tailwind design */
+            .choices {
+                margin-bottom: 0;
+            }
+
+            .choices__inner {
                 background: white;
                 border: 1px solid #e2e8f0;
                 border-radius: 0.5rem;
-                padding: 0.625rem 0.75rem;
+                padding: 0.5rem 0.75rem;
                 font-size: 0.875rem;
-                line-height: 1.25rem;
+                line-height: 1.5rem;
                 box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                min-height: 42px;
+                min-height: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
             }
 
-            /* Hide all inputs in main control */
-            .ts-wrapper.single .ts-control input,
-            .ts-wrapper.single .ts-control .items-placeholder,
-            .ts-wrapper.single .ts-control .dropdown-input-wrap {
-                display: none !important;
+            .choices__inner:hover {
+                border-color: #cbd5e1;
             }
 
-            .ts-wrapper.single .ts-control {
-                cursor: pointer;
-            }
-
-            .ts-dropdown {
-                border: 1px solid #e2e8f0;
-                border-radius: 0.5rem;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                margin-top: 0.25rem;
-                padding: 0;
-            }
-
-            /* Search input container in dropdown */
-            .ts-dropdown .ts-control {
-                padding: 0.75rem;
-                border-bottom: 1px solid #e2e8f0;
-                background: white;
-            }
-
-            /* Search input styling */
-            .ts-dropdown .ts-control input {
-                border: 2px solid var(--primary-color) !important;
-                border-radius: 0.5rem;
-                padding: 0.625rem 0.875rem;
-                width: 100%;
-                font-size: 0.875rem;
-                outline: none;
-                background: white;
+            .choices.is-focused .choices__inner {
+                border-color: var(--primary-color);
                 box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
             }
 
-            .ts-dropdown .ts-control input::placeholder {
-                color: #94a3b8;
+            .choices__list--dropdown {
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                z-index: 100;
+                margin-top: 0.25rem;
             }
 
-            .ts-dropdown .ts-control input:focus {
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
-            }
-
-            /* Dropdown content (options list) */
-            .ts-dropdown .ts-dropdown-content {
+            .choices__list--dropdown .choices__list {
                 max-height: 300px;
-                overflow-y: auto;
-                padding: 0.25rem 0;
             }
 
-            /* Options styling */
-            .ts-dropdown .option {
+            .choices__input {
+                font-size: 0.875rem;
                 padding: 0.625rem 0.875rem;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
+                border-radius: 0.5rem;
+                margin: 0.5rem;
             }
 
-            .ts-dropdown .option:hover,
-            .ts-dropdown .option.active {
+            .choices__input:focus {
+                outline: none;
+            }
+
+            .choices__list--dropdown .choices__item {
+                padding: 0.625rem 0.875rem;
+                font-size: 0.875rem;
+                color: #334155;
+            }
+
+            .choices__list--dropdown .choices__item--selectable {
+                padding-right: 0.875rem;
+            }
+
+            .choices__list--dropdown .choices__item--selectable.is-highlighted {
                 background-color: #f8fafc;
                 color: #0f172a;
             }
 
-            .ts-dropdown .option.selected {
+            .choices__list--dropdown .choices__item--selectable[aria-selected="true"] {
                 background-color: #eff6ff;
                 color: var(--primary-color);
                 font-weight: 500;
             }
 
-            /* Colored dots before client/category names */
-            .ts-dropdown .option::before {
-                content: '';
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background-color: currentColor;
+            .choices__item--selectable::after {
+                display: none;
+            }
+
+            .choices[data-type*=select-one] .choices__button {
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/%3E%3C/svg%3E");
+                background-size: 12px;
+                width: 12px;
+                height: 12px;
+                opacity: 1;
+                padding: 0;
+                border-left: none;
+                margin-left: 8px;
+                margin-right: 0;
+            }
+
+            .choices__placeholder {
                 opacity: 0.6;
+                color: #94a3b8;
+            }
+
+            /* Optgroup (parent category) styling */
+            .choices__group {
+                padding: 0.5rem 0.875rem;
+                font-weight: 600;
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                color: #475569;
+                background-color: #f8fafc;
+                border-top: 1px solid #e2e8f0;
+            }
+
+            .choices__group:first-child {
+                border-top: none;
+            }
+
+            /* Child options (inside optgroup) - add indentation */
+            .choices__list[role="listbox"] .choices__item[data-group-id] {
+                padding-left: 2rem;
+                font-size: 0.875rem;
+            }
+
+            /* Add a subtle indicator before child items */
+            .choices__list[role="listbox"] .choices__item[data-group-id]::before {
+                content: '└';
+                position: absolute;
+                left: 1rem;
+                color: #cbd5e1;
             }
         </style>
 
@@ -292,6 +318,72 @@
 
         <!-- Toast Notifications -->
         <x-toast />
+
+        <!-- Global Choices.js Initialization -->
+        <script>
+        // Auto-initialize Choices.js on all select elements
+        document.addEventListener('DOMContentLoaded', function() {
+            // Find all select elements that aren't already initialized
+            const selects = document.querySelectorAll('select:not(.choices__input)');
+
+            selects.forEach(function(select) {
+                // Skip if already initialized or if it's a native select we want to keep
+                if (select.classList.contains('choices-initialized')) {
+                    return;
+                }
+
+                // Check if select has multiple options (more than 5 = good candidate for search)
+                const optionCount = select.options.length;
+
+                // Initialize Choices.js on selects with many options or data attribute
+                if (optionCount > 10 || select.hasAttribute('data-searchable')) {
+                    try {
+                        new Choices(select, {
+                            searchEnabled: true,
+                            searchPlaceholderValue: 'Caută...',
+                            itemSelectText: '',
+                            shouldSort: false,
+                            removeItemButton: true,
+                            noResultsText: 'Nu s-au găsit rezultate',
+                            noChoicesText: 'Nu există opțiuni',
+                            searchResultLimit: 100
+                        });
+                        select.classList.add('choices-initialized');
+                    } catch (e) {
+                        console.warn('Failed to initialize Choices.js on select:', e);
+                    }
+                }
+            });
+        });
+
+        // Re-initialize on dynamic content (for modals, AJAX, etc.)
+        document.addEventListener('alpine:initialized', function() {
+            // Wait a bit for Alpine to finish rendering
+            setTimeout(function() {
+                const selects = document.querySelectorAll('select:not(.choices__input):not(.choices-initialized)');
+                selects.forEach(function(select) {
+                    const optionCount = select.options.length;
+                    if (optionCount > 10 || select.hasAttribute('data-searchable')) {
+                        try {
+                            new Choices(select, {
+                                searchEnabled: true,
+                                searchPlaceholderValue: 'Caută...',
+                                itemSelectText: '',
+                                shouldSort: false,
+                                removeItemButton: true,
+                                noResultsText: 'Nu s-au găsit rezultate',
+                                noChoicesText: 'Nu există opțiuni',
+                                searchResultLimit: 100
+                            });
+                            select.classList.add('choices-initialized');
+                        } catch (e) {
+                            console.warn('Failed to initialize Choices.js:', e);
+                        }
+                    }
+                });
+            }, 100);
+        });
+        </script>
 
         <!-- Scripts Stack -->
         @stack('scripts')

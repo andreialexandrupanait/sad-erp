@@ -10,7 +10,25 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data>
+    <!-- Main Layout with Sidebar -->
+    <div class="flex h-full">
+        <!-- Sidebar Navigation -->
+        <x-tasks.sidebar-nav :spaces="$spaces" />
+
+        <!-- Main Content -->
+        <div class="flex-1 p-6 space-y-6 overflow-auto" x-data>
+            <!-- Breadcrumb -->
+            <x-tasks.breadcrumb :currentList="$currentList" />
+
+            <!-- Advanced Filters -->
+            <x-tasks.advanced-filters
+                :lists="$lists"
+                :taskStatuses="$taskStatuses"
+                :taskPriorities="$taskPriorities"
+                :users="$users"
+                :services="$services"
+            />
+
         <!-- Success Message -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -157,9 +175,26 @@
                     </div>
                 @else
                     <div class="overflow-x-auto">
-                        <table class="w-full caption-bottom text-sm">
+                        <!-- Inline Task Creator -->
+                        <x-tasks.inline-create
+                            :lists="$lists"
+                            :taskStatuses="$taskStatuses"
+                            :users="$users"
+                            :services="$services"
+                            :taskPriorities="$taskPriorities"
+                        />
+
+                        <table class="w-full caption-bottom text-sm" x-data="taskDragDrop()">
                             <thead class="[&_tr]:border-b">
                                 <tr class="border-b transition-colors hover:bg-slate-50/50">
+                                    <th class="h-12 w-12 px-4 text-left align-middle">
+                                        <input
+                                            type="checkbox"
+                                            @change="$event.target.checked ? $store.taskBulk.selectAll(@json($tasks->pluck('id')->toArray())) : $store.taskBulk.clearSelection()"
+                                            class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                        />
+                                    </th>
+                                    <th class="h-12 w-8 px-2 text-left align-middle"></th>
                                     <x-ui.sortable-header column="name" label="{{ __('Task') }}" />
                                     <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('List / Client') }}</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
@@ -173,20 +208,43 @@
                             </thead>
                             <tbody class="[&_tr:last-child]:border-0">
                                 @foreach($tasks as $task)
-                                    <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                        <td class="p-4 align-middle">
+                                    <tr
+                                        draggable="true"
+                                        @dragstart="dragStart($event, {{ $task->id }})"
+                                        @dragend="dragEnd($event)"
+                                        @dragover.prevent
+                                        @dragenter="dragEnter($event, {{ $task->id }})"
+                                        @dragleave="dragLeave($event)"
+                                        @drop="drop($event, {{ $task->id }}, {{ $task->position }})"
+                                        class="border-b transition-colors hover:bg-slate-50/50"
+                                        :class="{ 'opacity-50': draggedTaskId === {{ $task->id }}, 'border-t-2 border-blue-500': dragOverTaskId === {{ $task->id }}, 'bg-blue-50/50': $store.taskBulk.isSelected({{ $task->id }}) }"
+                                    >
+                                        <td class="p-4 align-middle" @click.stop>
+                                            <input
+                                                type="checkbox"
+                                                :checked="$store.taskBulk.isSelected({{ $task->id }})"
+                                                @change="$store.taskBulk.toggleTask({{ $task->id }})"
+                                                class="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                            />
+                                        </td>
+                                        <td class="p-2 align-middle cursor-move" @click.stop>
+                                            <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                            </svg>
+                                        </td>
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             <div class="font-medium">{{ $task->name }}</div>
                                             @if($task->description)
                                                 <div class="text-sm text-slate-500 truncate max-w-md">{{ Str::limit($task->description, 60) }}</div>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle">
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             <div class="text-sm">{{ $task->list->name }}</div>
                                             @if($task->list->client)
                                                 <div class="text-xs text-slate-500">{{ $task->list->client->name }}</div>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle">
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             @if($task->status)
                                                 <span class="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium"
                                                       style="background-color: {{ $task->status->color }}20; color: {{ $task->status->color }}">
@@ -194,21 +252,21 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle">
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             @if($task->assignedUser)
                                                 <div class="text-sm">{{ $task->assignedUser->name }}</div>
                                             @else
                                                 <span class="text-sm text-slate-400">{{ __('Unassigned') }}</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle">
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             @if($task->service)
                                                 <div class="text-sm">{{ $task->service->name }}</div>
                                             @else
                                                 <span class="text-sm text-slate-400">-</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle">
+                                        <td class="p-4 align-middle cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             @if($task->due_date)
                                                 <div class="text-sm">{{ $task->due_date->format('d.m.Y') }}</div>
                                                 @if($task->due_date->isPast())
@@ -218,7 +276,7 @@
                                                 <span class="text-sm text-slate-400">-</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle text-right"
+                                        <td class="p-4 align-middle text-right" @click.stop
                                             x-data="{
                                                 editing: false,
                                                 timeTracked: {{ $task->time_tracked }},
@@ -270,14 +328,14 @@
                                                 <span class="text-xs text-slate-500 ml-1">min</span>
                                             </div>
                                         </td>
-                                        <td class="p-4 align-middle text-right">
+                                        <td class="p-4 align-middle text-right cursor-pointer" @click="$dispatch('task-panel-open', {{ $task->id }})">
                                             @if($task->total_amount > 0)
                                                 <div class="text-sm font-medium">{{ number_format($task->total_amount, 2) }} RON</div>
                                             @else
                                                 <span class="text-sm text-slate-400">-</span>
                                             @endif
                                         </td>
-                                        <td class="p-4 align-middle text-right">
+                                        <td class="p-4 align-middle text-right" @click.stop>
                                             <div class="flex justify-end gap-2">
                                                 <x-ui.button variant="ghost" size="sm" onclick="window.location.href='{{ route('tasks.edit', $task) }}'">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,6 +357,74 @@
                                 @endforeach
                             </tbody>
                         </table>
+
+                        <!-- Drag & Drop Script -->
+                        <script>
+                        function taskDragDrop() {
+                            return {
+                                draggedTaskId: null,
+                                dragOverTaskId: null,
+
+                                dragStart(event, taskId) {
+                                    this.draggedTaskId = taskId;
+                                    event.dataTransfer.effectAllowed = 'move';
+                                },
+
+                                dragEnd(event) {
+                                    this.draggedTaskId = null;
+                                    this.dragOverTaskId = null;
+                                },
+
+                                dragEnter(event, taskId) {
+                                    if (this.draggedTaskId !== taskId) {
+                                        this.dragOverTaskId = taskId;
+                                    }
+                                },
+
+                                dragLeave(event) {
+                                    this.dragOverTaskId = null;
+                                },
+
+                                async drop(event, targetTaskId, targetPosition) {
+                                    event.preventDefault();
+
+                                    if (this.draggedTaskId === targetTaskId) {
+                                        this.draggedTaskId = null;
+                                        this.dragOverTaskId = null;
+                                        return;
+                                    }
+
+                                    try {
+                                        const response = await fetch(`/tasks/${this.draggedTaskId}/position`, {
+                                            method: 'PATCH',
+                                            headers: {
+                                                'Content-Type': 'application/json',
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                                'Accept': 'application/json'
+                                            },
+                                            body: JSON.stringify({
+                                                position: targetPosition
+                                            })
+                                        });
+
+                                        const data = await response.json();
+
+                                        if (data.success) {
+                                            window.location.reload();
+                                        } else {
+                                            alert(data.message || 'Failed to reorder tasks');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error:', error);
+                                        alert('An error occurred while reordering');
+                                    }
+
+                                    this.draggedTaskId = null;
+                                    this.dragOverTaskId = null;
+                                }
+                            };
+                        }
+                        </script>
                     </div>
 
                     <!-- Pagination -->
@@ -493,5 +619,32 @@
                 }
             </script>
         @endif
+
+            <!-- Task Side Panel (ClickUp-style) -->
+            <x-tasks.side-panel
+                :taskStatuses="$taskStatuses"
+                :taskPriorities="$taskPriorities"
+                :users="$users"
+            />
+
+            <!-- Hierarchy Management Modals -->
+            <x-tasks.modals.space-modal :spaces="$spaces" />
+            <x-tasks.modals.folder-modal :spaces="$spaces" />
+            <x-tasks.modals.list-modal :spaces="$spaces" :clients="$clients" />
+
+            <!-- Bulk Actions Bar -->
+            <x-tasks.bulk-actions-bar :taskStatuses="$taskStatuses" :lists="$lists" />
+
+            <!-- Quick Switcher (Cmd+K) -->
+            <x-tasks.quick-switcher :spaces="$spaces" :lists="$lists" :taskStatuses="$taskStatuses" />
+
+            <!-- Keyboard Shortcuts Help -->
+            <x-tasks.keyboard-shortcuts-help />
+
+            <!-- Alpine.js Stores & Scripts -->
+            <x-tasks.modals.alpine-store />
+            <x-tasks.bulk-operations-store />
+            <x-tasks.global-shortcuts />
+        </div>
     </div>
 </x-app-layout>

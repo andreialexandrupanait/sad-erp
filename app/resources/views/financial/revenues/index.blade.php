@@ -26,7 +26,7 @@
                 </div>
             </form>
 
-            <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.revenues.create') }}'">
+            <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.revenues.create', ['month' => $month, 'year' => $year]) }}'">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
@@ -82,15 +82,23 @@
                 </div>
             </div>
 
-            <!-- Widget 2: Yearly Total (RON Only) -->
+            <!-- Widget 2: Yearly Total (All Currencies) -->
             <div class="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
                 <div class="flex items-center justify-between">
                     <div class="flex-1">
                         <p class="text-xs font-medium text-slate-500 uppercase">{{ __('Total pe an') }} {{ $year }}</p>
                         <div class="mt-2">
-                            <p class="text-lg font-bold text-blue-700">{{ number_format($yearTotalsRonOnly, 2) }} RON</p>
+                            @if($yearTotals->count() > 0)
+                                <p class="text-lg font-bold text-blue-700">
+                                    @foreach($yearTotals as $curr => $total)
+                                        {{ number_format($total, 2) }} {{ $curr }}@if(!$loop->last) / @endif
+                                    @endforeach
+                                </p>
+                            @else
+                                <p class="text-lg font-bold text-slate-400">0.00</p>
+                            @endif
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">{{ __('Doar RON') }}</p>
+                        <p class="text-xs text-slate-500 mt-1">{{ __('Toate valutele') }}</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-full">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,37 +125,74 @@
                     @endif
                 </div>
                 <input type="hidden" name="month" id="month-input" value="{{ $month }}">
-                <div class="grid grid-cols-6 gap-2 sm:grid-cols-12">
-                    @foreach(['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'] as $index => $monthName)
-                        @php
-                            $monthNum = $index + 1;
-                            $hasTransactions = isset($monthsWithTransactions[$monthNum]);
-                            $isSelected = $month == $monthNum;
-                            $transactionCount = $hasTransactions ? $monthsWithTransactions[$monthNum]['count'] : 0;
-                        @endphp
-                        <div class="relative group">
-                            <button
-                                type="button"
-                                onclick="document.getElementById('month-input').value = '{{ $monthNum }}'; document.getElementById('monthForm').submit();"
-                                class="w-full relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
-                                    {{ $isSelected ? 'border-green-500 bg-green-50 text-green-700 font-semibold' : ($hasTransactions ? 'border-slate-200 bg-slate-50 hover:border-green-300 hover:bg-green-50' : 'border-slate-100 bg-white text-slate-400') }}"
-                                title="{{ $hasTransactions ? $transactionCount . ' ' . __('transactions') : __('No items') }}"
-                            >
-                                <span class="text-xs font-medium">{{ $monthName }}</span>
-                                @if($hasTransactions)
-                                    <span class="absolute -top-1 -right-1 flex h-3 w-3">
-                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full {{ $isSelected ? 'bg-green-400' : 'bg-blue-400' }} opacity-75"></span>
-                                        <span class="relative inline-flex rounded-full h-3 w-3 {{ $isSelected ? 'bg-green-500' : 'bg-blue-500' }}"></span>
-                                    </span>
-                                    <span class="mt-1 text-[10px] font-semibold {{ $isSelected ? 'text-green-600' : 'text-slate-600' }}">
-                                        {{ $transactionCount }}
-                                    </span>
-                                @endif
-                            </button>
-                        </div>
-                    @endforeach
+
+                <!-- Month Navigation with Arrows -->
+                <div class="flex items-center gap-3">
+                    <!-- Left Arrow -->
+                    <button type="button"
+                            onclick="navigateMonth(-1)"
+                            class="flex-shrink-0 p-2 rounded-lg border-2 border-slate-200 hover:border-green-500 hover:bg-green-50 transition-all group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
+                            {{ $month == 1 ? 'disabled' : '' }}
+                            title="{{ __('Previous month') }}">
+                        <svg class="w-5 h-5 text-slate-600 group-hover:text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+
+                    <!-- Month Grid -->
+                    <div class="flex-1 grid grid-cols-6 gap-2 sm:grid-cols-12">
+                        @foreach(['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'] as $index => $monthName)
+                            @php
+                                $monthNum = $index + 1;
+                                $hasTransactions = isset($monthsWithTransactions[$monthNum]);
+                                $isSelected = $month == $monthNum;
+                                $transactionCount = $hasTransactions ? $monthsWithTransactions[$monthNum]['count'] : 0;
+                                $monthTotal = $hasTransactions ? $monthsWithTransactions[$monthNum]['total'] : 0;
+                            @endphp
+                            <div class="relative group">
+                                <button
+                                    type="button"
+                                    onclick="document.getElementById('month-input').value = '{{ $monthNum }}'; document.getElementById('monthForm').submit();"
+                                    class="w-full relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
+                                        {{ $isSelected ? 'border-green-500 bg-green-50 text-green-700 font-semibold' : ($hasTransactions ? 'border-slate-200 bg-slate-50 hover:border-green-300 hover:bg-green-50' : 'border-slate-100 bg-white text-slate-400') }}"
+                                    title="{{ $hasTransactions ? $transactionCount . ' ' . __('transactions') . ' | ' . number_format($monthTotal, 0) . ' Lei' : __('No items') }}"
+                                >
+                                    <span class="text-xs font-medium">{{ $monthName }}</span>
+                                    @if($hasTransactions)
+                                        <span class="mt-1 text-[10px] font-semibold {{ $isSelected ? 'text-green-600' : 'text-slate-600' }}">
+                                            {{ $transactionCount }} | {{ number_format($monthTotal, 0) }}
+                                        </span>
+                                    @endif
+                                </button>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <!-- Right Arrow -->
+                    <button type="button"
+                            onclick="navigateMonth(1)"
+                            class="flex-shrink-0 p-2 rounded-lg border-2 border-slate-200 hover:border-green-500 hover:bg-green-50 transition-all group disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-200 disabled:hover:bg-transparent"
+                            {{ $month == 12 ? 'disabled' : '' }}
+                            title="{{ __('Next month') }}">
+                        <svg class="w-5 h-5 text-slate-600 group-hover:text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
                 </div>
             </form>
+
+            <!-- Navigation JavaScript -->
+            <script>
+            function navigateMonth(direction) {
+                const currentMonth = {{ $month ?: 0 }};
+                const newMonth = currentMonth + direction;
+
+                if (newMonth >= 1 && newMonth <= 12) {
+                    document.getElementById('month-input').value = newMonth;
+                    document.getElementById('monthForm').submit();
+                }
+            }
+            </script>
         </div>
 
         <!-- Table -->
@@ -248,13 +293,6 @@
                     </tbody>
                 </table>
             </div>
-
-            <!-- Pagination -->
-            @if($revenues->hasPages())
-                <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
-                    {{ $revenues->links() }}
-                </div>
-            @endif
         </x-ui.card>
     </div>
 

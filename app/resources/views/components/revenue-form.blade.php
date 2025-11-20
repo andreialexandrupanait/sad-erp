@@ -72,7 +72,7 @@
                             id="occurred_at"
                             required
                             placeholder="{{ __('YYYY-MM-DD') }}"
-                            value="{{ old('occurred_at', $revenue ? $revenue->occurred_at?->format('Y-m-d') : now()->format('Y-m-d')) }}"
+                            value="{{ old('occurred_at', $revenue ? $revenue->occurred_at?->format('Y-m-d') : (request('month') && request('year') ? request('year') . '-' . str_pad(request('month'), 2, '0', STR_PAD_LEFT) . '-01' : now()->format('Y-m-d'))) }}"
                         />
                     </div>
                 </div>
@@ -272,35 +272,20 @@ function fileUploader(existingFilesData) {
     };
 }
 
-// Initialize Tom Select for client dropdown
+// Initialize Choices.js for client dropdown
 document.addEventListener('DOMContentLoaded', function() {
-    if (document.getElementById('client_id')) {
-        const tomSelect = new TomSelect('#client_id', {
-            placeholder: '{{ __("Selectează client (opțional)") }}',
-            allowEmptyOption: true,
-            plugins: {
-                'clear_button': {},
-                'dropdown_input': {}
-            },
-            maxOptions: null,
-            render: {
-                no_results: function(data, escape) {
-                    return '<div style="padding: 12px; text-align: center; color: #94a3b8;">{{ __("Nu s-au găsit rezultate") }}</div>';
-                }
-            },
-            onInitialize: function() {
-                // Hide the control input elegantly with CSS
-                const controlInput = this.control_input;
-                if (controlInput) {
-                    controlInput.style.position = 'absolute';
-                    controlInput.style.opacity = '0';
-                    controlInput.style.width = '0';
-                    controlInput.style.height = '0';
-                    controlInput.style.padding = '0';
-                    controlInput.style.border = 'none';
-                    controlInput.setAttribute('tabindex', '-1');
-                }
-            }
+    const clientSelect = document.getElementById('client_id');
+    if (clientSelect) {
+        new Choices(clientSelect, {
+            searchEnabled: true,
+            searchPlaceholderValue: '{{ __("Caută client...") }}',
+            itemSelectText: '',
+            shouldSort: false,
+            removeItemButton: true,
+            noResultsText: '{{ __("Nu s-au găsit rezultate") }}',
+            noChoicesText: '{{ __("Nu există opțiuni") }}',
+            placeholderValue: '{{ __("Selectează client (opțional)") }}',
+            searchResultLimit: 100
         });
     }
 });
