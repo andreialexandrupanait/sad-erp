@@ -7,6 +7,7 @@
     @keydown.window.prevent.ctrl.k="open = true"
     x-show="open"
     x-cloak
+   
     class="fixed inset-0 z-50 overflow-y-auto"
     @keydown.escape.window="close()"
 >

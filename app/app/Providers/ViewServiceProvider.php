@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Http\View\Composers\SettingsComposer;
+use App\Http\View\Composers\SidebarComposer;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,8 +37,9 @@ class ViewServiceProvider extends ServiceProvider
             'components.client-form-fields',
         ], SettingsComposer::class);
 
-        // You can add more composers here as needed
-        // Example:
-        // View::composer(['subscriptions.*'], SubscriptionSettingsComposer::class);
+        // Share task workspace hierarchy with sidebar
+        View::composer([
+            'components.sidebar',
+        ], SidebarComposer::class);
     }
 }

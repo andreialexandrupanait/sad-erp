@@ -1,4 +1,4 @@
-@props(['task' => null, 'action', 'method' => 'POST', 'lists' => [], 'services' => [], 'users' => [], 'taskStatuses' => [], 'selectedListId' => null])
+@props(['task' => null, 'action', 'method' => 'POST', 'lists' => [], 'services' => [], 'users' => [], 'taskStatuses' => [], 'taskPriorities' => [], 'customFields' => [], 'selectedListId' => null])
 
 <form method="POST" action="{{ $action }}" class="space-y-6" x-data="{
     listId: '{{ old('list_id', $task->list_id ?? $selectedListId ?? '') }}',
@@ -231,6 +231,23 @@
                         <p class="mt-1 text-xs text-gray-500">{{ __('Calculated: (time / 60) × hourly rate') }}</p>
                     </div>
                 </div>
+
+                <!-- Custom Fields -->
+                @if($customFields->isNotEmpty())
+                    <div class="border-t border-gray-200 pt-6">
+                        <h3 class="text-base font-semibold leading-7 text-gray-900 mb-4">
+                            {{ __('Custom Fields') }}
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            @foreach($customFields as $field)
+                                <x-tasks.custom-field-input
+                                    :field="$field"
+                                    :task="$task"
+                                />
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 

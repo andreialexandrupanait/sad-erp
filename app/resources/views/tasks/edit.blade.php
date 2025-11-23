@@ -19,6 +19,7 @@
                 :users="$users"
                 :taskStatuses="$taskStatuses"
                 :taskPriorities="$taskPriorities"
+                :customFields="$customFields"
                 :action="route('tasks.update', $task)"
                 method="PATCH"
             />

@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
     // Task Side Panel & ClickUp-style features
     Route::get('tasks/{task}/details', [TaskController::class, 'getDetails'])->name('tasks.details');
     Route::patch('tasks/{task}/quick-update', [TaskController::class, 'quickUpdate'])->name('tasks.quick-update');
+    Route::patch('tasks/{task}/custom-fields/{customField}', [TaskController::class, 'updateCustomField'])->name('tasks.custom-fields.update');
     Route::post('tasks/{task}/subtasks', [TaskController::class, 'addSubtask'])->name('tasks.subtasks.store');
     Route::patch('tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggle-status');
     Route::post('tasks/{task}/comments', [TaskController::class, 'addComment'])->name('tasks.comments.store');
@@ -90,6 +91,24 @@ Route::middleware('auth')->group(function () {
     Route::post('tasks/{task}/attachments', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.store');
     Route::get('tasks/attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])->name('tasks.attachments.download');
     Route::delete('tasks/attachments/{attachment}', [TaskController::class, 'deleteAttachment'])->name('tasks.attachments.destroy');
+
+    // Bulk operations
+    Route::post('tasks/bulk-update', [TaskController::class, 'bulkUpdate'])->name('tasks.bulk-update');
+
+    // Task duplication
+    Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
+
+    // Assignees management
+    Route::post('tasks/{task}/assignees', [TaskController::class, 'addAssignee'])->name('tasks.assignees.add');
+    Route::delete('tasks/{task}/assignees/{user}', [TaskController::class, 'removeAssignee'])->name('tasks.assignees.remove');
+
+    // Watchers management
+    Route::post('tasks/{task}/watchers', [TaskController::class, 'addWatcher'])->name('tasks.watchers.add');
+    Route::delete('tasks/{task}/watchers/{user}', [TaskController::class, 'removeWatcher'])->name('tasks.watchers.remove');
+
+    // Task Custom Fields Management
+    Route::resource('task-custom-fields', \App\Http\Controllers\TaskCustomFieldController::class)->except(['show']);
+    Route::post('task-custom-fields/reorder', [\App\Http\Controllers\TaskCustomFieldController::class, 'reorder'])->name('task-custom-fields.reorder');
 
     // Task Hierarchy Management (Spaces, Folders, Lists)
     Route::post('task-spaces', [\App\Http\Controllers\TaskSpaceController::class, 'store'])->name('task-spaces.store');

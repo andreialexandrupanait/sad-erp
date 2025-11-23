@@ -35,15 +35,22 @@
             .focus\:ring-primary-500:focus { --tw-ring-color: var(--primary-color) !important; }
         </style>
 
+        <!-- Alpine Collapse Plugin (must load before Alpine.js) -->
+        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+
         <!-- Alpine.js for interactivity -->
         <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-        <!-- Alpine Collapse Plugin -->
-        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 
         <!-- Choices.js for searchable dropdowns -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
         <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+
+        <!-- Alpine.js x-cloak - Hide elements until Alpine is ready -->
+        <style>
+            [x-cloak] {
+                display: none !important;
+            }
+        </style>
 
         <!-- Custom Styles for smooth transitions -->
         <style>

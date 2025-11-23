@@ -56,7 +56,15 @@ class TaskListController extends Controller
             'position' => 'nullable|integer',
         ]);
 
+        // Check if folder_id changed
+        $folderChanged = $validated['folder_id'] != $list->folder_id;
+
         $list->update($validated);
+
+        // Sync client status when folder changes
+        if ($folderChanged && $list->client_id) {
+            $this->syncClientStatusFromFolder($list->fresh(['folder', 'client']));
+        }
 
         if ($request->expectsJson()) {
             return response()->json([
@@ -94,11 +102,77 @@ class TaskListController extends Controller
             'folder_id' => 'nullable|exists:task_folders,id',
         ]);
 
+        // Check if folder_id changed (list moved to different folder)
+        $folderChanged = isset($validated['folder_id']) && $validated['folder_id'] != $list->folder_id;
+
         $list->update($validated);
+
+        // Sync client status when list moves to different folder
+        if ($folderChanged && $list->client_id) {
+            $this->syncClientStatusFromFolder($list->fresh(['folder', 'client']));
+        }
 
         return response()->json([
             'success' => true,
             'message' => __('List position updated successfully.'),
         ]);
+    }
+
+    /**
+     * Synchronize client status based on folder name
+     */
+    protected function syncClientStatusFromFolder(TaskList $list)
+    {
+        $folder = $list->folder;
+        if (!$folder) {
+            return;
+        }
+
+        // Map folder names to client status names
+        // This mapping can be customized based on your folder naming convention
+        $folderToStatusMap = [
+            'mentenanta' => 'maintenance',
+            'mentenanță' => 'maintenance',
+            'maintenance' => 'maintenance',
+            'activ' => 'active',
+            'activi' => 'active',
+            'active' => 'active',
+            'vechi' => 'inactive',
+            'old' => 'inactive',
+            'inactive' => 'inactive',
+            'arhiva' => 'archived',
+            'archive' => 'archived',
+            'archived' => 'archived',
+        ];
+
+        $folderNameLower = strtolower($folder->name);
+
+        // Find matching status name from folder name
+        $statusName = null;
+        foreach ($folderToStatusMap as $folderKey => $statusValue) {
+            if (str_contains($folderNameLower, $folderKey)) {
+                $statusName = $statusValue;
+                break;
+            }
+        }
+
+        if (!$statusName) {
+            return; // No matching status found
+        }
+
+        // Find the status option by label
+        $status = \App\Models\SettingOption::where('category', 'client_statuses')
+            ->where('is_active', true)
+            ->where(function($query) use ($statusName) {
+                $query->whereRaw('LOWER(label) LIKE ?', ['%' . $statusName . '%'])
+                      ->orWhereRaw('LOWER(value) LIKE ?', ['%' . $statusName . '%']);
+            })
+            ->first();
+
+        if ($status) {
+            $client = $list->client;
+            $client->status_id = $status->id;
+            $client->save();
+        }
     }
 }

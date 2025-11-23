@@ -7,8 +7,8 @@ document.addEventListener('alpine:init', () => {
             return;
         }
 
-        // N - New Task
-        if (e.key === 'n' || e.key === 'N') {
+        // Cmd/Ctrl + N - New Task (removed standalone N to prevent typing conflicts)
+        if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
             e.preventDefault();
             window.location.href = '{{ route('tasks.create') }}';
         }

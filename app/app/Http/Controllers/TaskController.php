@@ -4,77 +4,57 @@ namespace App\Http\Controllers;
 
 use App\Models\Task;
 use App\Models\TaskList;
-use App\Models\TaskService;
+use App\Models\TaskService as TaskServiceModel;
 use App\Models\User;
 use App\Models\SettingOption;
+use App\Models\TaskCustomField;
+use App\Services\Task\TaskService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TaskController extends Controller
 {
+    protected TaskService $taskService;
+
+    public function __construct(TaskService $taskService)
+    {
+        $this->taskService = $taskService;
+        $this->authorizeResource(Task::class, 'task');
+    }
     /**
      * Display a listing of all tasks (Everything view)
      */
     public function index(Request $request)
     {
-        $query = Task::with(['list.client', 'service', 'status', 'assignedUser']);
+        // Build filters from request
+        $filters = [
+            'search' => $request->search,
+            'list_id' => $request->list_id,
+            'status_id' => $request->status_id,
+            'assigned_to' => $request->assigned_to,
+            'service_id' => $request->service_id,
+            'priority_id' => $request->priority_id,
+            'sort' => $request->get('sort', 'position'),
+            'dir' => $request->get('dir', 'asc'),
+            'scope' => 'accessible', // Show tasks accessible by current user
+        ];
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
+        // Get view mode (default: list - ClickUp style)
+        $viewMode = $request->get('view', 'list');
 
-        // Filter by list
-        if ($request->filled('list_id')) {
-            $query->where('list_id', $request->list_id);
-        }
-
-        // Filter by status
-        if ($request->filled('status_id')) {
-            $query->where('status_id', $request->status_id);
-        }
-
-        // Filter by assigned user
-        if ($request->filled('assigned_to')) {
-            $query->where('assigned_to', $request->assigned_to);
-        }
-
-        // Filter by service
-        if ($request->filled('service_id')) {
-            $query->where('service_id', $request->service_id);
-        }
-
-        // Filter by priority
-        if ($request->filled('priority_id')) {
-            $query->where('priority_id', $request->priority_id);
-        }
-
-        // Get view mode (default: table)
-        $viewMode = $request->get('view', 'table');
-
-        // Sort
-        $sortBy = $request->get('sort', 'position');
-        $sortDir = $request->get('dir', 'asc');
-
-        if ($sortBy === 'position') {
-            $query->ordered();
+        // For kanban and list views, group by status
+        if (in_array($viewMode, ['kanban', 'list'])) {
+            $tasksByStatus = $this->taskService->getTasksGroupedByStatus($filters);
+            $tasks = $tasksByStatus; // For backwards compatibility
         } else {
-            $query->orderBy($sortBy, $sortDir);
-        }
-
-        // For kanban view, group by status
-        if ($viewMode === 'kanban') {
-            $tasks = $query->get()->groupBy('status_id');
-        } else {
-            $tasks = $query->paginate(50)->withQueryString();
+            // For table view, use pagination
+            $tasks = $this->taskService->getPaginatedTasks($filters, 50);
+            $tasksByStatus = collect();
         }
 
         // Get filter options
         $lists = TaskList::with('client')->ordered()->get();
-        $services = TaskService::active()->ordered()->get();
+        $services = TaskServiceModel::active()->ordered()->get();
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
@@ -92,7 +72,7 @@ class TaskController extends Controller
             ? TaskList::with('folder.space', 'client')->find($request->list_id)
             : null;
 
-        return view('tasks.index', compact('tasks', 'viewMode', 'lists', 'services', 'users', 'clients', 'taskStatuses', 'taskPriorities', 'spaces', 'currentList'));
+        return view('tasks.index', compact('tasks', 'tasksByStatus', 'viewMode', 'lists', 'services', 'users', 'clients', 'taskStatuses', 'taskPriorities', 'spaces', 'currentList'));
     }
 
     /**
@@ -101,17 +81,21 @@ class TaskController extends Controller
     public function create(Request $request)
     {
         $lists = TaskList::with('client')->ordered()->get();
-        $services = TaskService::active()->ordered()->get();
+        $services = TaskServiceModel::active()->ordered()->get();
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
         $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
         $taskPriorities = SettingOption::taskPriorities()->ordered()->get();
+        $customFields = TaskCustomField::forOrganization(auth()->user()->organization_id)
+                                       ->active()
+                                       ->ordered()
+                                       ->get();
 
         // Pre-select list if provided
         $selectedListId = $request->get('list_id');
 
-        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId', 'taskStatuses', 'taskPriorities'));
+        return view('tasks.create', compact('lists', 'services', 'users', 'selectedListId', 'taskStatuses', 'taskPriorities', 'customFields'));
     }
 
     /**
@@ -131,32 +115,33 @@ class TaskController extends Controller
             'time_tracked' => 'nullable|integer|min:0',
             'amount' => 'nullable|numeric|min:0',
             'position' => 'nullable|integer',
+            'custom_fields' => 'nullable|array',
+            'custom_fields.*' => 'nullable',
         ]);
-
-        // Get the next position if not provided
-        if (!isset($validated['position'])) {
-            $maxPosition = Task::where('list_id', $validated['list_id'])->max('position');
-            $validated['position'] = ($maxPosition ?? -1) + 1;
-        }
 
         // If service is selected and no amount is provided, get the rate for the client
         if (!empty($validated['service_id']) && empty($validated['amount'])) {
             $list = TaskList::find($validated['list_id']);
             if ($list && $list->client_id) {
-                $service = TaskService::find($validated['service_id']);
+                $service = TaskServiceModel::find($validated['service_id']);
                 if ($service) {
                     $validated['amount'] = $service->getRateForClient($list->client_id);
                 }
             }
         }
 
-        $task = Task::create($validated);
+        $task = $this->taskService->create($validated);
 
         // Handle AJAX requests from inline creator
         if ($request->expectsJson()) {
+            // Load relationships for complete task data
+            $task->load(['list.client', 'service', 'status', 'assignedUser', 'priority']);
+
             return response()->json([
                 'success' => true,
-                'task' => $task->load('list.client', 'status', 'priority', 'assignedUser', 'service'),
+                'task' => $task->toArray(),
+                'task_id' => $task->id,
+                'status_id' => $task->status_id,
                 'message' => __('Task created successfully.')
             ]);
         }
@@ -172,7 +157,7 @@ class TaskController extends Controller
      */
     public function show(Task $task)
     {
-        $task->load(['list.client', 'service', 'status', 'assignedUser', 'creator', 'customFields']);
+        $task->load(['list.client', 'service', 'status', 'assignedUser', 'creator', 'customFieldValues.customField']);
 
         return view('tasks.show', compact('task'));
     }
@@ -183,14 +168,21 @@ class TaskController extends Controller
     public function edit(Task $task)
     {
         $lists = TaskList::with('client')->ordered()->get();
-        $services = TaskService::active()->ordered()->get();
+        $services = TaskServiceModel::active()->ordered()->get();
         $users = User::where('organization_id', auth()->user()->organization_id)
                      ->orderBy('name')
                      ->get();
         $taskStatuses = SettingOption::taskStatuses()->ordered()->get();
         $taskPriorities = SettingOption::taskPriorities()->ordered()->get();
+        $customFields = TaskCustomField::forOrganization(auth()->user()->organization_id)
+                                       ->active()
+                                       ->ordered()
+                                       ->get();
 
-        return view('tasks.edit', compact('task', 'lists', 'services', 'users', 'taskStatuses', 'taskPriorities'));
+        // Load existing custom field values
+        $task->load('customFieldValues.customField');
+
+        return view('tasks.edit', compact('task', 'lists', 'services', 'users', 'taskStatuses', 'taskPriorities', 'customFields'));
     }
 
     /**
@@ -205,13 +197,16 @@ class TaskController extends Controller
             'assigned_to' => 'nullable|exists:users,id',
             'service_id' => 'nullable|exists:task_services,id',
             'status_id' => 'required|exists:settings_options,id',
+            'priority_id' => 'nullable|exists:settings_options,id',
             'due_date' => 'nullable|date',
             'time_tracked' => 'nullable|integer|min:0',
             'amount' => 'nullable|numeric|min:0',
             'position' => 'nullable|integer',
+            'custom_fields' => 'nullable|array',
+            'custom_fields.*' => 'nullable',
         ]);
 
-        $task->update($validated);
+        $task = $this->taskService->update($task, $validated);
 
         return redirect()
             ->route('tasks.index')
@@ -223,7 +218,7 @@ class TaskController extends Controller
      */
     public function destroy(Task $task)
     {
-        $task->delete();
+        $this->taskService->delete($task);
 
         return redirect()
             ->route('tasks.index')
@@ -239,10 +234,11 @@ class TaskController extends Controller
             'status_id' => 'required|exists:settings_options,id',
         ]);
 
-        $task->update($validated);
+        $task = $this->taskService->update($task, $validated);
 
         return response()->json([
             'success' => true,
+            'task' => $task,
             'message' => __('Task status updated successfully.'),
         ]);
     }
@@ -256,12 +252,12 @@ class TaskController extends Controller
             'time_tracked' => 'required|integer|min:0',
         ]);
 
-        $task->update($validated);
+        $task = $this->taskService->updateField($task, 'time_tracked', $validated['time_tracked']);
 
         return response()->json([
             'success' => true,
             'message' => __('Time tracked updated successfully.'),
-            'total_amount' => $task->fresh()->total_amount,
+            'total_amount' => $task->total_amount,
         ]);
     }
 
@@ -272,13 +268,18 @@ class TaskController extends Controller
     {
         $validated = $request->validate([
             'position' => 'required|integer|min:0',
-            'list_id' => 'nullable|exists:task_lists,id',
+            'status_id' => 'nullable|exists:settings_options,id',
         ]);
 
-        $task->update($validated);
+        $task = $this->taskService->updatePosition(
+            $task,
+            $validated['position'],
+            $validated['status_id'] ?? null
+        );
 
         return response()->json([
             'success' => true,
+            'task' => $task,
             'message' => __('Task position updated successfully.'),
         ]);
     }
@@ -311,7 +312,7 @@ class TaskController extends Controller
     {
         $allowedFields = [
             'name', 'description', 'status_id', 'priority_id', 'list_id',
-            'assigned_to', 'due_date', 'time_tracked', 'amount'
+            'assigned_to', 'due_date', 'time_tracked', 'amount', 'service_id'
         ];
 
         $data = $request->only($allowedFields);
@@ -330,6 +331,9 @@ class TaskController extends Controller
                 case 'list_id':
                     $rules[$field] = 'required|exists:task_lists,id';
                     break;
+                case 'service_id':
+                    $rules[$field] = 'nullable|exists:task_services,id';
+                    break;
                 case 'assigned_to':
                     $rules[$field] = 'nullable|exists:users,id';
                     break;
@@ -346,11 +350,41 @@ class TaskController extends Controller
         }
 
         $validated = $request->validate($rules);
-        $task->update($validated);
+        $task = $this->taskService->update($task, $validated);
 
         return response()->json([
             'success' => true,
-            'task' => $task->fresh()
+            'task' => $task
+        ]);
+    }
+
+    /**
+     * Update a custom field value for a task (AJAX)
+     */
+    public function updateCustomField(Request $request, Task $task, TaskCustomField $customField)
+    {
+        // Verify custom field belongs to organization
+        if ($customField->organization_id !== auth()->user()->organization_id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'value' => 'nullable',
+        ]);
+
+        // Update or create the custom field value
+        $task->customFieldValues()->updateOrCreate(
+            ['custom_field_id' => $customField->id],
+            ['value' => $validated['value'] ?? '']
+        );
+
+        // Reload the relationship
+        $task->load('customFieldValues.customField');
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Custom field updated successfully.'),
+            'value' => $validated['value'] ?? '',
         ]);
     }
 
@@ -363,14 +397,12 @@ class TaskController extends Controller
             'name' => 'required|string|max:255',
         ]);
 
-        $subtask = Task::create([
+        $subtask = $this->taskService->create([
             'parent_task_id' => $task->id,
             'list_id' => $task->list_id,
             'name' => $validated['name'],
             'status_id' => $task->status_id, // Inherit parent status
         ]);
-
-        $subtask->load('status', 'assignedUser');
 
         return response()->json($subtask);
     }
@@ -380,21 +412,19 @@ class TaskController extends Controller
      */
     public function toggleStatus(Task $task)
     {
-        $completedStatus = \App\Models\SettingOption::taskStatuses()
+        $completedStatus = SettingOption::taskStatuses()
             ->where('value', 'completed')
             ->first();
 
-        $todoStatus = \App\Models\SettingOption::taskStatuses()
+        $todoStatus = SettingOption::taskStatuses()
             ->where('value', 'todo')
             ->first();
 
-        if ($task->status_id == $completedStatus?->id) {
-            $task->update(['status_id' => $todoStatus?->id]);
-        } else {
-            $task->update(['status_id' => $completedStatus?->id]);
-        }
+        $newStatusId = $task->status_id == $completedStatus?->id
+            ? $todoStatus?->id
+            : $completedStatus?->id;
 
-        $task->load('status', 'assignedUser');
+        $task = $this->taskService->updateField($task, 'status_id', $newStatusId);
 
         return response()->json($task);
     }
@@ -478,5 +508,215 @@ class TaskController extends Controller
             'success' => true,
             'message' => __('Attachment deleted successfully.'),
         ]);
+    }
+
+    /**
+     * Bulk operations on tasks (AJAX)
+     */
+    public function bulkUpdate(\App\Http\Requests\Task\BulkUpdateTasksRequest $request)
+    {
+        $validated = $request->validated();
+        $taskIds = $validated['task_ids'];
+        $action = $validated['action'];
+
+        // Verify user has permission for all tasks
+        $tasks = Task::whereIn('id', $taskIds)->get();
+        foreach ($tasks as $task) {
+            $this->authorize('update', $task);
+        }
+
+        $updatedCount = 0;
+
+        try {
+            DB::beginTransaction();
+
+            switch ($action) {
+                case 'update_status':
+                    foreach ($tasks as $task) {
+                        $this->taskService->update($task, ['status_id' => $validated['status_id']]);
+                        $updatedCount++;
+                    }
+                    $message = __(':count tasks updated to new status.', ['count' => $updatedCount]);
+                    break;
+
+                case 'update_priority':
+                    foreach ($tasks as $task) {
+                        $this->taskService->update($task, ['priority_id' => $validated['priority_id']]);
+                        $updatedCount++;
+                    }
+                    $message = __(':count tasks updated to new priority.', ['count' => $updatedCount]);
+                    break;
+
+                case 'update_assigned_to':
+                    foreach ($tasks as $task) {
+                        $this->taskService->update($task, ['assigned_to' => $validated['assigned_to']]);
+                        $updatedCount++;
+                    }
+                    $message = __(':count tasks assigned to user.', ['count' => $updatedCount]);
+                    break;
+
+                case 'update_list':
+                    foreach ($tasks as $task) {
+                        $this->taskService->update($task, ['list_id' => $validated['list_id']]);
+                        $updatedCount++;
+                    }
+                    $message = __(':count tasks moved to new list.', ['count' => $updatedCount]);
+                    break;
+
+                case 'delete':
+                    foreach ($tasks as $task) {
+                        $this->authorize('delete', $task);
+                        $this->taskService->delete($task);
+                        $updatedCount++;
+                    }
+                    $message = __(':count tasks deleted.', ['count' => $updatedCount]);
+                    break;
+
+                default:
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('Invalid action.'),
+                    ], 400);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'updated_count' => $updatedCount,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => __('Bulk operation failed: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Duplicate a task with all its properties
+     */
+    public function duplicate(Task $task)
+    {
+        $this->authorize('view', $task);
+
+        try {
+            $newTask = $this->taskService->duplicate($task);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Task duplicated successfully.'),
+                'task' => $newTask,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to duplicate task: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Add an assignee to a task
+     */
+    public function addAssignee(Request $request, Task $task)
+    {
+        $this->authorize('update', $task);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        try {
+            $task->assignUser($validated['user_id']);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Assignee added successfully.'),
+                'assignees' => $task->fresh()->load('assignees')->assignees,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to add assignee: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove an assignee from a task
+     */
+    public function removeAssignee(Task $task, $userId)
+    {
+        $this->authorize('update', $task);
+
+        try {
+            $task->removeAssignee($userId);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Assignee removed successfully.'),
+                'assignees' => $task->fresh()->load('assignees')->assignees,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to remove assignee: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Add a watcher to a task
+     */
+    public function addWatcher(Request $request, Task $task)
+    {
+        $this->authorize('view', $task);
+
+        $validated = $request->validate([
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        try {
+            $task->addWatcher($validated['user_id']);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Watcher added successfully.'),
+                'watchers' => $task->fresh()->load('watchers')->watchers,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to add watcher: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove a watcher from a task
+     */
+    public function removeWatcher(Task $task, $userId)
+    {
+        $this->authorize('view', $task);
+
+        try {
+            $task->removeWatcher($userId);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Watcher removed successfully.'),
+                'watchers' => $task->fresh()->load('watchers')->watchers,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to remove watcher: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
     }
 }

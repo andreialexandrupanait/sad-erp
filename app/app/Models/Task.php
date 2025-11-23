@@ -66,10 +66,10 @@ class Task extends Model
             }
         });
 
-        static::addGlobalScope('user_scope', function (Builder $query) {
+        // Only scope by organization - users within same org can collaborate
+        static::addGlobalScope('organization_scope', function (Builder $query) {
             if (Auth::check()) {
-                $query->where('organization_id', Auth::user()->organization_id)
-                      ->where('user_id', Auth::id());
+                $query->where('organization_id', Auth::user()->organization_id);
             }
         });
     }
@@ -95,6 +95,28 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    /**
+     * Multiple assignees (new ClickUp-style feature)
+     */
+    public function assignees()
+    {
+        return $this->belongsToMany(User::class, 'task_assignees')
+                    ->withTimestamps()
+                    ->withPivot('assigned_by', 'assigned_at')
+                    ->orderBy('task_assignees.assigned_at');
+    }
+
+    /**
+     * Task watchers/followers
+     */
+    public function watchers()
+    {
+        return $this->belongsToMany(User::class, 'task_watchers')
+                    ->withTimestamps()
+                    ->withPivot('watched_at')
+                    ->orderBy('task_watchers.watched_at');
+    }
+
     public function service()
     {
         return $this->belongsTo(TaskService::class, 'service_id');
@@ -105,9 +127,9 @@ class Task extends Model
         return $this->belongsTo(SettingOption::class, 'status_id');
     }
 
-    public function customFields()
+    public function customFieldValues()
     {
-        return $this->hasMany(TaskCustomField::class);
+        return $this->hasMany(TaskCustomFieldValue::class);
     }
 
     public function priority()
@@ -137,10 +159,111 @@ class Task extends Model
         return $this->hasMany(TaskAttachment::class)->with('user')->latest();
     }
 
+    // Helper methods for assignees and watchers
+    /**
+     * Assign a user to this task
+     */
+    public function assignUser($userId)
+    {
+        if (!$this->assignees->contains($userId)) {
+            $this->assignees()->attach($userId, [
+                'assigned_by' => Auth::id(),
+                'assigned_at' => now(),
+            ]);
+
+            // Auto-add as watcher
+            $this->addWatcher($userId);
+        }
+    }
+
+    /**
+     * Remove an assignee from this task
+     */
+    public function removeAssignee($userId)
+    {
+        $this->assignees()->detach($userId);
+    }
+
+    /**
+     * Sync all assignees
+     */
+    public function syncAssignees(array $userIds)
+    {
+        $this->assignees()->sync($userIds);
+
+        // Auto-add all assignees as watchers
+        foreach ($userIds as $userId) {
+            $this->addWatcher($userId);
+        }
+    }
+
+    /**
+     * Add a watcher to this task
+     */
+    public function addWatcher($userId)
+    {
+        if (!$this->watchers->contains($userId)) {
+            $this->watchers()->attach($userId, [
+                'watched_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * Remove a watcher from this task
+     */
+    public function removeWatcher($userId)
+    {
+        $this->watchers()->detach($userId);
+    }
+
+    /**
+     * Check if user is watching this task
+     */
+    public function isWatchedBy($userId)
+    {
+        return $this->watchers->contains($userId);
+    }
+
+    /**
+     * Check if user is assigned to this task (including multi-assignees)
+     */
+    public function isAssignedTo($userId)
+    {
+        return $this->assigned_to === $userId || $this->assignees->contains($userId);
+    }
+
     // Scopes
     public function scopeOrdered($query)
     {
         return $query->orderBy('position')->orderBy('due_date');
+    }
+
+    /**
+     * Tasks created by the current user
+     */
+    public function scopeCreatedByMe($query)
+    {
+        return $query->where('user_id', Auth::id());
+    }
+
+    /**
+     * Tasks assigned to the current user
+     */
+    public function scopeAssignedToMe($query)
+    {
+        return $query->where('assigned_to', Auth::id());
+    }
+
+    /**
+     * Tasks accessible by the current user (created by OR assigned to)
+     */
+    public function scopeAccessibleByMe($query)
+    {
+        return $query->where(function($q) {
+            $q->where('user_id', Auth::id())
+              ->orWhere('assigned_to', Auth::id());
+        });
     }
 
     public function scopeAssignedTo($query, $userId)

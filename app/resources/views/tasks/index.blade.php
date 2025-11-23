@@ -10,23 +10,20 @@
         </x-ui.button>
     </x-slot>
 
-    <!-- Main Layout with Sidebar -->
-    <div class="flex h-full">
-        <!-- Sidebar Navigation -->
-        <x-tasks.sidebar-nav :spaces="$spaces" />
+    <!-- Main Content -->
+    <div class="min-h-screen bg-white" x-data>
+            <!-- ClickUp Views Bar Controller -->
+            <x-tasks.views-bar-controller :currentView="$viewMode" />
 
-        <!-- Main Content -->
-        <div class="flex-1 p-6 space-y-6 overflow-auto" x-data>
-            <!-- Breadcrumb -->
-            <x-tasks.breadcrumb :currentList="$currentList" />
-
-            <!-- Advanced Filters -->
-            <x-tasks.advanced-filters
-                :lists="$lists"
-                :taskStatuses="$taskStatuses"
-                :taskPriorities="$taskPriorities"
-                :users="$users"
-                :services="$services"
+            <!-- ClickUp Views Settings Bar -->
+            <x-tasks.views-settings-bar
+                currentGrouping="status"
+                :showSubtasks="false"
+                :showColumns="true"
+                :activeFilters="0"
+                :showClosed="false"
+                :showAssignee="true"
+                :meModeActive="false"
             />
 
         <!-- Success Message -->
@@ -39,120 +36,17 @@
             </x-ui.alert>
         @endif
 
-        <!-- Search and Filter Bar -->
-        <x-ui.card>
-            <x-ui.card-content>
-                <form method="GET" action="{{ route('tasks.index') }}">
-                    <div class="flex flex-col gap-3">
-                        <!-- First row: Search + Filters -->
-                        <div class="flex flex-col sm:flex-row gap-3 items-center">
-                            <!-- Search -->
-                            <div class="flex-1 w-full">
-                                <div class="relative">
-                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                        <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                        </svg>
-                                    </div>
-                                    <x-ui.input
-                                        type="text"
-                                        name="search"
-                                        value="{{ request('search') }}"
-                                        placeholder="{{ __('Search tasks') }}"
-                                        class="pl-10"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- List Filter -->
-                            <div class="w-full sm:w-48">
-                                <x-ui.select name="list_id">
-                                    <option value="">{{ __('All Lists') }}</option>
-                                    @foreach($lists as $list)
-                                        <option value="{{ $list->id }}" {{ request('list_id') == $list->id ? 'selected' : '' }}>
-                                            {{ $list->name }}@if($list->client) - {{ $list->client->name }}@endif
-                                        </option>
-                                    @endforeach
-                                </x-ui.select>
-                            </div>
-
-                            <!-- Status Filter -->
-                            <div class="w-full sm:w-48">
-                                <x-ui.select name="status_id">
-                                    <option value="">{{ __('All Statuses') }}</option>
-                                    @foreach($taskStatuses as $status)
-                                        <option value="{{ $status->id }}" {{ request('status_id') == $status->id ? 'selected' : '' }}>
-                                            {{ $status->label }}
-                                        </option>
-                                    @endforeach
-                                </x-ui.select>
-                            </div>
-
-                            <!-- Assigned To Filter -->
-                            <div class="w-full sm:w-48">
-                                <x-ui.select name="assigned_to">
-                                    <option value="">{{ __('All Assignees') }}</option>
-                                    @foreach($users as $user)
-                                        <option value="{{ $user->id }}" {{ request('assigned_to') == $user->id ? 'selected' : '' }}>
-                                            {{ $user->name }}
-                                        </option>
-                                    @endforeach
-                                </x-ui.select>
-                            </div>
-                        </div>
-
-                        <!-- Second row: View mode + Actions -->
-                        <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
-                            <!-- Service Filter -->
-                            <div class="w-full sm:w-48">
-                                <x-ui.select name="service_id">
-                                    <option value="">{{ __('All Services') }}</option>
-                                    @foreach($services as $service)
-                                        <option value="{{ $service->id }}" {{ request('service_id') == $service->id ? 'selected' : '' }}>
-                                            {{ $service->name }}
-                                        </option>
-                                    @endforeach
-                                </x-ui.select>
-                            </div>
-
-                            <div class="flex gap-2 ml-auto">
-                                <!-- View Mode Switcher -->
-                                <div class="flex gap-1 border border-slate-300 rounded-md p-1">
-                                    <a href="{{ route('tasks.index', array_merge(request()->except('view'), ['view' => 'table'])) }}"
-                                        class="p-2 rounded transition-colors {{ $viewMode === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}"
-                                        title="{{ __('Table') }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                        </svg>
-                                    </a>
-                                    <a href="{{ route('tasks.index', array_merge(request()->except('view'), ['view' => 'kanban'])) }}"
-                                        class="p-2 rounded transition-colors {{ $viewMode === 'kanban' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100' }}"
-                                        title="{{ __('Kanban') }}">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
-                                        </svg>
-                                    </a>
-                                </div>
-
-                                <!-- Search/Clear Buttons -->
-                                <x-ui.button type="submit" variant="default">
-                                    <svg class="w-4 h-4 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                                    </svg>
-                                    <span class="hidden sm:inline">{{ __('Search') }}</span>
-                                </x-ui.button>
-                                @if(request()->hasAny(['search', 'list_id', 'status_id', 'assigned_to', 'service_id']))
-                                    <x-ui.button variant="outline" onclick="window.location.href='{{ route('tasks.index') }}'">
-                                        <span class="hidden sm:inline">{{ __('Clear') }}</span>
-                                        <span class="sm:hidden">✕</span>
-                                    </x-ui.button>
-                                @endif
-                            </div>
-                        </div>
-                    </div>
-                </form>
-            </x-ui.card-content>
-        </x-ui.card>
+        <!-- ClickUp List View -->
+        @if($viewMode === 'list')
+            <x-tasks.clickup-list
+                :tasksByStatus="$tasksByStatus"
+                :taskStatuses="$taskStatuses"
+                :lists="$lists"
+                :users="$users"
+                :services="$services"
+                :taskPriorities="$taskPriorities"
+            />
+        @endif
 
         <!-- Table View -->
         @if($viewMode === 'table')
@@ -645,6 +539,5 @@
             <x-tasks.modals.alpine-store />
             <x-tasks.bulk-operations-store />
             <x-tasks.global-shortcuts />
-        </div>
     </div>
 </x-app-layout>

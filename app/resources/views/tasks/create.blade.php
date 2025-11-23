@@ -18,6 +18,7 @@
                 :users="$users"
                 :taskStatuses="$taskStatuses"
                 :taskPriorities="$taskPriorities"
+                :customFields="$customFields"
                 :selectedListId="$selectedListId"
                 :action="route('tasks.store')"
                 method="POST"

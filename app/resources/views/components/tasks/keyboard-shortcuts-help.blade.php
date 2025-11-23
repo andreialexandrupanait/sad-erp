@@ -1,9 +1,10 @@
 <!-- Keyboard Shortcuts Help Modal -->
 <div
     x-data="{ open: false }"
-    @keydown.window.prevent.shift="open = !open"
+    @keydown.window="if (e.key === '?' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) { e.preventDefault(); open = !open }"
     x-show="open"
     x-cloak
+   
     class="fixed inset-0 z-50 overflow-y-auto"
     @keydown.escape.window="open = false"
 >
@@ -67,7 +68,7 @@
                             </div>
                             <div class="flex items-center justify-between">
                                 <span class="text-sm text-slate-600">{{ __('New Task') }}</span>
-                                <kbd class="px-2 py-1 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded">N</kbd>
+                                <kbd class="px-2 py-1 text-xs font-semibold text-slate-600 bg-slate-100 border border-slate-200 rounded">⌘N</kbd>
                             </div>
                         </div>
                     </div>
