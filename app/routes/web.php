@@ -75,6 +75,13 @@ Route::middleware('auth')->group(function () {
     Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
 
     // Task Management Module
+    // API endpoints for lazy loading (v2 cache-based)
+    Route::get('api/tasks/status/{status}', [\App\Http\Controllers\Api\TaskApiController::class, 'getTasksByStatus'])->name('api.tasks.by-status');
+    Route::get('api/tasks/status-counts', [\App\Http\Controllers\Api\TaskApiController::class, 'getStatusCounts'])->name('api.tasks.status-counts');
+
+    // Legacy lazy loading endpoint - must be before resource route
+    Route::get('tasks/by-status/{status}', [TaskController::class, 'getTasksByStatus'])->name('tasks.by-status');
+
     Route::resource('tasks', TaskController::class);
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
     Route::patch('tasks/{task}/time', [TaskController::class, 'updateTime'])->name('tasks.update-time');
@@ -180,6 +187,18 @@ Route::middleware('auth')->group(function () {
         Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])->name('import.process');
         Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
         Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
+    });
+
+    // ClickUp Integration Settings
+    Route::prefix('settings/clickup')->name('settings.clickup.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'index'])->name('index');
+        Route::post('/credentials', [\App\Http\Controllers\Settings\ClickUpController::class, 'updateCredentials'])->name('credentials.update');
+        Route::post('/test-connection', [\App\Http\Controllers\Settings\ClickUpController::class, 'testConnection'])->name('test-connection');
+        Route::get('/workspaces', [\App\Http\Controllers\Settings\ClickUpController::class, 'getWorkspaces'])->name('workspaces');
+        Route::get('/import', [\App\Http\Controllers\Settings\ClickUpController::class, 'showImportForm'])->name('import');
+        Route::post('/import/start', [\App\Http\Controllers\Settings\ClickUpController::class, 'startImport'])->name('import.start');
+        Route::get('/sync/{syncId}/status', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncStatus'])->name('sync.status');
+        Route::get('/sync/{syncId}/progress', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncProgress'])->name('sync.progress');
     });
 
     // Task Tags Settings

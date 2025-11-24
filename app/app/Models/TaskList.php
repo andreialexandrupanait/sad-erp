@@ -20,12 +20,14 @@ class TaskList extends Model
         'icon',
         'color',
         'position',
+        'clickup_metadata',
     ];
 
     protected $casts = [
         'folder_id' => 'integer',
         'client_id' => 'integer',
         'position' => 'integer',
+        'clickup_metadata' => 'array',
     ];
 
     protected static function booted()

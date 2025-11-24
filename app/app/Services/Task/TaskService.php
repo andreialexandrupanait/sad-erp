@@ -10,10 +10,13 @@ use App\Events\Task\TaskUpdated;
 use App\Models\Task;
 use App\Models\TaskList;
 use App\Models\TaskCustomFieldValue;
+use App\Models\TaskDisplayCache;
+use App\Models\SettingOption;
 use App\Repositories\Task\TaskRepositoryInterface;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 class TaskService
 {
@@ -238,10 +241,57 @@ class TaskService
 
     /**
      * Get tasks grouped by status
+     * Only loads essential relationships for list/kanban views
      */
     public function getTasksGroupedByStatus(array $filters = []): Collection
     {
-        return $this->repository->getGroupedBy('status_id', $filters);
+        // Load only essential relationships for list display performance
+        $essentialWith = ['status', 'list', 'assignedUser', 'priority'];
+        $tasks = $this->repository->getAll($filters, $essentialWith);
+
+        return $tasks->groupBy('status_id');
+    }
+
+    /**
+     * Get task counts grouped by status (for lazy loading)
+     */
+    public function getTaskCountsByStatus(array $filters = []): SupportCollection
+    {
+        $query = Task::query();
+
+        // Apply the same filters as in repository
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if (!empty($filters['list_id'])) {
+            $query->where('list_id', $filters['list_id']);
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $query->where('assigned_to', $filters['assigned_to']);
+        }
+
+        if (!empty($filters['service_id'])) {
+            $query->where('service_id', $filters['service_id']);
+        }
+
+        if (!empty($filters['priority_id'])) {
+            $query->where('priority_id', $filters['priority_id']);
+        }
+
+        if (!empty($filters['scope']) && $filters['scope'] === 'accessible') {
+            $query->accessibleByMe();
+        }
+
+        // Group by status_id and count
+        return $query->groupBy('status_id')
+                    ->selectRaw('status_id, count(*) as count')
+                    ->pluck('count', 'status_id');
     }
 
     /**
@@ -278,5 +328,194 @@ class TaskService
                 ]
             );
         }
+    }
+
+    /**
+     * Get statuses with task counts (using cache)
+     */
+    public function getStatusesWithCounts(int $organizationId, array $filters = []): SupportCollection
+    {
+        // Get all statuses for this organization using the existing scope
+        $statuses = SettingOption::taskStatuses()->get();
+
+        // Build query for cached tasks
+        $query = TaskDisplayCache::where('organization_id', $organizationId);
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('task_name', 'like', "%{$search}%");
+        }
+
+        if (!empty($filters['list_id'])) {
+            $query->where('list_id', $filters['list_id']);
+        }
+
+        if (!empty($filters['assignee'])) {
+            if ($filters['assignee'] === 'unassigned') {
+                $query->whereNull('assignee_name');
+            } else {
+                $query->whereHas('task', function ($q) use ($filters) {
+                    $q->where('assigned_to', $filters['assignee']);
+                });
+            }
+        }
+
+        // Get counts per status
+        $counts = $query->groupBy('status_id')
+            ->selectRaw('status_id, count(*) as count')
+            ->pluck('count', 'status_id');
+
+        // Map statuses with their counts
+        return $statuses->map(function ($status) use ($counts) {
+            return [
+                'status' => $status,
+                'count' => $counts[$status->id] ?? 0,
+            ];
+        })->filter(function ($item) {
+            // Only include statuses with tasks
+            return $item['count'] > 0;
+        });
+    }
+
+    /**
+     * Get cached tasks for a specific status (paginated)
+     */
+    public function getCachedTasksByStatus(
+        int $statusId,
+        int $organizationId,
+        int $page = 1,
+        int $perPage = 50,
+        array $filters = []
+    ): array {
+        $query = TaskDisplayCache::where('organization_id', $organizationId)
+            ->where('status_id', $statusId)
+            ->orderBy('position')
+            ->orderBy('updated_at', 'desc');
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('task_name', 'like', "%{$search}%");
+        }
+
+        if (!empty($filters['list_id'])) {
+            $query->where('list_id', $filters['list_id']);
+        }
+
+        if (!empty($filters['assignee'])) {
+            if ($filters['assignee'] === 'unassigned') {
+                $query->whereNull('assignee_name');
+            } else {
+                $query->whereHas('task', function ($q) use ($filters) {
+                    $q->where('assigned_to', $filters['assignee']);
+                });
+            }
+        }
+
+        // Get total count
+        $total = $query->count();
+
+        // Get paginated results
+        $tasks = $query->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+
+        return [
+            'tasks' => $tasks,
+            'total' => $total,
+            'page' => $page,
+            'per_page' => $perPage,
+            'has_more' => ($page * $perPage) < $total,
+        ];
+    }
+
+    /**
+     * Get cached tasks grouped by status (optimized for legacy view)
+     * Returns same format as getTasksGroupedByStatus but uses cache
+     */
+    public function getCachedTasksGroupedByStatus(int $organizationId, array $filters = []): SupportCollection
+    {
+        $query = TaskDisplayCache::where('organization_id', $organizationId);
+
+        // Apply filters
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('task_name', 'like', "%{$search}%");
+        }
+
+        if (!empty($filters['list_id'])) {
+            $query->where('list_id', $filters['list_id']);
+        }
+
+        if (!empty($filters['status_id'])) {
+            $query->where('status_id', $filters['status_id']);
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $query->whereHas('task', function ($q) use ($filters) {
+                $q->where('assigned_to', $filters['assigned_to']);
+            });
+        }
+
+        // Get all matching cached tasks
+        $cachedTasks = $query->orderBy('position')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        // Get task IDs and load actual Task models with relationships
+        $taskIds = $cachedTasks->pluck('task_id')->toArray();
+
+        if (empty($taskIds)) {
+            return collect();
+        }
+
+        // Load actual Task models with all necessary relationships
+        $tasks = Task::with(['status', 'list', 'assignedUser', 'priority', 'assignees', 'service'])
+            ->whereIn('id', $taskIds)
+            ->get()
+            ->keyBy('id');
+
+        // Maintain the order from cache and group by status_id
+        $orderedTasks = $cachedTasks->map(function ($cached) use ($tasks) {
+            return $tasks->get($cached->task_id);
+        })->filter(); // Remove any nulls if task was deleted
+
+        // Group by status_id and return collection
+        return $orderedTasks->groupBy('status_id');
+    }
+
+    /**
+     * Get task counts by status (optimized with cache)
+     * Returns same format as original but uses cache
+     */
+    public function getCachedTaskCountsByStatus(int $organizationId, array $filters = []): SupportCollection
+    {
+        $query = TaskDisplayCache::where('organization_id', $organizationId);
+
+        // Apply same filters
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where('task_name', 'like', "%{$search}%");
+        }
+
+        if (!empty($filters['list_id'])) {
+            $query->where('list_id', $filters['list_id']);
+        }
+
+        if (!empty($filters['status_id'])) {
+            $query->where('status_id', $filters['status_id']);
+        }
+
+        if (!empty($filters['assigned_to'])) {
+            $query->whereHas('task', function ($q) use ($filters) {
+                $q->where('assigned_to', $filters['assigned_to']);
+            });
+        }
+
+        // Group by status_id and count - same format as original
+        return $query->groupBy('status_id')
+            ->selectRaw('status_id, count(*) as count')
+            ->pluck('count', 'status_id');
     }
 }

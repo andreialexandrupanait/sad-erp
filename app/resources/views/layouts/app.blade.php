@@ -45,6 +45,9 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
         <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
 
+        <!-- Task View CSS - ClickUp-style horizontal scroll -->
+        <link rel="stylesheet" href="{{ asset('css/task-view.css') }}">
+
         <!-- Alpine.js x-cloak - Hide elements until Alpine is ready -->
         <style>
             [x-cloak] {

@@ -126,7 +126,13 @@
     <!-- Spaces List -->
     <div class="p-2">
         @forelse($spaces ?? [] as $space)
-            <div class="mb-1" x-data="{ expanded: {{ $loop->first ? 'true' : 'false' }} }">
+            <div class="mb-1" x-data="{
+                expanded: (() => {
+                    const saved = localStorage.getItem('space_{{ $space->id }}_expanded');
+                    return saved !== null ? saved === 'true' : {{ $loop->first ? 'true' : 'false' }};
+                })()
+            }"
+            x-init="$watch('expanded', value => localStorage.setItem('space_{{ $space->id }}_expanded', value))">
                 <!-- Space -->
                 <div
                     class="group flex items-center gap-2 px-2 py-1.5 rounded hover:bg-slate-100 cursor-pointer transition-colors"
@@ -179,7 +185,13 @@
                 <!-- Folders -->
                 <div x-show="expanded" class="ml-6 mt-1 space-y-1">
                     @forelse($space->folders ?? [] as $folder)
-                        <div x-data="{ folderExpanded: {{ $loop->first ? 'true' : 'false' }} }">
+                        <div x-data="{
+                            folderExpanded: (() => {
+                                const saved = localStorage.getItem('folder_{{ $folder->id }}_expanded');
+                                return saved !== null ? saved === 'true' : {{ $loop->first ? 'true' : 'false' }};
+                            })()
+                        }"
+                        x-init="$watch('folderExpanded', value => localStorage.setItem('folder_{{ $folder->id }}_expanded', value))">
                             <!-- Folder -->
                             <div
                                 class="group flex items-center gap-2 px-2 py-1 rounded hover:bg-slate-100 cursor-move transition-colors"

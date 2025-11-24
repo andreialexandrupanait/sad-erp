@@ -11,8 +11,9 @@ class EloquentTaskRepository implements TaskRepositoryInterface
 {
     /**
      * Default relationships to eager load
+     * Only load status by default - other relationships should be loaded explicitly when needed
      */
-    protected array $defaultWith = ['list', 'status', 'assignedUser', 'assignees', 'watchers', 'service', 'priority', 'checklists.items', 'tags', 'dependencies.dependsOnTask.status', 'dependents.task.status'];
+    protected array $defaultWith = ['status'];
 
     /**
      * Find a task by ID with optional relationships

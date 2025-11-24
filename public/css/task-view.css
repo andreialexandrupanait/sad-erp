@@ -1,0 +1,356 @@
+/**
+ * ClickUp-Style Task List View - Horizontal Scroll Fix
+ *
+ * This CSS implements a single horizontal scrollbar at the bottom of the entire
+ * task table, ensuring header and rows scroll together as one unit.
+ */
+
+/* ============================================================================
+   1. MAIN CONTAINER STRUCTURE
+   ============================================================================ */
+
+/**
+ * #task-view-container: Main height-constrained container
+ * - Controls vertical scrolling for the entire view
+ * - Positioned relative for absolute popover positioning
+ */
+#task-view-container {
+    position: relative;
+    width: 100%;
+    max-height: calc(100vh - 200px); /* Adjust based on your header/toolbar height */
+    display: flex;
+    flex-direction: column;
+}
+
+/**
+ * #task-scroll-wrapper: Horizontal scroll container
+ * - This is where the single horizontal scrollbar appears
+ * - overflow-y: visible allows popovers to extend outside
+ */
+#task-scroll-wrapper {
+    overflow-x: auto;
+    overflow-y: visible;
+    width: 100%;
+    flex: 1;
+    position: relative;
+}
+
+/**
+ * #task-table: Fixed-width table container
+ * - Enforces minimum width to ensure all columns are visible
+ * - Sum of all column widths: 1973px
+ */
+#task-table {
+    min-width: 1973px;
+    width: max-content;
+    position: relative;
+}
+
+/* ============================================================================
+   2. TABLE STRUCTURE
+   ============================================================================ */
+
+#task-table > table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#task-table tbody {
+    display: table-row-group;
+}
+
+/* ============================================================================
+   3. GROUP STRUCTURE
+   ============================================================================ */
+
+/**
+ * Status groups should not create their own scroll containers
+ */
+.task-group-row {
+    border: 0;
+}
+
+.task-group-cell {
+    padding: 0;
+    border: 0;
+    vertical-align: top;
+}
+
+/**
+ * Group header (status badge row)
+ */
+.task-group-header {
+    height: 36px; /* 9 * 4px = h-9 */
+    padding-left: 12px;
+    padding-right: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/**
+ * Column headers row
+ */
+.task-column-headers {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    background-color: white;
+    border-bottom: 1px solid #e2e8f0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.task-column-header {
+    flex-shrink: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================================================
+   4. TASK ROWS
+   ============================================================================ */
+
+.task-row {
+    display: flex;
+    height: 36px;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background-color 150ms ease;
+}
+
+.task-row:hover {
+    background-color: #fafafa;
+}
+
+.task-cell {
+    flex-shrink: 0;
+    padding-left: 12px;
+    padding-right: 12px;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+}
+
+/* ============================================================================
+   5. POPOVER FIXES - CRITICAL FOR SCROLL BEHAVIOR
+   ============================================================================ */
+
+/**
+ * All popover containers must not expand the scroll area
+ * They should be positioned absolutely and overflow must be visible
+ */
+
+/* Cell-level popovers (dropdowns within cells) */
+.task-cell-popover-container {
+    position: relative;
+}
+
+.task-cell-popover {
+    position: absolute;
+    z-index: 50;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e2e8f0;
+    max-height: 384px; /* 96 * 4px = max-h-96 */
+    overflow-y: auto;
+}
+
+/* Ensure popovers don't push layout */
+.task-cell-popover-container:has(.task-cell-popover[style*="display: block"]),
+.task-cell-popover-container:has(.task-cell-popover[x-show="true"]) {
+    overflow: visible;
+}
+
+/**
+ * Global popovers (status dropdown, date picker)
+ * These use fixed positioning and calculate their position
+ */
+.task-global-popover {
+    position: fixed;
+    z-index: 100;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #e2e8f0;
+}
+
+/* Status dropdown specific */
+.task-status-dropdown {
+    width: 224px; /* 56 * 4px = w-56 */
+}
+
+/* Date picker specific */
+.task-date-picker {
+    width: 480px;
+}
+
+/* Time tracking popover */
+.task-time-popover {
+    width: 280px;
+}
+
+/* ============================================================================
+   6. COLUMN RESIZE HANDLE
+   ============================================================================ */
+
+.column-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    z-index: 15;
+}
+
+.column-resize-handle:hover {
+    background-color: rgba(59, 130, 246, 0.1);
+}
+
+.column-resize-handle.resizing {
+    background-color: rgba(59, 130, 246, 0.3);
+}
+
+/* ============================================================================
+   7. SCROLLBAR STYLING (Already in your layout, but included for completeness)
+   ============================================================================ */
+
+#task-scroll-wrapper::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+#task-scroll-wrapper::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+#task-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+#task-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ============================================================================
+   8. EMPTY STATE
+   ============================================================================ */
+
+.task-empty-state {
+    padding: 48px 16px;
+    text-align: center;
+    color: #94a3b8;
+}
+
+/* ============================================================================
+   9. LOADING STATE
+   ============================================================================ */
+
+.task-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+/* ============================================================================
+   10. RESPONSIVE ADJUSTMENTS
+   ============================================================================ */
+
+/* On smaller screens, ensure container height adjusts */
+@media (max-height: 800px) {
+    #task-view-container {
+        max-height: calc(100vh - 150px);
+    }
+}
+
+@media (max-height: 600px) {
+    #task-view-container {
+        max-height: calc(100vh - 120px);
+    }
+}
+
+/* ============================================================================
+   11. FIX FOR SPECIFIC ISSUES
+   ============================================================================ */
+
+/**
+ * Issue: Long columns get cut off when there are few tasks
+ * Fix: Ensure min-width is always enforced
+ */
+#task-table {
+    min-width: 1973px !important;
+}
+
+/**
+ * Issue: Popovers push layout
+ * Fix: Ensure parent containers allow overflow
+ */
+#task-scroll-wrapper,
+#task-table,
+#task-table > table,
+#task-table tbody,
+.task-group-cell {
+    overflow-y: visible !important;
+}
+
+/**
+ * Issue: Some columns do not align with header
+ * Fix: Ensure all cells and headers use exact same width
+ * (Applied via inline styles from Alpine.js)
+ */
+
+/**
+ * Issue: Scrollbar appears under last group instead of at bottom
+ * Fix: Single scroll wrapper contains all groups
+ * (Applied via HTML structure change)
+ */
+
+/* ============================================================================
+   12. UTILITIES
+   ============================================================================ */
+
+/* Helper class for column widths (optional, can use inline styles) */
+.col-name { width: 561px; }
+.col-project { width: 160px; }
+.col-service { width: 152px; }
+.col-due-date { width: 160px; }
+.col-status { width: 160px; }
+.col-priority { width: 140px; }
+.col-assignee { width: 160px; }
+.col-time-tracked { width: 160px; }
+.col-amount { width: 160px; }
+.col-total-charge { width: 160px; }
+
+/* Flex shrink prevention */
+.no-shrink {
+    flex-shrink: 0;
+}
+
+/* Text truncation */
+.truncate-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}

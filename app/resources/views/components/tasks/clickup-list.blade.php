@@ -1,5 +1,5 @@
 {{-- ClickUp List View - Pixel Perfect Replica --}}
-@props(['tasksByStatus', 'taskStatuses', 'lists', 'users', 'services', 'taskPriorities'])
+@props(['tasksByStatus', 'taskCountsByStatus', 'taskStatuses', 'lists', 'users', 'services', 'taskPriorities'])
 
 <div class="bg-white overflow-hidden p-4" x-data="clickupListView()" x-init="init()">
 
@@ -55,10 +55,12 @@
         </div>
     </div>
 
-    {{-- Table Container --}}
-    <div class="overflow-x-auto">
-        <table class="w-full" style="border-collapse: collapse; border-spacing: 0;">
-            <tbody>
+    {{-- Table Container with ClickUp-style scroll --}}
+    <div id="task-view-container">
+        <div id="task-scroll-wrapper">
+            <div id="task-table">
+                <table class="w-full" style="border-collapse: collapse; border-spacing: 0;">
+                    <tbody>
                 @foreach($taskStatuses as $status)
                     @php
                         $statusTasks = $tasksByStatus->get($status->id, collect());
@@ -67,7 +69,14 @@
                     {{-- Status Group --}}
                     <tr class="border-0">
                         <td colspan="100%" class="p-0 border-0 @if(!$loop->first) pt-6 @endif">
-                            <div x-data="{ expanded: {{ $statusTasks->isNotEmpty() ? 'true' : 'false' }} }" class="w-full">
+                            <div x-data="{
+                                expanded: (() => {
+                                    const saved = localStorage.getItem('status_{{ $status->id }}_expanded');
+                                    return saved !== null ? saved === 'true' : {{ $statusTasks->isNotEmpty() ? 'true' : 'false' }};
+                                })()
+                            }"
+                            x-init="$watch('expanded', value => localStorage.setItem('status_{{ $status->id }}_expanded', value))"
+                            class="w-full">
                                 {{-- Group Header Row 1: Status Badge + Count + Actions --}}
                                 <div @click="expanded = !expanded"
                                      data-status-id="{{ $status->id }}"
@@ -85,7 +94,7 @@
                                               style="color: {{ $status->color }}">
                                             {{ $status->label }}
                                         </span>
-                                        <span class="text-sm text-slate-500">{{ $statusTasks->count() }}</span>
+                                        <span class="text-sm text-slate-500">{{ $taskCountsByStatus->get($status->id, 0) }}</span>
                                     </div>
 
                                     <div class="flex items-center gap-1" @click.stop>
@@ -591,7 +600,7 @@
                                                 {{-- Priority (enhanced with flag icons) --}}
                                                 <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.priority.width}px`" x-data="{ showPriorityDropdown: false }">
                                                         <button @click="showPriorityDropdown = !showPriorityDropdown"
-                                                                class="w-full inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium hover:shadow-sm transition-all">
+                                                                class="w-full inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium hover:bg-[#fafafa] transition-all">
                                                             @if($task->priority)
                                                                 @php
                                                                     $priorityLabel = strtoupper($task->priority->label);
@@ -603,13 +612,15 @@
                                                                     ];
                                                                     $flagColor = $flagColors[$priorityLabel] ?? 'text-slate-400';
                                                                 @endphp
-                                                                <svg class="w-4 h-4 {{ $flagColor }}" fill="currentColor" viewBox="0 0 20 20">
+                                                                <svg class="w-4 h-4 {{ $flagColor }} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                                     <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
                                                                 </svg>
+                                                                <span class="{{ $flagColor }}">{{ $task->priority->label }}</span>
                                                             @else
-                                                                <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
+                                                                <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                                                     <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
                                                                 </svg>
+                                                                <span class="text-slate-400">Set priority</span>
                                                             @endif
                                                         </button>
 
@@ -708,7 +719,8 @@
                                                                      } else {
                                                                          this.assignedUsers.push(userId);
                                                                      }
-                                                                     window.location.reload();
+                                                                     // Close dropdown after update
+                                                                     this.showAssigneeDropdown = false;
                                                                  }
                                                              } catch (error) {
                                                                  console.error('Error updating assignee:', error);
@@ -887,13 +899,17 @@
                                                                      })
                                                                  });
 
-                                                                 const data = await response.json();
-                                                                 if (data.success) {
-                                                                     // Update displayed time
-                                                                     data.time_tracked = (data.time_tracked || 0) + minutes;
+                                                                 const result = await response.json();
+                                                                 if (result.success) {
+                                                                     // Update displayed time reactively
+                                                                     if (result.time_tracked !== undefined) {
+                                                                         data.time_tracked = result.time_tracked;
+                                                                     }
+                                                                     if (result.total_amount !== undefined) {
+                                                                         data.total_amount = result.total_amount;
+                                                                     }
                                                                      this.showTimePopover = false;
                                                                      this.timeForm = { input: '', description: '', billable: true };
-                                                                     window.location.reload(); // Reload to show updated time
                                                                  } else {
                                                                      alert('Failed to save time entry');
                                                                  }
@@ -904,19 +920,20 @@
                                                          }
                                                      }">
 
-                                                    {{-- Time Display Button --}}
-                                                    <button @click="showTimePopover = !showTimePopover"
-                                                            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
-                                                        @php
-                                                            $tracked_h = floor($task->time_tracked / 60);
-                                                            $tracked_m = $task->time_tracked % 60;
-                                                            $tracked_display = $tracked_h > 0 ? "{$tracked_h}h {$tracked_m}m" : ($tracked_m > 0 ? "{$tracked_m}m" : '–');
-                                                        @endphp
+                                                    {{-- Time Display with Quick Start --}}
+                                                    <div class="w-full flex items-center gap-1">
+                                                        <button @click="showTimePopover = !showTimePopover"
+                                                                class="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
+                                                            @php
+                                                                $tracked_h = floor($task->time_tracked / 60);
+                                                                $tracked_m = $task->time_tracked % 60;
+                                                                $tracked_display = $tracked_h > 0 ? "{$tracked_h}h {$tracked_m}m" : ($tracked_m > 0 ? "{$tracked_m}m" : '–');
+                                                            @endphp
 
-                                                        <span class="inline-flex items-center gap-1.5">
-                                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                                            </svg>
+                                                            <span class="inline-flex items-center gap-1.5">
+                                                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                                </svg>
                                                             @if($task->time_estimate)
                                                                 @php
                                                                     $estimate_h = floor($task->time_estimate / 60);
@@ -932,6 +949,16 @@
                                                             @endif
                                                         </span>
                                                     </button>
+
+                                                    {{-- Quick Start Button --}}
+                                                    <button @click.stop="timeForm.input = '15m'; saveTime();"
+                                                            title="Quick add 15 minutes"
+                                                            class="flex-shrink-0 p-1 rounded hover:bg-green-50 text-green-600 hover:text-green-700 transition-colors opacity-0 group-hover:opacity-100">
+                                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
 
                                                     {{-- Time Tracking Popover --}}
                                                     <div x-show="showTimePopover"
@@ -1097,6 +1124,8 @@
                 @endforeach
             </tbody>
         </table>
+            </div>
+        </div>
     </div>
 
     {{-- ✨ UNIFIED Status Dropdown Component (ClickUp pattern) --}}
@@ -1105,10 +1134,12 @@
          @click.away="closeStatusMenu()"
          @keydown.escape.window="closeStatusMenu()"
          x-cloak
-         class="fixed w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100]"
+         class="fixed w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100] task-global-popover task-status-dropdown"
          :style="statusDropdown.anchorElement ? (() => {
              const rect = statusDropdown.anchorElement.getBoundingClientRect();
-             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
          })() : 'display: none;'">
 
         {{-- Search --}}
@@ -1188,10 +1219,12 @@
          @click.away="closeDatePicker()"
          @keydown.escape.window="closeDatePicker()"
          x-cloak
-         class="fixed w-[480px] bg-white rounded-lg shadow-xl border border-slate-200 z-[100]"
+         class="fixed w-[480px] bg-white rounded-lg shadow-xl border border-slate-200 z-[100] task-global-popover task-date-picker"
          :style="datePicker.anchorElement ? (() => {
              const rect = datePicker.anchorElement.getBoundingClientRect();
-             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
          })() : 'display: none;'">
 
         <div class="flex">
@@ -1361,6 +1394,22 @@ function clickupListView() {
         init() {
             this.initColumnManagement();
             this.initDragAndDrop();
+            this.initScrollListener();
+        },
+
+        // Initialize scroll listener to close popovers on horizontal scroll
+        initScrollListener() {
+            const scrollWrapper = document.getElementById('task-scroll-wrapper');
+            if (scrollWrapper) {
+                scrollWrapper.addEventListener('scroll', () => {
+                    if (this.statusDropdown.isOpen) {
+                        this.closeStatusMenu();
+                    }
+                    if (this.datePicker.isOpen) {
+                        this.closeDatePicker();
+                    }
+                });
+            }
         },
 
         // Unified status menu handler
@@ -1565,8 +1614,8 @@ function clickupListView() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload to show updated date
-                    window.location.reload();
+                    // Close date picker after successful update
+                    this.closeDatePicker();
                 } else {
                     alert('Failed to update date. Please try again.');
                 }
@@ -1837,6 +1886,13 @@ function clickupListView() {
         createTask(name, statusId) {
             if (!name || !name.trim()) return;
 
+            const listId = {{ request('list_id') ?? 'null' }};
+
+            if (!listId) {
+                alert('Please select a list first. Use the sidebar to navigate to a specific list.');
+                return;
+            }
+
             fetch('{{ route('tasks.store') }}', {
                 method: 'POST',
                 headers: {
@@ -1847,7 +1903,7 @@ function clickupListView() {
                 body: JSON.stringify({
                     name: name.trim(),
                     status_id: statusId,
-                    list_id: {{ request('list_id') ?? 'null' }}
+                    list_id: listId
                 })
             })
             .then(response => response.json())
@@ -1909,8 +1965,9 @@ function taskRow(taskId, taskData) {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Reload the page to show task in new status group
-                    window.location.reload();
+                    // Use the global updateTaskStatus for optimistic UI update
+                    updateTaskStatus(taskId, statusId);
+                    this.closeDatePicker();
                 } else {
                     alert('Failed to update status. Please try again.');
                 }

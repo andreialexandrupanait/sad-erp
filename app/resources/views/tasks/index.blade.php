@@ -40,6 +40,7 @@
         @if($viewMode === 'list')
             <x-tasks.clickup-list
                 :tasksByStatus="$tasksByStatus"
+                :taskCountsByStatus="$taskCountsByStatus ?? collect()"
                 :taskStatuses="$taskStatuses"
                 :lists="$lists"
                 :users="$users"

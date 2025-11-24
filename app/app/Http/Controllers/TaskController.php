@@ -26,6 +26,52 @@ class TaskController extends Controller
      */
     public function index(Request $request)
     {
+        $organizationId = auth()->user()->organization_id;
+
+        // Check if using new v2 view (cache-based with lazy loading)
+        $useV2 = $request->get('v2', true); // Default to V2 with lazy loading and full ClickUp design
+
+        if ($useV2) {
+            // NEW V2 APPROACH: Use cache-based system
+            $filters = [];
+            if ($request->filled('search')) {
+                $filters['search'] = $request->search;
+            }
+            if ($request->filled('list_id')) {
+                $filters['list_id'] = $request->list_id;
+            }
+            if ($request->filled('assignee')) {
+                $filters['assignee'] = $request->assignee;
+            }
+
+            // Get statuses with task counts (using cache)
+            $statuses = $this->taskService->getStatusesWithCounts($organizationId, $filters);
+
+            // Get filter options
+            $lists = TaskList::with('client')->ordered()->get();
+            $users = User::where('organization_id', $organizationId)
+                         ->orderBy('name')
+                         ->get();
+
+            // Get all task statuses for dropdowns
+            $taskStatuses = \App\Models\SettingOption::taskStatuses()->get();
+            $taskPriorities = \App\Models\SettingOption::taskPriorities()->get();
+            $services = \App\Models\TaskService::active()->ordered()->get();
+
+            // Load hierarchy for sidebar
+            $spaces = \App\Models\TaskSpace::with(['folders.lists' => function($query) {
+                $query->withCount('tasks');
+            }])->ordered()->get();
+
+            // Get current list for breadcrumb
+            $currentList = $request->filled('list_id')
+                ? TaskList::with('folder.space', 'client')->find($request->list_id)
+                : null;
+
+            return view('tasks.index-v2', compact('statuses', 'organizationId', 'lists', 'users', 'taskStatuses', 'taskPriorities', 'services', 'spaces', 'currentList', 'filters'));
+        }
+
+        // LEGACY APPROACH: Original implementation
         // Build filters from request
         $filters = [
             'search' => $request->search,
@@ -44,12 +90,17 @@ class TaskController extends Controller
 
         // For kanban and list views, group by status
         if (in_array($viewMode, ['kanban', 'list'])) {
+            // Get task counts per status
+            $taskCountsByStatus = $this->taskService->getTaskCountsByStatus($filters);
+
+            // Get tasks grouped by status
             $tasksByStatus = $this->taskService->getTasksGroupedByStatus($filters);
-            $tasks = $tasksByStatus; // For backwards compatibility
+            $tasks = $tasksByStatus;
         } else {
             // For table view, use pagination
             $tasks = $this->taskService->getPaginatedTasks($filters, 50);
             $tasksByStatus = collect();
+            $taskCountsByStatus = collect();
         }
 
         // Get filter options
@@ -72,7 +123,36 @@ class TaskController extends Controller
             ? TaskList::with('folder.space', 'client')->find($request->list_id)
             : null;
 
-        return view('tasks.index', compact('tasks', 'tasksByStatus', 'viewMode', 'lists', 'services', 'users', 'clients', 'taskStatuses', 'taskPriorities', 'spaces', 'currentList'));
+        return view('tasks.index', compact('tasks', 'tasksByStatus', 'taskCountsByStatus', 'viewMode', 'lists', 'services', 'users', 'clients', 'taskStatuses', 'taskPriorities', 'spaces', 'currentList'));
+    }
+
+    /**
+     * Get tasks for a specific status (for lazy loading)
+     */
+    public function getTasksByStatus(Request $request, $statusId)
+    {
+        // Build filters from request
+        $filters = [
+            'status_id' => $statusId,
+            'search' => $request->search,
+            'list_id' => $request->list_id,
+            'assigned_to' => $request->assigned_to,
+            'service_id' => $request->service_id,
+            'priority_id' => $request->priority_id,
+            'sort' => $request->get('sort', 'position'),
+            'dir' => $request->get('dir', 'asc'),
+            'scope' => 'accessible',
+        ];
+
+        // Load only essential relationships for performance
+        $essentialWith = ['status', 'list', 'assignedUser', 'priority'];
+        $tasks = $this->taskService->getTasksForUser(array_filter($filters));
+
+        return response()->json([
+            'success' => true,
+            'tasks' => $tasks,
+            'count' => $tasks->count(),
+        ]);
     }
 
     /**

@@ -18,10 +18,12 @@ class TaskSpace extends Model
         'icon',
         'color',
         'position',
+        'clickup_metadata',
     ];
 
     protected $casts = [
         'position' => 'integer',
+        'clickup_metadata' => 'array',
     ];
 
     protected static function booted()

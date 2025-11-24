@@ -55,6 +55,9 @@ class Task extends Model
     {
         parent::booted();
 
+        // Register cache observer
+        static::observe(\App\Observers\TaskCacheObserver::class);
+
         static::creating(function ($task) {
             if (Auth::check()) {
                 $task->organization_id = $task->organization_id ?? Auth::user()->organization_id;
@@ -168,12 +171,12 @@ class Task extends Model
     // Comments and attachments
     public function comments()
     {
-        return $this->hasMany(TaskComment::class)->with('user')->latest();
+        return $this->hasMany(TaskComment::class)->latest();
     }
 
     public function attachments()
     {
-        return $this->hasMany(TaskAttachment::class)->with('user')->latest();
+        return $this->hasMany(TaskAttachment::class)->latest();
     }
 
     /**
@@ -181,7 +184,7 @@ class Task extends Model
      */
     public function checklists()
     {
-        return $this->hasMany(TaskChecklist::class)->ordered()->with('items');
+        return $this->hasMany(TaskChecklist::class)->ordered();
     }
 
     /**
@@ -198,7 +201,7 @@ class Task extends Model
      */
     public function dependencies()
     {
-        return $this->hasMany(TaskDependency::class, 'task_id')->with('dependsOnTask');
+        return $this->hasMany(TaskDependency::class, 'task_id');
     }
 
     /**
@@ -206,7 +209,7 @@ class Task extends Model
      */
     public function dependents()
     {
-        return $this->hasMany(TaskDependency::class, 'depends_on_task_id')->with('task');
+        return $this->hasMany(TaskDependency::class, 'depends_on_task_id');
     }
 
     /**
@@ -214,7 +217,7 @@ class Task extends Model
      */
     public function activities()
     {
-        return $this->hasMany(TaskActivity::class)->with('user')->latest('created_at');
+        return $this->hasMany(TaskActivity::class)->latest('created_at');
     }
 
     /**
@@ -222,7 +225,7 @@ class Task extends Model
      */
     public function timeEntries()
     {
-        return $this->hasMany(TaskTimeEntry::class)->with('user')->latest();
+        return $this->hasMany(TaskTimeEntry::class)->latest();
     }
 
     /**
