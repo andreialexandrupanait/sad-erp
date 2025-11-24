@@ -33,7 +33,9 @@
       "Bash(ln:*)",
       "Bash(php -i:*)",
       "Bash(xargs ls:*)",
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(awk:*)",
+      "Bash(php -l:*)"
     ],
     "deny": [],
     "ask": []

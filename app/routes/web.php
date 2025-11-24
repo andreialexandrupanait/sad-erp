@@ -11,6 +11,7 @@ use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TaskServiceController;
+use App\Livewire\Tasks\TaskList;
 use App\Http\Controllers\Financial\DashboardController as FinancialDashboardController;
 use App\Http\Controllers\Financial\RevenueController;
 use App\Http\Controllers\Financial\ExpenseController;
@@ -82,7 +83,11 @@ Route::middleware('auth')->group(function () {
     // Legacy lazy loading endpoint - must be before resource route
     Route::get('tasks/by-status/{status}', [TaskController::class, 'getTasksByStatus'])->name('tasks.by-status');
 
-    Route::resource('tasks', TaskController::class);
+    // Livewire task list (replaces tasks.index)
+    Route::get('tasks', TaskList::class)->name('tasks.index');
+
+    // Task resource routes (except index which is handled by Livewire above)
+    Route::resource('tasks', TaskController::class)->except(['index']);
     Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
     Route::patch('tasks/{task}/time', [TaskController::class, 'updateTime'])->name('tasks.update-time');
     Route::patch('tasks/{task}/position', [TaskController::class, 'updatePosition'])->name('tasks.update-position');

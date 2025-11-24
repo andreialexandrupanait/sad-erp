@@ -283,6 +283,10 @@
                                                      'priority_color' => $task->priority?->color,
                                                      'assigned_to' => $task->assigned_to
                                                  ]))"
+                                                 x-show="window.clickupRoot.shouldRenderTask({{ $task->id }})"
+                                                 x-transition:enter="transition ease-out duration-100"
+                                                 x-transition:enter-start="opacity-0"
+                                                 x-transition:enter-end="opacity-100"
                                                  draggable="true">
 
                                                 {{-- Checkbox --}}
@@ -300,7 +304,7 @@
                                                     <div class="flex items-center gap-2">
                                                         {{-- Status Icon --}}
                                                         <div class="relative flex-shrink-0">
-                                                            <button @click="openStatusMenu({{ $task->id }}, $event)"
+                                                            <button @click="window.clickupRoot.openStatusMenu({{ $task->id }}, $event)"
                                                                     class="w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 p-0.5"
                                                                     style="color: {{ $status->color_class }}"
                                                                     :data-task-id="{{ $task->id }}">
@@ -428,128 +432,32 @@
                                                     </div>
                                                 </div>
 
-                                                {{-- Project/List (editable dropdown) --}}
-                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.project.width}px`" x-data="{ showListDropdown: false }">
-                                                    <div class="relative">
-                                                        <button @click="showListDropdown = !showListDropdown"
-                                                                class="w-full text-left text-sm text-slate-600 truncate hover:bg-slate-50 px-1 -mx-1 rounded">
-                                                            {{ $task->list?->name ?? '–' }}
-                                                        </button>
-
-                                                        {{-- List Dropdown --}}
-                                                        <div x-show="showListDropdown"
-                                                             @click.away="showListDropdown = false"
-                                                             class="absolute left-0 top-full mt-1 w-72 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-96 overflow-y-auto"
-                                                             x-cloak>
-                                                            {{-- Search --}}
-                                                            <div class="px-3 pb-2">
-                                                                <input type="text"
-                                                                       placeholder="{{ __('Search lists...') }}"
-                                                                       class="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                                            </div>
-
-                                                            <div class="border-t border-slate-200 mb-1"></div>
-
-                                                            {{-- Lists grouped by Space/Folder --}}
-                                                            @foreach($lists as $list)
-                                                                <button @click="updateListField({{ $list->id }}); showListDropdown = false"
-                                                                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
-                                                                    <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                                                                    </svg>
-                                                                    <div class="flex-1 min-w-0">
-                                                                        <div class="truncate">{{ $list->name }}</div>
-                                                                        @if($list->client)
-                                                                            <div class="text-xs text-slate-400 truncate">{{ $list->client->name }}</div>
-                                                                        @endif
-                                                                    </div>
-                                                                    @if($task->list_id === $list->id)
-                                                                        <svg class="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                        </svg>
-                                                                    @endif
-                                                                </button>
-                                                            @endforeach
-                                                        </div>
-                                                    </div>
+                                                {{-- Project/List (using global dropdown) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.project.width}px`">
+                                                    <button @click="window.clickupRoot.openListMenu({{ $task->id }}, $event)"
+                                                            class="w-full text-left text-sm text-slate-600 truncate hover:bg-slate-50 px-1 -mx-1 rounded">
+                                                        {{ $task->list?->name ?? '–' }}
+                                                    </button>
                                                 </div>
 
-                                                {{-- Service/Custom Field (enhanced with colored pills) --}}
-                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.service.width}px`"
-                                                     x-data="{
-                                                         showServiceDropdown: false,
-                                                         searchQuery: '',
-
-                                                         get filteredServices() {
-                                                             if (!this.searchQuery) return @js($services);
-                                                             return @js($services).filter(service =>
-                                                                 service.name.toLowerCase().includes(this.searchQuery.toLowerCase())
-                                                             );
-                                                         }
-                                                     }">
-                                                        <button @click="showServiceDropdown = !showServiceDropdown"
-                                                                class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
-                                                            @if($task->service)
-                                                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
-                                                                      style="background-color: {{ $task->service->color }}20; color: {{ $task->service->color }}">
-                                                                    {{ $task->service->name }}
-                                                                </span>
-                                                            @else
-                                                                <span class="text-slate-400">Select service...</span>
-                                                            @endif
-                                                        </button>
-
-                                                        {{-- Service Dropdown --}}
-                                                        <div x-show="showServiceDropdown"
-                                                             @click.away="showServiceDropdown = false"
-                                                             x-cloak
-                                                             class="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-80 overflow-y-auto">
-
-                                                            {{-- Search --}}
-                                                            <div class="px-3 pb-2">
-                                                                <input type="text"
-                                                                       x-model="searchQuery"
-                                                                       placeholder="Search or add options..."
-                                                                       class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                                            </div>
-
-                                                            {{-- None Option --}}
-                                                            <button @click="updateServiceField(null); showServiceDropdown = false"
-                                                                    class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 text-slate-500">
-                                                                None
-                                                            </button>
-
-                                                            <div class="border-t border-slate-200 my-1"></div>
-
-                                                            {{-- Service Options as Colored Pills --}}
-                                                            <template x-for="service in filteredServices" :key="service.id">
-                                                                <button @click="updateServiceField(service.id); showServiceDropdown = false"
-                                                                        class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
-                                                                    {{-- Drag Handle Icon (for visual consistency) --}}
-                                                                    <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
-                                                                    </svg>
-
-                                                                    {{-- Colored Pill --}}
-                                                                    <span class="flex-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
-                                                                          :style="`background-color: ${service.color}20; color: ${service.color}`"
-                                                                          x-text="service.name"></span>
-
-                                                                    {{-- Checkmark if selected --}}
-                                                                    <span x-show="{{ $task->service_id }} === service.id"
-                                                                          class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
-                                                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                        </svg>
-                                                                    </span>
-                                                                </button>
-                                                            </template>
-                                                        </div>
+                                                {{-- Service (using global dropdown) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.service.width}px`">
+                                                    <button @click="window.clickupRoot.openServiceMenu({{ $task->id }}, $event)"
+                                                            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
+                                                        @if($task->service)
+                                                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+                                                                  style="background-color: {{ $task->service->color }}20; color: {{ $task->service->color }}">
+                                                                {{ $task->service->name }}
+                                                            </span>
+                                                        @else
+                                                            <span class="text-slate-400">Select service...</span>
+                                                        @endif
+                                                    </button>
                                                 </div>
 
                                                 {{-- Due Date (ClickUp-style date picker) --}}
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.due_date.width}px`">
-                                                    <button @click="openDatePicker({{ $task->id }}, $event, 'due', '{{ $task->start_date?->format('Y-m-d') }}', '{{ $task->due_date?->format('Y-m-d') }}')"
+                                                    <button @click="window.clickupRoot.openDatePicker({{ $task->id }}, $event, 'due', '{{ $task->start_date?->format('Y-m-d') }}', '{{ $task->due_date?->format('Y-m-d') }}')"
                                                             class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors"
                                                             :data-task-id="{{ $task->id }}">
                                                         @if($task->due_date)
@@ -587,7 +495,7 @@
 
                                                 {{-- Status (editable dropdown) --}}
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.status.width}px`">
-                                                    <button @click="openStatusMenu({{ $task->id }}, $event)"
+                                                    <button @click="window.clickupRoot.openStatusMenu({{ $task->id }}, $event)"
                                                             class="w-full inline-flex items-center gap-2 px-2 py-1 rounded text-sm hover:bg-[#fafafa] transition-colors"
                                                             :style="`color: ${data.status_color || '#64748b'}`"
                                                             :data-task-id="{{ $task->id }}">
@@ -597,139 +505,37 @@
                                                     </button>
                                                 </div>
 
-                                                {{-- Priority (enhanced with flag icons) --}}
-                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.priority.width}px`" x-data="{ showPriorityDropdown: false }">
-                                                        <button @click="showPriorityDropdown = !showPriorityDropdown"
-                                                                class="w-full inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium hover:bg-[#fafafa] transition-all">
-                                                            @if($task->priority)
-                                                                @php
-                                                                    $priorityLabel = strtoupper($task->priority->label);
-                                                                    $flagColors = [
-                                                                        'URGENT' => 'text-red-600',
-                                                                        'HIGH' => 'text-orange-500',
-                                                                        'NORMAL' => 'text-blue-500',
-                                                                        'LOW' => 'text-slate-400'
-                                                                    ];
-                                                                    $flagColor = $flagColors[$priorityLabel] ?? 'text-slate-400';
-                                                                @endphp
-                                                                <svg class="w-4 h-4 {{ $flagColor }} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
-                                                                </svg>
-                                                                <span class="{{ $flagColor }}">{{ $task->priority->label }}</span>
-                                                            @else
-                                                                <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
-                                                                </svg>
-                                                                <span class="text-slate-400">Set priority</span>
-                                                            @endif
-                                                        </button>
-
-                                                        {{-- Priority Dropdown --}}
-                                                        <div x-show="showPriorityDropdown"
-                                                             @click.away="showPriorityDropdown = false"
-                                                             x-cloak
-                                                             class="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
-
-                                                            {{-- Task Priority Section --}}
-                                                            <div class="px-3 py-1 mb-1">
-                                                                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Task Priority</span>
-                                                            </div>
-
-                                                            {{-- None Option --}}
-                                                            <button @click="updatePriorityField(null); showPriorityDropdown = false"
-                                                                    class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-slate-500">
-                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
-                                                                </svg>
-                                                                <span>No Priority</span>
-                                                            </button>
-
-                                                            <div class="border-t border-slate-200 my-1"></div>
-
-                                                            {{-- Priority Options with Flag Icons --}}
-                                                            @foreach($taskPriorities as $priority)
-                                                                @php
-                                                                    $priorityLabel = strtoupper($priority->label);
-                                                                    $priorityConfig = [
-                                                                        'URGENT' => ['color' => 'text-red-600', 'bg' => 'hover:bg-red-50'],
-                                                                        'HIGH' => ['color' => 'text-orange-500', 'bg' => 'hover:bg-orange-50'],
-                                                                        'NORMAL' => ['color' => 'text-blue-500', 'bg' => 'hover:bg-blue-50'],
-                                                                        'LOW' => ['color' => 'text-slate-400', 'bg' => 'hover:bg-slate-50']
-                                                                    ];
-                                                                    $config = $priorityConfig[$priorityLabel] ?? ['color' => 'text-slate-600', 'bg' => 'hover:bg-slate-50'];
-                                                                @endphp
-                                                                <button @click="updatePriorityField({{ $priority->id }}, '{{ $priority->label }}', '{{ $priority->color }}'); showPriorityDropdown = false"
-                                                                        class="w-full px-3 py-1.5 text-left text-sm {{ $config['bg'] }} flex items-center gap-2.5">
-                                                                    <svg class="w-4 h-4 {{ $config['color'] }}" fill="currentColor" viewBox="0 0 20 20">
-                                                                        <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
-                                                                    </svg>
-                                                                    <span class="flex-1 {{ $config['color'] }} font-medium">{{ $priority->label }}</span>
-                                                                    @if($task->priority_id === $priority->id)
-                                                                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                        </svg>
-                                                                    @endif
-                                                                </button>
-                                                            @endforeach
-                                                        </div>
+                                                {{-- Priority (using global dropdown) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.priority.width}px`">
+                                                    <button @click="window.clickupRoot.openPriorityMenu({{ $task->id }}, $event)"
+                                                            class="w-full inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium hover:bg-[#fafafa] transition-all">
+                                                        @if($task->priority)
+                                                            @php
+                                                                $priorityLabel = strtoupper($task->priority->label);
+                                                                $flagColors = [
+                                                                    'URGENT' => 'text-red-600',
+                                                                    'HIGH' => 'text-orange-500',
+                                                                    'NORMAL' => 'text-blue-500',
+                                                                    'LOW' => 'text-slate-400'
+                                                                ];
+                                                                $flagColor = $flagColors[$priorityLabel] ?? 'text-slate-400';
+                                                            @endphp
+                                                            <svg class="w-4 h-4 {{ $flagColor }} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                            </svg>
+                                                            <span class="{{ $flagColor }}">{{ $task->priority->label }}</span>
+                                                        @else
+                                                            <svg class="w-4 h-4 text-slate-300 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                            </svg>
+                                                            <span class="text-slate-400">Set priority</span>
+                                                        @endif
+                                                    </button>
                                                 </div>
 
-                                                {{-- Assignee (enhanced with search and sections) --}}
-                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.assignee.width}px`"
-                                                     x-data="{
-                                                         showAssigneeDropdown: false,
-                                                         assignedUsers: @js($task->assignees->pluck('id')->toArray()),
-                                                         searchQuery: '',
-
-                                                         get currentUser() {
-                                                             return {{ auth()->id() }};
-                                                         },
-
-                                                         get filteredUsers() {
-                                                             if (!this.searchQuery) return @js($users);
-                                                             return @js($users).filter(user =>
-                                                                 user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-                                                                 user.email.toLowerCase().includes(this.searchQuery.toLowerCase())
-                                                             );
-                                                         },
-
-                                                         get isCurrentUserAssigned() {
-                                                             return this.assignedUsers.includes(this.currentUser);
-                                                         },
-
-                                                         async toggleAssignee(userId) {
-                                                             const isAssigned = this.assignedUsers.includes(userId);
-                                                             const url = `/tasks/{{ $task->id }}/assignees${isAssigned ? `/${userId}` : ''}`;
-                                                             const method = isAssigned ? 'DELETE' : 'POST';
-
-                                                             try {
-                                                                 const response = await fetch(url, {
-                                                                     method: method,
-                                                                     headers: {
-                                                                         'Content-Type': 'application/json',
-                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                                                                     },
-                                                                     body: method === 'POST' ? JSON.stringify({ user_id: userId }) : null
-                                                                 });
-
-                                                                 const data = await response.json();
-                                                                 if (data.success) {
-                                                                     if (isAssigned) {
-                                                                         this.assignedUsers = this.assignedUsers.filter(id => id !== userId);
-                                                                     } else {
-                                                                         this.assignedUsers.push(userId);
-                                                                     }
-                                                                     // Close dropdown after update
-                                                                     this.showAssigneeDropdown = false;
-                                                                 }
-                                                             } catch (error) {
-                                                                 console.error('Error updating assignee:', error);
-                                                             }
-                                                         }
-                                                     }">
-
-                                                    {{-- Assignee Display --}}
-                                                    <button @click="showAssigneeDropdown = !showAssigneeDropdown"
+                                                {{-- Assignee (using global dropdown) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.assignee.width}px`">
+                                                    <button @click="window.clickupRoot.openAssigneeMenu({{ $task->id }}, $event, @js($task->assignees->pluck('id')->toArray()))"
                                                             class="flex items-center gap-1 hover:bg-slate-50 rounded px-1 -mx-1">
                                                         @if($task->assignees->count() > 0)
                                                             <div class="flex -space-x-2">
@@ -760,169 +566,12 @@
                                                             </div>
                                                         @endif
                                                     </button>
-
-                                                    {{-- Assignee Dropdown --}}
-                                                    <div x-show="showAssigneeDropdown"
-                                                         @click.away="showAssigneeDropdown = false"
-                                                         x-cloak
-                                                         class="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-96 overflow-y-auto">
-
-                                                        {{-- Search --}}
-                                                        <div class="px-3 pb-2">
-                                                            <input type="text"
-                                                                   x-model="searchQuery"
-                                                                   placeholder="Search or enter email..."
-                                                                   class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                                        </div>
-
-                                                        {{-- Assignees Section --}}
-                                                        <div class="px-3 py-1 mb-1">
-                                                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignees</span>
-                                                        </div>
-
-                                                        {{-- Me Option --}}
-                                                        <button @click="toggleAssignee(currentUser)"
-                                                                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
-                                                            @if(auth()->user()->avatar)
-                                                                <img src="{{ auth()->user()->avatar }}"
-                                                                     alt="Me"
-                                                                     class="w-6 h-6 rounded-full">
-                                                            @else
-                                                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-                                                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-                                                                </div>
-                                                            @endif
-                                                            <span class="flex-1 font-medium text-slate-900">Me</span>
-                                                            <span x-show="isCurrentUserAssigned"
-                                                                  class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                                                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                </svg>
-                                                            </span>
-                                                        </button>
-
-                                                        <div class="border-t border-slate-200 my-1"></div>
-
-                                                        {{-- People Section --}}
-                                                        <div class="px-3 py-1 mb-1">
-                                                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">People</span>
-                                                        </div>
-
-                                                        <template x-for="user in filteredUsers.filter(u => u.id !== currentUser)" :key="user.id">
-                                                            <button @click="toggleAssignee(user.id)"
-                                                                    class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
-                                                                <img :src="user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`"
-                                                                     :alt="user.name"
-                                                                     class="w-6 h-6 rounded-full">
-                                                                <span class="flex-1 text-slate-700" x-text="user.name"></span>
-                                                                <span x-show="assignedUsers.includes(user.id)"
-                                                                      class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
-                                                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                    </svg>
-                                                                </span>
-                                                            </button>
-                                                        </template>
-
-                                                        <div class="border-t border-slate-200 my-1"></div>
-
-                                                        {{-- Invite via Email --}}
-                                                        <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-purple-600">
-                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                                                            </svg>
-                                                            <span>Invite people via email</span>
-                                                        </button>
-                                                    </div>
                                                 </div>
 
-                                                {{-- Time Tracked (ClickUp-style popover) --}}
-                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.time_tracked.width}px`"
-                                                     x-data="{
-                                                         showTimePopover: false,
-                                                         timeForm: {
-                                                             input: '',
-                                                             description: '',
-                                                             billable: true
-                                                         },
-
-                                                         parseTime(input) {
-                                                             // Parse '3h 20m', '3.5h', '90m', '1h30', etc.
-                                                             input = input.toLowerCase().trim();
-                                                             let totalMinutes = 0;
-
-                                                             // Match hours and minutes patterns
-                                                             const hMatch = input.match(/(\d+\.?\d*)h/);
-                                                             const mMatch = input.match(/(\d+)m/);
-
-                                                             if (hMatch) {
-                                                                 totalMinutes += parseFloat(hMatch[1]) * 60;
-                                                             }
-                                                             if (mMatch) {
-                                                                 totalMinutes += parseInt(mMatch[1]);
-                                                             }
-
-                                                             // If just a number, assume minutes
-                                                             if (!hMatch && !mMatch && /^\d+$/.test(input)) {
-                                                                 totalMinutes = parseInt(input);
-                                                             }
-
-                                                             return Math.round(totalMinutes);
-                                                         },
-
-                                                         formatTime(minutes) {
-                                                             if (!minutes || minutes === 0) return '–';
-                                                             const h = Math.floor(minutes / 60);
-                                                             const m = minutes % 60;
-                                                             return h > 0 ? `${h}h ${m}m` : `${m}m`;
-                                                         },
-
-                                                         async saveTime() {
-                                                             const minutes = this.parseTime(this.timeForm.input);
-
-                                                             if (minutes <= 0) {
-                                                                 alert('Please enter a valid time (e.g., 3h 20m, 90m, or 1.5h)');
-                                                                 return;
-                                                             }
-
-                                                             try {
-                                                                 const response = await fetch(`/tasks/{{ $task->id }}/time-entries`, {
-                                                                     method: 'POST',
-                                                                     headers: {
-                                                                         'Content-Type': 'application/json',
-                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
-                                                                     },
-                                                                     body: JSON.stringify({
-                                                                         minutes: minutes,
-                                                                         description: this.timeForm.description,
-                                                                         billable: this.timeForm.billable
-                                                                     })
-                                                                 });
-
-                                                                 const result = await response.json();
-                                                                 if (result.success) {
-                                                                     // Update displayed time reactively
-                                                                     if (result.time_tracked !== undefined) {
-                                                                         data.time_tracked = result.time_tracked;
-                                                                     }
-                                                                     if (result.total_amount !== undefined) {
-                                                                         data.total_amount = result.total_amount;
-                                                                     }
-                                                                     this.showTimePopover = false;
-                                                                     this.timeForm = { input: '', description: '', billable: true };
-                                                                 } else {
-                                                                     alert('Failed to save time entry');
-                                                                 }
-                                                             } catch (error) {
-                                                                 console.error('Error saving time:', error);
-                                                                 alert('Failed to save time entry');
-                                                             }
-                                                         }
-                                                     }">
-
-                                                    {{-- Time Display with Quick Start --}}
+                                                {{-- Time Tracked (using global popover) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.time_tracked.width}px`">
                                                     <div class="w-full flex items-center gap-1">
-                                                        <button @click="showTimePopover = !showTimePopover"
+                                                        <button @click="window.clickupRoot.openTimePopover({{ $task->id }}, $event)"
                                                                 class="flex-1 text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
                                                             @php
                                                                 $tracked_h = floor($task->time_tracked / 60);
@@ -950,8 +599,8 @@
                                                         </span>
                                                     </button>
 
-                                                    {{-- Quick Start Button --}}
-                                                    <button @click.stop="timeForm.input = '15m'; saveTime();"
+                                                    {{-- Quick add 15m button --}}
+                                                    <button @click.stop="window.clickupRoot.quickAddTime({{ $task->id }}, 15)"
                                                             title="Quick add 15 minutes"
                                                             class="flex-shrink-0 p-1 rounded hover:bg-green-50 text-green-600 hover:text-green-700 transition-colors opacity-0 group-hover:opacity-100">
                                                         <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -959,58 +608,6 @@
                                                         </svg>
                                                     </button>
                                                 </div>
-
-                                                    {{-- Time Tracking Popover --}}
-                                                    <div x-show="showTimePopover"
-                                                         @click.away="showTimePopover = false"
-                                                         x-cloak
-                                                         class="absolute left-0 top-full mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-4 z-50">
-
-                                                        <h3 class="text-sm font-semibold text-slate-900 mb-3">Add Time Entry</h3>
-
-                                                        {{-- Time Input --}}
-                                                        <div class="mb-3">
-                                                            <label class="block text-xs font-medium text-slate-700 mb-1">Time</label>
-                                                            <input type="text"
-                                                                   x-model="timeForm.input"
-                                                                   placeholder="e.g., 3h 20m or 90m"
-                                                                   class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
-                                                            <p class="text-xs text-slate-500 mt-1">Format: 3h 20m, 1.5h, or 90m</p>
-                                                        </div>
-
-                                                        {{-- Description --}}
-                                                        <div class="mb-3">
-                                                            <label class="block text-xs font-medium text-slate-700 mb-1">Description (optional)</label>
-                                                            <textarea x-model="timeForm.description"
-                                                                      rows="2"
-                                                                      placeholder="What did you work on?"
-                                                                      class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
-                                                        </div>
-
-                                                        {{-- Billable Toggle --}}
-                                                        <div class="mb-4 flex items-center justify-between">
-                                                            <span class="text-xs font-medium text-slate-700">Billable</span>
-                                                            <button @click="timeForm.billable = !timeForm.billable"
-                                                                    type="button"
-                                                                    class="relative inline-flex h-5 w-10 items-center rounded-full transition-colors"
-                                                                    :class="timeForm.billable ? 'bg-green-600' : 'bg-slate-300'">
-                                                                <span :class="timeForm.billable ? 'translate-x-6' : 'translate-x-1'"
-                                                                      class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform"></span>
-                                                            </button>
-                                                        </div>
-
-                                                        {{-- Actions --}}
-                                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-200">
-                                                            <button @click="showTimePopover = false"
-                                                                    class="flex-1 px-3 py-2 text-sm bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
-                                                                Cancel
-                                                            </button>
-                                                            <button @click="saveTime()"
-                                                                    class="flex-1 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-                                                                Save
-                                                            </button>
-                                                        </div>
-                                                    </div>
                                                 </div>
 
                                                 {{-- Amount (editable) --}}
@@ -1352,6 +949,296 @@
             </div>
         </div>
     </div>
+
+    {{-- ✨ UNIFIED Priority Dropdown Component (ClickUp pattern) --}}
+    <div x-show="priorityDropdown.isOpen"
+         @click.away="window.clickupRoot.closePriorityMenu()"
+         @keydown.escape.window="window.clickupRoot.closePriorityMenu()"
+         x-cloak
+         class="fixed w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100] task-global-popover task-priority-dropdown"
+         :style="priorityDropdown.anchorElement ? (() => {
+             const rect = priorityDropdown.anchorElement.getBoundingClientRect();
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
+         })() : 'display: none;'">
+
+        {{-- Header --}}
+        <div class="px-3 py-1 mb-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Task Priority</span>
+        </div>
+
+        {{-- No Priority Option --}}
+        <button @click="priorityDropdown.taskId && window.clickupRoot.updatePriorityForTask(priorityDropdown.taskId, null); window.clickupRoot.closePriorityMenu();"
+                class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-slate-500">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+            </svg>
+            <span>No Priority</span>
+        </button>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 my-1"></div>
+
+        {{-- Priority Options --}}
+        @foreach($taskPriorities as $priority)
+            @php
+                $priorityLabel = strtoupper($priority->label);
+                $priorityConfig = [
+                    'URGENT' => ['color' => 'text-red-600', 'bg' => 'hover:bg-red-50'],
+                    'HIGH' => ['color' => 'text-orange-500', 'bg' => 'hover:bg-orange-50'],
+                    'NORMAL' => ['color' => 'text-blue-500', 'bg' => 'hover:bg-blue-50'],
+                    'LOW' => ['color' => 'text-slate-400', 'bg' => 'hover:bg-slate-50']
+                ];
+                $config = $priorityConfig[$priorityLabel] ?? ['color' => 'text-slate-600', 'bg' => 'hover:bg-slate-50'];
+            @endphp
+            <button @click="priorityDropdown.taskId && window.clickupRoot.updatePriorityForTask(priorityDropdown.taskId, {{ $priority->id }}, '{{ $priority->label }}', '{{ $priority->color }}'); window.clickupRoot.closePriorityMenu();"
+                    class="w-full px-3 py-1.5 text-left text-sm {{ $config['bg'] }} flex items-center gap-2.5">
+                <svg class="w-4 h-4 {{ $config['color'] }}" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                </svg>
+                <span class="flex-1 {{ $config['color'] }} font-medium">{{ $priority->label }}</span>
+            </button>
+        @endforeach
+    </div>
+
+    {{-- ✨ UNIFIED Service Dropdown Component (ClickUp pattern) --}}
+    <div x-show="serviceDropdown.isOpen"
+         @click.away="window.clickupRoot.closeServiceMenu()"
+         @keydown.escape.window="window.clickupRoot.closeServiceMenu()"
+         x-cloak
+         class="fixed w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100] task-global-popover task-service-dropdown"
+         :style="serviceDropdown.anchorElement ? (() => {
+             const rect = serviceDropdown.anchorElement.getBoundingClientRect();
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
+         })() : 'display: none;'">
+
+        {{-- Search --}}
+        <div class="px-3 pb-2">
+            <input type="text"
+                   x-model="serviceDropdown.searchQuery"
+                   placeholder="Search or add options..."
+                   class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        {{-- None Option --}}
+        <button @click="serviceDropdown.taskId && window.clickupRoot.updateServiceForTask(serviceDropdown.taskId, null); window.clickupRoot.closeServiceMenu();"
+                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 text-slate-500">
+            None
+        </button>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 my-1"></div>
+
+        {{-- Service Options --}}
+        <div class="max-h-80 overflow-y-auto">
+            @foreach($services as $service)
+                <button @click="serviceDropdown.taskId && window.clickupRoot.updateServiceForTask(serviceDropdown.taskId, {{ $service->id }}); window.clickupRoot.closeServiceMenu();"
+                        x-show="!serviceDropdown.searchQuery || '{{ strtolower($service->name) }}'.includes(serviceDropdown.searchQuery.toLowerCase())"
+                        class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                    </svg>
+                    <span class="flex-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          style="background-color: {{ $service->color }}20; color: {{ $service->color }}">
+                        {{ $service->name }}
+                    </span>
+                </button>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ✨ UNIFIED Assignee Dropdown Component (ClickUp pattern) --}}
+    <div x-show="assigneeDropdown.isOpen"
+         @click.away="window.clickupRoot.closeAssigneeMenu()"
+         @keydown.escape.window="window.clickupRoot.closeAssigneeMenu()"
+         x-cloak
+         class="fixed w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100] task-global-popover task-assignee-dropdown"
+         :style="assigneeDropdown.anchorElement ? (() => {
+             const rect = assigneeDropdown.anchorElement.getBoundingClientRect();
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
+         })() : 'display: none;'">
+
+        {{-- Search --}}
+        <div class="px-3 pb-2">
+            <input type="text"
+                   x-model="assigneeDropdown.searchQuery"
+                   placeholder="Search or enter email..."
+                   class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+        </div>
+
+        {{-- Assignees Header --}}
+        <div class="px-3 py-1 mb-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignees</span>
+        </div>
+
+        {{-- Me Option --}}
+        <button @click="assigneeDropdown.taskId && window.clickupRoot.toggleAssigneeForTask(assigneeDropdown.taskId, {{ auth()->id() }});"
+                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+            @if(auth()->user()->avatar)
+                <img src="{{ auth()->user()->avatar }}" alt="Me" class="w-6 h-6 rounded-full">
+            @else
+                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                </div>
+            @endif
+            <span class="flex-1 font-medium text-slate-900">Me</span>
+            <span x-show="assigneeDropdown.assignedUsers.includes({{ auth()->id() }})"
+                  class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                </svg>
+            </span>
+        </button>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 my-1"></div>
+
+        {{-- People Header --}}
+        <div class="px-3 py-1 mb-1">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">People</span>
+        </div>
+
+        {{-- User Options --}}
+        <div class="max-h-96 overflow-y-auto">
+            @foreach($users as $user)
+                @if($user->id !== auth()->id())
+                    <button @click="assigneeDropdown.taskId && window.clickupRoot.toggleAssigneeForTask(assigneeDropdown.taskId, {{ $user->id }});"
+                            x-show="!assigneeDropdown.searchQuery || '{{ strtolower($user->name) }}'.includes(assigneeDropdown.searchQuery.toLowerCase()) || '{{ strtolower($user->email) }}'.includes(assigneeDropdown.searchQuery.toLowerCase())"
+                            class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                        <img src="{{ $user->avatar ?: 'https://ui-avatars.com/api/?name=' . urlencode($user->name) }}"
+                             alt="{{ $user->name }}"
+                             class="w-6 h-6 rounded-full">
+                        <span class="flex-1 text-slate-700">{{ $user->name }}</span>
+                        <span x-show="assigneeDropdown.assignedUsers.includes({{ $user->id }})"
+                              class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </span>
+                    </button>
+                @endif
+            @endforeach
+        </div>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 my-1"></div>
+
+        {{-- Invite Option --}}
+        <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-purple-600">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <span>Invite people via email</span>
+        </button>
+    </div>
+
+    {{-- ✨ UNIFIED List/Project Dropdown Component (ClickUp pattern) --}}
+    <div x-show="listDropdown.isOpen"
+         @click.away="window.clickupRoot.closeListMenu()"
+         @keydown.escape.window="window.clickupRoot.closeListMenu()"
+         x-cloak
+         class="fixed w-72 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100] task-global-popover task-list-dropdown"
+         :style="listDropdown.anchorElement ? (() => {
+             const rect = listDropdown.anchorElement.getBoundingClientRect();
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
+         })() : 'display: none;'">
+
+        {{-- Search --}}
+        <div class="px-3 pb-2">
+            <input type="text"
+                   x-model="listDropdown.searchQuery"
+                   placeholder="Search lists..."
+                   class="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 mb-1"></div>
+
+        {{-- Lists --}}
+        <div class="max-h-96 overflow-y-auto">
+            @foreach($lists as $list)
+                <button @click="listDropdown.taskId && window.clickupRoot.updateListForTask(listDropdown.taskId, {{ $list->id }}); window.clickupRoot.closeListMenu();"
+                        x-show="!listDropdown.searchQuery || '{{ strtolower($list->name) }}'.includes(listDropdown.searchQuery.toLowerCase()) @if($list->client) || '{{ strtolower($list->client->name) }}'.includes(listDropdown.searchQuery.toLowerCase()) @endif"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                    <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <div class="truncate">{{ $list->name }}</div>
+                        @if($list->client)
+                            <div class="text-xs text-slate-400 truncate">{{ $list->client->name }}</div>
+                        @endif
+                    </div>
+                </button>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ✨ UNIFIED Time Tracking Popover (ClickUp pattern) --}}
+    <div x-show="timePopover.isOpen"
+         @click.away="window.clickupRoot.closeTimePopover()"
+         @keydown.escape.window="window.clickupRoot.closeTimePopover()"
+         x-cloak
+         class="fixed w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-4 z-[100]"
+         :style="timePopover.anchorElement ? (() => {
+             const rect = timePopover.anchorElement.getBoundingClientRect();
+             const scrollWrapper = document.getElementById('task-scroll-wrapper');
+             const scrollLeft = scrollWrapper ? scrollWrapper.scrollLeft : 0;
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX - scrollLeft}px;`;
+         })() : 'display: none;'">
+
+        <h3 class="text-sm font-semibold text-slate-900 mb-3">Add Time Entry</h3>
+
+        {{-- Time Input --}}
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Time</label>
+            <input x-model="timePopover.timeForm.input"
+                   type="text"
+                   @keydown.enter="window.clickupRoot.saveTimeEntry()"
+                   placeholder="e.g., 3h 20m, 90m, or 1.5h"
+                   class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                   autofocus>
+            <p class="text-xs text-slate-400 mt-1">Examples: 3h 20m, 90m, 1.5h</p>
+        </div>
+
+        {{-- Description --}}
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-slate-700 mb-1.5">Description (optional)</label>
+            <textarea x-model="timePopover.timeForm.description"
+                      rows="2"
+                      placeholder="What did you work on?"
+                      class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"></textarea>
+        </div>
+
+        {{-- Billable Toggle --}}
+        <div class="mb-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox"
+                       x-model="timePopover.timeForm.billable"
+                       class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-2 focus:ring-blue-500">
+                <span class="text-sm text-slate-700">Billable</span>
+            </label>
+        </div>
+
+        {{-- Actions --}}
+        <div class="flex gap-2">
+            <button @click="window.clickupRoot.saveTimeEntry()"
+                    class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
+                Save
+            </button>
+            <button @click="window.clickupRoot.closeTimePopover()"
+                    class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors">
+                Cancel
+            </button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -1391,22 +1278,216 @@ function clickupListView() {
             tempDueDate: null
         },
 
+        // Shared priority dropdown state
+        priorityDropdown: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null
+        },
+
+        // Shared service dropdown state
+        serviceDropdown: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null,
+            searchQuery: ''
+        },
+
+        // Shared assignee dropdown state
+        assigneeDropdown: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null,
+            searchQuery: '',
+            assignedUsers: []
+        },
+
+        // Shared list dropdown state
+        listDropdown: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null,
+            searchQuery: ''
+        },
+
+        // Shared time tracking popover state
+        timePopover: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null,
+            timeForm: {
+                input: '',
+                description: '',
+                billable: true
+            }
+        },
+
+        // Virtual scrolling state
+        virtualScroll: {
+            enabled: true, // Enable virtual scrolling
+            threshold: 100, // Only activate virtual scrolling if task count > threshold
+            rowHeight: 36, // Height of each task row in pixels (h-9 = 36px)
+            bufferSize: 10, // Number of tasks to render above/below viewport
+            scrollTop: 0,
+            viewportHeight: 0,
+            visibleRange: { start: 0, end: 50 } // Initially render first 50 tasks
+        },
+
+        // Task data store (injected from PHP)
+        tasksByStatus: @js($tasksByStatus->mapWithKeys(function($tasks, $statusId) {
+            return [$statusId => $tasks->map(function($task) {
+                return [
+                    'id' => $task->id,
+                    'name' => $task->name,
+                    'list_id' => $task->list_id,
+                    'list_name' => $task->list?->name,
+                    'due_date' => $task->due_date?->format('Y-m-d'),
+                    'start_date' => $task->start_date?->format('Y-m-d'),
+                    'time_tracked' => $task->time_tracked ?? 0,
+                    'time_estimate' => $task->time_estimate ?? 0,
+                    'amount' => $task->amount ?? 0,
+                    'total_amount' => $task->total_amount ?? 0,
+                    'service_id' => $task->service_id,
+                    'service_name' => $task->service?->name,
+                    'service_color' => $task->service?->color,
+                    'status_id' => $task->status_id,
+                    'status_label' => $task->status?->label,
+                    'status_color' => $task->status?->color_class,
+                    'priority_id' => $task->priority_id,
+                    'priority_label' => $task->priority?->label,
+                    'priority_color' => $task->priority?->color,
+                    'assigned_to' => $task->assigned_to,
+                    'assignees' => $task->assignees->map(function($assignee) {
+                        return [
+                            'id' => $assignee->id,
+                            'name' => $assignee->name,
+                            'avatar' => $assignee->avatar
+                        ];
+                    })->toArray(),
+                    'tags' => $task->tags->map(function($tag) {
+                        return [
+                            'id' => $tag->id,
+                            'name' => $tag->name,
+                            'color' => $tag->color
+                        ];
+                    })->toArray()
+                ];
+            })->values()];
+        })),
+
+        // Task index mapping (for quick lookups and virtual scrolling)
+        taskIndexMap: {},
+        totalTaskCount: 0,
+
         init() {
+            console.log('ClickUp List View initialized');
+            // Store reference to root component globally for child access
+            window.clickupRoot = this;
+            this.initTaskIndexMap();
             this.initColumnManagement();
             this.initDragAndDrop();
             this.initScrollListener();
+            this.initVirtualScroll();
         },
 
-        // Initialize scroll listener to close popovers on horizontal scroll
+        // Build task index map for virtual scrolling
+        initTaskIndexMap() {
+            let globalIndex = 0;
+            Object.entries(this.tasksByStatus).forEach(([statusId, tasks]) => {
+                tasks.forEach((task, localIndex) => {
+                    this.taskIndexMap[task.id] = {
+                        globalIndex: globalIndex++,
+                        statusId: parseInt(statusId),
+                        localIndex: localIndex
+                    };
+                });
+            });
+            this.totalTaskCount = globalIndex;
+        },
+
+        // Initialize virtual scrolling
+        initVirtualScroll() {
+            if (!this.virtualScroll.enabled) return;
+
+            const scrollWrapper = document.getElementById('task-scroll-wrapper');
+            if (scrollWrapper) {
+                // Set initial viewport height
+                this.virtualScroll.viewportHeight = scrollWrapper.clientHeight;
+
+                // Update viewport height on window resize
+                window.addEventListener('resize', () => {
+                    this.virtualScroll.viewportHeight = scrollWrapper.clientHeight;
+                    this.updateVisibleRange();
+                });
+
+                // Initial visible range calculation
+                this.updateVisibleRange();
+            }
+        },
+
+        // Update visible range based on scroll position
+        updateVisibleRange() {
+            if (!this.virtualScroll.enabled) return;
+
+            const { scrollTop, viewportHeight, rowHeight, bufferSize } = this.virtualScroll;
+
+            // Calculate which rows are visible
+            const visibleStart = Math.floor(scrollTop / rowHeight);
+            const visibleEnd = Math.ceil((scrollTop + viewportHeight) / rowHeight);
+
+            // Add buffer zones
+            const start = Math.max(0, visibleStart - bufferSize);
+            const end = Math.min(this.totalTaskCount, visibleEnd + bufferSize);
+
+            this.virtualScroll.visibleRange = { start, end };
+        },
+
+        // Check if a task should be rendered (for virtual scrolling)
+        shouldRenderTask(taskId) {
+            // If virtual scrolling is disabled or task count is below threshold, render all
+            if (!this.virtualScroll.enabled || this.totalTaskCount <= this.virtualScroll.threshold) {
+                return true;
+            }
+
+            const taskInfo = this.taskIndexMap[taskId];
+            if (!taskInfo) return true; // Render if not found in map
+
+            const { start, end } = this.virtualScroll.visibleRange;
+            return taskInfo.globalIndex >= start && taskInfo.globalIndex < end;
+        },
+
+        // Initialize scroll listener to close popovers and handle virtual scrolling
         initScrollListener() {
             const scrollWrapper = document.getElementById('task-scroll-wrapper');
             if (scrollWrapper) {
                 scrollWrapper.addEventListener('scroll', () => {
+                    // Close dropdowns on scroll
                     if (this.statusDropdown.isOpen) {
                         this.closeStatusMenu();
                     }
                     if (this.datePicker.isOpen) {
                         this.closeDatePicker();
+                    }
+                    if (this.priorityDropdown.isOpen) {
+                        this.window.clickupRoot.closePriorityMenu();
+                    }
+                    if (this.serviceDropdown.isOpen) {
+                        this.window.clickupRoot.closeServiceMenu();
+                    }
+                    if (this.assigneeDropdown.isOpen) {
+                        this.window.clickupRoot.closeAssigneeMenu();
+                    }
+                    if (this.listDropdown.isOpen) {
+                        this.window.clickupRoot.closeListMenu();
+                    }
+                    if (this.timePopover.isOpen) {
+                        this.window.clickupRoot.closeTimePopover();
+                    }
+
+                    // Update virtual scroll position
+                    if (this.virtualScroll.enabled) {
+                        this.virtualScroll.scrollTop = scrollWrapper.scrollTop;
+                        this.updateVisibleRange();
                     }
                 });
             }
@@ -1472,6 +1553,239 @@ function clickupListView() {
             this.datePicker.anchorElement = null;
             this.datePicker.tempStartDate = null;
             this.datePicker.tempDueDate = null;
+        },
+
+        // Unified priority menu handler
+        openPriorityMenu(taskId, event) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.priorityDropdown.isOpen && this.priorityDropdown.taskId === taskId) {
+                this.window.clickupRoot.closePriorityMenu();
+            } else {
+                // Close other dropdowns
+                this.closeStatusMenu();
+                this.closeDatePicker();
+                this.window.clickupRoot.closeServiceMenu();
+                this.window.clickupRoot.closeAssigneeMenu();
+                this.window.clickupRoot.closeListMenu();
+                // Open for this task and anchor to clicked element
+                this.priorityDropdown.isOpen = true;
+                this.priorityDropdown.taskId = taskId;
+                this.priorityDropdown.anchorElement = event.currentTarget;
+            }
+        },
+
+        window.clickupRoot.closePriorityMenu() {
+            this.priorityDropdown.isOpen = false;
+            this.priorityDropdown.taskId = null;
+            this.priorityDropdown.anchorElement = null;
+        },
+
+        // Unified service menu handler
+        openServiceMenu(taskId, event) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.serviceDropdown.isOpen && this.serviceDropdown.taskId === taskId) {
+                this.window.clickupRoot.closeServiceMenu();
+            } else {
+                // Close other dropdowns
+                this.closeStatusMenu();
+                this.closeDatePicker();
+                this.window.clickupRoot.closePriorityMenu();
+                this.window.clickupRoot.closeAssigneeMenu();
+                this.window.clickupRoot.closeListMenu();
+                // Open for this task and anchor to clicked element
+                this.serviceDropdown.isOpen = true;
+                this.serviceDropdown.taskId = taskId;
+                this.serviceDropdown.anchorElement = event.currentTarget;
+                this.serviceDropdown.searchQuery = '';
+            }
+        },
+
+        window.clickupRoot.closeServiceMenu() {
+            this.serviceDropdown.isOpen = false;
+            this.serviceDropdown.taskId = null;
+            this.serviceDropdown.anchorElement = null;
+            this.serviceDropdown.searchQuery = '';
+        },
+
+        // Unified assignee menu handler
+        openAssigneeMenu(taskId, event, assignedUsers = []) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.assigneeDropdown.isOpen && this.assigneeDropdown.taskId === taskId) {
+                this.window.clickupRoot.closeAssigneeMenu();
+            } else {
+                // Close other dropdowns
+                this.closeStatusMenu();
+                this.closeDatePicker();
+                this.window.clickupRoot.closePriorityMenu();
+                this.window.clickupRoot.closeServiceMenu();
+                this.window.clickupRoot.closeListMenu();
+                // Open for this task and anchor to clicked element
+                this.assigneeDropdown.isOpen = true;
+                this.assigneeDropdown.taskId = taskId;
+                this.assigneeDropdown.anchorElement = event.currentTarget;
+                this.assigneeDropdown.assignedUsers = assignedUsers;
+                this.assigneeDropdown.searchQuery = '';
+            }
+        },
+
+        window.clickupRoot.closeAssigneeMenu() {
+            this.assigneeDropdown.isOpen = false;
+            this.assigneeDropdown.taskId = null;
+            this.assigneeDropdown.anchorElement = null;
+            this.assigneeDropdown.searchQuery = '';
+            this.assigneeDropdown.assignedUsers = [];
+        },
+
+        // Unified list menu handler
+        openListMenu(taskId, event) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.listDropdown.isOpen && this.listDropdown.taskId === taskId) {
+                this.window.clickupRoot.closeListMenu();
+            } else {
+                // Close other dropdowns
+                this.closeStatusMenu();
+                this.closeDatePicker();
+                this.window.clickupRoot.closePriorityMenu();
+                this.window.clickupRoot.closeServiceMenu();
+                this.window.clickupRoot.closeAssigneeMenu();
+                // Open for this task and anchor to clicked element
+                this.listDropdown.isOpen = true;
+                this.listDropdown.taskId = taskId;
+                this.listDropdown.anchorElement = event.currentTarget;
+                this.listDropdown.searchQuery = '';
+            }
+        },
+
+        window.clickupRoot.closeListMenu() {
+            this.listDropdown.isOpen = false;
+            this.listDropdown.taskId = null;
+            this.listDropdown.anchorElement = null;
+            this.listDropdown.searchQuery = '';
+        },
+
+        // Unified time tracking popover handler
+        openTimePopover(taskId, event) {
+            event.stopPropagation();
+
+            if (this.timePopover.isOpen && this.timePopover.taskId === taskId) {
+                this.window.clickupRoot.closeTimePopover();
+            } else {
+                // Close other popovers
+                this.closeStatusMenu();
+                this.closeDatePicker();
+                this.window.clickupRoot.closePriorityMenu();
+                this.window.clickupRoot.closeServiceMenu();
+                this.window.clickupRoot.closeAssigneeMenu();
+                this.window.clickupRoot.closeListMenu();
+
+                // Open for this task
+                this.timePopover.isOpen = true;
+                this.timePopover.taskId = taskId;
+                this.timePopover.anchorElement = event.currentTarget;
+                this.timePopover.timeForm = { input: '', description: '', billable: true };
+            }
+        },
+
+        window.clickupRoot.closeTimePopover() {
+            this.timePopover.isOpen = false;
+            this.timePopover.taskId = null;
+            this.timePopover.anchorElement = null;
+            this.timePopover.timeForm = { input: '', description: '', billable: true };
+        },
+
+        // Parse time input (3h 20m, 90m, 1.5h, etc.)
+        parseTime(input) {
+            input = input.toLowerCase().trim();
+            let totalMinutes = 0;
+
+            const hMatch = input.match(/(\d+\.?\d*)h/);
+            const mMatch = input.match(/(\d+)m/);
+
+            if (hMatch) {
+                totalMinutes += parseFloat(hMatch[1]) * 60;
+            }
+            if (mMatch) {
+                totalMinutes += parseInt(mMatch[1]);
+            }
+
+            // If just a number, assume minutes
+            if (!hMatch && !mMatch && /^\d+$/.test(input)) {
+                totalMinutes = parseInt(input);
+            }
+
+            return Math.round(totalMinutes);
+        },
+
+        // Format minutes to display (90 → 1h 30m)
+        formatTime(minutes) {
+            if (!minutes || minutes === 0) return '–';
+            const h = Math.floor(minutes / 60);
+            const m = minutes % 60;
+            return h > 0 ? `${h}h ${m}m` : `${m}m`;
+        },
+
+        // Save time entry for task
+        async window.clickupRoot.saveTimeEntry() {
+            const taskId = this.timePopover.taskId;
+            const minutes = this.parseTime(this.timePopover.timeForm.input);
+
+            if (minutes <= 0) {
+                alert('Please enter a valid time (e.g., 3h 20m, 90m, or 1.5h)');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/tasks/${taskId}/time-entries`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                    },
+                    body: JSON.stringify({
+                        minutes: minutes,
+                        description: this.timePopover.timeForm.description,
+                        billable: this.timePopover.timeForm.billable
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    // Update task in store
+                    if (result.time_tracked !== undefined) {
+                        const taskInfo = this.taskIndexMap[taskId];
+                        if (taskInfo) {
+                            const tasks = this.tasksByStatus[taskInfo.statusId];
+                            if (tasks && tasks[taskInfo.localIndex]) {
+                                tasks[taskInfo.localIndex].time_tracked = result.time_tracked;
+                                if (result.total_amount !== undefined) {
+                                    tasks[taskInfo.localIndex].total_amount = result.total_amount;
+                                }
+                            }
+                        }
+                    }
+                    this.window.clickupRoot.closeTimePopover();
+                } else {
+                    alert('Failed to save time entry');
+                }
+            } catch (error) {
+                console.error('Error saving time:', error);
+                alert('Failed to save time entry');
+            }
+        },
+
+        // Quick add time (for the 15m button)
+        async quickAddTime(taskId, minutes) {
+            this.timePopover.taskId = taskId;
+            this.timePopover.timeForm.input = `${minutes}m`;
+            await this.window.clickupRoot.saveTimeEntry();
         },
 
         // Calendar navigation
@@ -1706,6 +2020,96 @@ function clickupListView() {
             this.bulkOperation('delete', {});
         },
 
+        // Global update method for priority (used by global priority dropdown)
+        updatePriorityForTask(taskId, priorityId, label = null, color = null) {
+            // Find the task row element
+            const taskRowElement = document.querySelector(`[x-data*="taskRow(${taskId}"`);
+            if (!taskRowElement) {
+                console.error(`Task row ${taskId} not found`);
+                return;
+            }
+
+            // Get the Alpine component data
+            const taskComponent = Alpine.$data(taskRowElement);
+            if (taskComponent && taskComponent.updatePriorityField) {
+                taskComponent.updatePriorityField(priorityId, label, color);
+            }
+        },
+
+        // Global update method for service (used by global service dropdown)
+        updateServiceForTask(taskId, serviceId) {
+            // Find the task row element
+            const taskRowElement = document.querySelector(`[x-data*="taskRow(${taskId}"`);
+            if (!taskRowElement) {
+                console.error(`Task row ${taskId} not found`);
+                return;
+            }
+
+            // Get the Alpine component data
+            const taskComponent = Alpine.$data(taskRowElement);
+            if (taskComponent && taskComponent.updateServiceField) {
+                taskComponent.updateServiceField(serviceId);
+            }
+        },
+
+        // Global update method for assignee (used by global assignee dropdown)
+        async toggleAssigneeForTask(taskId, userId) {
+            // Find the task row element
+            const taskRowElement = document.querySelector(`[x-data*="taskRow(${taskId}"`);
+            if (!taskRowElement) {
+                console.error(`Task row ${taskId} not found`);
+                return;
+            }
+
+            // Check if user is assigned
+            const isAssigned = this.assigneeDropdown.assignedUsers.includes(userId);
+            const url = `/tasks/${taskId}/assignees${isAssigned ? `/${userId}` : ''}`;
+            const method = isAssigned ? 'DELETE' : 'POST';
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: method === 'POST' ? JSON.stringify({ user_id: userId }) : null
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Update the assignedUsers array
+                    if (isAssigned) {
+                        this.assigneeDropdown.assignedUsers = this.assigneeDropdown.assignedUsers.filter(id => id !== userId);
+                    } else {
+                        this.assigneeDropdown.assignedUsers.push(userId);
+                    }
+
+                    // Reload the page to reflect changes (or implement optimistic update)
+                    setTimeout(() => window.location.reload(), 500);
+                }
+            } catch (error) {
+                console.error('Error toggling assignee:', error);
+                alert('Failed to update assignee. Please try again.');
+            }
+        },
+
+        // Global update method for list (used by global list dropdown)
+        updateListForTask(taskId, listId) {
+            // Find the task row element
+            const taskRowElement = document.querySelector(`[x-data*="taskRow(${taskId}"`);
+            if (!taskRowElement) {
+                console.error(`Task row ${taskId} not found`);
+                return;
+            }
+
+            // Get the Alpine component data
+            const taskComponent = Alpine.$data(taskRowElement);
+            if (taskComponent && taskComponent.updateListField) {
+                taskComponent.updateListField(listId);
+            }
+        },
+
         initColumnManagement() {
             // Load saved column preferences from localStorage
             const saved = localStorage.getItem('clickup_columns');
@@ -1920,6 +2324,28 @@ function clickupListView() {
                 console.error('Error creating task:', error);
                 alert('Failed to create task. Please try again.');
             });
+        },
+
+        // Toggle virtual scrolling on/off
+        toggleVirtualScrolling() {
+            this.virtualScroll.enabled = !this.virtualScroll.enabled;
+            console.log(`Virtual scrolling ${this.virtualScroll.enabled ? 'enabled' : 'disabled'}`);
+        },
+
+        // Get performance stats
+        getPerformanceStats() {
+            const renderedTasks = this.virtualScroll.enabled && this.totalTaskCount > this.virtualScroll.threshold
+                ? this.virtualScroll.visibleRange.end - this.virtualScroll.visibleRange.start
+                : this.totalTaskCount;
+
+            return {
+                totalTasks: this.totalTaskCount,
+                renderedTasks: renderedTasks,
+                virtualScrollEnabled: this.virtualScroll.enabled && this.totalTaskCount > this.virtualScroll.threshold,
+                threshold: this.virtualScroll.threshold,
+                visibleRange: this.virtualScroll.visibleRange,
+                renderPercentage: ((renderedTasks / this.totalTaskCount) * 100).toFixed(1) + '%'
+            };
         }
     };
 }
