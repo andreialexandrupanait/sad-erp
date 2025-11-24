@@ -40,7 +40,7 @@
     <!-- Subtasks List -->
     <div class="space-y-2">
         <template x-for="subtask in $el.closest('[x-data*=taskSidePanel]').__x.$data.task.subtasks" :key="subtask.id">
-            <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
+            <div class="flex items-start gap-3 p-3 bg-[#fafafa] rounded-lg hover:bg-gray-50 transition-colors group">
                 <!-- Status Checkbox -->
                 <input
                     type="checkbox"

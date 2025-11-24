@@ -112,7 +112,9 @@ class TaskController extends Controller
             'status_id' => 'required|exists:settings_options,id',
             'priority_id' => 'nullable|exists:settings_options,id',
             'due_date' => 'nullable|date',
+            'start_date' => 'nullable|date|before_or_equal:due_date',
             'time_tracked' => 'nullable|integer|min:0',
+            'time_estimate' => 'nullable|integer|min:0',
             'amount' => 'nullable|numeric|min:0',
             'position' => 'nullable|integer',
             'custom_fields' => 'nullable|array',
@@ -199,7 +201,9 @@ class TaskController extends Controller
             'status_id' => 'required|exists:settings_options,id',
             'priority_id' => 'nullable|exists:settings_options,id',
             'due_date' => 'nullable|date',
+            'start_date' => 'nullable|date|before_or_equal:due_date',
             'time_tracked' => 'nullable|integer|min:0',
+            'time_estimate' => 'nullable|integer|min:0',
             'amount' => 'nullable|numeric|min:0',
             'position' => 'nullable|integer',
             'custom_fields' => 'nullable|array',
@@ -299,7 +303,9 @@ class TaskController extends Controller
             'subtasks.assignedUser',
             'comments.user',
             'comments.replies.user',
-            'attachments.user'
+            'attachments.user',
+            'checklists.items.assignedUser',
+            'activities.user'
         ]);
 
         return response()->json($task);
@@ -312,7 +318,7 @@ class TaskController extends Controller
     {
         $allowedFields = [
             'name', 'description', 'status_id', 'priority_id', 'list_id',
-            'assigned_to', 'due_date', 'time_tracked', 'amount', 'service_id'
+            'assigned_to', 'due_date', 'start_date', 'time_tracked', 'time_estimate', 'amount', 'service_id'
         ];
 
         $data = $request->only($allowedFields);
@@ -338,15 +344,25 @@ class TaskController extends Controller
                     $rules[$field] = 'nullable|exists:users,id';
                     break;
                 case 'due_date':
+                case 'start_date':
                     $rules[$field] = 'nullable|date';
                     break;
                 case 'time_tracked':
+                case 'time_estimate':
                     $rules[$field] = 'nullable|integer|min:0';
                     break;
                 case 'amount':
                     $rules[$field] = 'nullable|numeric|min:0';
                     break;
             }
+        }
+
+        // Additional validation: start_date should be before or equal to due_date
+        if (isset($data['start_date']) && isset($task->due_date)) {
+            $rules['start_date'] = 'nullable|date|before_or_equal:' . $task->due_date;
+        }
+        if (isset($data['due_date']) && isset($task->start_date)) {
+            $rules['due_date'] = 'nullable|date|after_or_equal:' . $task->start_date;
         }
 
         $validated = $request->validate($rules);
@@ -716,6 +732,70 @@ class TaskController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => __('Failed to remove watcher: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Add a tag to a task
+     */
+    public function addTag(Request $request, Task $task)
+    {
+        $this->authorize('update', $task);
+
+        $validated = $request->validate([
+            'tag_id' => 'required|exists:task_tags,id',
+        ]);
+
+        try {
+            $tag = \App\Models\TaskTag::findOrFail($validated['tag_id']);
+
+            // Ensure tag belongs to user's organization
+            if ($tag->organization_id !== auth()->user()->organization_id) {
+                abort(403, 'Unauthorized');
+            }
+
+            $task->addTag($tag);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Tag added successfully.'),
+                'tags' => $task->fresh()->load('tags')->tags,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to add tag: :error', ['error' => $e->getMessage()]),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove a tag from a task
+     */
+    public function removeTag(Task $task, $tagId)
+    {
+        $this->authorize('update', $task);
+
+        try {
+            $tag = \App\Models\TaskTag::findOrFail($tagId);
+
+            // Ensure tag belongs to user's organization
+            if ($tag->organization_id !== auth()->user()->organization_id) {
+                abort(403, 'Unauthorized');
+            }
+
+            $task->removeTag($tag);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Tag removed successfully.'),
+                'tags' => $task->fresh()->load('tags')->tags,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to remove tag: :error', ['error' => $e->getMessage()]),
             ], 500);
         }
     }

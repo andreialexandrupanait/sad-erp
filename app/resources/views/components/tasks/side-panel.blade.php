@@ -43,7 +43,7 @@
                         <!-- Content -->
                         <div x-show="!loading && task" class="flex-1 overflow-y-auto">
                             <!-- Header -->
-                            <div class="sticky top-0 z-10 bg-white border-b border-slate-200 px-6 py-4">
+                            <div class="sticky top-0 z-10 bg-white border-b border-[#e6e6e6] px-6 py-4">
                                 <div class="flex items-start justify-between">
                                     <div class="flex-1">
                                         <!-- Task Name (Editable) -->
@@ -175,16 +175,16 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-slate-500 mb-1">{{ __('Total') }}</label>
-                                        <div class="px-2 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-md">
+                                        <div class="px-2 py-1.5 text-sm bg-slate-50 border border-[#e6e6e6] rounded-md">
                                             <span x-text="((task.time_tracked / 60) * task.amount).toFixed(2)"></span> RON
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Tabs: Subtasks, Comments, Attachments -->
+                                <!-- Tabs: Subtasks, Checklists, Comments, Attachments -->
                                 <div x-data="{ activeTab: 'subtasks' }">
                                     <!-- Tab Headers -->
-                                    <div class="border-b border-slate-200">
+                                    <div class="border-b border-[#e6e6e6]">
                                         <nav class="-mb-px flex space-x-6">
                                             <button
                                                 @click="activeTab = 'subtasks'"
@@ -193,6 +193,22 @@
                                             >
                                                 {{ __('Subtasks') }}
                                                 <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="task.subtasks?.length || 0"></span>
+                                            </button>
+                                            <button
+                                                @click="activeTab = 'checklists'"
+                                                :class="activeTab === 'checklists' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                                                class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+                                            >
+                                                {{ __('Checklists') }}
+                                                <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="task.checklists?.length || 0"></span>
+                                            </button>
+                                            <button
+                                                @click="activeTab = 'dependencies'"
+                                                :class="activeTab === 'dependencies' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                                                class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+                                            >
+                                                {{ __('Dependencies') }}
+                                                <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="(task.dependencies?.length || 0) + (task.dependents?.length || 0)"></span>
                                             </button>
                                             <button
                                                 @click="activeTab = 'comments'"
@@ -210,6 +226,22 @@
                                                 {{ __('Attachments') }}
                                                 <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="task.attachments?.length || 0"></span>
                                             </button>
+                                            <button
+                                                @click="activeTab = 'activity'"
+                                                :class="activeTab === 'activity' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                                                class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+                                            >
+                                                {{ __('Activity') }}
+                                                <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="task.activities?.length || 0"></span>
+                                            </button>
+                                            <button
+                                                @click="activeTab = 'time-tracking'"
+                                                :class="activeTab === 'time-tracking' ? 'border-blue-500 text-blue-600' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'"
+                                                class="whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm"
+                                            >
+                                                {{ __('Time Tracking') }}
+                                                <span class="ml-2 py-0.5 px-2 rounded-full text-xs bg-slate-100" x-text="task.time_tracked || 0"></span>
+                                            </button>
                                         </nav>
                                     </div>
 
@@ -220,6 +252,54 @@
                                             <x-tasks.subtasks-section />
                                         </div>
 
+                                        <!-- Checklists Tab -->
+                                        <div x-show="activeTab === 'checklists'">
+                                            <!-- Add Checklist Button -->
+                                            <div class="mb-4">
+                                                <button @click="addChecklist" type="button"
+                                                        class="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 transition-colors">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                    </svg>
+                                                    {{ __('Add Checklist') }}
+                                                </button>
+                                            </div>
+
+                                            <!-- Checklists List -->
+                                            <div class="space-y-3">
+                                                <template x-for="checklistItem in task.checklists || []" :key="checklistItem.id">
+                                                    <div class="border border-[#e6e6e6] rounded-lg bg-white p-3">
+                                                        <div class="flex items-center justify-between mb-2">
+                                                            <div class="flex-1">
+                                                                <h4 class="font-medium text-slate-900" x-text="checklistItem.name"></h4>
+                                                            </div>
+                                                            <div class="text-xs text-slate-600">
+                                                                <span x-text="checklistItem.items?.filter(i => i.is_completed).length || 0"></span>/<span x-text="checklistItem.items?.length || 0"></span>
+                                                            </div>
+                                                        </div>
+                                                        <template x-for="item in checklistItem.items || []" :key="item.id">
+                                                            <div class="flex items-center gap-2 py-1">
+                                                                <input type="checkbox"
+                                                                       :checked="item.is_completed"
+                                                                       class="w-4 h-4 rounded border-slate-300">
+                                                                <span class="text-sm" :class="item.is_completed ? 'line-through text-slate-500' : 'text-slate-700'" x-text="item.text"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                                <template x-if="!task.checklists || task.checklists.length === 0">
+                                                    <div class="text-center py-8 text-slate-500 text-sm">
+                                                        {{ __('No checklists yet') }}
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </div>
+
+                                        <!-- Dependencies Tab -->
+                                        <div x-show="activeTab === 'dependencies'" class="p-4">
+                                            <x-tasks.dependencies-section />
+                                        </div>
+
                                         <!-- Comments Tab -->
                                         <div x-show="activeTab === 'comments'">
                                             <x-tasks.comments-section />
@@ -228,6 +308,16 @@
                                         <!-- Attachments Tab -->
                                         <div x-show="activeTab === 'attachments'">
                                             <x-tasks.attachments-section />
+                                        </div>
+
+                                        <!-- Activity Tab -->
+                                        <div x-show="activeTab === 'activity'">
+                                            <x-tasks.activity-section />
+                                        </div>
+
+                                        <!-- Time Tracking Tab -->
+                                        <div x-show="activeTab === 'time-tracking'">
+                                            <x-tasks.time-tracking-section />
                                         </div>
                                     </div>
                                 </div>
@@ -298,6 +388,35 @@ function taskSidePanel() {
                 }
             } catch (error) {
                 console.error('Error updating task:', error);
+            }
+        },
+
+        async addChecklist() {
+            const checklistName = prompt('Enter checklist name:');
+            if (!checklistName || !checklistName.trim()) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/tasks/${this.task.id}/checklists`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ name: checklistName })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (!this.task.checklists) {
+                        this.task.checklists = [];
+                    }
+                    this.task.checklists.push(data.checklist);
+                }
+            } catch (error) {
+                console.error('Error adding checklist:', error);
             }
         },
 

@@ -23,10 +23,13 @@ class Task extends Model
         'name',
         'description',
         'due_date',
+        'start_date',
         'time_tracked',
+        'time_estimate',
         'amount',
         'total_amount',
         'position',
+        'date_closed',
     ];
 
     protected $casts = [
@@ -39,10 +42,13 @@ class Task extends Model
         'priority_id' => 'integer',
         'parent_task_id' => 'integer',
         'time_tracked' => 'integer',
+        'time_estimate' => 'integer',
         'amount' => 'decimal:2',
         'total_amount' => 'decimal:2',
         'position' => 'integer',
         'due_date' => 'date',
+        'start_date' => 'date',
+        'date_closed' => 'datetime',
     ];
 
     protected static function booted()
@@ -63,6 +69,17 @@ class Task extends Model
                 $task->total_amount = ($task->time_tracked / 60) * $task->amount;
             } else {
                 $task->total_amount = 0;
+            }
+
+            // Auto-set date_closed when status changes to "Done"
+            if ($task->isDirty('status_id') && $task->status) {
+                $statusName = $task->status->name ?? '';
+                if (in_array(strtolower($statusName), ['done', 'completed', 'closed'])) {
+                    $task->date_closed = now();
+                } elseif ($task->date_closed) {
+                    // Clear date_closed if status changed from Done to something else
+                    $task->date_closed = null;
+                }
             }
         });
 
@@ -157,6 +174,152 @@ class Task extends Model
     public function attachments()
     {
         return $this->hasMany(TaskAttachment::class)->with('user')->latest();
+    }
+
+    /**
+     * Task checklists
+     */
+    public function checklists()
+    {
+        return $this->hasMany(TaskChecklist::class)->ordered()->with('items');
+    }
+
+    /**
+     * Task tags
+     */
+    public function tags()
+    {
+        return $this->belongsToMany(TaskTag::class, 'task_tag_assignments', 'task_id', 'tag_id')
+                    ->withTimestamps();
+    }
+
+    /**
+     * Tasks that this task depends on (blocking tasks)
+     */
+    public function dependencies()
+    {
+        return $this->hasMany(TaskDependency::class, 'task_id')->with('dependsOnTask');
+    }
+
+    /**
+     * Tasks that depend on this task (blocked tasks)
+     */
+    public function dependents()
+    {
+        return $this->hasMany(TaskDependency::class, 'depends_on_task_id')->with('task');
+    }
+
+    /**
+     * Activity log for this task
+     */
+    public function activities()
+    {
+        return $this->hasMany(TaskActivity::class)->with('user')->latest('created_at');
+    }
+
+    /**
+     * Time entries for this task
+     */
+    public function timeEntries()
+    {
+        return $this->hasMany(TaskTimeEntry::class)->with('user')->latest();
+    }
+
+    /**
+     * Add a tag to this task
+     */
+    public function addTag(TaskTag $tag): void
+    {
+        if (!$this->tags()->where('tag_id', $tag->id)->exists()) {
+            $this->tags()->attach($tag->id);
+        }
+    }
+
+    /**
+     * Remove a tag from this task
+     */
+    public function removeTag(TaskTag $tag): void
+    {
+        $this->tags()->detach($tag->id);
+    }
+
+    /**
+     * Add a dependency (this task depends on another task)
+     */
+    public function addDependency(int $dependsOnTaskId, string $type = 'blocks'): bool
+    {
+        // Check for circular dependencies
+        if (TaskDependency::wouldCreateCircularDependency($this->id, $dependsOnTaskId)) {
+            return false;
+        }
+
+        // Check if dependency already exists
+        if ($this->dependencies()->where('depends_on_task_id', $dependsOnTaskId)->exists()) {
+            return false;
+        }
+
+        $this->dependencies()->create([
+            'depends_on_task_id' => $dependsOnTaskId,
+            'dependency_type' => $type,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Remove a dependency
+     */
+    public function removeDependency(int $dependsOnTaskId): void
+    {
+        $this->dependencies()->where('depends_on_task_id', $dependsOnTaskId)->delete();
+    }
+
+    /**
+     * Check if this task is blocked (has incomplete dependencies)
+     */
+    public function isBlocked(): bool
+    {
+        return $this->dependencies()
+                    ->whereHas('dependsOnTask', function ($query) {
+                        $query->whereHas('status', function ($q) {
+                            $q->whereNotIn('name', ['Done', 'Completed', 'Closed']);
+                        });
+                    })
+                    ->exists();
+    }
+
+    /**
+     * Get count of incomplete dependencies
+     */
+    public function getIncompleteDependenciesCount(): int
+    {
+        return $this->dependencies()
+                    ->whereHas('dependsOnTask', function ($query) {
+                        $query->whereHas('status', function ($q) {
+                            $q->whereNotIn('name', ['Done', 'Completed', 'Closed']);
+                        });
+                    })
+                    ->count();
+    }
+
+    /**
+     * Get checklist progress summary as "3/10"
+     */
+    public function getChecklistProgressAttribute(): string
+    {
+        $totalItems = 0;
+        $completedItems = 0;
+
+        foreach ($this->checklists as $checklist) {
+            $totalItems += $checklist->items->count();
+            $completedItems += $checklist->items->where('is_completed', true)->count();
+        }
+
+        if ($totalItems === 0) {
+            return '';
+        }
+
+        return "{$completedItems}/{$totalItems}";
     }
 
     // Helper methods for assignees and watchers
@@ -285,5 +448,54 @@ class Task extends Model
     public function scopeOverdue($query)
     {
         return $query->where('due_date', '<', now());
+    }
+
+    // Accessors for Planning Fields
+
+    /**
+     * Format time estimate as "2h 30m"
+     */
+    public function getTimeEstimateFormattedAttribute(): string
+    {
+        if (!$this->time_estimate) {
+            return '';
+        }
+
+        $hours = floor($this->time_estimate / 60);
+        $minutes = $this->time_estimate % 60;
+
+        if ($hours > 0 && $minutes > 0) {
+            return "{$hours}h {$minutes}m";
+        } elseif ($hours > 0) {
+            return "{$hours}h";
+        } else {
+            return "{$minutes}m";
+        }
+    }
+
+    /**
+     * Calculate estimate variance (tracked - estimate)
+     * Positive = over estimate, Negative = under estimate
+     */
+    public function getEstimateVarianceAttribute(): ?int
+    {
+        if (!$this->time_estimate) {
+            return null;
+        }
+
+        return $this->time_tracked - $this->time_estimate;
+    }
+
+    /**
+     * Get estimate variance percentage
+     * Returns percentage over/under estimate
+     */
+    public function getEstimateVariancePercentAttribute(): ?float
+    {
+        if (!$this->time_estimate || $this->time_estimate === 0) {
+            return null;
+        }
+
+        return ($this->estimate_variance / $this->time_estimate) * 100;
     }
 }

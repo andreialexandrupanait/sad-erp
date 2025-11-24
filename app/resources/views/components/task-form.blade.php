@@ -127,6 +127,24 @@
                         @enderror
                     </div>
 
+                    <!-- Start Date -->
+                    <div class="field-wrapper">
+                        <x-ui.label for="start_date">
+                            {{ __('Start Date') }}
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <x-ui.input
+                                type="date"
+                                name="start_date"
+                                id="start_date"
+                                value="{{ old('start_date', $task ? $task->start_date?->format('Y-m-d') : '') }}"
+                            />
+                        </div>
+                        @error('start_date')
+                            <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
                     <!-- Due Date -->
                     <div class="field-wrapper">
                         <x-ui.label for="due_date">
@@ -146,24 +164,45 @@
                     </div>
                 </div>
 
-                <!-- Service 50% | Time Tracked 50% -->
+                <!-- Service -->
+                <div class="field-wrapper">
+                    <x-ui.label for="service_id">
+                        {{ __('Service') }}
+                    </x-ui.label>
+                    <div class="mt-2">
+                        <x-ui.select name="service_id" id="service_id" x-model="serviceId">
+                            <option value="">{{ __('No service') }}</option>
+                            @foreach($services as $service)
+                                <option value="{{ $service->id }}" {{ old('service_id', $task->service_id ?? '') == $service->id ? 'selected' : '' }}>
+                                    {{ $service->name }} ({{ number_format($service->default_hourly_rate, 2) }} RON/h)
+                                </option>
+                            @endforeach
+                        </x-ui.select>
+                    </div>
+                    @error('service_id')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <!-- Time Estimate 50% | Time Tracked 50% -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Service -->
+                    <!-- Time Estimate (minutes) -->
                     <div class="field-wrapper">
-                        <x-ui.label for="service_id">
-                            {{ __('Service') }}
+                        <x-ui.label for="time_estimate">
+                            {{ __('Time Estimate (minutes)') }}
                         </x-ui.label>
                         <div class="mt-2">
-                            <x-ui.select name="service_id" id="service_id" x-model="serviceId">
-                                <option value="">{{ __('No service') }}</option>
-                                @foreach($services as $service)
-                                    <option value="{{ $service->id }}" {{ old('service_id', $task->service_id ?? '') == $service->id ? 'selected' : '' }}>
-                                        {{ $service->name }} ({{ number_format($service->default_hourly_rate, 2) }} RON/h)
-                                    </option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-ui.input
+                                type="number"
+                                name="time_estimate"
+                                id="time_estimate"
+                                min="0"
+                                value="{{ old('time_estimate', $task->time_estimate ?? '') }}"
+                                placeholder="0"
+                            />
                         </div>
-                        @error('service_id')
+                        <p class="mt-1 text-xs text-slate-500">{{ __('Estimated time to complete this task') }}</p>
+                        @error('time_estimate')
                             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                         @enderror
                     </div>

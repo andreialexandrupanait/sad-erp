@@ -39,7 +39,7 @@
 
                 <!-- Comment Content -->
                 <div class="flex-1 min-w-0">
-                    <div class="bg-slate-50 rounded-lg px-4 py-3">
+                    <div class="bg-[#fafafa] rounded-lg px-4 py-3">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="font-medium text-sm text-slate-900" x-text="comment.user?.name"></span>
                             <span class="text-xs text-slate-500" x-text="new Date(comment.created_at).toLocaleString()"></span>

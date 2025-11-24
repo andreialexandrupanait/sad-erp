@@ -1,7 +1,7 @@
 <div class="space-y-4">
     <!-- Upload Attachment -->
     <div x-data="{ uploading: false }">
-        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition-colors">
+        <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-slate-300 border-dashed rounded-lg cursor-pointer bg-[#fafafa] hover:bg-slate-100 transition-colors">
             <div class="flex flex-col items-center justify-center pt-5 pb-6">
                 <svg class="w-8 h-8 mb-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
@@ -30,7 +30,7 @@
     <!-- Attachments List -->
     <div class="space-y-2">
         <template x-for="attachment in $el.closest('[x-data*=taskSidePanel]').__x.$data.task.attachments" :key="attachment.id">
-            <div class="flex items-center gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
+            <div class="flex items-center gap-3 p-3 bg-[#fafafa] rounded-lg hover:bg-slate-100 transition-colors group">
                 <!-- File Icon -->
                 <div class="flex-shrink-0">
                     <svg class="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

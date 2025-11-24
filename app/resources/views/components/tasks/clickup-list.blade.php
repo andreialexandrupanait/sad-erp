@@ -71,7 +71,7 @@
                                 {{-- Group Header Row 1: Status Badge + Count + Actions --}}
                                 <div @click="expanded = !expanded"
                                      data-status-id="{{ $status->id }}"
-                                     class="flex items-center gap-2 h-8 px-3 bg-slate-50 hover:bg-slate-100 cursor-pointer border-b border-slate-200">
+                                     class="flex items-center gap-2 h-9 px-3 cursor-pointer">
                                     <button class="flex-shrink-0" @click.stop="expanded = !expanded">
                                         <svg class="w-2.5 h-2.5 text-slate-400 transition-transform"
                                              :class="expanded ? 'rotate-90' : ''"
@@ -81,32 +81,32 @@
                                     </button>
 
                                     <div class="flex items-center gap-2">
-                                        <span class="text-[10px] font-bold uppercase"
+                                        <span class="text-xs font-bold uppercase px-2 py-1 bg-[#fafafa] rounded"
                                               style="color: {{ $status->color }}">
                                             {{ $status->label }}
                                         </span>
-                                        <span class="text-[13px] text-slate-500">{{ $statusTasks->count() }}</span>
+                                        <span class="text-sm text-slate-500">{{ $statusTasks->count() }}</span>
                                     </div>
 
-                                    <div class="ml-auto flex items-center gap-1" @click.stop>
-                                        <button class="p-0.5 hover:bg-slate-200 rounded transition-colors">
-                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
-                                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                                            </svg>
-                                        </button>
+                                    <div class="flex items-center gap-1" @click.stop>
                                         <button @click="$dispatch('open-task-modal', { status_id: {{ $status->id }} })"
-                                                class="flex items-center gap-1 px-2 py-0.5 text-[13px] text-slate-600 hover:bg-slate-200 rounded transition-colors">
+                                                class="flex items-center gap-1 px-2 py-0.5 text-sm text-slate-600 hover:bg-slate-200 rounded transition-colors">
                                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                             </svg>
                                             {{ __('Add Task') }}
+                                        </button>
+                                        <button class="p-0.5 hover:bg-slate-200 rounded transition-colors">
+                                            <svg class="w-3.5 h-3.5 text-slate-500" fill="currentColor" viewBox="0 0 20 20">
+                                                <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+                                            </svg>
                                         </button>
                                     </div>
                                 </div>
 
                                 {{-- Group Header Row 2: Column Headers --}}
                                 <div x-show="expanded" x-collapse x-cloak>
-                                    <div class="flex items-center h-8 bg-white border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wide">
+                                    <div class="flex items-center h-9 bg-white border-b border-[#f0f0f0] text-sm font-semibold text-slate-500">
                                         {{-- Checkbox Column --}}
                                         <div class="w-8 px-2 flex-shrink-0">
                                         </div>
@@ -126,7 +126,7 @@
                                         </div>
 
                                         {{-- Project Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.project.width}px`" data-column="project">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.project.width}px`" data-column="project">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Project') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -139,7 +139,7 @@
                                         </div>
 
                                         {{-- Serviciu Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.service.width}px`" data-column="service">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.service.width}px`" data-column="service">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Serviciu') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -152,7 +152,7 @@
                                         </div>
 
                                         {{-- Due Date Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.due_date.width}px`" data-column="due_date">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.due_date.width}px`" data-column="due_date">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Due date') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -165,7 +165,7 @@
                                         </div>
 
                                         {{-- Status Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.status.width}px`" data-column="status">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.status.width}px`" data-column="status">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Status') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -178,7 +178,7 @@
                                         </div>
 
                                         {{-- Priority Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.priority.width}px`" data-column="priority">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.priority.width}px`" data-column="priority">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Priority') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -191,7 +191,7 @@
                                         </div>
 
                                         {{-- Assignee Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.assignee.width}px`" data-column="assignee">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.assignee.width}px`" data-column="assignee">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Assignee') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -204,7 +204,7 @@
                                         </div>
 
                                         {{-- Time Tracked Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.time_tracked.width}px`" data-column="time_tracked">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.time_tracked.width}px`" data-column="time_tracked">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Time tracked') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -217,7 +217,7 @@
                                         </div>
 
                                         {{-- Amount Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.amount.width}px`" data-column="amount">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.amount.width}px`" data-column="amount">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Amount') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -230,7 +230,7 @@
                                         </div>
 
                                         {{-- Total Charge Column --}}
-                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-slate-200" :style="`width: ${columns.total_charge.width}px`" data-column="total_charge">
+                                        <div class="px-3 flex-shrink-0 relative group hover:border-r hover:border-[#f0f0f0]" :style="`width: ${columns.total_charge.width}px`" data-column="total_charge">
                                             <div class="flex items-center justify-between">
                                                 <span>{{ __('Total Charge') }}</span>
                                                 <button class="p-0.5 text-slate-400 hover:text-slate-600 opacity-0 group-hover:opacity-100">
@@ -255,15 +255,20 @@
                                     {{-- Task Rows --}}
                                     <div>
                                         @forelse($statusTasks as $task)
-                                            <div class="flex items-center h-8 border-b border-slate-100 hover:bg-slate-50 group"
+                                            <div class="flex items-center h-9 py-2 border-b border-[#f0f0f0] hover:bg-[#fafafa] group"
                                                  x-data="taskRow({{ $task->id }}, @js([
                                                      'name' => $task->name,
                                                      'list_id' => $task->list_id,
                                                      'due_date' => $task->due_date?->format('Y-m-d'),
+                                                     'start_date' => $task->start_date?->format('Y-m-d'),
                                                      'time_tracked' => $task->time_tracked ?? 0,
+                                                     'time_estimate' => $task->time_estimate ?? 0,
                                                      'amount' => $task->amount ?? 0,
                                                      'total_amount' => $task->total_amount ?? 0,
                                                      'service_id' => $task->service_id,
+                                                     'status_id' => $task->status_id,
+                                                     'status_label' => $task->status?->label,
+                                                     'status_color' => $task->status?->color_class,
                                                      'priority_id' => $task->priority_id,
                                                      'priority_label' => $task->priority?->label,
                                                      'priority_color' => $task->priority?->color,
@@ -285,10 +290,11 @@
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.name.width}px`">
                                                     <div class="flex items-center gap-2">
                                                         {{-- Status Icon --}}
-                                                        <div x-data="{ showStatusDropdown: false }" class="relative flex-shrink-0">
-                                                            <button @click="showStatusDropdown = !showStatusDropdown"
-                                                                    class="w-4 h-4 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100"
-                                                                    style="color: {{ $status->color }}">
+                                                        <div class="relative flex-shrink-0">
+                                                            <button @click="openStatusMenu({{ $task->id }}, $event)"
+                                                                    class="w-5 h-5 rounded-full flex items-center justify-center transition-colors hover:bg-slate-100 p-0.5"
+                                                                    style="color: {{ $status->color_class }}"
+                                                                    :data-task-id="{{ $task->id }}">
                                                                 @php
                                                                     $statusLabel = strtoupper($status->label);
                                                                 @endphp
@@ -334,104 +340,81 @@
                                                                     </svg>
                                                                 @endif
                                                             </button>
-                                                            {{-- Status Dropdown --}}
-                                                            <div x-show="showStatusDropdown"
-                                                                 @click.away="showStatusDropdown = false"
-                                                                
-                                                                 class="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50"
-                                                                 x-cloak>
-                                                                {{-- Search --}}
-                                                                <div class="px-3 pb-2">
-                                                                    <input type="text"
-                                                                           placeholder="Search..."
-                                                                           class="w-full px-2 py-1 text-[13px] border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
-                                                                </div>
-
-                                                                {{-- Divider --}}
-                                                                <div class="border-t border-slate-200 mb-1"></div>
-
-                                                                {{-- Statuses Header --}}
-                                                                <div class="px-3 py-1 flex items-center justify-between">
-                                                                    <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Statuses</span>
-                                                                    <button class="p-0.5 hover:bg-slate-100 rounded">
-                                                                        <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                                                                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
-                                                                        </svg>
-                                                                    </button>
-                                                                </div>
-
-                                                                {{-- Status Options --}}
-                                                                @foreach($taskStatuses as $availableStatus)
-                                                                    @php
-                                                                        $availableStatusLabel = strtoupper($availableStatus->label);
-                                                                    @endphp
-                                                                    <button @click="updateTaskStatus({{ $task->id }}, {{ $availableStatus->id }}); showStatusDropdown = false"
-                                                                            class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5 group">
-                                                                        {{-- Status Icon --}}
-                                                                        <div class="w-4 h-4 flex items-center justify-center flex-shrink-0" style="color: {{ $availableStatus->color }}">
-                                                                            @if($availableStatusLabel === 'TO DO')
-                                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                                                    <circle cx="12" cy="12" r="9"/>
-                                                                                </svg>
-                                                                            @elseif($availableStatusLabel === 'IN PROGRESS')
-                                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                                                    <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
-                                                                                    <circle cx="12" cy="12" r="4"/>
-                                                                                </svg>
-                                                                            @elseif($availableStatusLabel === 'FEEDBACK')
-                                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                                                    <circle cx="12" cy="12" r="9"/>
-                                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-                                                                                </svg>
-                                                                            @elseif($availableStatusLabel === 'DONE')
-                                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                                                    <circle cx="12" cy="12" r="10"/>
-                                                                                    <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                                                                                </svg>
-                                                                            @elseif($availableStatusLabel === 'CANCELED' || $availableStatusLabel === 'CANCELLED')
-                                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                                                    <circle cx="12" cy="12" r="10"/>
-                                                                                    <path d="M8 8l8 8M16 8l-8 8" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
-                                                                                </svg>
-                                                                            @elseif($availableStatusLabel === 'COMPLETED')
-                                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                                                    <circle cx="12" cy="12" r="10"/>
-                                                                                    <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                                                                                </svg>
-                                                                            @else
-                                                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
-                                                                                    <circle cx="12" cy="12" r="9"/>
-                                                                                </svg>
-                                                                            @endif
-                                                                        </div>
-
-                                                                        {{-- Status Label --}}
-                                                                        <span class="flex-1 text-slate-700">{{ $availableStatus->label }}</span>
-
-                                                                        {{-- Checkmark if selected --}}
-                                                                        @if($availableStatus->id === $status->id)
-                                                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                            </svg>
-                                                                        @endif
-                                                                    </button>
-                                                                @endforeach
-                                                            </div>
                                                         </div>
-                                                        <div class="flex-1 min-w-0">
-                                                            <div x-show="!editing.name"
-                                                                 @click="editing.name = true; $nextTick(() => $refs.nameInput?.focus())"
-                                                                 class="text-[13px] text-slate-900 truncate cursor-text hover:bg-white px-1 -mx-1 rounded">
-                                                                <span x-text="data.name"></span>
+                                                        <div class="flex-1 min-w-0 flex items-center gap-2">
+                                                            <div class="flex-1 min-w-0">
+                                                                <div x-show="!editing.name"
+                                                                     @click="editing.name = true; $nextTick(() => $refs.nameInput?.focus())"
+                                                                     class="text-sm text-slate-900 truncate cursor-text hover:bg-white px-1 -mx-1 rounded">
+                                                                    <span x-text="data.name"></span>
+                                                                </div>
+                                                                <input x-show="editing.name"
+                                                                       x-cloak
+                                                                       x-ref="nameInput"
+                                                                       x-model="data.name"
+                                                                       @blur="updateField('name'); editing.name = false"
+                                                                       @keydown.enter="updateField('name'); editing.name = false"
+                                                                       @keydown.escape="editing.name = false"
+                                                                       class="w-full text-sm px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                                                             </div>
-                                                            <input x-show="editing.name"
-                                                                   x-cloak
-                                                                   x-ref="nameInput"
-                                                                   x-model="data.name"
-                                                                   @blur="updateField('name'); editing.name = false"
-                                                                   @keydown.enter="updateField('name'); editing.name = false"
-                                                                   @keydown.escape="editing.name = false"
-                                                                   class="w-full text-[13px] px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+
+                                                            {{-- Checklist Progress Indicator --}}
+                                                            @php
+                                                                $totalItems = 0;
+                                                                $completedItems = 0;
+                                                                if ($task->relationLoaded('checklists')) {
+                                                                    foreach ($task->checklists as $checklist) {
+                                                                        $totalItems += $checklist->items->count();
+                                                                        $completedItems += $checklist->items->where('is_completed', true)->count();
+                                                                    }
+                                                                }
+                                                            @endphp
+                                                            @if($totalItems > 0)
+                                                                <div class="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs hover:bg-slate-100 transition-colors"
+                                                                     :class="{ 'text-green-600': {{ $completedItems }} === {{ $totalItems }}, 'text-slate-600': {{ $completedItems }} < {{ $totalItems }} }"
+                                                                     title="{{ __('Checklist items') }}">
+                                                                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                                                                    </svg>
+                                                                    <span class="font-medium">{{ $completedItems }}/{{ $totalItems }}</span>
+                                                                </div>
+                                                            @endif
+
+                                                            {{-- Dependency Indicator --}}
+                                                            @if($task->relationLoaded('dependencies') && $task->dependencies->isNotEmpty())
+                                                                @php
+                                                                    $incompleteDeps = $task->dependencies->filter(function($dep) {
+                                                                        $status = $dep->dependsOnTask->status->name ?? '';
+                                                                        return !in_array(strtolower($status), ['done', 'completed', 'closed']);
+                                                                    })->count();
+                                                                @endphp
+                                                                @if($incompleteDeps > 0)
+                                                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-600 border border-red-200"
+                                                                         title="{{ $incompleteDeps }} incomplete {{ $incompleteDeps === 1 ? 'dependency' : 'dependencies' }}">
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                                                        </svg>
+                                                                        {{ $incompleteDeps }}
+                                                                    </div>
+                                                                @endif
+                                                            @endif
+
+                                                            {{-- Tags Display --}}
+                                                            @if($task->relationLoaded('tags') && $task->tags->isNotEmpty())
+                                                                @foreach($task->tags->take(2) as $tag)
+                                                                    <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                                                                         style="background-color: {{ $tag->color }}20; color: {{ $tag->color }}"
+                                                                         title="{{ $tag->name }}">
+                                                                        {{ Str::limit($tag->name, 10) }}
+                                                                    </div>
+                                                                @endforeach
+                                                                @if($task->tags->count() > 2)
+                                                                    <div class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600"
+                                                                         title="{{ $task->tags->count() - 2 }} more tags">
+                                                                        +{{ $task->tags->count() - 2 }}
+                                                                    </div>
+                                                                @endif
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 </div>
@@ -440,7 +423,7 @@
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.project.width}px`" x-data="{ showListDropdown: false }">
                                                     <div class="relative">
                                                         <button @click="showListDropdown = !showListDropdown"
-                                                                class="w-full text-left text-[13px] text-slate-600 truncate hover:bg-slate-50 px-1 -mx-1 rounded">
+                                                                class="w-full text-left text-sm text-slate-600 truncate hover:bg-slate-50 px-1 -mx-1 rounded">
                                                             {{ $task->list?->name ?? '–' }}
                                                         </button>
 
@@ -453,7 +436,7 @@
                                                             <div class="px-3 pb-2">
                                                                 <input type="text"
                                                                        placeholder="{{ __('Search lists...') }}"
-                                                                       class="w-full px-2 py-1 text-[13px] border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                                                       class="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
                                                             </div>
 
                                                             <div class="border-t border-slate-200 mb-1"></div>
@@ -461,14 +444,14 @@
                                                             {{-- Lists grouped by Space/Folder --}}
                                                             @foreach($lists as $list)
                                                                 <button @click="updateListField({{ $list->id }}); showListDropdown = false"
-                                                                        class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5">
+                                                                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
                                                                     <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                                                     </svg>
                                                                     <div class="flex-1 min-w-0">
                                                                         <div class="truncate">{{ $list->name }}</div>
                                                                         @if($list->client)
-                                                                            <div class="text-[11px] text-slate-400 truncate">{{ $list->client->name }}</div>
+                                                                            <div class="text-xs text-slate-400 truncate">{{ $list->client->name }}</div>
                                                                         @endif
                                                                     </div>
                                                                     @if($task->list_id === $list->id)
@@ -482,97 +465,194 @@
                                                     </div>
                                                 </div>
 
-                                                {{-- Service (editable dropdown) --}}
-                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.service.width}px`" x-data="{ showServiceDropdown: false }">
-                                                    <div class="relative">
+                                                {{-- Service/Custom Field (enhanced with colored pills) --}}
+                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.service.width}px`"
+                                                     x-data="{
+                                                         showServiceDropdown: false,
+                                                         searchQuery: '',
+
+                                                         get filteredServices() {
+                                                             if (!this.searchQuery) return @js($services);
+                                                             return @js($services).filter(service =>
+                                                                 service.name.toLowerCase().includes(this.searchQuery.toLowerCase())
+                                                             );
+                                                         }
+                                                     }">
                                                         <button @click="showServiceDropdown = !showServiceDropdown"
-                                                                class="w-full inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-medium hover:shadow-sm"
-                                                                style="background-color: {{ $task->service?->color ?? '#e2e8f0' }}20; color: {{ $task->service?->color ?? '#64748b' }}">
-                                                            {{ $task->service?->name ?? '–' }}
+                                                                class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
+                                                            @if($task->service)
+                                                                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium"
+                                                                      style="background-color: {{ $task->service->color }}20; color: {{ $task->service->color }}">
+                                                                    {{ $task->service->name }}
+                                                                </span>
+                                                            @else
+                                                                <span class="text-slate-400">Select service...</span>
+                                                            @endif
                                                         </button>
 
                                                         {{-- Service Dropdown --}}
                                                         <div x-show="showServiceDropdown"
                                                              @click.away="showServiceDropdown = false"
-                                                             class="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-64 overflow-y-auto"
-                                                             x-cloak>
+                                                             x-cloak
+                                                             class="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-80 overflow-y-auto">
+
+                                                            {{-- Search --}}
+                                                            <div class="px-3 pb-2">
+                                                                <input type="text"
+                                                                       x-model="searchQuery"
+                                                                       placeholder="Search or add options..."
+                                                                       class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                            </div>
+
                                                             {{-- None Option --}}
                                                             <button @click="updateServiceField(null); showServiceDropdown = false"
-                                                                    class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5 text-slate-500">
-                                                                {{ __('None') }}
+                                                                    class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 text-slate-500">
+                                                                None
                                                             </button>
 
                                                             <div class="border-t border-slate-200 my-1"></div>
 
-                                                            {{-- Service Options --}}
-                                                            @foreach($services as $service)
-                                                                <button @click="updateServiceField({{ $service->id }}); showServiceDropdown = false"
-                                                                        class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5">
-                                                                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: {{ $service->color }}"></span>
-                                                                    <span class="flex-1">{{ $service->name }}</span>
-                                                                    @if($task->service_id === $service->id)
-                                                                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            {{-- Service Options as Colored Pills --}}
+                                                            <template x-for="service in filteredServices" :key="service.id">
+                                                                <button @click="updateServiceField(service.id); showServiceDropdown = false"
+                                                                        class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                                                                    {{-- Drag Handle Icon (for visual consistency) --}}
+                                                                    <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                                                    </svg>
+
+                                                                    {{-- Colored Pill --}}
+                                                                    <span class="flex-1 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                                                                          :style="`background-color: ${service.color}20; color: ${service.color}`"
+                                                                          x-text="service.name"></span>
+
+                                                                    {{-- Checkmark if selected --}}
+                                                                    <span x-show="{{ $task->service_id }} === service.id"
+                                                                          class="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center">
+                                                                        <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                                                         </svg>
-                                                                    @endif
+                                                                    </span>
                                                                 </button>
-                                                            @endforeach
+                                                            </template>
                                                         </div>
-                                                    </div>
                                                 </div>
 
-                                                {{-- Due Date (editable) --}}
+                                                {{-- Due Date (ClickUp-style date picker) --}}
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.due_date.width}px`">
-                                                    <div x-show="!editing.due_date"
-                                                         @click="editing.due_date = true"
-                                                         class="text-[13px] text-slate-600 cursor-pointer hover:bg-white px-1 -mx-1 rounded">
-                                                        {{ $task->due_date ? $task->due_date->format('d/m/y') : '–' }}
-                                                    </div>
-                                                    <input x-show="editing.due_date"
-                                                           x-cloak
-                                                           type="date"
-                                                           x-model="data.due_date"
-                                                           @blur="updateField('due_date'); editing.due_date = false"
-                                                           @change="updateField('due_date'); editing.due_date = false"
-                                                           class="w-full text-[13px] px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                                    <button @click="openDatePicker({{ $task->id }}, $event, 'due', '{{ $task->start_date?->format('Y-m-d') }}', '{{ $task->due_date?->format('Y-m-d') }}')"
+                                                            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors"
+                                                            :data-task-id="{{ $task->id }}">
+                                                        @if($task->due_date)
+                                                            @php
+                                                                $today = \Carbon\Carbon::today();
+                                                                $isPast = $task->due_date->isPast();
+                                                                $isToday = $task->due_date->isToday();
+                                                                $isTomorrow = $task->due_date->isTomorrow();
+                                                            @endphp
+                                                            <span class="inline-flex items-center gap-1.5"
+                                                                  :class="{
+                                                                      'text-red-600': {{ $isPast ? 'true' : 'false' }},
+                                                                      'text-purple-600': {{ $isToday ? 'true' : 'false' }},
+                                                                      'text-slate-600': {{ !$isPast && !$isToday ? 'true' : 'false' }}
+                                                                  }">
+                                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                                </svg>
+                                                                @if($task->start_date)
+                                                                    <span class="text-xs">{{ $task->start_date->format('d/m') }} → </span>
+                                                                @endif
+                                                                @if($isToday)
+                                                                    <span class="font-medium">Today</span>
+                                                                @elseif($isTomorrow)
+                                                                    <span>Tomorrow</span>
+                                                                @else
+                                                                    <span>{{ $task->due_date->format('M d') }}</span>
+                                                                @endif
+                                                            </span>
+                                                        @else
+                                                            <span class="text-slate-400">Add due date</span>
+                                                        @endif
+                                                    </button>
                                                 </div>
 
-                                                {{-- Status --}}
-                                                <div class="px-3 flex-shrink-0 text-center" :style="`width: ${columns.status.width}px`">
-                                                    <span class="text-[11px] font-medium uppercase"
-                                                          style="color: {{ $status->color }}">
-                                                        {{ $status->label }}
-                                                    </span>
+                                                {{-- Status (editable dropdown) --}}
+                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.status.width}px`">
+                                                    <button @click="openStatusMenu({{ $task->id }}, $event)"
+                                                            class="w-full inline-flex items-center gap-2 px-2 py-1 rounded text-sm hover:bg-[#fafafa] transition-colors"
+                                                            :style="`color: ${data.status_color || '#64748b'}`"
+                                                            :data-task-id="{{ $task->id }}">
+                                                        <div class="w-3 h-3 rounded-full flex-shrink-0"
+                                                             :style="`background-color: ${data.status_color || '#94a3b8'}`"></div>
+                                                        <span x-text="data.status_label || '{{ $status->label }}'"></span>
+                                                    </button>
                                                 </div>
 
-                                                {{-- Priority (editable dropdown) --}}
-                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.priority.width}px`" x-data="{ showPriorityDropdown: false }">
-                                                    <div class="relative">
+                                                {{-- Priority (enhanced with flag icons) --}}
+                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.priority.width}px`" x-data="{ showPriorityDropdown: false }">
                                                         <button @click="showPriorityDropdown = !showPriorityDropdown"
-                                                                class="w-full inline-flex items-center justify-center px-2 py-0.5 rounded text-[11px] font-medium hover:shadow-sm"
-                                                                :style="`background-color: ${data.priority_color || '#e2e8f0'}20; color: ${data.priority_color || '#64748b'}`">
-                                                            <span x-text="data.priority_label || '–'"></span>
+                                                                class="w-full inline-flex items-center justify-center px-2 py-0.5 rounded text-xs font-medium hover:shadow-sm transition-all">
+                                                            @if($task->priority)
+                                                                @php
+                                                                    $priorityLabel = strtoupper($task->priority->label);
+                                                                    $flagColors = [
+                                                                        'URGENT' => 'text-red-600',
+                                                                        'HIGH' => 'text-orange-500',
+                                                                        'NORMAL' => 'text-blue-500',
+                                                                        'LOW' => 'text-slate-400'
+                                                                    ];
+                                                                    $flagColor = $flagColors[$priorityLabel] ?? 'text-slate-400';
+                                                                @endphp
+                                                                <svg class="w-4 h-4 {{ $flagColor }}" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                                </svg>
+                                                            @else
+                                                                <svg class="w-4 h-4 text-slate-300" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                                </svg>
+                                                            @endif
                                                         </button>
 
                                                         {{-- Priority Dropdown --}}
                                                         <div x-show="showPriorityDropdown"
                                                              @click.away="showPriorityDropdown = false"
-                                                             class="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-64 overflow-y-auto"
-                                                             x-cloak>
+                                                             x-cloak
+                                                             class="absolute left-0 top-full mt-1 w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
+
+                                                            {{-- Task Priority Section --}}
+                                                            <div class="px-3 py-1 mb-1">
+                                                                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Task Priority</span>
+                                                            </div>
+
                                                             {{-- None Option --}}
                                                             <button @click="updatePriorityField(null); showPriorityDropdown = false"
-                                                                    class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5 text-slate-500">
-                                                                {{ __('None') }}
+                                                                    class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-slate-500">
+                                                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                                </svg>
+                                                                <span>No Priority</span>
                                                             </button>
 
                                                             <div class="border-t border-slate-200 my-1"></div>
 
-                                                            {{-- Priority Options --}}
+                                                            {{-- Priority Options with Flag Icons --}}
                                                             @foreach($taskPriorities as $priority)
+                                                                @php
+                                                                    $priorityLabel = strtoupper($priority->label);
+                                                                    $priorityConfig = [
+                                                                        'URGENT' => ['color' => 'text-red-600', 'bg' => 'hover:bg-red-50'],
+                                                                        'HIGH' => ['color' => 'text-orange-500', 'bg' => 'hover:bg-orange-50'],
+                                                                        'NORMAL' => ['color' => 'text-blue-500', 'bg' => 'hover:bg-blue-50'],
+                                                                        'LOW' => ['color' => 'text-slate-400', 'bg' => 'hover:bg-slate-50']
+                                                                    ];
+                                                                    $config = $priorityConfig[$priorityLabel] ?? ['color' => 'text-slate-600', 'bg' => 'hover:bg-slate-50'];
+                                                                @endphp
                                                                 <button @click="updatePriorityField({{ $priority->id }}, '{{ $priority->label }}', '{{ $priority->color }}'); showPriorityDropdown = false"
-                                                                        class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5">
-                                                                    <span class="w-2 h-2 rounded-full flex-shrink-0" style="background-color: {{ $priority->color }}"></span>
-                                                                    <span class="flex-1">{{ $priority->label }}</span>
+                                                                        class="w-full px-3 py-1.5 text-left text-sm {{ $config['bg'] }} flex items-center gap-2.5">
+                                                                    <svg class="w-4 h-4 {{ $config['color'] }}" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z"/>
+                                                                    </svg>
+                                                                    <span class="flex-1 {{ $config['color'] }} font-medium">{{ $priority->label }}</span>
                                                                     @if($task->priority_id === $priority->id)
                                                                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
@@ -581,138 +661,336 @@
                                                                 </button>
                                                             @endforeach
                                                         </div>
-                                                    </div>
                                                 </div>
 
-                                                {{-- Assignees (multi-select with avatar stack) --}}
-                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.assignee.width}px`"
+                                                {{-- Assignee (enhanced with search and sections) --}}
+                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.assignee.width}px`"
                                                      x-data="{
                                                          showAssigneeDropdown: false,
                                                          assignedUsers: @js($task->assignees->pluck('id')->toArray()),
-                                                         toggleAssignee(userId) {
-                                                             const index = this.assignedUsers.indexOf(userId);
-                                                             if (index > -1) {
-                                                                 fetch(`/tasks/{{ $task->id }}/assignees/${userId}`, {
-                                                                     method: 'DELETE',
-                                                                     headers: {
-                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                                                         'Accept': 'application/json'
-                                                                     }
-                                                                 }).then(r => r.json()).then(data => {
-                                                                     if (data.success) this.assignedUsers.splice(index, 1);
-                                                                 });
-                                                             } else {
-                                                                 fetch(`/tasks/{{ $task->id }}/assignees`, {
-                                                                     method: 'POST',
+                                                         searchQuery: '',
+
+                                                         get currentUser() {
+                                                             return {{ auth()->id() }};
+                                                         },
+
+                                                         get filteredUsers() {
+                                                             if (!this.searchQuery) return @js($users);
+                                                             return @js($users).filter(user =>
+                                                                 user.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                                                 user.email.toLowerCase().includes(this.searchQuery.toLowerCase())
+                                                             );
+                                                         },
+
+                                                         get isCurrentUserAssigned() {
+                                                             return this.assignedUsers.includes(this.currentUser);
+                                                         },
+
+                                                         async toggleAssignee(userId) {
+                                                             const isAssigned = this.assignedUsers.includes(userId);
+                                                             const url = `/tasks/{{ $task->id }}/assignees${isAssigned ? `/${userId}` : ''}`;
+                                                             const method = isAssigned ? 'DELETE' : 'POST';
+
+                                                             try {
+                                                                 const response = await fetch(url, {
+                                                                     method: method,
                                                                      headers: {
                                                                          'Content-Type': 'application/json',
-                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content,
-                                                                         'Accept': 'application/json'
+                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
                                                                      },
-                                                                     body: JSON.stringify({ user_id: userId })
-                                                                 }).then(r => r.json()).then(data => {
-                                                                     if (data.success) this.assignedUsers.push(userId);
+                                                                     body: method === 'POST' ? JSON.stringify({ user_id: userId }) : null
                                                                  });
+
+                                                                 const data = await response.json();
+                                                                 if (data.success) {
+                                                                     if (isAssigned) {
+                                                                         this.assignedUsers = this.assignedUsers.filter(id => id !== userId);
+                                                                     } else {
+                                                                         this.assignedUsers.push(userId);
+                                                                     }
+                                                                     window.location.reload();
+                                                                 }
+                                                             } catch (error) {
+                                                                 console.error('Error updating assignee:', error);
                                                              }
-                                                         },
-                                                         isAssigned(userId) {
-                                                             return this.assignedUsers.includes(userId);
                                                          }
                                                      }">
-                                                    <div class="relative">
-                                                        {{-- Avatar Stack Display --}}
-                                                        <button @click="showAssigneeDropdown = !showAssigneeDropdown"
-                                                                class="w-full inline-flex items-center gap-1 px-2 py-0.5 rounded text-[13px] hover:bg-slate-50">
-                                                            @php
-                                                                $allAssignees = $task->assignees;
-                                                                $displayLimit = 3;
-                                                            @endphp
 
-                                                            @if($allAssignees->isNotEmpty())
-                                                                <div class="flex -space-x-2">
-                                                                    @foreach($allAssignees->take($displayLimit) as $assignee)
-                                                                        @if($assignee->avatar)
-                                                                            <img src="{{ $assignee->avatar }}"
-                                                                                 alt="{{ $assignee->name }}"
-                                                                                 title="{{ $assignee->name }}"
-                                                                                 class="w-6 h-6 rounded-full border-2 border-white">
-                                                                        @else
-                                                                            <div class="w-6 h-6 rounded-full border-2 border-white bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-[10px] font-semibold"
-                                                                                 title="{{ $assignee->name }}">
-                                                                                {{ strtoupper(substr($assignee->name, 0, 1)) }}
-                                                                            </div>
-                                                                        @endif
-                                                                    @endforeach
-
-                                                                    @if($allAssignees->count() > $displayLimit)
-                                                                        <div class="w-6 h-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-slate-600 text-[10px] font-semibold"
-                                                                             title="{{ $allAssignees->skip($displayLimit)->pluck('name')->join(', ') }}">
-                                                                            +{{ $allAssignees->count() - $displayLimit }}
+                                                    {{-- Assignee Display --}}
+                                                    <button @click="showAssigneeDropdown = !showAssigneeDropdown"
+                                                            class="flex items-center gap-1 hover:bg-slate-50 rounded px-1 -mx-1">
+                                                        @if($task->assignees->count() > 0)
+                                                            <div class="flex -space-x-2">
+                                                                @foreach($task->assignees->take(3) as $assignee)
+                                                                    @if($assignee->avatar)
+                                                                        <img src="{{ $assignee->avatar }}"
+                                                                             alt="{{ $assignee->name }}"
+                                                                             class="w-6 h-6 rounded-full border-2 border-white"
+                                                                             title="{{ $assignee->name }}">
+                                                                    @else
+                                                                        <div class="w-6 h-6 rounded-full border-2 border-white bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-semibold"
+                                                                             title="{{ $assignee->name }}">
+                                                                            {{ strtoupper(substr($assignee->name, 0, 1)) }}
                                                                         </div>
                                                                     @endif
-                                                                </div>
-                                                            @else
-                                                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                @endforeach
+                                                                @if($task->assignees->count() > 3)
+                                                                    <div class="w-6 h-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-xs font-medium text-slate-600">
+                                                                        +{{ $task->assignees->count() - 3 }}
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        @else
+                                                            <div class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center">
+                                                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                                                 </svg>
+                                                            </div>
+                                                        @endif
+                                                    </button>
+
+                                                    {{-- Assignee Dropdown --}}
+                                                    <div x-show="showAssigneeDropdown"
+                                                         @click.away="showAssigneeDropdown = false"
+                                                         x-cloak
+                                                         class="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-96 overflow-y-auto">
+
+                                                        {{-- Search --}}
+                                                        <div class="px-3 pb-2">
+                                                            <input type="text"
+                                                                   x-model="searchQuery"
+                                                                   placeholder="Search or enter email..."
+                                                                   class="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                        </div>
+
+                                                        {{-- Assignees Section --}}
+                                                        <div class="px-3 py-1 mb-1">
+                                                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Assignees</span>
+                                                        </div>
+
+                                                        {{-- Me Option --}}
+                                                        <button @click="toggleAssignee(currentUser)"
+                                                                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                                                            @if(auth()->user()->avatar)
+                                                                <img src="{{ auth()->user()->avatar }}"
+                                                                     alt="Me"
+                                                                     class="w-6 h-6 rounded-full">
+                                                            @else
+                                                                <div class="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                                                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                                                </div>
                                                             @endif
+                                                            <span class="flex-1 font-medium text-slate-900">Me</span>
+                                                            <span x-show="isCurrentUserAssigned"
+                                                                  class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                                                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                </svg>
+                                                            </span>
                                                         </button>
 
-                                                        {{-- Multi-Select Assignee Dropdown --}}
-                                                        <div x-show="showAssigneeDropdown"
-                                                             @click.away="showAssigneeDropdown = false"
-                                                             class="absolute left-0 top-full mt-1 w-64 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50 max-h-64 overflow-y-auto"
-                                                             x-cloak>
-                                                            <div class="px-3 pb-2">
-                                                                <div class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">Assignees</div>
-                                                            </div>
+                                                        <div class="border-t border-slate-200 my-1"></div>
 
-                                                            {{-- User Options (Multi-select) --}}
-                                                            @foreach($users as $user)
-                                                                <button @click="toggleAssignee({{ $user->id }})"
-                                                                        class="w-full px-3 py-1.5 text-left text-[13px] hover:bg-slate-50 flex items-center gap-2.5"
-                                                                        :class="isAssigned({{ $user->id }}) ? 'bg-blue-50' : ''">
-                                                                    @if($user->avatar)
-                                                                        <img src="{{ $user->avatar }}" alt="{{ $user->name }}" class="w-6 h-6 rounded-full flex-shrink-0">
-                                                                    @else
-                                                                        <div class="w-6 h-6 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0">
-                                                                            {{ strtoupper(substr($user->name, 0, 1)) }}
-                                                                        </div>
-                                                                    @endif
-                                                                    <span class="flex-1">{{ $user->name }}</span>
-                                                                    <svg x-show="isAssigned({{ $user->id }})" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        {{-- People Section --}}
+                                                        <div class="px-3 py-1 mb-1">
+                                                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">People</span>
+                                                        </div>
+
+                                                        <template x-for="user in filteredUsers.filter(u => u.id !== currentUser)" :key="user.id">
+                                                            <button @click="toggleAssignee(user.id)"
+                                                                    class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5">
+                                                                <img :src="user.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}`"
+                                                                     :alt="user.name"
+                                                                     class="w-6 h-6 rounded-full">
+                                                                <span class="flex-1 text-slate-700" x-text="user.name"></span>
+                                                                <span x-show="assignedUsers.includes(user.id)"
+                                                                      class="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center">
+                                                                    <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                                                     </svg>
-                                                                </button>
-                                                            @endforeach
-                                                        </div>
+                                                                </span>
+                                                            </button>
+                                                        </template>
+
+                                                        <div class="border-t border-slate-200 my-1"></div>
+
+                                                        {{-- Invite via Email --}}
+                                                        <button class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 text-purple-600">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                            </svg>
+                                                            <span>Invite people via email</span>
+                                                        </button>
                                                     </div>
                                                 </div>
 
-                                                {{-- Time Tracked (editable) --}}
-                                                <div class="px-3 flex-shrink-0" :style="`width: ${columns.time_tracked.width}px`">
-                                                    <div x-show="!editing.time_tracked"
-                                                         @click="editing.time_tracked = true; $nextTick(() => $refs.timeInput?.focus())"
-                                                         class="text-[13px] text-slate-600 cursor-text hover:bg-white px-1 -mx-1 rounded">
-                                                        {{ $task->time_tracked > 0 ? floor($task->time_tracked / 60) . 'h ' . ($task->time_tracked % 60) . 'm' : '–' }}
+                                                {{-- Time Tracked (ClickUp-style popover) --}}
+                                                <div class="px-3 flex-shrink-0 relative" :style="`width: ${columns.time_tracked.width}px`"
+                                                     x-data="{
+                                                         showTimePopover: false,
+                                                         timeForm: {
+                                                             input: '',
+                                                             description: '',
+                                                             billable: true
+                                                         },
+
+                                                         parseTime(input) {
+                                                             // Parse '3h 20m', '3.5h', '90m', '1h30', etc.
+                                                             input = input.toLowerCase().trim();
+                                                             let totalMinutes = 0;
+
+                                                             // Match hours and minutes patterns
+                                                             const hMatch = input.match(/(\d+\.?\d*)h/);
+                                                             const mMatch = input.match(/(\d+)m/);
+
+                                                             if (hMatch) {
+                                                                 totalMinutes += parseFloat(hMatch[1]) * 60;
+                                                             }
+                                                             if (mMatch) {
+                                                                 totalMinutes += parseInt(mMatch[1]);
+                                                             }
+
+                                                             // If just a number, assume minutes
+                                                             if (!hMatch && !mMatch && /^\d+$/.test(input)) {
+                                                                 totalMinutes = parseInt(input);
+                                                             }
+
+                                                             return Math.round(totalMinutes);
+                                                         },
+
+                                                         formatTime(minutes) {
+                                                             if (!minutes || minutes === 0) return '–';
+                                                             const h = Math.floor(minutes / 60);
+                                                             const m = minutes % 60;
+                                                             return h > 0 ? `${h}h ${m}m` : `${m}m`;
+                                                         },
+
+                                                         async saveTime() {
+                                                             const minutes = this.parseTime(this.timeForm.input);
+
+                                                             if (minutes <= 0) {
+                                                                 alert('Please enter a valid time (e.g., 3h 20m, 90m, or 1.5h)');
+                                                                 return;
+                                                             }
+
+                                                             try {
+                                                                 const response = await fetch(`/tasks/{{ $task->id }}/time-entries`, {
+                                                                     method: 'POST',
+                                                                     headers: {
+                                                                         'Content-Type': 'application/json',
+                                                                         'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content
+                                                                     },
+                                                                     body: JSON.stringify({
+                                                                         minutes: minutes,
+                                                                         description: this.timeForm.description,
+                                                                         billable: this.timeForm.billable
+                                                                     })
+                                                                 });
+
+                                                                 const data = await response.json();
+                                                                 if (data.success) {
+                                                                     // Update displayed time
+                                                                     data.time_tracked = (data.time_tracked || 0) + minutes;
+                                                                     this.showTimePopover = false;
+                                                                     this.timeForm = { input: '', description: '', billable: true };
+                                                                     window.location.reload(); // Reload to show updated time
+                                                                 } else {
+                                                                     alert('Failed to save time entry');
+                                                                 }
+                                                             } catch (error) {
+                                                                 console.error('Error saving time:', error);
+                                                                 alert('Failed to save time entry');
+                                                             }
+                                                         }
+                                                     }">
+
+                                                    {{-- Time Display Button --}}
+                                                    <button @click="showTimePopover = !showTimePopover"
+                                                            class="w-full text-left text-sm px-2 py-1 rounded hover:bg-[#fafafa] transition-colors">
+                                                        @php
+                                                            $tracked_h = floor($task->time_tracked / 60);
+                                                            $tracked_m = $task->time_tracked % 60;
+                                                            $tracked_display = $tracked_h > 0 ? "{$tracked_h}h {$tracked_m}m" : ($tracked_m > 0 ? "{$tracked_m}m" : '–');
+                                                        @endphp
+
+                                                        <span class="inline-flex items-center gap-1.5">
+                                                            <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                            </svg>
+                                                            @if($task->time_estimate)
+                                                                @php
+                                                                    $estimate_h = floor($task->time_estimate / 60);
+                                                                    $estimate_m = $task->time_estimate % 60;
+                                                                    $estimate_display = $estimate_h > 0 ? "{$estimate_h}h {$estimate_m}m" : "{$estimate_m}m";
+                                                                    $variance_pct = $task->time_tracked > 0 ? ($task->time_tracked / $task->time_estimate) * 100 : 0;
+                                                                    $color_class = $variance_pct >= 100 ? 'text-red-600' : ($variance_pct >= 80 ? 'text-yellow-600' : 'text-green-600');
+                                                                @endphp
+                                                                <span class="{{ $color_class }} font-medium">{{ $tracked_display }}</span>
+                                                                <span class="text-slate-400"> / {{ $estimate_display }}</span>
+                                                            @else
+                                                                <span class="text-slate-600">{{ $tracked_display }}</span>
+                                                            @endif
+                                                        </span>
+                                                    </button>
+
+                                                    {{-- Time Tracking Popover --}}
+                                                    <div x-show="showTimePopover"
+                                                         @click.away="showTimePopover = false"
+                                                         x-cloak
+                                                         class="absolute left-0 top-full mt-1 w-80 bg-white rounded-lg shadow-xl border border-slate-200 p-4 z-50">
+
+                                                        <h3 class="text-sm font-semibold text-slate-900 mb-3">Add Time Entry</h3>
+
+                                                        {{-- Time Input --}}
+                                                        <div class="mb-3">
+                                                            <label class="block text-xs font-medium text-slate-700 mb-1">Time</label>
+                                                            <input type="text"
+                                                                   x-model="timeForm.input"
+                                                                   placeholder="e.g., 3h 20m or 90m"
+                                                                   class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                                            <p class="text-xs text-slate-500 mt-1">Format: 3h 20m, 1.5h, or 90m</p>
+                                                        </div>
+
+                                                        {{-- Description --}}
+                                                        <div class="mb-3">
+                                                            <label class="block text-xs font-medium text-slate-700 mb-1">Description (optional)</label>
+                                                            <textarea x-model="timeForm.description"
+                                                                      rows="2"
+                                                                      placeholder="What did you work on?"
+                                                                      class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+                                                        </div>
+
+                                                        {{-- Billable Toggle --}}
+                                                        <div class="mb-4 flex items-center justify-between">
+                                                            <span class="text-xs font-medium text-slate-700">Billable</span>
+                                                            <button @click="timeForm.billable = !timeForm.billable"
+                                                                    type="button"
+                                                                    class="relative inline-flex h-5 w-10 items-center rounded-full transition-colors"
+                                                                    :class="timeForm.billable ? 'bg-green-600' : 'bg-slate-300'">
+                                                                <span :class="timeForm.billable ? 'translate-x-6' : 'translate-x-1'"
+                                                                      class="inline-block h-3 w-3 transform rounded-full bg-white transition-transform"></span>
+                                                            </button>
+                                                        </div>
+
+                                                        {{-- Actions --}}
+                                                        <div class="flex items-center gap-2 pt-3 border-t border-slate-200">
+                                                            <button @click="showTimePopover = false"
+                                                                    class="flex-1 px-3 py-2 text-sm bg-white border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50">
+                                                                Cancel
+                                                            </button>
+                                                            <button @click="saveTime()"
+                                                                    class="flex-1 px-3 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700">
+                                                                Save
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <input x-show="editing.time_tracked"
-                                                           x-cloak
-                                                           x-ref="timeInput"
-                                                           type="number"
-                                                           x-model="data.time_tracked"
-                                                           @blur="updateField('time_tracked'); editing.time_tracked = false"
-                                                           @keydown.enter="updateField('time_tracked'); editing.time_tracked = false"
-                                                           @keydown.escape="editing.time_tracked = false"
-                                                           class="w-20 text-[13px] px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
-                                                           placeholder="0">
                                                 </div>
 
                                                 {{-- Amount (editable) --}}
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.amount.width}px`">
                                                     <div x-show="!editing.amount"
                                                          @click="editing.amount = true; $nextTick(() => $refs.amountInput?.focus())"
-                                                         class="text-[13px] text-slate-600 cursor-text hover:bg-white px-1 -mx-1 rounded">
+                                                         class="text-sm text-slate-600 cursor-text hover:bg-white px-1 -mx-1 rounded">
                                                         <span x-text="data.amount ? '€' + data.amount : '–'"></span>
                                                     </div>
                                                     <input x-show="editing.amount"
@@ -724,13 +1002,13 @@
                                                            @blur="updateField('amount'); editing.amount = false"
                                                            @keydown.enter="updateField('amount'); editing.amount = false"
                                                            @keydown.escape="editing.amount = false"
-                                                           class="w-20 text-[13px] px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                                           class="w-20 text-sm px-1 -mx-1 border border-blue-500 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                                            placeholder="0.00">
                                                 </div>
 
                                                 {{-- Total Charge (reactive) --}}
                                                 <div class="px-3 flex-shrink-0" :style="`width: ${columns.total_charge.width}px`">
-                                                    <div class="text-[13px] font-medium text-slate-900"
+                                                    <div class="text-sm font-medium text-slate-900"
                                                          x-text="data.total_amount ? '€' + parseFloat(data.total_amount).toFixed(2) : '–'">
                                                     </div>
                                                 </div>
@@ -745,13 +1023,13 @@
                                                 </div>
                                             </div>
                                         @empty
-                                            <div class="h-8 px-3 flex items-center text-[13px] text-slate-400 italic border-b border-slate-100">
+                                            <div class="h-8 px-3 flex items-center text-sm text-slate-400 italic border-b border-slate-100">
                                                 {{ __('No tasks') }}
                                             </div>
                                         @endforelse
 
                                         {{-- Add Task in Group --}}
-                                        <div class="group flex items-center h-8 border-b border-slate-100 hover:bg-slate-50 transition-colors" x-data="{ showAdd: false }">
+                                        <div class="group flex items-center h-9 py-2 hover:bg-[#fafafa] transition-colors" x-data="{ showAdd: false }">
                                             {{-- Checkbox Column --}}
                                             <div class="w-8 px-2 flex-shrink-0"></div>
 
@@ -759,7 +1037,7 @@
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.name.width}px`">
                                                 <button @click="showAdd = true"
                                                         x-show="!showAdd"
-                                                        class="flex items-center gap-1.5 text-[13px] text-slate-500 hover:text-slate-700">
+                                                        class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700">
                                                     <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                                     </svg>
@@ -773,42 +1051,42 @@
                                                        @keydown.escape="showAdd = false"
                                                        @keydown.enter="if($event.target.value.trim()) { createTask($event.target.value, {{ $status->id }}); $event.target.value = ''; showAdd = false; }"
                                                        @blur="showAdd = false"
-                                                       class="w-full text-[13px] px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
+                                                       class="w-full text-sm px-2 py-1 border border-slate-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
                                             </div>
 
                                             {{-- Project Column --}}
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.project.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Serviciu Column --}}
                                             <div class="px-3 flex-shrink-0 text-center" :style="`width: ${columns.service.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Due Date Column --}}
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.due_date.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Status Column --}}
                                             <div class="px-3 flex-shrink-0 text-center" :style="`width: ${columns.status.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Time Tracked Column --}}
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.time_tracked.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Amount Column --}}
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.amount.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
 
                                             {{-- Total Charge Column --}}
                                             <div class="px-3 flex-shrink-0" :style="`width: ${columns.total_charge.width}px`">
-                                                <span class="text-[11px] text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
+                                                <span class="text-xs text-slate-400 opacity-0 group-hover:opacity-100">Calculate ▼</span>
                                             </div>
                                         </div>
                                     </div>
@@ -819,6 +1097,227 @@
                 @endforeach
             </tbody>
         </table>
+    </div>
+
+    {{-- ✨ UNIFIED Status Dropdown Component (ClickUp pattern) --}}
+    {{-- This single dropdown is triggered by both icon and status column --}}
+    <div x-show="statusDropdown.isOpen"
+         @click.away="closeStatusMenu()"
+         @keydown.escape.window="closeStatusMenu()"
+         x-cloak
+         class="fixed w-56 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-[100]"
+         :style="statusDropdown.anchorElement ? (() => {
+             const rect = statusDropdown.anchorElement.getBoundingClientRect();
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
+         })() : 'display: none;'">
+
+        {{-- Search --}}
+        <div class="px-3 pb-2">
+            <input type="text"
+                   placeholder="Search..."
+                   class="w-full px-2 py-1 text-sm border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500">
+        </div>
+
+        {{-- Divider --}}
+        <div class="border-t border-slate-200 mb-1"></div>
+
+        {{-- Statuses Header --}}
+        <div class="px-3 py-1 flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Statuses</span>
+            <button class="p-0.5 hover:bg-slate-100 rounded">
+                <svg class="w-3 h-3 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- Status Options --}}
+        @foreach($taskStatuses as $availableStatus)
+            @php
+                $availableStatusLabel = strtoupper($availableStatus->label);
+            @endphp
+            <button @click="statusDropdown.taskId && updateTaskStatus(statusDropdown.taskId, {{ $availableStatus->id }}); closeStatusMenu();"
+                    class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center gap-2.5 group">
+                {{-- Status Icon --}}
+                <div class="w-4 h-4 flex items-center justify-center flex-shrink-0" style="color: {{ $availableStatus->color_class }}">
+                    @if($availableStatusLabel === 'TO DO')
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/>
+                        </svg>
+                    @elseif($availableStatusLabel === 'IN PROGRESS')
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="4"/>
+                        </svg>
+                    @elseif($availableStatusLabel === 'FEEDBACK')
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    @elseif($availableStatusLabel === 'DONE')
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    @elseif($availableStatusLabel === 'CANCELED' || $availableStatusLabel === 'CANCELLED')
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M8 8l8 8M16 8l-8 8" stroke="white" stroke-width="2" fill="none" stroke-linecap="round"/>
+                        </svg>
+                    @elseif($availableStatusLabel === 'COMPLETED')
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9 12l2 2 4-4" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    @else
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                            <circle cx="12" cy="12" r="9"/>
+                        </svg>
+                    @endif
+                </div>
+
+                {{-- Status Label --}}
+                <span class="flex-1 text-slate-700">{{ $availableStatus->label }}</span>
+            </button>
+        @endforeach
+    </div>
+
+    {{-- ✨ UNIFIED Date Picker Component (ClickUp pattern) --}}
+    {{-- Two-column layout: quick shortcuts on left, calendar on right --}}
+    <div x-show="datePicker.isOpen"
+         @click.away="closeDatePicker()"
+         @keydown.escape.window="closeDatePicker()"
+         x-cloak
+         class="fixed w-[480px] bg-white rounded-lg shadow-xl border border-slate-200 z-[100]"
+         :style="datePicker.anchorElement ? (() => {
+             const rect = datePicker.anchorElement.getBoundingClientRect();
+             return `top: ${rect.bottom + window.scrollY + 4}px; left: ${rect.left + window.scrollX}px;`;
+         })() : 'display: none;'">
+
+        <div class="flex">
+            {{-- Left Column: Quick Shortcuts --}}
+            <div class="w-40 border-r border-slate-200 py-2">
+                <button @click="setQuickDate('today')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center justify-between">
+                    <span class="text-slate-700">Today</span>
+                    <span class="text-xs text-slate-400" x-text="new Date().toLocaleDateString('en-US', {weekday: 'short'})"></span>
+                </button>
+
+                <button @click="setQuickDate('tomorrow')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 flex items-center justify-between">
+                    <span class="text-slate-700">Tomorrow</span>
+                    <span class="text-xs text-slate-400" x-text="(() => {
+                        const tomorrow = new Date();
+                        tomorrow.setDate(tomorrow.getDate() + 1);
+                        return tomorrow.toLocaleDateString('en-US', {weekday: 'short'});
+                    })()"></span>
+                </button>
+
+                <button @click="setQuickDate('next_week')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50">
+                    <span class="text-slate-700">Next week</span>
+                </button>
+
+                <button @click="setQuickDate('next_weekend')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50">
+                    <span class="text-slate-700">This weekend</span>
+                </button>
+
+                <button @click="setQuickDate('2_weeks')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50">
+                    <span class="text-slate-700">2 weeks</span>
+                </button>
+
+                <button @click="setQuickDate('4_weeks')"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50">
+                    <span class="text-slate-700">4 weeks</span>
+                </button>
+
+                <div class="border-t border-slate-200 my-1"></div>
+
+                <button @click="clearDate()"
+                        class="w-full px-3 py-1.5 text-left text-sm hover:bg-slate-50 text-red-600">
+                    <span>Clear</span>
+                </button>
+            </div>
+
+            {{-- Right Column: Calendar --}}
+            <div class="flex-1 p-3">
+                {{-- Calendar Header --}}
+                <div class="flex items-center justify-between mb-3">
+                    <button @click="previousMonth()"
+                            class="p-1 hover:bg-slate-100 rounded">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                    </button>
+
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-sm text-slate-900" x-text="getMonthName()"></span>
+                        <span class="text-sm text-slate-600" x-text="datePicker.currentYear"></span>
+                    </div>
+
+                    <button @click="nextMonth()"
+                            class="p-1 hover:bg-slate-100 rounded">
+                        <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </button>
+                </div>
+
+                {{-- Today Button --}}
+                <button @click="setQuickDate('today')"
+                        class="w-full mb-2 py-1 text-xs text-center text-blue-600 hover:bg-blue-50 rounded">
+                    Today
+                </button>
+
+                {{-- Calendar Grid --}}
+                <div class="grid grid-cols-7 gap-1">
+                    {{-- Day Headers --}}
+                    <template x-for="day in ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']">
+                        <div class="text-center text-xs font-medium text-slate-500 py-1" x-text="day"></div>
+                    </template>
+
+                    {{-- Empty cells for days before month starts --}}
+                    <template x-for="i in getFirstDayOfMonth()">
+                        <div></div>
+                    </template>
+
+                    {{-- Day cells --}}
+                    <template x-for="day in getDaysInMonth()">
+                        <button @click="selectDate(day)"
+                                class="h-8 text-sm rounded hover:bg-slate-100 transition-colors"
+                                :class="{
+                                    'bg-purple-600 text-white hover:bg-purple-700': isSelectedDate(day),
+                                    'ring-2 ring-purple-300': isToday(day) && !isSelectedDate(day),
+                                    'text-slate-900': !isSelectedDate(day)
+                                }"
+                                x-text="day">
+                        </button>
+                    </template>
+                </div>
+
+                {{-- Current Selection Display --}}
+                <div x-show="datePicker.selectedDate" class="mt-3 pt-3 border-t border-slate-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <span class="text-sm text-slate-700" x-text="(() => {
+                                if (!datePicker.selectedDate) return '';
+                                const date = new Date(datePicker.selectedDate + 'T00:00:00');
+                                return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            })()"></span>
+                        </div>
+                        <button @click="clearDate()"
+                                class="text-xs text-slate-500 hover:text-red-600">
+                            ✕
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -839,9 +1338,252 @@ function clickupListView() {
             total_charge: { width: 160, visible: true, order: 9 }
         },
 
+        // Shared status dropdown state
+        statusDropdown: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null
+        },
+
+        // Shared date picker state
+        datePicker: {
+            isOpen: false,
+            taskId: null,
+            anchorElement: null,
+            mode: 'due', // 'due' or 'start'
+            selectedDate: null,
+            currentMonth: new Date().getMonth(),
+            currentYear: new Date().getFullYear(),
+            tempStartDate: null,
+            tempDueDate: null
+        },
+
         init() {
             this.initColumnManagement();
             this.initDragAndDrop();
+        },
+
+        // Unified status menu handler
+        openStatusMenu(taskId, event) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.statusDropdown.isOpen && this.statusDropdown.taskId === taskId) {
+                this.closeStatusMenu();
+            } else {
+                // Close date picker if open
+                this.closeDatePicker();
+                // Open for this task and anchor to clicked element
+                this.statusDropdown.isOpen = true;
+                this.statusDropdown.taskId = taskId;
+                this.statusDropdown.anchorElement = event.currentTarget;
+            }
+        },
+
+        closeStatusMenu() {
+            this.statusDropdown.isOpen = false;
+            this.statusDropdown.taskId = null;
+            this.statusDropdown.anchorElement = null;
+        },
+
+        // Unified date picker handler
+        openDatePicker(taskId, event, mode = 'due', startDate = null, dueDate = null) {
+            event.stopPropagation();
+
+            // If clicking on the same task's trigger, toggle
+            if (this.datePicker.isOpen && this.datePicker.taskId === taskId) {
+                this.closeDatePicker();
+            } else {
+                // Close status menu if open
+                this.closeStatusMenu();
+                // Open for this task and anchor to clicked element
+                this.datePicker.isOpen = true;
+                this.datePicker.taskId = taskId;
+                this.datePicker.anchorElement = event.currentTarget;
+                this.datePicker.mode = mode;
+                this.datePicker.tempStartDate = startDate;
+                this.datePicker.tempDueDate = dueDate;
+                this.datePicker.selectedDate = mode === 'due' ? dueDate : startDate;
+
+                // Set calendar to show selected date's month or current month
+                if (this.datePicker.selectedDate) {
+                    const date = new Date(this.datePicker.selectedDate);
+                    this.datePicker.currentMonth = date.getMonth();
+                    this.datePicker.currentYear = date.getFullYear();
+                } else {
+                    this.datePicker.currentMonth = new Date().getMonth();
+                    this.datePicker.currentYear = new Date().getFullYear();
+                }
+            }
+        },
+
+        closeDatePicker() {
+            this.datePicker.isOpen = false;
+            this.datePicker.taskId = null;
+            this.datePicker.anchorElement = null;
+            this.datePicker.tempStartDate = null;
+            this.datePicker.tempDueDate = null;
+        },
+
+        // Calendar navigation
+        previousMonth() {
+            if (this.datePicker.currentMonth === 0) {
+                this.datePicker.currentMonth = 11;
+                this.datePicker.currentYear--;
+            } else {
+                this.datePicker.currentMonth--;
+            }
+        },
+
+        nextMonth() {
+            if (this.datePicker.currentMonth === 11) {
+                this.datePicker.currentMonth = 0;
+                this.datePicker.currentYear++;
+            } else {
+                this.datePicker.currentMonth++;
+            }
+        },
+
+        // Get days in current month
+        getDaysInMonth() {
+            return new Date(this.datePicker.currentYear, this.datePicker.currentMonth + 1, 0).getDate();
+        },
+
+        // Get first day of month (0 = Sunday, 6 = Saturday)
+        getFirstDayOfMonth() {
+            return new Date(this.datePicker.currentYear, this.datePicker.currentMonth, 1).getDay();
+        },
+
+        // Check if date is today
+        isToday(day) {
+            const today = new Date();
+            return day === today.getDate() &&
+                   this.datePicker.currentMonth === today.getMonth() &&
+                   this.datePicker.currentYear === today.getFullYear();
+        },
+
+        // Check if date is selected
+        isSelectedDate(day) {
+            if (!this.datePicker.selectedDate) return false;
+            const selected = new Date(this.datePicker.selectedDate);
+            return day === selected.getDate() &&
+                   this.datePicker.currentMonth === selected.getMonth() &&
+                   this.datePicker.currentYear === selected.getFullYear();
+        },
+
+        // Select a date from calendar
+        selectDate(day) {
+            const dateStr = `${this.datePicker.currentYear}-${String(this.datePicker.currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+            if (this.datePicker.mode === 'due') {
+                this.datePicker.tempDueDate = dateStr;
+            } else {
+                this.datePicker.tempStartDate = dateStr;
+            }
+
+            this.datePicker.selectedDate = dateStr;
+            this.applyDateChange();
+        },
+
+        // Quick date selection helpers
+        setQuickDate(option) {
+            const today = new Date();
+            let targetDate;
+
+            switch(option) {
+                case 'today':
+                    targetDate = today;
+                    break;
+                case 'tomorrow':
+                    targetDate = new Date(today);
+                    targetDate.setDate(today.getDate() + 1);
+                    break;
+                case 'next_week':
+                    targetDate = new Date(today);
+                    targetDate.setDate(today.getDate() + 7);
+                    break;
+                case 'next_weekend':
+                    targetDate = new Date(today);
+                    const daysUntilSaturday = (6 - today.getDay() + 7) % 7;
+                    targetDate.setDate(today.getDate() + (daysUntilSaturday === 0 ? 7 : daysUntilSaturday));
+                    break;
+                case '2_weeks':
+                    targetDate = new Date(today);
+                    targetDate.setDate(today.getDate() + 14);
+                    break;
+                case '4_weeks':
+                    targetDate = new Date(today);
+                    targetDate.setDate(today.getDate() + 28);
+                    break;
+                case 'clear':
+                    this.clearDate();
+                    return;
+                default:
+                    return;
+            }
+
+            const dateStr = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`;
+
+            if (this.datePicker.mode === 'due') {
+                this.datePicker.tempDueDate = dateStr;
+            } else {
+                this.datePicker.tempStartDate = dateStr;
+            }
+
+            this.datePicker.selectedDate = dateStr;
+            this.applyDateChange();
+        },
+
+        // Clear date
+        clearDate() {
+            if (this.datePicker.mode === 'due') {
+                this.datePicker.tempDueDate = null;
+            } else {
+                this.datePicker.tempStartDate = null;
+            }
+            this.datePicker.selectedDate = null;
+            this.applyDateChange();
+        },
+
+        // Apply date change to task
+        applyDateChange() {
+            if (!this.datePicker.taskId) return;
+
+            const field = this.datePicker.mode === 'due' ? 'due_date' : 'start_date';
+            const value = this.datePicker.mode === 'due' ? this.datePicker.tempDueDate : this.datePicker.tempStartDate;
+
+            // Update task via API
+            fetch(`/tasks/${this.datePicker.taskId}/quick-update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ [field]: value })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload to show updated date
+                    window.location.reload();
+                } else {
+                    alert('Failed to update date. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating date:', error);
+                alert('Failed to update date. Please try again.');
+            });
+
+            this.closeDatePicker();
+        },
+
+        // Get month name
+        getMonthName() {
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                          'July', 'August', 'September', 'October', 'November', 'December'];
+            return months[this.datePicker.currentMonth];
         },
 
         toggleTaskSelection(taskId) {
@@ -954,7 +1696,8 @@ function clickupListView() {
                 if (!isResizing || !columnName) return;
 
                 const diff = e.pageX - startX;
-                const newWidth = Math.max(80, startWidth + diff); // Min width 80px
+                // Min width 80px, Max width 500px
+                const newWidth = Math.max(80, Math.min(500, startWidth + diff));
 
                 // Update Alpine state - this will automatically update all column instances
                 this.columns[columnName].width = newWidth;
@@ -1146,6 +1889,36 @@ function taskRow(taskId, taskData) {
             this.data.priority_label = label;
             this.data.priority_color = color;
             this.updateField('priority_id', priorityId);
+        },
+
+        updateStatusField(statusId, label = null, color = null) {
+            this.data.status_id = statusId;
+            this.data.status_label = label;
+            this.data.status_color = color;
+
+            // Update the status via API
+            fetch(`/tasks/${this.taskId}/quick-update`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ status_id: statusId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload the page to show task in new status group
+                    window.location.reload();
+                } else {
+                    alert('Failed to update status. Please try again.');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating status:', error);
+                alert('Failed to update status. Please try again.');
+            });
         },
 
         updateAssigneeField(userId) {

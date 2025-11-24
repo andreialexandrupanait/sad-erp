@@ -106,6 +106,37 @@ Route::middleware('auth')->group(function () {
     Route::post('tasks/{task}/watchers', [TaskController::class, 'addWatcher'])->name('tasks.watchers.add');
     Route::delete('tasks/{task}/watchers/{user}', [TaskController::class, 'removeWatcher'])->name('tasks.watchers.remove');
 
+    // Tags management
+    Route::post('tasks/{task}/tags', [TaskController::class, 'addTag'])->name('tasks.tags.add');
+    Route::delete('tasks/{task}/tags/{tag}', [TaskController::class, 'removeTag'])->name('tasks.tags.remove');
+
+    // Checklists management
+    Route::post('tasks/{task}/checklists', [\App\Http\Controllers\TaskChecklistController::class, 'store'])->name('tasks.checklists.store');
+    Route::patch('tasks/{task}/checklists/{checklist}', [\App\Http\Controllers\TaskChecklistController::class, 'update'])->name('tasks.checklists.update');
+    Route::delete('tasks/{task}/checklists/{checklist}', [\App\Http\Controllers\TaskChecklistController::class, 'destroy'])->name('tasks.checklists.destroy');
+
+    // Checklist items management
+    Route::post('tasks/{task}/checklists/{checklist}/items', [\App\Http\Controllers\TaskChecklistController::class, 'storeItem'])->name('tasks.checklists.items.store');
+    Route::patch('checklist-items/{item}', [\App\Http\Controllers\TaskChecklistController::class, 'updateItem'])->name('checklist-items.update');
+    Route::post('checklist-items/{item}/toggle', [\App\Http\Controllers\TaskChecklistController::class, 'toggleItem'])->name('checklist-items.toggle');
+    Route::delete('checklist-items/{item}', [\App\Http\Controllers\TaskChecklistController::class, 'destroyItem'])->name('checklist-items.destroy');
+    Route::patch('checklists/{checklist}/items/reorder', [\App\Http\Controllers\TaskChecklistController::class, 'reorderItems'])->name('checklists.items.reorder');
+
+    // Task dependencies management
+    Route::get('tasks/{task}/dependencies', [\App\Http\Controllers\TaskDependencyController::class, 'index'])->name('tasks.dependencies.index');
+    Route::post('tasks/{task}/dependencies', [\App\Http\Controllers\TaskDependencyController::class, 'store'])->name('tasks.dependencies.store');
+    Route::delete('tasks/{task}/dependencies/{dependency}', [\App\Http\Controllers\TaskDependencyController::class, 'destroy'])->name('tasks.dependencies.destroy');
+    Route::get('tasks/{task}/dependencies/search', [\App\Http\Controllers\TaskDependencyController::class, 'search'])->name('tasks.dependencies.search');
+
+    // Task time entries management
+    Route::get('tasks/{task}/time-entries', [\App\Http\Controllers\TaskTimeEntryController::class, 'index'])->name('tasks.time-entries.index');
+    Route::post('tasks/{task}/time-entries', [\App\Http\Controllers\TaskTimeEntryController::class, 'store'])->name('tasks.time-entries.store');
+    Route::patch('tasks/{task}/time-entries/{entry}', [\App\Http\Controllers\TaskTimeEntryController::class, 'update'])->name('tasks.time-entries.update');
+    Route::delete('tasks/{task}/time-entries/{entry}', [\App\Http\Controllers\TaskTimeEntryController::class, 'destroy'])->name('tasks.time-entries.destroy');
+    Route::post('tasks/{task}/time-entries/start', [\App\Http\Controllers\TaskTimeEntryController::class, 'startTimer'])->name('tasks.time-entries.start');
+    Route::post('tasks/{task}/time-entries/{entry}/stop', [\App\Http\Controllers\TaskTimeEntryController::class, 'stopTimer'])->name('tasks.time-entries.stop');
+    Route::get('time-entries/running', [\App\Http\Controllers\TaskTimeEntryController::class, 'getRunningTimer'])->name('time-entries.running');
+
     // Task Custom Fields Management
     Route::resource('task-custom-fields', \App\Http\Controllers\TaskCustomFieldController::class)->except(['show']);
     Route::post('task-custom-fields/reorder', [\App\Http\Controllers\TaskCustomFieldController::class, 'reorder'])->name('task-custom-fields.reorder');
@@ -150,6 +181,19 @@ Route::middleware('auth')->group(function () {
         Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
         Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
     });
+
+    // Task Tags Settings
+    Route::get('settings/task-tags', [\App\Http\Controllers\TaskTagController::class, 'index'])->name('settings.task-tags');
+    Route::post('settings/task-tags', [\App\Http\Controllers\TaskTagController::class, 'store'])->name('settings.task-tags.store');
+    Route::patch('settings/task-tags/{tag}', [\App\Http\Controllers\TaskTagController::class, 'update'])->name('settings.task-tags.update');
+    Route::delete('settings/task-tags/{tag}', [\App\Http\Controllers\TaskTagController::class, 'destroy'])->name('settings.task-tags.destroy');
+
+    // Task Statuses Settings
+    Route::get('settings/task-statuses', [\App\Http\Controllers\Settings\TaskStatusController::class, 'index'])->name('settings.task-statuses');
+    Route::post('settings/task-statuses', [\App\Http\Controllers\Settings\TaskStatusController::class, 'store'])->name('settings.task-statuses.store');
+    Route::patch('settings/task-statuses/{status}', [\App\Http\Controllers\Settings\TaskStatusController::class, 'update'])->name('settings.task-statuses.update');
+    Route::delete('settings/task-statuses/{status}', [\App\Http\Controllers\Settings\TaskStatusController::class, 'destroy'])->name('settings.task-statuses.destroy');
+    Route::post('settings/task-statuses/reorder', [\App\Http\Controllers\Settings\TaskStatusController::class, 'reorder'])->name('settings.task-statuses.reorder');
 
     // Nomenclature Settings Pages (Individual routes for each section)
     Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');
