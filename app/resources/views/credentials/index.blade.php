@@ -133,13 +133,85 @@
                                         </x-ui.badge>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
-                                        <div class="text-sm text-slate-700">
-                                            {{ $credential->username ?? '-' }}
-                                        </div>
+                                        @if($credential->username)
+                                            <div class="flex items-center gap-2"
+                                                 x-data="{
+                                                     copied: false,
+                                                     async copyUsername() {
+                                                         try {
+                                                             await navigator.clipboard.writeText('{{ addslashes($credential->username) }}');
+                                                             this.copied = true;
+                                                             setTimeout(() => this.copied = false, 2000);
+                                                         } catch (err) {
+                                                             console.error('Failed to copy:', err);
+                                                         }
+                                                     }
+                                                 }">
+                                                <span class="text-sm text-slate-700">
+                                                    {{ $credential->username }}
+                                                </span>
+                                                <button @click="copyUsername()"
+                                                        type="button"
+                                                        class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                                                        :title="copied ? 'Copied!' : 'Copy username'">
+                                                    <svg x-show="!copied"
+                                                         class="h-3.5 w-3.5"
+                                                         fill="none"
+                                                         stroke="currentColor"
+                                                         viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                    </svg>
+                                                    <svg x-show="copied"
+                                                         x-cloak
+                                                         class="h-3.5 w-3.5 text-green-600"
+                                                         fill="none"
+                                                         stroke="currentColor"
+                                                         viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        @else
+                                            <div class="text-sm text-slate-700">-</div>
+                                        @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
-                                        <div class="text-sm font-mono text-slate-500">
-                                            {{ $credential->masked_password }}
+                                        <div class="flex items-center gap-2"
+                                             x-data="{
+                                                 copied: false,
+                                                 async copyPassword() {
+                                                     try {
+                                                         await navigator.clipboard.writeText('{{ addslashes($credential->password) }}');
+                                                         this.copied = true;
+                                                         setTimeout(() => this.copied = false, 2000);
+                                                     } catch (err) {
+                                                         console.error('Failed to copy:', err);
+                                                     }
+                                                 }
+                                             }">
+                                            <span class="text-sm font-mono text-slate-500">
+                                                {{ $credential->masked_password }}
+                                            </span>
+                                            <button @click="copyPassword()"
+                                                    type="button"
+                                                    class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                                                    :title="copied ? 'Copied!' : 'Copy password'">
+                                                <svg x-show="!copied"
+                                                     class="h-4 w-4"
+                                                     fill="none"
+                                                     stroke="currentColor"
+                                                     viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                                </svg>
+                                                <svg x-show="copied"
+                                                     x-cloak
+                                                     class="h-4 w-4 text-green-600"
+                                                     fill="none"
+                                                     stroke="currentColor"
+                                                     viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
