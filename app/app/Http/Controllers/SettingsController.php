@@ -10,9 +10,17 @@ use Illuminate\Support\Facades\Storage;
 class SettingsController extends Controller
 {
     /**
-     * Display the application settings page
+     * Display the main settings hub page - redirects to Application
      */
     public function index()
+    {
+        return redirect()->route('settings.application');
+    }
+
+    /**
+     * Display the application settings page
+     */
+    public function application()
     {
         // Get application settings
         $appSettings = [
@@ -27,6 +35,42 @@ class SettingsController extends Controller
         ];
 
         return view('settings.application', compact('appSettings'));
+    }
+
+    /**
+     * Display the business settings hub page
+     */
+    public function business()
+    {
+        return view('settings.business.index');
+    }
+
+    /**
+     * Display the integrations hub page
+     */
+    public function integrations()
+    {
+        return view('settings.integrations.index');
+    }
+
+    /**
+     * Display the nomenclature hub page
+     */
+    public function nomenclatureIndex()
+    {
+        $counts = [
+            'client_statuses' => SettingOption::clientStatuses()->count(),
+            'domain_statuses' => SettingOption::domainStatuses()->count(),
+            'subscription_statuses' => SettingOption::subscriptionStatuses()->count(),
+            'access_platforms' => SettingOption::accessPlatforms()->count(),
+            'expense_categories' => SettingOption::where('category', 'expense_categories')->count(),
+            'payment_methods' => SettingOption::paymentMethods()->count(),
+            'billing_cycles' => SettingOption::billingCycles()->count(),
+            'currencies' => SettingOption::currencies()->count(),
+            'domain_registrars' => SettingOption::domainRegistrars()->count(),
+        ];
+
+        return view('settings.nomenclature.index', compact('counts'));
     }
 
     /**
@@ -386,5 +430,34 @@ class SettingsController extends Controller
                 'message' => 'Failed to send test email: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Display the yearly objectives settings page
+     */
+    public function yearlyObjectives()
+    {
+        $budgetThresholds = auth()->user()->getBudgetThresholds();
+
+        return view('settings.yearly-objectives', compact('budgetThresholds'));
+    }
+
+    /**
+     * Update yearly objectives (budget thresholds)
+     */
+    public function updateYearlyObjectives(Request $request)
+    {
+        $validated = $request->validate([
+            'expense_budget_ron' => 'nullable|numeric|min:0',
+            'expense_budget_eur' => 'nullable|numeric|min:0',
+            'revenue_target_ron' => 'nullable|numeric|min:0',
+            'revenue_target_eur' => 'nullable|numeric|min:0',
+            'profit_margin_min' => 'nullable|numeric|min:0|max:100',
+        ]);
+
+        auth()->user()->saveBudgetThresholds($validated);
+
+        return redirect()->route('settings.yearly-objectives')
+            ->with('success', __('Yearly objectives saved successfully!'));
     }
 }

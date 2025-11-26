@@ -1,12 +1,12 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Conturi Interne</x-slot>
+    <x-slot name="pageTitle">{{ __('Internal Accounts') }}</x-slot>
 
     <x-slot name="headerActions">
         <x-ui.button variant="default" onclick="window.location.href='{{ route('internal-accounts.create') }}'">
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Cont nou
+            {{ __('New Account') }}
         </x-ui.button>
     </x-slot>
 
@@ -132,7 +132,7 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <x-ui.sortable-header column="nume_cont_aplicatie" label="{{ __('Account Name') }}" />
+                                <x-ui.sortable-header column="account_name" label="{{ __('Account Name') }}" />
                                 <x-ui.sortable-header column="url" label="{{ __('URL') }}" />
                                 <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
                                 <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
@@ -146,7 +146,7 @@
                                 <x-ui.table-row x-data="{ showPassword{{ $account->id }}: false }">
                                     <x-ui.table-cell>
                                         <div class="text-sm font-medium text-slate-900">
-                                            {{ $account->nume_cont_aplicatie }}
+                                            {{ $account->account_name }}
                                         </div>
                                     </x-ui.table-cell>
 
@@ -219,7 +219,7 @@
                                         </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
-                                        @if ($account->accesibil_echipei)
+                                        @if ($account->team_accessible)
                                             <x-ui.badge variant="success">
                                                 {{ __('Team') }}
                                             </x-ui.badge>
@@ -290,7 +290,7 @@
                 window.dispatchEvent(new CustomEvent('toast', {
                     detail: {
                         type: 'success',
-                        message: (label || 'Text') + ' copied to clipboard!'
+                        message: (label || '{{ __('Text') }}') + ' {{ __('copied to clipboard') }}'
                     }
                 }));
             }).catch(function(err) {
@@ -298,7 +298,7 @@
                 window.dispatchEvent(new CustomEvent('toast', {
                     detail: {
                         type: 'error',
-                        message: 'Failed to copy to clipboard'
+                        message: '{{ __('Failed to copy to clipboard') }}'
                     }
                 }));
             });

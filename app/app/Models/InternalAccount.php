@@ -2,29 +2,29 @@
 
 namespace App\Models;
 
+use App\Traits\EncryptsPasswords;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Crypt;
 
 class InternalAccount extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, EncryptsPasswords;
 
     protected $fillable = [
         'organization_id',
         'user_id',
-        'nume_cont_aplicatie',
+        'account_name',
         'url',
         'username',
         'password',
-        'accesibil_echipei',
+        'team_accessible',
         'notes',
     ];
 
     protected $casts = [
-        'accesibil_echipei' => 'boolean',
+        'team_accessible' => 'boolean',
     ];
 
     /**
@@ -38,7 +38,11 @@ class InternalAccount extends Model
         static::creating(function ($account) {
             if (auth()->check()) {
                 if (empty($account->organization_id)) {
-                    $account->organization_id = auth()->user()->organization_id;
+                    $orgId = auth()->user()->organization_id;
+                    if (!$orgId) {
+                        throw new \RuntimeException('User must belong to an organization to create internal accounts.');
+                    }
+                    $account->organization_id = $orgId;
                 }
                 if (empty($account->user_id)) {
                     $account->user_id = auth()->id();
@@ -46,12 +50,12 @@ class InternalAccount extends Model
             }
         });
 
-        // Global scope: Show only user's own accounts OR team-accessible accounts
+        // Global scope: Show only user's own accounts OR team-accessible accounts within same org
         static::addGlobalScope('accessible', function (Builder $builder) {
-            if (auth()->check()) {
+            if (auth()->check() && auth()->user()->organization_id) {
                 $builder->where(function ($query) {
                     $query->where('user_id', auth()->id())
-                          ->orWhere('accesibil_echipei', true);
+                          ->orWhere('team_accessible', true);
                 })
                 ->where('organization_id', auth()->user()->organization_id);
             }
@@ -71,41 +75,7 @@ class InternalAccount extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Encrypt password before saving
-     */
-    public function setPasswordAttribute($value)
-    {
-        if (!empty($value)) {
-            $this->attributes['password'] = Crypt::encryptString($value);
-        }
-    }
-
-    /**
-     * Decrypt password when retrieving
-     */
-    public function getPasswordAttribute($value)
-    {
-        if (!empty($value)) {
-            try {
-                return Crypt::decryptString($value);
-            } catch (\Exception $e) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get masked password (e.g., "***********")
-     */
-    public function getMaskedPasswordAttribute()
-    {
-        if (!empty($this->attributes['password'])) {
-            return str_repeat('•', 12);
-        }
-        return '';
-    }
+    // Password encryption/decryption handled by EncryptsPasswords trait
 
     /**
      * Check if current user is the owner
@@ -124,7 +94,7 @@ class InternalAccount extends Model
             return false;
         }
 
-        return $this->user_id === auth()->id() || $this->accesibil_echipei;
+        return $this->user_id === auth()->id() || $this->team_accessible;
     }
 
     /**
@@ -133,7 +103,7 @@ class InternalAccount extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('nume_cont_aplicatie', 'like', "%{$search}%")
+            $q->where('account_name', 'like', "%{$search}%")
               ->orWhere('username', 'like', "%{$search}%")
               ->orWhere('url', 'like', "%{$search}%");
         });
@@ -145,7 +115,7 @@ class InternalAccount extends Model
     public function scopeTeamAccessible($query, $teamAccessible = null)
     {
         if ($teamAccessible !== null) {
-            return $query->where('accesibil_echipei', (bool) $teamAccessible);
+            return $query->where('team_accessible', (bool) $teamAccessible);
         }
         return $query;
     }
@@ -166,7 +136,7 @@ class InternalAccount extends Model
      */
     public function getDisplayNameAttribute()
     {
-        return $this->nume_cont_aplicatie;
+        return $this->account_name;
     }
 
     /**
@@ -175,11 +145,11 @@ class InternalAccount extends Model
     public function getOwnershipStatusAttribute()
     {
         if ($this->isOwner()) {
-            return 'Your Account';
+            return __('Your Account');
         }
-        if ($this->accesibil_echipei) {
-            return 'Team Account (by ' . $this->user->name . ')';
+        if ($this->team_accessible) {
+            return __('Team Account (by :name)', ['name' => $this->user->name]);
         }
-        return 'Unknown';
+        return __('Unknown');
     }
 }

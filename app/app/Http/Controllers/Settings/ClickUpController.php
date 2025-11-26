@@ -345,4 +345,169 @@ class ClickUpController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Cancel a running sync
+     */
+    public function cancelSync($syncId)
+    {
+        $sync = ClickUpSync::find($syncId);
+
+        if (!$sync) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($sync->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Only running or pending syncs can be cancelled
+        if (!in_array($sync->status, ['running', 'pending'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only running or pending syncs can be cancelled'
+            ], 400);
+        }
+
+        $sync->update([
+            'status' => 'cancelled',
+            'completed_at' => now(),
+            'errors' => array_merge($sync->errors ?? [], ['Cancelled by user']),
+        ]);
+
+        Log::info('ClickUp sync cancelled by user', [
+            'sync_id' => $sync->id,
+            'user_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sync cancelled successfully'
+        ]);
+    }
+
+    /**
+     * Delete a sync record
+     */
+    public function deleteSync($syncId)
+    {
+        $sync = ClickUpSync::find($syncId);
+
+        if (!$sync) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($sync->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Don't delete running syncs - cancel them first
+        if ($sync->status === 'running') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a running sync. Cancel it first.'
+            ], 400);
+        }
+
+        $sync->delete();
+
+        Log::info('ClickUp sync deleted', [
+            'sync_id' => $syncId,
+            'user_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sync deleted successfully'
+        ]);
+    }
+
+    /**
+     * Retry a failed sync
+     */
+    public function retrySync($syncId)
+    {
+        $sync = ClickUpSync::find($syncId);
+
+        if (!$sync) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Sync not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($sync->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Only failed or cancelled syncs can be retried
+        if (!in_array($sync->status, ['failed', 'cancelled'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only failed or cancelled syncs can be retried'
+            ], 400);
+        }
+
+        $organization = auth()->user()->organization;
+        $clickUpSettings = $organization->settings['clickup'] ?? [];
+        $token = $clickUpSettings['token'] ?? config('services.clickup.personal_token');
+
+        if (empty($token)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ClickUp token not configured'
+            ], 400);
+        }
+
+        // Create new sync record (keep the old one for history)
+        $newSync = ClickUpSync::create([
+            'organization_id' => $sync->organization_id,
+            'user_id' => auth()->id(),
+            'sync_type' => $sync->sync_type,
+            'clickup_workspace_id' => $sync->clickup_workspace_id,
+            'clickup_list_id' => $sync->clickup_list_id,
+            'status' => 'pending',
+            'options' => $sync->options,
+        ]);
+
+        // Dispatch background job
+        ImportClickUpWorkspaceJob::dispatch(
+            $sync->organization_id,
+            auth()->id(),
+            $sync->clickup_workspace_id,
+            $sync->options ?? [],
+            $newSync->id,
+            $token
+        );
+
+        Log::info('ClickUp sync retried', [
+            'original_sync_id' => $sync->id,
+            'new_sync_id' => $newSync->id,
+            'user_id' => auth()->id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'sync_id' => $newSync->id,
+            'message' => 'Sync restarted successfully'
+        ]);
+    }
 }

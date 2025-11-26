@@ -2,6 +2,7 @@
 
 <form method="POST" action="{{ $action }}" class="space-y-6" enctype="multipart/form-data" x-data="fileUploader(@js($revenue?->files ?? []))">
     @csrf
+    <x-unsaved-form-warning />
     @if($method !== 'POST')
         @method($method)
     @endif

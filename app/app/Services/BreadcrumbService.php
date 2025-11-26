@@ -44,12 +44,18 @@ class BreadcrumbService
 
         // Financial
         'financial.dashboard' => 'Financiar',
+        'financial.yearly-report' => 'Istoric Financiar',
         'financial.revenues.index' => 'Venituri',
         'financial.revenues.create' => 'Venit nou',
+        'financial.revenues.show' => 'Detalii venit',
         'financial.revenues.edit' => 'Editează venit',
+        'financial.revenues.import' => 'Import venituri',
         'financial.expenses.index' => 'Cheltuieli',
         'financial.expenses.create' => 'Cheltuială nouă',
+        'financial.expenses.show' => 'Detalii cheltuială',
         'financial.expenses.edit' => 'Editează cheltuială',
+        'financial.expenses.import' => 'Import cheltuieli',
+        'financial.files.index' => 'Fișiere',
 
         // Settings
         'settings.index' => 'Setări',

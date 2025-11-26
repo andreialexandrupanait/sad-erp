@@ -8,7 +8,10 @@ use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
 use App\Models\Client;
 use App\Models\SettingOption;
+use App\Models\SmartbillImport;
+use App\Jobs\ImportSmartbillInvoicesJob;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
@@ -18,7 +21,185 @@ class ImportController extends Controller
 
     public function showRevenueImportForm()
     {
-        return view('financial.revenues.import');
+        // Get recent imports for the current organization
+        $recentImports = SmartbillImport::where('organization_id', auth()->user()->organization_id)
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get();
+
+        return view('financial.revenues.import', compact('recentImports'));
+    }
+
+    /**
+     * Preview import before processing
+     */
+    public function previewRevenues(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt,xls,xlsx|max:5120',
+        ]);
+
+        $file = $request->file('csv_file');
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // Parse file
+        if (in_array($extension, ['xls', 'xlsx'])) {
+            $spreadsheet = IOFactory::load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $csvData = $worksheet->toArray();
+        } else {
+            $csvContent = file_get_contents($file->getRealPath());
+            $csvData = array_map('str_getcsv', explode("\n", $csvContent));
+        }
+
+        // Find header row
+        $headerRowIndex = 0;
+        $header = null;
+        foreach ($csvData as $index => $row) {
+            $row = array_map('trim', $row);
+            foreach ($row as $cell) {
+                $cell = strtolower($cell);
+                if (in_array($cell, ['serie', 'numar', 'data', 'client', 'total', 'cif', 'moneda'])) {
+                    $headerRowIndex = $index;
+                    $header = $row;
+                    break 2;
+                }
+            }
+        }
+
+        if ($header === null) {
+            $header = array_shift($csvData);
+            $header = array_map('trim', $header);
+        } else {
+            $csvData = array_slice($csvData, $headerRowIndex + 1);
+        }
+
+        $isSmartbillExport = $this->detectSmartbillExport($header);
+
+        // Pre-load existing clients for duplicate detection
+        $allClients = Client::all();
+        $clientsByCif = [];
+        foreach ($allClients as $client) {
+            if (!empty($client->tax_id)) {
+                $clientsByCif[$client->tax_id] = $client;
+                $cleanCif = preg_replace('/^RO/i', '', $client->tax_id);
+                $cleanCif = preg_replace('/\s+/', '', $cleanCif);
+                if ($cleanCif !== $client->tax_id) {
+                    $clientsByCif[$cleanCif] = $client;
+                    $clientsByCif['RO' . $cleanCif] = $client;
+                }
+            }
+        }
+
+        // Process rows for preview
+        $previewRows = [];
+        $summary = [
+            'total' => 0,
+            'new' => 0,
+            'duplicates' => 0,
+            'errors' => 0,
+            'new_clients' => 0,
+            'total_amount_ron' => 0,
+            'total_amount_eur' => 0,
+        ];
+
+        foreach ($csvData as $index => $row) {
+            if (empty(array_filter($row))) continue;
+            if (count($row) !== count($header)) continue;
+
+            $summary['total']++;
+            $data = array_combine($header, $row);
+
+            if ($isSmartbillExport) {
+                $data = $this->mapSmartbillColumns($data);
+            }
+
+            // Basic validation
+            $hasError = false;
+            $errorMsg = '';
+            if (empty($data['document_name'])) {
+                $hasError = true;
+                $errorMsg = 'Missing document name';
+            } elseif (empty($data['amount']) || !is_numeric($data['amount'])) {
+                $hasError = true;
+                $errorMsg = 'Invalid amount';
+            } elseif (empty($data['occurred_at'])) {
+                $hasError = true;
+                $errorMsg = 'Missing date';
+            }
+
+            // Check for duplicates
+            $isDuplicate = false;
+            if (!$hasError) {
+                $series = trim($data['serie'] ?? $data['Serie'] ?? '');
+                $number = trim($data['numar'] ?? $data['Numar'] ?? '');
+
+                if (!empty($series) && !empty($number)) {
+                    $isDuplicate = FinancialRevenue::where('smartbill_series', $series)
+                        ->where('smartbill_invoice_number', $number)
+                        ->exists();
+                }
+            }
+
+            // Check client status
+            $clientStatus = 'none';
+            $clientName = trim($data['client_name'] ?? $data['client'] ?? '');
+            $cif = trim($data['cif_client'] ?? $data['CIF'] ?? '');
+
+            if (!empty($cif)) {
+                $cleanCif = preg_replace('/^RO/i', '', $cif);
+                $cleanCif = preg_replace('/\s+/', '', $cleanCif);
+                $existingClient = $clientsByCif[$cif] ?? $clientsByCif[$cleanCif] ?? $clientsByCif['RO' . $cleanCif] ?? null;
+
+                if ($existingClient) {
+                    $clientStatus = 'existing';
+                    $clientName = $existingClient->name;
+                } elseif (!empty($clientName)) {
+                    $clientStatus = 'new';
+                    $summary['new_clients']++;
+                }
+            }
+
+            // Update summary
+            if ($hasError) {
+                $summary['errors']++;
+            } elseif ($isDuplicate) {
+                $summary['duplicates']++;
+            } else {
+                $summary['new']++;
+                $currency = strtoupper(trim($data['currency'] ?? 'RON'));
+                $amount = (float) $data['amount'];
+                if ($currency === 'EUR') {
+                    $summary['total_amount_eur'] += $amount;
+                } else {
+                    $summary['total_amount_ron'] += $amount;
+                }
+            }
+
+            // Only include first 50 rows in preview for performance
+            if ($index < 50) {
+                $previewRows[] = [
+                    'row' => $index + 2,
+                    'document_name' => $data['document_name'] ?? '',
+                    'amount' => $data['amount'] ?? '',
+                    'currency' => strtoupper(trim($data['currency'] ?? 'RON')),
+                    'date' => $data['occurred_at'] ?? '',
+                    'client_name' => $clientName,
+                    'client_status' => $clientStatus,
+                    'is_duplicate' => $isDuplicate,
+                    'has_error' => $hasError,
+                    'error_msg' => $errorMsg,
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'is_smartbill' => $isSmartbillExport,
+            'summary' => $summary,
+            'preview_rows' => $previewRows,
+            'has_more' => $summary['total'] > 50,
+        ]);
     }
 
     public function importRevenues(Request $request)
@@ -39,11 +220,69 @@ class ImportController extends Controller
             $spreadsheet = IOFactory::load($file->getRealPath());
             $worksheet = $spreadsheet->getActiveSheet();
             $csvData = $worksheet->toArray();
+
+            // Convert to CSV format for storage
+            $csvContent = '';
+            foreach ($csvData as $row) {
+                $csvContent .= implode(',', array_map(function($cell) {
+                    return '"' . str_replace('"', '""', $cell ?? '') . '"';
+                }, $row)) . "\n";
+            }
         } else {
-            // Parse CSV file
-            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+            // Read CSV file content directly
+            $csvContent = file_get_contents($file->getRealPath());
+            $csvData = array_map('str_getcsv', explode("\n", $csvContent));
         }
 
+        // Count rows (excluding empty ones and header)
+        $totalRows = count(array_filter($csvData, function($row) {
+            return !empty(array_filter($row));
+        }));
+
+        // For small files (< 50 rows) without PDF download, process synchronously
+        $downloadPdfs = $request->boolean('download_smartbill_pdfs', false);
+        $dryRun = $request->boolean('dry_run', false);
+
+        if ($totalRows < 50 && !$downloadPdfs) {
+            return $this->importRevenuesSynchronously($request, $csvData);
+        }
+
+        // For larger files or when downloading PDFs, use background job
+        $organization = auth()->user()->organization;
+        $userId = auth()->id();
+
+        // Store file temporarily
+        $tempFileName = 'imports/smartbill_' . uniqid() . '.csv';
+        Storage::disk('local')->put($tempFileName, $csvContent);
+
+        // Create import record
+        $import = SmartbillImport::create([
+            'organization_id' => $organization->id,
+            'user_id' => $userId,
+            'file_name' => $file->getClientOriginalName(),
+            'file_path' => $tempFileName,
+            'status' => 'pending',
+            'options' => [
+                'download_pdfs' => $downloadPdfs,
+                'dry_run' => $dryRun,
+            ],
+            'total_rows' => $totalRows - 1, // Subtract header row
+            'processed_rows' => 0,
+        ]);
+
+        // Dispatch background job
+        ImportSmartbillInvoicesJob::dispatch($import->id, $organization->id, $userId);
+
+        return redirect()
+            ->route('financial.revenues.import')
+            ->with('success', "Import started! Processing {$totalRows} rows in the background. You can track progress below.");
+    }
+
+    /**
+     * Process small imports synchronously (original logic)
+     */
+    protected function importRevenuesSynchronously(Request $request, array $csvData)
+    {
         // Find the actual header row (Smartbill exports have metadata rows before headers)
         $headerRowIndex = 0;
         $header = null;
@@ -96,6 +335,25 @@ class ImportController extends Controller
         $pdfsDownloaded = 0;
         $errors = [];
         $duplicatesFound = [];
+
+        // OPTIMIZED: Pre-load all clients indexed by CIF for fast lookup
+        // This replaces N+1 queries (one per CSV row) with a single query
+        $allClients = Client::all();
+        $clientsByCif = [];
+        foreach ($allClients as $client) {
+            if (!empty($client->tax_id)) {
+                // Index by original CIF
+                $clientsByCif[$client->tax_id] = $client;
+                // Also index by cleaned CIF (without RO prefix)
+                $cleanCif = preg_replace('/^RO/i', '', $client->tax_id);
+                $cleanCif = preg_replace('/\s+/', '', $cleanCif);
+                if ($cleanCif !== $client->tax_id) {
+                    $clientsByCif[$cleanCif] = $client;
+                    $clientsByCif['RO' . $cleanCif] = $client;
+                }
+            }
+        }
+        $clientsByName = $allClients->keyBy(fn($c) => strtolower($c->name));
 
         foreach ($csvData as $index => $row) {
             $rowNumber = $index + 2;
@@ -153,12 +411,8 @@ class ImportController extends Controller
                     $cleanCif = preg_replace('/^RO/i', '', $cif);
                     $cleanCif = preg_replace('/\s+/', '', $cleanCif);
 
-                    // Try exact match or with RO prefix
-                    $client = Client::where(function($query) use ($cif, $cleanCif) {
-                        $query->where('tax_id', $cif)
-                              ->orWhere('tax_id', $cleanCif)
-                              ->orWhere('tax_id', 'RO' . $cleanCif);
-                    })->first();
+                    // OPTIMIZED: Use pre-loaded clients instead of database query
+                    $client = $clientsByCif[$cif] ?? $clientsByCif[$cleanCif] ?? $clientsByCif['RO' . $cleanCif] ?? null;
 
                     // If client exists, check if it's a placeholder and update it
                     if ($client && !empty($clientName)) {
@@ -218,6 +472,12 @@ class ImportController extends Controller
                                     'name' => $clientName,
                                     'cif' => $cif
                                 ]);
+                                // OPTIMIZED: Add newly created client to pre-loaded collections
+                                // so subsequent rows can find it without database queries
+                                $clientsByCif[$cif] = $client;
+                                $clientsByCif[$cleanCif] = $client;
+                                $clientsByCif['RO' . $cleanCif] = $client;
+                                $clientsByName[strtolower($formattedName)] = $client;
                             } catch (\Exception $e) {
                                 \Log::warning("Failed to auto-create client from Smartbill import", [
                                     'name' => $clientName,
@@ -234,9 +494,10 @@ class ImportController extends Controller
                 }
 
                 // Fallback: try to match by name if CIF match didn't work (for non-Smartbill imports)
+                // OPTIMIZED: Use pre-loaded clients instead of database query
                 if (!$clientId && !empty($data['client_name'] ?? $data['client'] ?? '')) {
                     $clientName = trim($data['client_name'] ?? $data['client']);
-                    $client = Client::where('name', 'like', "%{$clientName}%")->first();
+                    $client = $clientsByName[strtolower($clientName)] ?? null;
                     $clientId = $client?->id;
                 }
 
@@ -511,7 +772,7 @@ class ImportController extends Controller
         // Determine year/month from revenue
         $year = $revenue->occurred_at->year;
         $month = $revenue->occurred_at->month;
-        $monthName = $this->getRomanianMonthName($month);
+        $monthName = romanian_month($month);
 
         // Store in same structure as regular revenue files: /year/MonthName/Incasari/filename
         $path = "{$year}/{$monthName}/Incasari/{$filename}";
@@ -807,29 +1068,6 @@ class ImportController extends Controller
     }
 
     /**
-     * Get Romanian month name from month number
-     */
-    protected function getRomanianMonthName($monthNumber)
-    {
-        $months = [
-            1 => 'Ianuarie',
-            2 => 'Februarie',
-            3 => 'Martie',
-            4 => 'Aprilie',
-            5 => 'Mai',
-            6 => 'Iunie',
-            7 => 'Iulie',
-            8 => 'August',
-            9 => 'Septembrie',
-            10 => 'Octombrie',
-            11 => 'Noiembrie',
-            12 => 'Decembrie',
-        ];
-
-        return $months[$monthNumber] ?? 'Unknown';
-    }
-
-    /**
      * Format client name to Title Case
      * Converts "ASOCIATIA ROMANA" to "Asociatia Romana"
      */
@@ -841,5 +1079,136 @@ class ImportController extends Controller
 
         // Convert to Title Case using multibyte string function
         return mb_convert_case(trim($name), MB_CASE_TITLE, 'UTF-8');
+    }
+
+    // ==================== IMPORT STATUS MANAGEMENT ====================
+
+    /**
+     * Get import status (for polling)
+     */
+    public function getImportStatus($importId)
+    {
+        $import = SmartbillImport::find($importId);
+
+        if (!$import) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($import->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        return response()->json([
+            'success' => true,
+            'import' => [
+                'id' => $import->id,
+                'status' => $import->status,
+                'file_name' => $import->file_name,
+                'total_rows' => $import->total_rows,
+                'processed_rows' => $import->processed_rows,
+                'progress_percentage' => $import->progress_percentage,
+                'stats' => $import->stats,
+                'errors' => $import->errors,
+                'started_at' => $import->started_at?->format('Y-m-d H:i:s'),
+                'completed_at' => $import->completed_at?->format('Y-m-d H:i:s'),
+            ]
+        ]);
+    }
+
+    /**
+     * Cancel a running import
+     */
+    public function cancelImport($importId)
+    {
+        $import = SmartbillImport::find($importId);
+
+        if (!$import) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($import->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Only running or pending imports can be cancelled
+        if (!in_array($import->status, ['running', 'pending'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only running or pending imports can be cancelled'
+            ], 400);
+        }
+
+        $import->update([
+            'status' => 'cancelled',
+            'completed_at' => now(),
+            'errors' => array_merge($import->errors ?? [], ['Cancelled by user']),
+        ]);
+
+        // Clean up the temp file
+        if ($import->file_path && Storage::disk('local')->exists($import->file_path)) {
+            Storage::disk('local')->delete($import->file_path);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import cancelled successfully'
+        ]);
+    }
+
+    /**
+     * Delete an import record
+     */
+    public function deleteImport($importId)
+    {
+        $import = SmartbillImport::find($importId);
+
+        if (!$import) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import not found'
+            ], 404);
+        }
+
+        // Check authorization
+        if ($import->organization_id !== auth()->user()->organization_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 403);
+        }
+
+        // Don't delete running imports - cancel them first
+        if ($import->status === 'running') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot delete a running import. Cancel it first.'
+            ], 400);
+        }
+
+        // Clean up the temp file
+        if ($import->file_path && Storage::disk('local')->exists($import->file_path)) {
+            Storage::disk('local')->delete($import->file_path);
+        }
+
+        $import->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Import deleted successfully'
+        ]);
     }
 }

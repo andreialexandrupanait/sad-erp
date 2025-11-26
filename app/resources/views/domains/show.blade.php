@@ -117,7 +117,7 @@
                     <!-- Status -->
                     <div>
                         <div class="text-sm font-medium text-slate-500">{{ __('Status') }}</div>
-                        <div class="mt-1 text-slate-900">{{ $domain->status }}</div>
+                        <div class="mt-1 text-slate-900">{{ __($domain->status) }}</div>
                     </div>
 
                     <!-- Notes -->

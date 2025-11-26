@@ -15,7 +15,8 @@ class ClientController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Client::with(['status']);
+        $query = Client::with(['status'])
+            ->withCount(['revenues as invoices_count']);
 
         // Search functionality
         if ($request->filled('search')) {
@@ -30,30 +31,40 @@ class ClientController extends Controller
         // Get view mode (default: table)
         $viewMode = $request->get('view', 'table');
 
-        // Get group by status flag (only for table view)
-        $groupByStatus = $request->get('group_by_status', false) && $viewMode === 'table';
-
-        // Sort based on view mode
+        // Sort - default to name ascending for better UX
         if ($viewMode === 'kanban') {
             $query->ordered();
         } else {
-            $sortBy = $request->get('sort', 'created_at');
-            $sortDir = $request->get('dir', 'desc');
+            $sortBy = $request->get('sort', 'name');
+            $sortDir = $request->get('dir', 'asc');
+
+            // Whitelist allowed sort columns for security
+            $allowedSortColumns = ['name', 'status_id', 'total_incomes', 'created_at', 'email'];
+            if (!in_array($sortBy, $allowedSortColumns)) {
+                $sortBy = 'name';
+            }
+
+            // Validate sort direction
+            $sortDir = in_array($sortDir, ['asc', 'desc']) ? $sortDir : 'asc';
+
             $query->orderBy($sortBy, $sortDir);
         }
+
+        // Get status counts for filter pills
+        $statusCounts = Client::selectRaw('status_id, COUNT(*) as count')
+            ->groupBy('status_id')
+            ->pluck('count', 'status_id')
+            ->toArray();
 
         // For kanban view, group by status
         if ($viewMode === 'kanban') {
             $clients = $query->get()->groupBy('status_id');
-        } elseif ($groupByStatus) {
-            // For grouped table view
-            $clients = $query->get()->groupBy('status_id');
         } else {
-            $clients = $query->paginate(50)->withQueryString();
+            // Default to 100 clients per page
+            $clients = $query->paginate(100)->withQueryString();
         }
 
-        // Note: $clientStatuses is now automatically available via SettingsComposer
-        return view('clients.index', compact('clients', 'viewMode', 'groupByStatus'));
+        return view('clients.index', compact('clients', 'viewMode', 'statusCounts'));
     }
 
     /**
@@ -102,20 +113,29 @@ class ClientController extends Controller
         // Convert checkbox to boolean
         $validated['vat_payer'] = $request->has('vat_payer');
 
+        // Sanitize text inputs to prevent XSS
+        $validated['name'] = sanitize_input($validated['name']);
+        if (!empty($validated['company_name'])) {
+            $validated['company_name'] = sanitize_input($validated['company_name']);
+        }
+        if (!empty($validated['contact_person'])) {
+            $validated['contact_person'] = sanitize_input($validated['contact_person']);
+        }
+
         $client = Client::create($validated);
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Client created successfully!',
+                'message' => __('Client created successfully.'),
                 'client' => $client->load('status'),
             ], 201);
         }
 
         return redirect()
             ->route('clients.show', $client)
-            ->with('success', 'Client created successfully!');
+            ->with('success', __('Client created successfully.'));
     }
 
     /**
@@ -185,20 +205,29 @@ class ClientController extends Controller
         // Convert checkbox to boolean
         $validated['vat_payer'] = $request->has('vat_payer');
 
+        // Sanitize text inputs to prevent XSS
+        $validated['name'] = sanitize_input($validated['name']);
+        if (!empty($validated['company_name'])) {
+            $validated['company_name'] = sanitize_input($validated['company_name']);
+        }
+        if (!empty($validated['contact_person'])) {
+            $validated['contact_person'] = sanitize_input($validated['contact_person']);
+        }
+
         $client->update($validated);
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Client updated successfully!',
+                'message' => __('Client updated successfully.'),
                 'client' => $client->fresh()->load('status'),
             ]);
         }
 
         return redirect()
             ->route('clients.show', $client)
-            ->with('success', 'Client updated successfully!');
+            ->with('success', __('Client updated successfully.'));
     }
 
     /**
@@ -233,7 +262,7 @@ class ClientController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Client order updated successfully!',
+            'message' => __('Client order updated successfully.'),
         ]);
     }
 
@@ -247,6 +276,6 @@ class ClientController extends Controller
 
         return redirect()
             ->route('clients.index')
-            ->with('success', "Client '{$clientName}' deleted successfully!");
+            ->with('success', __('Client deleted successfully.'));
     }
 }

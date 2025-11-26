@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ $internalAccount->nume_cont_aplicatie }}</x-slot>
+    <x-slot name="pageTitle">{{ $internalAccount->account_name }}</x-slot>
 
     <x-slot name="headerActions">
         @if ($internalAccount->isOwner())
@@ -7,14 +7,14 @@
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                 </svg>
-                Edit
+                {{ __('Edit') }}
             </x-ui.button>
         @endif
         <x-ui.button variant="secondary" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
             </svg>
-            Back to List
+            {{ __('Back to List') }}
         </x-ui.button>
     </x-slot>
 
@@ -31,8 +31,8 @@
 
         <!-- Access Restriction Notice -->
         @if (!$internalAccount->isOwner())
-            <x-ui.alert variant="warning" title="View-Only Access">
-                <p>This account is owned by {{ $internalAccount->user->name }}. You can view the details but cannot edit or delete it.</p>
+            <x-ui.alert variant="warning" title="{{ __('View-Only Access') }}">
+                <p>{{ __('This account is owned by :name. You can view the details but cannot edit or delete it.', ['name' => $internalAccount->user->name]) }}</p>
             </x-ui.alert>
         @endif
 
@@ -41,20 +41,20 @@
             <div class="lg:col-span-2">
                 <x-ui.card>
                     <x-ui.card-header>
-                        <h3 class="text-lg font-semibold text-slate-900">Account Information</h3>
+                        <h3 class="text-lg font-semibold text-slate-900">{{ __('Account Information') }}</h3>
                     </x-ui.card-header>
                     <x-ui.card-content>
                         <div class="grid gap-6">
                             <!-- Account Name -->
                             <div>
-                                <x-ui.label class="text-slate-500">Account Name</x-ui.label>
-                                <p class="mt-1 text-slate-900 font-medium">{{ $internalAccount->nume_cont_aplicatie }}</p>
+                                <x-ui.label class="text-slate-500">{{ __('Account Name') }}</x-ui.label>
+                                <p class="mt-1 text-slate-900 font-medium">{{ $internalAccount->account_name }}</p>
                             </div>
 
                             <!-- URL -->
                             @if ($internalAccount->url)
                                 <div>
-                                    <x-ui.label class="text-slate-500">URL</x-ui.label>
+                                    <x-ui.label class="text-slate-500">{{ __('URL') }}</x-ui.label>
                                     <p class="mt-1">
                                         <a href="{{ $internalAccount->url }}" target="_blank" class="text-blue-600 hover:text-blue-800 break-all inline-flex items-center gap-1">
                                             {{ $internalAccount->url }}
@@ -69,7 +69,7 @@
                             <!-- Username -->
                             @if ($internalAccount->username)
                                 <div>
-                                    <x-ui.label class="text-slate-500">Username / Email</x-ui.label>
+                                    <x-ui.label class="text-slate-500">{{ __('Username / Email') }}</x-ui.label>
                                     <div class="mt-1 flex items-center gap-2">
                                         <p class="text-slate-900 font-mono">{{ $internalAccount->username }}</p>
                                         <button onclick="copyToClipboard('{{ $internalAccount->username }}')" class="text-slate-500 hover:text-slate-700">
@@ -84,7 +84,7 @@
                             <!-- Password -->
                             @if ($internalAccount->password)
                                 <div>
-                                    <x-ui.label class="text-slate-500">Password</x-ui.label>
+                                    <x-ui.label class="text-slate-500">{{ __('Password') }}</x-ui.label>
                                     <div class="mt-1 flex items-center gap-2">
                                         <p id="password-display" class="text-slate-900 font-mono">{{ $internalAccount->masked_password }}</p>
                                         <button onclick="togglePassword()" class="text-blue-600 hover:text-blue-800">
@@ -105,7 +105,7 @@
                             <!-- Notes -->
                             @if ($internalAccount->notes)
                                 <div>
-                                    <x-ui.label class="text-slate-500">Notes</x-ui.label>
+                                    <x-ui.label class="text-slate-500">{{ __('Notes') }}</x-ui.label>
                                     <p class="mt-1 text-slate-900 whitespace-pre-line">{{ $internalAccount->notes }}</p>
                                 </div>
                             @endif
@@ -119,27 +119,27 @@
                 <!-- Access & Metadata -->
                 <x-ui.card>
                     <x-ui.card-header>
-                        <h3 class="text-lg font-semibold text-slate-900">Details</h3>
+                        <h3 class="text-lg font-semibold text-slate-900">{{ __('Details') }}</h3>
                     </x-ui.card-header>
                     <x-ui.card-content>
                         <div class="space-y-4">
                             <!-- Access Level -->
                             <div>
-                                <x-ui.label class="text-slate-500">Access Level</x-ui.label>
+                                <x-ui.label class="text-slate-500">{{ __('Access Level') }}</x-ui.label>
                                 <div class="mt-1">
-                                    @if ($internalAccount->accesibil_echipei)
+                                    @if ($internalAccount->team_accessible)
                                         <x-ui.badge variant="success">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                                             </svg>
-                                            Team Accessible
+                                            {{ __('Team Accessible') }}
                                         </x-ui.badge>
                                     @else
                                         <x-ui.badge variant="secondary">
                                             <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                             </svg>
-                                            Private
+                                            {{ __('Private') }}
                                         </x-ui.badge>
                                     @endif
                                 </div>
@@ -147,24 +147,24 @@
 
                             <!-- Owner -->
                             <div>
-                                <x-ui.label class="text-slate-500">Owner</x-ui.label>
+                                <x-ui.label class="text-slate-500">{{ __('Owner') }}</x-ui.label>
                                 <p class="mt-1 text-slate-900">
                                     {{ $internalAccount->user->name }}
                                     @if ($internalAccount->isOwner())
-                                        <span class="text-sm text-slate-500">(You)</span>
+                                        <span class="text-sm text-slate-500">({{ __('You') }})</span>
                                     @endif
                                 </p>
                             </div>
 
                             <!-- Created -->
                             <div>
-                                <x-ui.label class="text-slate-500">Created</x-ui.label>
+                                <x-ui.label class="text-slate-500">{{ __('Created') }}</x-ui.label>
                                 <p class="mt-1 text-slate-900 text-sm">{{ $internalAccount->created_at->format('M d, Y H:i') }}</p>
                             </div>
 
                             <!-- Last Updated -->
                             <div>
-                                <x-ui.label class="text-slate-500">Last Updated</x-ui.label>
+                                <x-ui.label class="text-slate-500">{{ __('Last Updated') }}</x-ui.label>
                                 <p class="mt-1 text-slate-900 text-sm">{{ $internalAccount->updated_at->format('M d, Y H:i') }}</p>
                             </div>
                         </div>
@@ -175,14 +175,14 @@
                 @if ($internalAccount->url)
                     <x-ui.card>
                         <x-ui.card-header>
-                            <h3 class="text-lg font-semibold text-slate-900">Quick Actions</h3>
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Quick Actions') }}</h3>
                         </x-ui.card-header>
                         <x-ui.card-content>
                             <x-ui.button variant="default" class="w-full" onclick="window.open('{{ $internalAccount->url }}', '_blank')">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
-                                Open Platform
+                                {{ __('Open Platform') }}
                             </x-ui.button>
                         </x-ui.card-content>
                     </x-ui.card>
@@ -207,7 +207,7 @@
                 passwordRevealed = true;
 
                 // Show toast notification
-                showToast('Password revealed', 'info');
+                showToast('{{ __('Password revealed') }}', 'info');
             } else {
                 // Hide password
                 passwordDisplay.textContent = '{{ $internalAccount->masked_password }}';
@@ -224,10 +224,10 @@
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(function() {
-                showToast('Copied to clipboard!', 'success');
+                showToast('{{ __('Copied to clipboard!') }}', 'success');
             }, function(err) {
                 console.error('Could not copy text: ', err);
-                showToast('Failed to copy', 'error');
+                showToast('{{ __('Failed to copy') }}', 'error');
             });
         }
 

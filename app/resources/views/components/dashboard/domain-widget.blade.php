@@ -20,7 +20,7 @@
                 <div class="flex items-center justify-between p-2 bg-orange-50 border border-orange-100 rounded-lg hover:bg-orange-100 transition-colors cursor-pointer"
                      onclick="window.location.href='{{ route('domains.edit', $item['domain']) }}'">
                     <div class="flex-1 min-w-0">
-                        <p class="text-xs font-medium text-slate-900 truncate">{{ $item['domain']->domain }}</p>
+                        <p class="text-xs font-medium text-slate-900 truncate">{{ $item['domain']->domain_name }}</p>
                         <p class="text-xs text-slate-500">{{ $item['domain']->expiry_date->format('d.m.Y') }}</p>
                     </div>
                     <div class="text-right flex-shrink-0 ml-2">

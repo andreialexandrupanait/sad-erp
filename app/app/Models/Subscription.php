@@ -16,6 +16,7 @@ class Subscription extends Model
         'user_id',
         'vendor_name',
         'price',
+        'currency',
         'billing_cycle',
         'custom_days',
         'start_date',
@@ -144,22 +145,37 @@ class Subscription extends Model
     {
         // For paused/cancelled subscriptions, show status instead of renewal date
         if ($this->status === 'paused') {
-            return 'Suspendat';
+            return __('Paused');
         }
         if ($this->status === 'cancelled') {
-            return 'Anulat';
+            return __('Cancelled');
         }
 
         $days = $this->days_until_renewal;
 
-        if ($days === null) return 'Necunoscut';
+        if ($days === null) return __('Unknown');
         if ($days < 0) {
             $daysOverdue = abs($days);
-            return "Expirat cu {$daysOverdue} " . ($daysOverdue === 1 ? 'zi' : 'zile');
+            return trans_choice('Expired :count day ago|Expired :count days ago', $daysOverdue, ['count' => $daysOverdue]);
         }
-        if ($days === 0) return 'Se reînnoiește azi';
-        if ($days === 1) return 'Se reînnoiește mâine';
-        return "Se reînnoiește în {$days} zile";
+        if ($days === 0) return __('Expires today');
+        if ($days === 1) return __('Expires tomorrow');
+        return trans_choice('Expires in :count day|Expires in :count days', $days, ['count' => $days]);
+    }
+
+    /**
+     * Computed Attributes - Billing cycle label
+     */
+    public function getBillingCycleLabelAttribute()
+    {
+        $labels = [
+            'weekly' => __('Weekly'),
+            'monthly' => __('Monthly'),
+            'annual' => __('Annual'),
+            'custom' => __('Custom'),
+        ];
+
+        return $labels[$this->billing_cycle] ?? ucfirst($this->billing_cycle);
     }
 
     /**
@@ -226,6 +242,8 @@ class Subscription extends Model
         $baseDate = $fromDate ? Carbon::parse($fromDate) : $this->next_renewal_date;
 
         switch ($this->billing_cycle) {
+            case 'weekly':
+                return $baseDate->addWeek();
             case 'monthly':
                 return $baseDate->addMonth();
             case 'annual':
@@ -240,7 +258,7 @@ class Subscription extends Model
     /**
      * Update renewal date and log the change
      */
-    public function updateRenewalDate($newDate, $reason = 'Actualizare manuală')
+    public function updateRenewalDate($newDate, $reason = null)
     {
         $oldDate = $this->next_renewal_date;
 
@@ -255,7 +273,7 @@ class Subscription extends Model
                 'organization_id' => $this->user->organization_id ?? 1,
                 'old_renewal_date' => $oldDate,
                 'new_renewal_date' => $newDate,
-                'change_reason' => $reason,
+                'change_reason' => $reason ?? __('Manual update'),
                 'changed_by_user_id' => auth()->id(),
                 'changed_at' => now(),
             ]);
@@ -266,27 +284,36 @@ class Subscription extends Model
 
     /**
      * Auto-advance overdue renewals
+     * Optimized: calculates final date in one pass instead of multiple DB writes
      */
     public function advanceOverdueRenewals()
     {
         $today = Carbon::now()->startOfDay();
+        $oldDate = $this->next_renewal_date->copy();
+        $currentDate = $this->next_renewal_date->copy();
+        $cyclesAdvanced = 0;
 
-        // Keep advancing until next_renewal_date is in the future
-        while ($this->next_renewal_date->startOfDay()->lt($today)) {
-            $oldDate = $this->next_renewal_date;
-            $newDate = $this->calculateNextRenewal();
+        // Calculate final date without saving each iteration
+        while ($currentDate->startOfDay()->lt($today)) {
+            $currentDate = $this->calculateNextRenewal($currentDate);
+            $cyclesAdvanced++;
+        }
 
-            $this->next_renewal_date = $newDate;
+        // Only save once if we advanced
+        if ($cyclesAdvanced > 0) {
+            $this->next_renewal_date = $currentDate;
             $this->save();
 
-            // Log each advancement if SubscriptionLog model exists
+            // Create single log entry for the entire advancement
             if (class_exists(SubscriptionLog::class)) {
                 SubscriptionLog::create([
                     'subscription_id' => $this->id,
                     'organization_id' => $this->user->organization_id ?? 1,
                     'old_renewal_date' => $oldDate,
-                    'new_renewal_date' => $newDate,
-                    'change_reason' => 'Reînnoire automată abonament expirat',
+                    'new_renewal_date' => $currentDate,
+                    'change_reason' => $cyclesAdvanced === 1
+                        ? __('Automatic renewal of expired subscription')
+                        : __('Automatic renewal (:count cycles)', ['count' => $cyclesAdvanced]),
                     'changed_by_user_id' => null, // System action
                     'changed_at' => now(),
                 ]);
@@ -298,52 +325,35 @@ class Subscription extends Model
 
     /**
      * Statistics for user's subscriptions
+     * Optimized to use database-level aggregations instead of loading all records
      */
     public static function getStatistics()
     {
-        $activeCount = self::where('status', 'active')->count();
-        $pausedCount = self::where('status', 'paused')->count();
-        $cancelledCount = self::where('status', 'cancelled')->count();
+        // Single query for all status counts
+        $counts = self::selectRaw("
+            SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_count,
+            SUM(CASE WHEN status = 'paused' THEN 1 ELSE 0 END) as paused_count,
+            SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count
+        ")->first();
 
-        // Monthly cost projection
-        $monthlyCost = self::where('status', 'active')
-            ->get()
-            ->sum(function ($subscription) {
-                switch ($subscription->billing_cycle) {
-                    case 'lunar':
-                    case 'monthly':
-                        return $subscription->price;
-                    case 'anual':
-                    case 'annual':
-                        return $subscription->price / 12;
-                    case 'custom':
-                        $daysPerMonth = 30;
-                        $customDays = $subscription->custom_days ?? 30;
-                        return ($subscription->price / $customDays) * $daysPerMonth;
-                    default:
-                        return 0;
-                }
-            });
-
-        // Annual cost projection
-        $annualCost = self::where('status', 'active')
-            ->get()
-            ->sum(function ($subscription) {
-                switch ($subscription->billing_cycle) {
-                    case 'lunar':
-                    case 'monthly':
-                        return $subscription->price * 12;
-                    case 'anual':
-                    case 'annual':
-                        return $subscription->price;
-                    case 'custom':
-                        $daysPerYear = 365;
-                        $customDays = $subscription->custom_days ?? 30;
-                        return ($subscription->price / $customDays) * $daysPerYear;
-                    default:
-                        return 0;
-                }
-            });
+        // Single query for cost calculations (active subscriptions only)
+        $costs = self::where('status', 'active')
+            ->selectRaw("
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 4.33
+                    WHEN billing_cycle = 'monthly' THEN price
+                    WHEN billing_cycle = 'annual' THEN price / 12
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 30
+                    ELSE 0
+                END) as monthly_cost,
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 52
+                    WHEN billing_cycle = 'monthly' THEN price * 12
+                    WHEN billing_cycle = 'annual' THEN price
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 365
+                    ELSE 0
+                END) as annual_cost
+            ")->first();
 
         // Upcoming renewals (next 30 days)
         $upcomingRenewals = self::where('status', 'active')
@@ -354,11 +364,11 @@ class Subscription extends Model
             ->count();
 
         return [
-            'active' => $activeCount,
-            'paused' => $pausedCount,
-            'cancelled' => $cancelledCount,
-            'monthly_cost' => round($monthlyCost, 2),
-            'annual_cost' => round($annualCost, 2),
+            'active' => (int) ($counts->active_count ?? 0),
+            'paused' => (int) ($counts->paused_count ?? 0),
+            'cancelled' => (int) ($counts->cancelled_count ?? 0),
+            'monthly_cost' => round($costs->monthly_cost ?? 0, 2),
+            'annual_cost' => round($costs->annual_cost ?? 0, 2),
             'upcoming_renewals' => $upcomingRenewals,
         ];
     }

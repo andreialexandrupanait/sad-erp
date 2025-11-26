@@ -1,12 +1,12 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Acces & parole</x-slot>
+    <x-slot name="pageTitle">{{ __('Credentials') }}</x-slot>
 
     <x-slot name="headerActions">
         <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.create') }}'">
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            Acces nou
+            {{ __('New Credential') }}
         </x-ui.button>
     </x-slot>
 
@@ -153,7 +153,7 @@
                                                 <button @click="copyUsername()"
                                                         type="button"
                                                         class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                                                        :title="copied ? 'Copied!' : 'Copy username'">
+                                                        :title="copied ? '{{ __('Copied!') }}' : '{{ __('Copy username') }}'">
                                                     <svg x-show="!copied"
                                                          class="h-3.5 w-3.5"
                                                          fill="none"
@@ -195,7 +195,7 @@
                                             <button @click="copyPassword()"
                                                     type="button"
                                                     class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                                                    :title="copied ? 'Copied!' : 'Copy password'">
+                                                    :title="copied ? '{{ __('Copied!') }}' : '{{ __('Copy password') }}'">
                                                 <svg x-show="!copied"
                                                      class="h-4 w-4"
                                                      fill="none"

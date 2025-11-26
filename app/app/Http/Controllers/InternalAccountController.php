@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\InternalAccount;
+use App\Http\Requests\InternalAccount\StoreInternalAccountRequest;
+use App\Http\Requests\InternalAccount\UpdateInternalAccountRequest;
 use Illuminate\Http\Request;
 
 class InternalAccountController extends Controller
@@ -33,7 +35,7 @@ class InternalAccountController extends Controller
         $sortOrder = $request->get('dir', 'desc');
 
         // Validate sort column
-        $allowedSortColumns = ['nume_cont_aplicatie', 'url', 'username', 'created_at', 'updated_at'];
+        $allowedSortColumns = ['account_name', 'url', 'username', 'created_at', 'updated_at'];
         if (!in_array($sortBy, $allowedSortColumns)) {
             $sortBy = 'created_at';
         }
@@ -63,33 +65,21 @@ class InternalAccountController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreInternalAccountRequest $request)
     {
-        $validated = $request->validate([
-            'nume_cont_aplicatie' => 'required|string|max:255',
-            'url' => 'nullable|url|max:255',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:500',
-            'accesibil_echipei' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Ensure boolean value
-        $validated['accesibil_echipei'] = $request->has('accesibil_echipei');
-
-        $account = InternalAccount::create($validated);
+        $account = InternalAccount::create($request->validated());
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Internal account created successfully!',
+                'message' => __('Internal account created successfully.'),
                 'account' => $account->load('user'),
             ], 201);
         }
 
         return redirect()->route('internal-accounts.show', $account)
-            ->with('success', 'Internal account created successfully.');
+            ->with('success', __('Internal account created successfully.'));
     }
 
     /**
@@ -99,7 +89,7 @@ class InternalAccountController extends Controller
     {
         // Check if user has access
         if (!$internalAccount->isAccessible()) {
-            abort(403, 'You do not have permission to view this account.');
+            abort(403, __('You do not have permission to view this account.'));
         }
 
         $internalAccount->load('user');
@@ -114,7 +104,7 @@ class InternalAccountController extends Controller
     {
         // Only owner can edit
         if (!$internalAccount->isOwner()) {
-            abort(403, 'Only the account owner can edit this record.');
+            abort(403, __('Only the account owner can edit this record.'));
         }
 
         return view('internal-accounts.edit', compact('internalAccount'));
@@ -123,24 +113,9 @@ class InternalAccountController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, InternalAccount $internalAccount)
+    public function update(UpdateInternalAccountRequest $request, InternalAccount $internalAccount)
     {
-        // Only owner can update
-        if (!$internalAccount->isOwner()) {
-            abort(403, 'Only the account owner can update this record.');
-        }
-
-        $validated = $request->validate([
-            'nume_cont_aplicatie' => 'required|string|max:255',
-            'url' => 'nullable|url|max:255',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:500',
-            'accesibil_echipei' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Ensure boolean value
-        $validated['accesibil_echipei'] = $request->has('accesibil_echipei');
+        $validated = $request->validated();
 
         // Only update password if a new one is provided
         if (empty($validated['password'])) {
@@ -153,13 +128,13 @@ class InternalAccountController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Internal account updated successfully!',
+                'message' => __('Internal account updated successfully.'),
                 'account' => $internalAccount->fresh()->load('user'),
             ]);
         }
 
         return redirect()->route('internal-accounts.show', $internalAccount)
-            ->with('success', 'Internal account updated successfully.');
+            ->with('success', __('Internal account updated successfully.'));
     }
 
     /**
@@ -169,12 +144,39 @@ class InternalAccountController extends Controller
     {
         // Only owner can delete
         if (!$internalAccount->isOwner()) {
-            abort(403, 'Only the account owner can delete this record.');
+            abort(403, __('Only the account owner can delete this record.'));
         }
 
         $internalAccount->delete();
 
         return redirect()->route('internal-accounts.index')
-            ->with('success', 'Internal account deleted successfully.');
+            ->with('success', __('Internal account deleted successfully.'));
+    }
+
+    /**
+     * Reveal password (returns JSON for AJAX)
+     */
+    public function revealPassword(InternalAccount $internalAccount)
+    {
+        // Check if user has access to this account
+        if (!$internalAccount->isAccessible()) {
+            return response()->json([
+                'message' => __('You do not have permission to view this password.'),
+            ], 403);
+        }
+
+        // Log the access for audit purposes
+        \Illuminate\Support\Facades\Log::info('Password revealed for internal account', [
+            'account_id' => $internalAccount->id,
+            'account_name' => $internalAccount->account_name,
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()->email,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
+
+        return response()->json([
+            'password' => $internalAccount->password,
+        ]);
     }
 }

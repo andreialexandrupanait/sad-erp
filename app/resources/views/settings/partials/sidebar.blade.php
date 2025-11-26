@@ -5,150 +5,91 @@
             <p class="text-sm text-slate-500 mt-1">{{ __('Manage your application') }}</p>
         </div>
 
-        <nav class="px-3 pb-6 space-y-6">
-            <!-- Application Settings -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Application') }}</h2>
-                </div>
-                <a href="{{ route('settings.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.index') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <nav class="px-3 pb-6 space-y-1">
+            <!-- Application -->
+            <a href="{{ route('settings.application') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.application') || request()->routeIs('settings.index') ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.application') || request()->routeIs('settings.index') ? 'bg-blue-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.application') || request()->routeIs('settings.index') ? 'text-blue-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
-                    {{ __('Application Settings') }}
-                </a>
-            </div>
-
-            <!-- Business Information (NEW) -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Business') }}</h2>
                 </div>
-                <a href="{{ route('settings.business-info') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.business-info') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div>
+                    <span class="block">{{ __('Application') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.application') || request()->routeIs('settings.index') ? 'text-blue-500' : 'text-slate-400' }}">{{ __('Name, logo, language') }}</span>
+                </div>
+            </a>
+
+            <!-- Business -->
+            <a href="{{ route('settings.business') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.business*') || request()->routeIs('settings.services*') || request()->routeIs('settings.invoice-settings') ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.business*') || request()->routeIs('settings.services*') || request()->routeIs('settings.invoice-settings') ? 'bg-emerald-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.business*') || request()->routeIs('settings.services*') || request()->routeIs('settings.invoice-settings') ? 'text-emerald-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                     </svg>
-                    {{ __('Business Information') }}
-                </a>
-                <a href="{{ route('settings.invoice-settings') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.invoice-settings') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    {{ __('Invoice Settings') }}
-                </a>
-            </div>
-
-            <!-- Notifications (NEW) -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Notifications') }}</h2>
                 </div>
-                <a href="{{ route('settings.notifications') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.notifications') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                    {{ __('Notification Settings') }}
-                </a>
-            </div>
+                <div>
+                    <span class="block">{{ __('Business') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.business*') || request()->routeIs('settings.services*') || request()->routeIs('settings.invoice-settings') ? 'text-emerald-500' : 'text-slate-400' }}">{{ __('Company, invoicing, services') }}</span>
+                </div>
+            </a>
 
             <!-- Integrations -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Integrations') }}</h2>
+            <a href="{{ route('settings.integrations') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.integrations*') || request()->routeIs('settings.smartbill.*') || request()->routeIs('settings.clickup.*') ? 'bg-purple-50 text-purple-700 border border-purple-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.integrations*') || request()->routeIs('settings.smartbill.*') || request()->routeIs('settings.clickup.*') ? 'bg-purple-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.integrations*') || request()->routeIs('settings.smartbill.*') || request()->routeIs('settings.clickup.*') ? 'text-purple-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/>
+                    </svg>
                 </div>
-                <a href="{{ route('settings.smartbill.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.smartbill.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    {{ __('Smartbill Import') }}
-                </a>
-                <a href="{{ route('settings.clickup.index') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.clickup.*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
-                    </svg>
-                    {{ __('ClickUp Import') }}
-                </a>
-            </div>
-
-            <!-- Nomenclatoare -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Nomenclature') }}</h2>
+                <div>
+                    <span class="block">{{ __('Integrations') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.integrations*') || request()->routeIs('settings.smartbill.*') || request()->routeIs('settings.clickup.*') ? 'text-purple-500' : 'text-slate-400' }}">{{ __('SmartBill, ClickUp') }}</span>
                 </div>
+            </a>
 
-                <a href="{{ route('settings.client-statuses') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.client-statuses') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Client Statuses') }}</span>
-                </a>
-
-                <a href="{{ route('settings.domain-statuses') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.domain-statuses') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Domain Statuses') }}</span>
-                </a>
-
-                <a href="{{ route('settings.subscription-statuses') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.subscription-statuses') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Subscription Statuses') }}</span>
-                </a>
-
-                <a href="{{ route('settings.access-platforms') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.access-platforms') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Platform Categories') }}</span>
-                </a>
-
-                <a href="{{ route('settings.expense-categories') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.expense-categories') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Expense Categories') }}</span>
-                </a>
-
-                <a href="{{ route('settings.payment-methods') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.payment-methods') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Payment Methods') }}</span>
-                </a>
-
-                <a href="{{ route('settings.billing-cycles') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.billing-cycles') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Billing Cycles') }}</span>
-                </a>
-
-                <a href="{{ route('settings.domain-registrars') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.domain-registrars') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Domain Registrars') }}</span>
-                </a>
-
-                <a href="{{ route('settings.currencies') }}"
-                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors group {{ request()->routeIs('settings.currencies') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <span>{{ __('Currencies') }}</span>
-                </a>
-            </div>
-
-            <!-- Task Management -->
-            <div>
-                <div class="px-3 mb-2">
-                    <h2 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">{{ __('Task Management') }}</h2>
+            <!-- Nomenclature -->
+            <a href="{{ route('settings.nomenclature') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.nomenclature') || request()->routeIs('settings.client-statuses') || request()->routeIs('settings.domain-statuses') || request()->routeIs('settings.subscription-statuses') || request()->routeIs('settings.access-platforms') || request()->routeIs('settings.expense-categories') || request()->routeIs('settings.payment-methods') || request()->routeIs('settings.billing-cycles') || request()->routeIs('settings.domain-registrars') || request()->routeIs('settings.currencies') ? 'bg-amber-50 text-amber-700 border border-amber-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.nomenclature') || request()->routeIs('settings.client-statuses') || request()->routeIs('settings.domain-statuses') || request()->routeIs('settings.subscription-statuses') || request()->routeIs('settings.access-platforms') || request()->routeIs('settings.expense-categories') || request()->routeIs('settings.payment-methods') || request()->routeIs('settings.billing-cycles') || request()->routeIs('settings.domain-registrars') || request()->routeIs('settings.currencies') ? 'bg-amber-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.nomenclature') || request()->routeIs('settings.client-statuses') || request()->routeIs('settings.domain-statuses') || request()->routeIs('settings.subscription-statuses') || request()->routeIs('settings.access-platforms') || request()->routeIs('settings.expense-categories') || request()->routeIs('settings.payment-methods') || request()->routeIs('settings.billing-cycles') || request()->routeIs('settings.domain-registrars') || request()->routeIs('settings.currencies') ? 'text-amber-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                    </svg>
                 </div>
-                <a href="{{ route('settings.task-tags') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.task-tags*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                <div>
+                    <span class="block">{{ __('Nomenclature') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.nomenclature') || request()->routeIs('settings.client-statuses') || request()->routeIs('settings.domain-statuses') || request()->routeIs('settings.subscription-statuses') || request()->routeIs('settings.access-platforms') || request()->routeIs('settings.expense-categories') || request()->routeIs('settings.payment-methods') || request()->routeIs('settings.billing-cycles') || request()->routeIs('settings.domain-registrars') || request()->routeIs('settings.currencies') ? 'text-amber-500' : 'text-slate-400' }}">{{ __('Statuses, categories') }}</span>
+                </div>
+            </a>
+
+            <!-- Notifications -->
+            <a href="{{ route('settings.notifications') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.notifications*') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.notifications*') ? 'bg-rose-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.notifications*') ? 'text-rose-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
-                    {{ __('Task Tags') }}
-                </a>
-                <a href="{{ route('settings.task-statuses') }}"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.task-statuses*') ? 'bg-slate-100 text-slate-900' : 'text-slate-600 hover:bg-slate-50' }}">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </div>
+                <div>
+                    <span class="block">{{ __('Notifications') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.notifications*') ? 'text-rose-500' : 'text-slate-400' }}">{{ __('Alerts, reminders') }}</span>
+                </div>
+            </a>
+
+            <!-- Yearly Objectives -->
+            <a href="{{ route('settings.yearly-objectives') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.yearly-objectives') ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.yearly-objectives') ? 'bg-teal-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.yearly-objectives') ? 'text-teal-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
                     </svg>
-                    {{ __('Task Statuses') }}
-                </a>
-            </div>
+                </div>
+                <div>
+                    <span class="block">{{ __('Yearly Objectives') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.yearly-objectives') ? 'text-teal-500' : 'text-slate-400' }}">{{ __('Budget thresholds') }}</span>
+                </div>
+            </a>
         </nav>
     </div>
 </aside>

@@ -199,7 +199,6 @@
                                 <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
                                 <x-ui.sortable-header column="registrar" label="{{ __('Registrar') }}" />
                                 <x-ui.sortable-header column="expiry_date" label="{{ __('Expiry Date') }}" />
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
                                 <x-ui.sortable-header column="annual_cost" label="{{ __('Cost') }}" class="text-right" />
                                 <th class="h-12 px-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
@@ -233,18 +232,9 @@
                                         <div class="text-sm font-medium text-slate-900">
                                             {{ $domain->expiry_date->format('M d, Y') }}
                                         </div>
-                                        <div class="text-xs text-slate-500">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $domain->expiry_status === 'Expired' ? 'bg-red-100 text-red-700' : ($domain->expiry_status === 'Expiring' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600') }}">
                                             {{ $domain->expiry_text }}
-                                        </div>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        @if ($domain->expiry_status === 'Expired')
-                                            <x-ui.badge variant="destructive">{{ __('Expired') }}</x-ui.badge>
-                                        @elseif ($domain->expiry_status === 'Expiring')
-                                            <x-ui.badge variant="warning">{{ __('Expiring Soon') }}</x-ui.badge>
-                                        @else
-                                            <x-ui.badge variant="success">{{ __('Valid') }}</x-ui.badge>
-                                        @endif
+                                        </span>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
                                         <div class="text-sm text-slate-700">

@@ -22,6 +22,7 @@ class RevenueController extends Controller
         $month = $request->get('month', session('financial.filters.month', now()->month));
         $currency = $request->get('currency', session('financial.filters.currency'));
         $clientId = $request->get('client_id', session('financial.filters.client_id'));
+        $search = $request->get('search', '');
 
         // Store filter values in session for persistence
         session([
@@ -39,14 +40,22 @@ class RevenueController extends Controller
             $sortBy = 'occurred_at';
         }
 
+        $perPage = $request->get('per_page', 50);
+
         $revenues = FinancialRevenue::with(['client', 'files'])
             ->withCount('files')
             ->forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($clientId, fn($q) => $q->where('client_id', $clientId))
+            ->when($search, fn($q) => $q->where(function($query) use ($search) {
+                $query->where('document_name', 'like', "%{$search}%")
+                      ->orWhere('note', 'like', "%{$search}%")
+                      ->orWhereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            }))
             ->orderBy($sortBy, $sortDir)
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialRevenue::forYear($year)
@@ -71,6 +80,11 @@ class RevenueController extends Controller
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($clientId, fn($q) => $q->where('client_id', $clientId))
+            ->when($search, fn($q) => $q->where(function($query) use ($search) {
+                $query->where('document_name', 'like', "%{$search}%")
+                      ->orWhere('note', 'like', "%{$search}%")
+                      ->orWhereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            }))
             ->count();
 
         $clients = Client::orderBy('name')->get();
@@ -101,6 +115,7 @@ class RevenueController extends Controller
             'month',
             'currency',
             'clientId',
+            'search',
             'clients',
             'currencies',
             'availableYears',
@@ -242,7 +257,7 @@ class RevenueController extends Controller
         // Get year and month from revenue
         $year = $revenue->year;
         $month = $revenue->month;
-        $monthName = $this->getRomanianMonthName($month);
+        $monthName = romanian_month($month);
         $tip = 'Incasari'; // Revenue files folder
 
         // Generate file name: Factura + Document Name.ext (without date)
@@ -285,43 +300,4 @@ class RevenueController extends Controller
         ]);
     }
 
-    /**
-     * Get Romanian month name
-     */
-    private function getRomanianMonthName($monthNumber)
-    {
-        $months = [
-            1 => 'Ianuarie',
-            2 => 'Februarie',
-            3 => 'Martie',
-            4 => 'Aprilie',
-            5 => 'Mai',
-            6 => 'Iunie',
-            7 => 'Iulie',
-            8 => 'August',
-            9 => 'Septembrie',
-            10 => 'Octombrie',
-            11 => 'Noiembrie',
-            12 => 'Decembrie',
-        ];
-
-        return $months[$monthNumber] ?? 'Unknown';
-    }
-
-    /**
-     * Sanitize filename for storage
-     */
-    private function sanitizeFileName($filename)
-    {
-        // Remove accents
-        $filename = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $filename);
-        // Keep only alphanumeric, dash, underscore
-        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $filename);
-        // Remove consecutive dashes
-        $filename = preg_replace('/-+/', '-', $filename);
-        // Trim dashes from ends
-        $filename = trim($filename, '-');
-
-        return $filename ?: 'file';
-    }
 }

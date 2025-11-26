@@ -35,7 +35,8 @@
       "Bash(xargs ls:*)",
       "Bash(docker logs:*)",
       "Bash(awk:*)",
-      "Bash(php -l:*)"
+      "Bash(php -l:*)",
+      "Bash(sudo docker compose exec:*)"
     ],
     "deny": [],
     "ask": []

@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Subscription;
+use App\Models\SubscriptionLog;
 use App\Models\SettingOption;
+use App\Http\Requests\Subscription\StoreSubscriptionRequest;
+use App\Http\Requests\Subscription\UpdateSubscriptionRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
@@ -46,7 +49,9 @@ class SubscriptionController extends Controller
             $sortBy = 'next_renewal_date';
         }
 
-        $query->orderBy($sortBy, $sortDir);
+        // Always put paused and cancelled subscriptions at the end
+        $query->orderByRaw("CASE WHEN status = 'active' THEN 0 WHEN status = 'paused' THEN 1 ELSE 2 END ASC")
+              ->orderBy($sortBy, $sortDir);
 
         // Paginate
         $subscriptions = $query->paginate(15)->withQueryString();
@@ -65,8 +70,9 @@ class SubscriptionController extends Controller
         // Get nomenclature data for forms
         $billingCycles = SettingOption::billingCycles()->get();
         $statuses = SettingOption::subscriptionStatuses()->get();
+        $currencies = SettingOption::currencies()->get();
 
-        return view('subscriptions.index', compact('subscriptions', 'stats', 'activeFilters', 'billingCycles', 'statuses'));
+        return view('subscriptions.index', compact('subscriptions', 'stats', 'activeFilters', 'billingCycles', 'statuses', 'currencies'));
     }
 
     /**
@@ -76,42 +82,29 @@ class SubscriptionController extends Controller
     {
         $billingCycles = SettingOption::billingCycles()->get();
         $statuses = SettingOption::subscriptionStatuses()->get();
+        $currencies = SettingOption::currencies()->get();
 
-        return view('subscriptions.create', compact('billingCycles', 'statuses'));
+        return view('subscriptions.create', compact('billingCycles', 'statuses', 'currencies'));
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreSubscriptionRequest $request)
     {
-        $validBillingCycles = SettingOption::billingCycles()->pluck('value')->toArray();
-        $validStatuses = SettingOption::subscriptionStatuses()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'vendor_name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
-            'billing_cycle' => ['required', Rule::in($validBillingCycles)],
-            'custom_days' => 'nullable|integer|min:1|max:3650|required_if:billing_cycle,custom',
-            'start_date' => 'required|date',
-            'next_renewal_date' => 'required|date|after_or_equal:start_date',
-            'status' => ['required', Rule::in($validStatuses)],
-            'notes' => 'nullable|string',
-        ]);
-
-        $subscription = Subscription::create($validated);
+        $subscription = Subscription::create($request->validated());
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Subscription created successfully!',
+                'message' => __('Subscription created successfully.'),
                 'subscription' => $subscription,
             ], 201);
         }
 
         return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription created successfully.');
+            ->with('success', __('Subscription created successfully.'));
     }
 
     /**
@@ -131,52 +124,49 @@ class SubscriptionController extends Controller
     {
         $billingCycles = SettingOption::billingCycles()->get();
         $statuses = SettingOption::subscriptionStatuses()->get();
+        $currencies = SettingOption::currencies()->get();
 
-        return view('subscriptions.edit', compact('subscription', 'billingCycles', 'statuses'));
+        return view('subscriptions.edit', compact('subscription', 'billingCycles', 'statuses', 'currencies'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Subscription $subscription)
+    public function update(UpdateSubscriptionRequest $request, Subscription $subscription)
     {
-        $validBillingCycles = SettingOption::billingCycles()->pluck('value')->toArray();
-        $validStatuses = SettingOption::subscriptionStatuses()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'vendor_name' => 'required|string|max:255',
-            'price' => 'required|numeric|min:0|max:999999.99',
-            'billing_cycle' => ['required', Rule::in($validBillingCycles)],
-            'custom_days' => 'nullable|integer|min:1|max:3650|required_if:billing_cycle,custom',
-            'start_date' => 'required|date',
-            'next_renewal_date' => 'required|date|after_or_equal:start_date',
-            'status' => ['required', Rule::in($validStatuses)],
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Check if renewal date changed
         $renewalDateChanged = $subscription->next_renewal_date->format('Y-m-d') !== $validated['next_renewal_date'];
 
+        // Check if status changed
+        $oldStatus = $subscription->status;
+        $statusChanged = $oldStatus !== $validated['status'];
+
         if ($renewalDateChanged) {
             // Use the helper method to update and log
-            $oldDate = $subscription->next_renewal_date;
             $subscription->fill($validated);
-            $subscription->updateRenewalDate($validated['next_renewal_date'], 'Manual update via edit form');
+            $subscription->updateRenewalDate($validated['next_renewal_date'], __('Manual update from form'));
         } else {
             $subscription->update($validated);
+        }
+
+        // Log status change if applicable
+        if ($statusChanged) {
+            $this->logStatusChange($subscription, $oldStatus, $validated['status'], __('Status change from form'));
         }
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Subscription updated successfully!',
+                'message' => __('Subscription updated successfully.'),
                 'subscription' => $subscription->fresh(),
             ]);
         }
 
         return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription updated successfully.');
+            ->with('success', __('Subscription updated successfully.'));
     }
 
     /**
@@ -184,31 +174,23 @@ class SubscriptionController extends Controller
      */
     public function updateStatus(Request $request, Subscription $subscription)
     {
-        \Log::info('updateStatus called', [
-            'subscription_id' => $subscription->id,
-            'current_status' => $subscription->status,
-            'request_data' => $request->all(),
-        ]);
-
         // Validate against the actual ENUM values in the database
         $validated = $request->validate([
             'status' => ['required', Rule::in(['active', 'paused', 'cancelled'])],
         ]);
 
-        \Log::info('Validation passed', ['validated_data' => $validated]);
-
         $oldStatus = $subscription->status;
         $subscription->update($validated);
         $newStatus = $subscription->fresh()->status;
 
-        \Log::info('Status updated', [
-            'old_status' => $oldStatus,
-            'new_status' => $newStatus,
-        ]);
+        // Log status change
+        if ($oldStatus !== $newStatus) {
+            $this->logStatusChange($subscription, $oldStatus, $newStatus, __('Status change from list'));
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Subscription status updated successfully!',
+            'message' => __('Subscription status updated successfully.'),
             'old_status' => $oldStatus,
             'new_status' => $newStatus,
         ]);
@@ -222,7 +204,42 @@ class SubscriptionController extends Controller
         $subscription->delete();
 
         return redirect()->route('subscriptions.index')
-            ->with('success', 'Subscription deleted successfully.');
+            ->with('success', __('Subscription deleted successfully.'));
+    }
+
+    /**
+     * Manually renew a subscription (advance to next billing cycle)
+     */
+    public function renew(Request $request, Subscription $subscription)
+    {
+        // Only active subscriptions can be renewed
+        if ($subscription->status !== 'active') {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Only active subscriptions can be renewed.'),
+                ], 422);
+            }
+            return redirect()->route('subscriptions.index')
+                ->with('error', __('Only active subscriptions can be renewed.'));
+        }
+
+        $oldDate = $subscription->next_renewal_date;
+        $newDate = $subscription->calculateNextRenewal();
+
+        $subscription->updateRenewalDate($newDate, __('Manual renewal'));
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Subscription :name has been renewed.', ['name' => $subscription->vendor_name]),
+                'old_date' => $oldDate->format('Y-m-d'),
+                'new_date' => $newDate->format('Y-m-d'),
+            ]);
+        }
+
+        return redirect()->route('subscriptions.index')
+            ->with('success', __('Subscription :name has been renewed until :date.', ['name' => $subscription->vendor_name, 'date' => $newDate->translatedFormat('d M Y')]));
     }
 
     /**
@@ -243,10 +260,39 @@ class SubscriptionController extends Controller
 
         if ($updatedCount > 0) {
             return redirect()->route('subscriptions.index')
-                ->with('success', "Updated {$updatedCount} overdue " . ($updatedCount === 1 ? 'subscription' : 'subscriptions') . ".");
+                ->with('success', __('Updated :count overdue subscription(s).', ['count' => $updatedCount]));
         }
 
         return redirect()->route('subscriptions.index')
-            ->with('info', 'No overdue subscriptions to update.');
+            ->with('info', __('No overdue subscriptions to update.'));
+    }
+
+    /**
+     * Log status changes to the subscription_logs table
+     */
+    private function logStatusChange(Subscription $subscription, string $oldStatus, string $newStatus, string $reason): void
+    {
+        if (!class_exists(SubscriptionLog::class)) {
+            return;
+        }
+
+        $statusLabels = [
+            'active' => __('Active'),
+            'paused' => __('Paused'),
+            'cancelled' => __('Cancelled'),
+        ];
+
+        $oldLabel = $statusLabels[$oldStatus] ?? $oldStatus;
+        $newLabel = $statusLabels[$newStatus] ?? $newStatus;
+
+        SubscriptionLog::create([
+            'subscription_id' => $subscription->id,
+            'organization_id' => $subscription->user->organization_id ?? 1,
+            'old_renewal_date' => $subscription->next_renewal_date,
+            'new_renewal_date' => $subscription->next_renewal_date,
+            'change_reason' => "{$reason}: {$oldLabel} → {$newLabel}",
+            'changed_by_user_id' => auth()->id(),
+            'changed_at' => now(),
+        ]);
     }
 }

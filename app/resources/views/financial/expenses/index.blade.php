@@ -1,10 +1,20 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Cheltuieli</x-slot>
+    <x-slot name="pageTitle">{{ __('Expenses') }}</x-slot>
 
     <x-slot name="headerActions">
         <div class="flex items-center gap-3">
             <form method="GET" id="filterForm" class="flex items-center gap-3">
                 <input type="hidden" name="month" value="{{ $month }}">
+
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="{{ __('Caută...') }}"
+                        class="w-40 pl-8 pr-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-900 focus:border-slate-900"
+                        onchange="this.form.submit()">
+                    <svg class="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
 
                 <div class="flex items-center gap-2">
                     <label class="text-sm font-medium text-slate-700">{{ __('An') }}:</label>
@@ -24,13 +34,35 @@
                         @endforeach
                     </x-ui.select>
                 </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-slate-700">{{ __('Categorie') }}:</label>
+                    <x-ui.select name="category_id" onchange="this.form.submit()">
+                        <option value="">{{ __('Toate') }}</option>
+                        @foreach($categories as $category)
+                            @if($category->children->count() > 0)
+                                <optgroup label="{{ $category->name }}">
+                                    @foreach($category->children as $child)
+                                        <option value="{{ $child->id }}" {{ ($categoryId ?? '') == $child->id ? 'selected' : '' }}>
+                                            {{ $child->name }}
+                                        </option>
+                                    @endforeach
+                                </optgroup>
+                            @else
+                                <option value="{{ $category->id }}" {{ ($categoryId ?? '') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endif
+                        @endforeach
+                    </x-ui.select>
+                </div>
             </form>
 
             <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.expenses.create', ['month' => $month, 'year' => $year]) }}'">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                Adaugă cheltuială
+                {{ __('Add Expense') }}
             </x-ui.button>
         </div>
     </x-slot>
@@ -197,9 +229,9 @@
 
         <!-- Table -->
         <x-ui.card>
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                 <p class="text-sm text-slate-600">
-                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
+                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $expenses->firstItem() ?? 0 }}-{{ $expenses->lastItem() ?? 0 }}</span> {{ __('din') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
                     @if($month)
                         @php
                             $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
@@ -209,6 +241,11 @@
                         <span class="text-slate-500">{{ __('pentru anul') }} {{ $year }}</span>
                     @endif
                 </p>
+                @if($expenses->hasPages())
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-500">{{ __('Pagina') }} {{ $expenses->currentPage() }} {{ __('din') }} {{ $expenses->lastPage() }}</span>
+                    </div>
+                @endif
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full caption-bottom text-sm">
@@ -299,6 +336,13 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- Pagination --}}
+            @if($expenses->hasPages())
+                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                    {{ $expenses->links() }}
+                </div>
+            @endif
         </x-ui.card>
     </div>
 

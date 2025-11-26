@@ -42,9 +42,9 @@ class SmartbillService
             ]);
 
             if ($method === 'GET') {
-                $response = $request->get($url, $data ?? []);
+                $response = $request->timeout(15)->get($url, $data ?? []);
             } elseif ($method === 'POST') {
-                $response = $request->post($url, $data ?? []);
+                $response = $request->timeout(15)->post($url, $data ?? []);
             } else {
                 throw new Exception("Unsupported HTTP method: {$method}");
             }
@@ -161,7 +161,7 @@ class SmartbillService
             $response = Http::withHeaders([
                 'Authorization' => $this->getAuthHeader(),
                 'Accept' => 'application/octet-stream',
-            ])->get($url);
+            ])->timeout(30)->get($url);
 
             if (!$response->successful()) {
                 Log::error('Smartbill PDF Download Error', [

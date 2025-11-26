@@ -7,12 +7,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "bacon/bacon-qr-code": "^3.0",
         "consoletvs/charts": "6.*",
+        "jenssegers/agent": "^2.6",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "livewire/livewire": "^3.0",
         "maatwebsite/excel": "^3.1",
         "necenzurat/smartbill": "^1.1",
+        "pragmarx/google2fa-laravel": "^2.3",
         "spatie/eloquent-sortable": "^4.5"
     },
     "require-dev": {

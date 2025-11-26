@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Setari</x-slot>
+    <x-slot name="pageTitle">{{ __('Settings') }}</x-slot>
 
     @push('head')
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">

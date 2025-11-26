@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\EncryptsPasswords;
+use App\Traits\HasOrganization;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Crypt;
 
 class Credential extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, EncryptsPasswords, HasOrganization;
 
     protected $table = 'access_credentials';
 
@@ -51,76 +51,18 @@ class Credential extends Model
         'Other' => 'Other',
     ];
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Automatically set organization_id when creating
-        static::creating(function ($credential) {
-            if (auth()->check() && empty($credential->organization_id)) {
-                $credential->organization_id = auth()->user()->organization_id;
-            }
-        });
-
-        // Global scope to filter by organization
-        static::addGlobalScope('organization', function (Builder $builder) {
-            if (auth()->check() && auth()->user()->organization_id) {
-                $builder->where('organization_id', auth()->user()->organization_id);
-            }
-        });
-    }
+    // Organization scoping handled by HasOrganization trait
+    // Password encryption handled by EncryptsPasswords trait
 
     /**
      * Relationships
      */
-    public function organization()
-    {
-        return $this->belongsTo(Organization::class);
-    }
-
     public function client()
     {
         return $this->belongsTo(Client::class);
     }
 
-    /**
-     * Encrypt password before saving
-     */
-    public function setPasswordAttribute($value)
-    {
-        if (!empty($value)) {
-            $this->attributes['password'] = Crypt::encryptString($value);
-        }
-    }
-
-    /**
-     * Decrypt password when retrieving
-     */
-    public function getPasswordAttribute($value)
-    {
-        if (!empty($value)) {
-            try {
-                return Crypt::decryptString($value);
-            } catch (\Exception $e) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Get masked password (e.g., "***********")
-     */
-    public function getMaskedPasswordAttribute()
-    {
-        if (!empty($this->attributes['password'])) {
-            return str_repeat('•', 12);
-        }
-        return '';
-    }
+    // Password encryption/decryption handled by EncryptsPasswords trait
 
     /**
      * Search scope

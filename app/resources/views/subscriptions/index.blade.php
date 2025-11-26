@@ -206,10 +206,9 @@
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
                                 <x-ui.sortable-header column="vendor_name" label="{{ __('Vendor Name') }}" />
-                                <x-ui.sortable-header column="price" label="{{ __('Price (RON)') }}" class="text-right" />
+                                <x-ui.sortable-header column="price" label="{{ __('Price') }}" class="text-right" />
                                 <x-ui.sortable-header column="billing_cycle" label="{{ __('Billing Cycle') }}" />
-                                <x-ui.sortable-header column="next_renewal_date" label="{{ __('Next Renewal Date') }}" />
-                                <x-ui.sortable-header column="status" label="{{ __('Status') }}" />
+                                <x-ui.sortable-header column="next_renewal_date" label="{{ __('Expiry Date') }}" />
                                 <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
                             </tr>
                         </thead>
@@ -217,61 +216,50 @@
                             @foreach($subscriptions as $subscription)
                                 <x-ui.table-row>
                                     <x-ui.table-cell>
-                                        <a href="{{ route('subscriptions.show', $subscription) }}" class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors">
-                                            {{ $subscription->vendor_name }}
-                                        </a>
+                                        <div class="font-medium text-slate-900">
+                                            <a href="{{ route('subscriptions.show', $subscription) }}" class="hover:text-slate-600 transition-colors">
+                                                {{ $subscription->vendor_name }}
+                                            </a>
+                                        </div>
+                                        @if($subscription->status === 'active')
+                                            <div class="flex items-center gap-1 mt-1">
+                                                <button
+                                                    type="button"
+                                                    onclick="renewSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
+                                                    class="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
+                                                    title="{{ __('Mark as renewed') }}">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                    </svg>
+                                                    {{ __('Renew') }}
+                                                </button>
+                                            </div>
+                                        @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
-                                        <div class="text-sm font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} <span class="text-slate-500 font-normal">RON</span></div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} <span class="text-slate-500 font-normal">{{ $subscription->currency ?? 'RON' }}</span></div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="text-sm text-slate-700">
-                                            {{ ucfirst($subscription->billing_cycle) }}
+                                            {{ $subscription->billing_cycle_label }}
                                             @if($subscription->billing_cycle === 'custom')
                                                 <span class="text-xs text-slate-500">({{ $subscription->custom_days }}d)</span>
                                             @endif
                                         </div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
-                                        <div class="text-sm font-medium text-slate-900">{{ $subscription->next_renewal_date->format('M d, Y') }}</div>
-                                        @php
-                                            $renewalBadgeVariant = 'default';
-                                            if (str_contains($subscription->renewal_badge_color, 'red')) {
-                                                $renewalBadgeVariant = 'destructive';
-                                            } elseif (str_contains($subscription->renewal_badge_color, 'yellow')) {
-                                                $renewalBadgeVariant = 'warning';
-                                            } elseif (str_contains($subscription->renewal_badge_color, 'green')) {
-                                                $renewalBadgeVariant = 'success';
-                                            }
-                                        @endphp
-                                        <x-ui.badge variant="{{ $renewalBadgeVariant }}" class="mt-1">
-                                            {{ $subscription->renewal_text }}
-                                        </x-ui.badge>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        <div x-data="{ editing: false, status: '{{ $subscription->status }}' }">
-                                            <!-- Display Mode -->
-                                            <div x-show="!editing"
-                                                 @click="editing = true"
-                                                 class="cursor-pointer inline-block"
-                                                 title="Click pentru a schimba statusul">
-                                                <x-subscription-status-badge :status="$subscription->status" />
+                                        @if($subscription->status === 'paused')
+                                            <x-ui.badge variant="default">{{ __('Paused') }}</x-ui.badge>
+                                        @elseif($subscription->status === 'cancelled')
+                                            <x-ui.badge variant="destructive">{{ __('Cancelled') }}</x-ui.badge>
+                                        @else
+                                            <div class="text-sm font-medium text-slate-900">
+                                                {{ $subscription->next_renewal_date->translatedFormat('d M Y') }}
                                             </div>
-
-                                            <!-- Edit Mode -->
-                                            <div x-show="editing" x-cloak class="inline-block">
-                                                <select
-                                                    x-model="status"
-                                                    @change="updateSubscriptionStatus({{ $subscription->id }}, status); editing = false"
-                                                    @blur="editing = false"
-                                                    class="text-xs px-2 py-1 rounded border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                                                    x-init="$nextTick(() => { if (editing) $el.focus() })">
-                                                    <option value="active" {{ $subscription->status == 'active' ? 'selected' : '' }}>Activă</option>
-                                                    <option value="paused" {{ $subscription->status == 'paused' ? 'selected' : '' }}>Suspendată</option>
-                                                    <option value="cancelled" {{ $subscription->status == 'cancelled' ? 'selected' : '' }}>Anulată</option>
-                                                </select>
-                                            </div>
-                                        </div>
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600')) }}">
+                                                {{ $subscription->renewal_text }}
+                                            </span>
+                                        @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
                                         <x-table-actions
@@ -300,20 +288,21 @@
     <x-toast />
 
     <script>
-        function updateSubscriptionStatus(subscriptionId, status) {
-            console.log('updateSubscriptionStatus called', { subscriptionId, status });
+        function renewSubscription(subscriptionId, vendorName) {
+            const confirmMsg = `{{ __('Confirm renewal of subscription') }} "${vendorName}"?\n\n{{ __('The next renewal date will be advanced according to the billing cycle.') }}`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
 
-            fetch(`/subscriptions/${subscriptionId}/status`, {
-                method: 'PATCH',
+            fetch(`/subscriptions/${subscriptionId}/renew`, {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}',
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ status: status })
             })
             .then(response => {
-                console.log('Response received', { status: response.status, ok: response.ok });
                 if (!response.ok) {
                     return response.json().then(err => {
                         throw new Error(err.message || `HTTP error! status: ${response.status}`);
@@ -322,18 +311,14 @@
                 return response.json();
             })
             .then(data => {
-                console.log('Response data:', data);
                 if (data.success) {
-                    console.log('Status updated successfully, reloading page');
-                    // Reload the page to show updated status badge with correct colors
                     window.location.reload();
                 } else {
-                    alert('Eroare la actualizarea statusului. Încercați din nou.');
+                    alert(data.message || '{{ __('Error renewing subscription.') }}');
                 }
             })
             .catch(error => {
-                console.error('Error updating status:', error);
-                alert('Eroare la actualizarea statusului: ' + error.message);
+                alert('{{ __('Error renewing subscription:') }} ' + error.message);
             });
         }
     </script>

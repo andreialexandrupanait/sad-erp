@@ -12,20 +12,20 @@
 
                 <!-- Account/Application Name (Required) -->
                 <div class="sm:col-span-6 field-wrapper">
-                    <x-ui.label for="nume_cont_aplicatie">
+                    <x-ui.label for="account_name">
                         {{ __('Account / Application Name') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
                         <x-ui.input
                             type="text"
-                            name="nume_cont_aplicatie"
-                            id="nume_cont_aplicatie"
+                            name="account_name"
+                            id="account_name"
                             required
-                            value="{{ old('nume_cont_aplicatie', $account->nume_cont_aplicatie ?? '') }}"
+                            value="{{ old('account_name', $account->account_name ?? '') }}"
                             placeholder="{{ __('Account or application name placeholder') }}"
                         />
                     </div>
-                    @error('nume_cont_aplicatie')
+                    @error('account_name')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                     @enderror
                 </div>
@@ -101,15 +101,15 @@
                         <div class="flex h-6 items-center">
                             <input
                                 type="checkbox"
-                                name="accesibil_echipei"
-                                id="accesibil_echipei"
+                                name="team_accessible"
+                                id="team_accessible"
                                 value="1"
-                                {{ old('accesibil_echipei', $account->accesibil_echipei ?? false) ? 'checked' : '' }}
+                                {{ old('team_accessible', $account->team_accessible ?? false) ? 'checked' : '' }}
                                 class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                             >
                         </div>
                         <div class="ml-3 text-sm leading-6">
-                            <label for="accesibil_echipei" class="font-medium text-slate-900">{{ __('Make accessible to team') }}</label>
+                            <label for="team_accessible" class="font-medium text-slate-900">{{ __('Make accessible to team') }}</label>
                             <p class="text-slate-500">{{ __('Allow all team members to view this account') }}</p>
                         </div>
                     </div>

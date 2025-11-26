@@ -1,10 +1,20 @@
 <x-app-layout>
-    <x-slot name="pageTitle">Venituri</x-slot>
+    <x-slot name="pageTitle">{{ __('Revenues') }}</x-slot>
 
     <x-slot name="headerActions">
         <div class="flex items-center gap-3">
             <form method="GET" id="filterForm" class="flex items-center gap-3">
                 <input type="hidden" name="month" value="{{ $month }}">
+
+                <!-- Search -->
+                <div class="relative">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="{{ __('Caută...') }}"
+                        class="w-40 pl-8 pr-3 py-1.5 text-sm border border-slate-300 rounded-lg focus:ring-1 focus:ring-slate-900 focus:border-slate-900"
+                        onchange="this.form.submit()">
+                    <svg class="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
 
                 <div class="flex items-center gap-2">
                     <label class="text-sm font-medium text-slate-700">{{ __('An') }}:</label>
@@ -30,7 +40,7 @@
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>
-                Adaugă venit
+                {{ __('Add Revenue') }}
             </x-ui.button>
         </div>
     </x-slot>
@@ -197,9 +207,9 @@
 
         <!-- Table -->
         <x-ui.card>
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
                 <p class="text-sm text-slate-600">
-                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
+                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $revenues->firstItem() ?? 0 }}-{{ $revenues->lastItem() ?? 0 }}</span> {{ __('din') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
                     @if($month)
                         @php
                             $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
@@ -209,6 +219,11 @@
                         <span class="text-slate-500">{{ __('pentru anul') }} {{ $year }}</span>
                     @endif
                 </p>
+                @if($revenues->hasPages())
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-slate-500">{{ __('Pagina') }} {{ $revenues->currentPage() }} {{ __('din') }} {{ $revenues->lastPage() }}</span>
+                    </div>
+                @endif
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full caption-bottom text-sm">
@@ -293,6 +308,13 @@
                     </tbody>
                 </table>
             </div>
+
+            {{-- Pagination --}}
+            @if($revenues->hasPages())
+                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
+                    {{ $revenues->links() }}
+                </div>
+            @endif
         </x-ui.card>
     </div>
 

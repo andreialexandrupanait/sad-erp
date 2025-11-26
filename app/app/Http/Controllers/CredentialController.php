@@ -86,13 +86,13 @@ class CredentialController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Credential created successfully!',
+                'message' => __('Credential created successfully.'),
                 'credential' => $credential->load('client'),
             ], 201);
         }
 
         return redirect()->route('credentials.show', $credential)
-            ->with('success', 'Credential created successfully.');
+            ->with('success', __('Credential created successfully.'));
     }
 
     /**
@@ -143,13 +143,13 @@ class CredentialController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Credential updated successfully!',
+                'message' => __('Credential updated successfully.'),
                 'credential' => $credential->fresh()->load('client'),
             ]);
         }
 
         return redirect()->route('credentials.show', $credential)
-            ->with('success', 'Credential updated successfully.');
+            ->with('success', __('Credential updated successfully.'));
     }
 
     /**
@@ -160,7 +160,7 @@ class CredentialController extends Controller
         $credential->delete();
 
         return redirect()->route('credentials.index')
-            ->with('success', 'Credential deleted successfully.');
+            ->with('success', __('Credential deleted successfully.'));
     }
 
     /**
@@ -168,8 +168,19 @@ class CredentialController extends Controller
      */
     public function revealPassword(Credential $credential)
     {
-        // Track access
+        // Track access in database
         $credential->trackAccess();
+
+        // Log the access for audit purposes
+        \Illuminate\Support\Facades\Log::info('Password revealed for credential', [
+            'credential_id' => $credential->id,
+            'platform' => $credential->platform,
+            'client_id' => $credential->client_id,
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()->email,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+        ]);
 
         return response()->json([
             'password' => $credential->password,

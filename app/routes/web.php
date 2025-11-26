@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\SessionController;
+use App\Http\Controllers\ServiceController;
+use App\Http\Controllers\Profile\UserServiceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ImportExportController;
@@ -49,6 +53,25 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Two-Factor Authentication
+    Route::get("/profile/two-factor", [TwoFactorController::class, "show"])->name("profile.two-factor");
+    Route::post("/profile/two-factor/enable", [TwoFactorController::class, "enable"])->name("profile.two-factor.enable");
+    Route::post("/profile/two-factor/confirm", [TwoFactorController::class, "confirm"])->name("profile.two-factor.confirm");
+    Route::post("/profile/two-factor/disable", [TwoFactorController::class, "disable"])->name("profile.two-factor.disable");
+    Route::post("/profile/two-factor/recovery-codes", [TwoFactorController::class, "showRecoveryCodes"])->name("profile.two-factor.recovery-codes");
+    Route::post("/profile/two-factor/regenerate-codes", [TwoFactorController::class, "regenerateRecoveryCodes"])->name("profile.two-factor.regenerate-codes");
+
+    // Session Management
+    Route::get("/profile/sessions", [SessionController::class, "index"])->name("profile.sessions");
+    Route::delete("/profile/sessions/{session}", [SessionController::class, "destroy"])->name("profile.sessions.destroy");
+    Route::delete("/profile/sessions", [SessionController::class, "destroyOthers"])->name("profile.sessions.destroy-others");
+
+    // User Services (rates per service)
+    Route::get("/profile/services", [UserServiceController::class, "index"])->name("profile.services");
+    Route::post("/profile/services", [UserServiceController::class, "store"])->name("profile.services.store");
+    Route::put("/profile/services/{userService}", [UserServiceController::class, "update"])->name("profile.services.update");
+    Route::delete("/profile/services/{userService}", [UserServiceController::class, "destroy"])->name("profile.services.destroy");
+
     // Centralized Import/Export System
     Route::get('import-export', [ImportExportController::class, 'index'])->name('import-export.index');
     Route::get('import-export/{module}', [ImportExportController::class, 'showImportForm'])->name('import-export.import.form');
@@ -63,9 +86,15 @@ Route::middleware('auth')->group(function () {
 
     // Credentials Module
     Route::resource('credentials', CredentialController::class);
+    Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
+        ->middleware('throttle:6,1') // 6 requests per minute
+        ->name('credentials.reveal-password');
 
     // Internal Accounts Module (Conturi)
     Route::resource('internal-accounts', InternalAccountController::class);
+    Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])
+        ->middleware('throttle:6,1') // 6 requests per minute
+        ->name('internal-accounts.reveal-password');
 
     // Domains Module (Domenii)
     Route::resource('domains', DomainController::class);
@@ -73,6 +102,7 @@ Route::middleware('auth')->group(function () {
     // Subscriptions Module (Abonamente)
     Route::resource('subscriptions', SubscriptionController::class);
     Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
+    Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
     Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
 
     // Task Management Module
@@ -172,16 +202,32 @@ Route::middleware('auth')->group(function () {
     // Task Services Management
     Route::resource('task-services', TaskServiceController::class);
 
-    // Settings Module
+    // Settings Module - Main Hub
     Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    // Settings - Application
+    Route::get('settings/application', [SettingsController::class, 'application'])->name('settings.application');
     Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
 
-    // Business Settings (NEW)
+    // Settings - Business Hub
+    Route::get('settings/business', [SettingsController::class, 'business'])->name('settings.business');
     Route::get('settings/business-info', [SettingsController::class, 'businessInfo'])->name('settings.business-info');
     Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
+
+    // Settings - Integrations Hub
+    Route::get('settings/integrations', [SettingsController::class, 'integrations'])->name('settings.integrations');
+
+    // Settings - Nomenclature Hub
+    Route::get('settings/nomenclature', [SettingsController::class, 'nomenclatureIndex'])->name('settings.nomenclature');
+
+    // Settings - Notifications
     Route::get('settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
     Route::post('settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
     Route::post('settings/notifications/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.notifications.test-email');
+
+    // Settings - Yearly Objectives (Budget Thresholds)
+    Route::get('settings/yearly-objectives', [SettingsController::class, 'yearlyObjectives'])->name('settings.yearly-objectives');
+    Route::post('settings/yearly-objectives', [SettingsController::class, 'updateYearlyObjectives'])->name('settings.yearly-objectives.update');
 
     // Smartbill Integration Settings
     Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
@@ -204,6 +250,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/import/start', [\App\Http\Controllers\Settings\ClickUpController::class, 'startImport'])->name('import.start');
         Route::get('/sync/{syncId}/status', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncStatus'])->name('sync.status');
         Route::get('/sync/{syncId}/progress', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncProgress'])->name('sync.progress');
+        Route::post('/sync/{syncId}/cancel', [\App\Http\Controllers\Settings\ClickUpController::class, 'cancelSync'])->name('sync.cancel');
+        Route::delete('/sync/{syncId}', [\App\Http\Controllers\Settings\ClickUpController::class, 'deleteSync'])->name('sync.delete');
+        Route::post('/sync/{syncId}/retry', [\App\Http\Controllers\Settings\ClickUpController::class, 'retrySync'])->name('sync.retry');
     });
 
     // Task Tags Settings
@@ -237,17 +286,31 @@ Route::middleware('auth')->group(function () {
     Route::delete('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'destroy'])->name('settings.nomenclature.destroy');
     Route::post('settings/nomenclature/reorder', [\App\Http\Controllers\NomenclatureController::class, 'reorder'])->name('settings.nomenclature.reorder');
 
+    // Services Management (organization-level)
+    Route::get("settings/services", [ServiceController::class, "index"])->name("settings.services");
+    Route::post("settings/services", [ServiceController::class, "store"])->name("settings.services.store");
+    Route::put("settings/services/{service}", [ServiceController::class, "update"])->name("settings.services.update");
+    Route::delete("settings/services/{service}", [ServiceController::class, "destroy"])->name("settings.services.destroy");
+    Route::post("settings/services/reorder", [ServiceController::class, "reorder"])->name("settings.services.reorder");
+
     // Financial Module
     Route::prefix('financial')->name('financial.')->group(function () {
         // Dashboard
         Route::get('/', [FinancialDashboardController::class, 'index'])->name('dashboard');
-        Route::get('/history/{year}', [FinancialDashboardController::class, 'yearlyReport'])->name('yearly-report');
+        Route::post('/budget-thresholds', [FinancialDashboardController::class, 'saveBudgetThresholds'])->name('budget-thresholds.save');
+        Route::get('/cashflow', [FinancialDashboardController::class, 'cashflow'])->name('cashflow');
+        Route::get('/history', [FinancialDashboardController::class, 'yearlyReport'])->name('yearly-report');
+        Route::get('/history/export', [FinancialDashboardController::class, 'exportAllYearsCsv'])->name('history.export');
         Route::get('/export/{year}', [FinancialDashboardController::class, 'exportCsv'])->name('export');
 
         // Revenues
         Route::get('revenues/import', [ImportController::class, 'showRevenueImportForm'])->name('revenues.import');
         Route::post('revenues/import', [ImportController::class, 'importRevenues'])->name('revenues.import.post');
+        Route::post('revenues/import/preview', [ImportController::class, 'previewRevenues'])->name('revenues.import.preview');
         Route::get('revenues/import/template', [ImportController::class, 'downloadRevenueTemplate'])->name('revenues.import.template');
+        Route::get('revenues/import/{importId}/status', [ImportController::class, 'getImportStatus'])->name('revenues.import.status');
+        Route::post('revenues/import/{importId}/cancel', [ImportController::class, 'cancelImport'])->name('revenues.import.cancel');
+        Route::delete('revenues/import/{importId}', [ImportController::class, 'deleteImport'])->name('revenues.import.delete');
         Route::resource('revenues', RevenueController::class)->parameters(['revenues' => 'revenue']);
 
         // Expenses
@@ -255,6 +318,7 @@ Route::middleware('auth')->group(function () {
         Route::post('expenses/import', [ImportController::class, 'importExpenses'])->name('expenses.import.post');
         Route::get('expenses/import/template', [ImportController::class, 'downloadExpenseTemplate'])->name('expenses.import.template');
         Route::resource('expenses', ExpenseController::class)->parameters(['expenses' => 'expense']);
+
 
         // Files
         Route::get('files', [FinancialFileController::class, 'index'])->name('files.index');

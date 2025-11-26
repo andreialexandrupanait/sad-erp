@@ -128,11 +128,11 @@
                     <div class="mt-2">
                         <x-ui.select name="status" id="status" required>
                             @php
-                                $defaultStatus = $statuses->first()?->value ?? 'activ';
+                                $defaultStatus = $statuses->first()?->value ?? 'Active';
                             @endphp
                             @foreach($statuses as $status)
                                 <option value="{{ $status->value }}" {{ old('status', $domain->status ?? $defaultStatus) == $status->value ? 'selected' : '' }}>
-                                    {{ $status->label }}
+                                    {{ __($status->label) }}
                                 </option>
                             @endforeach
                         </x-ui.select>

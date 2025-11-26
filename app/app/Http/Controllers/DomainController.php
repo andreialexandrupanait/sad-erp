@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Domain;
 use App\Models\Client;
+use App\Models\SettingOption;
+use App\Http\Requests\Domain\StoreDomainRequest;
+use App\Http\Requests\Domain\UpdateDomainRequest;
 use Illuminate\Http\Request;
 
 class DomainController extends Controller
@@ -73,8 +76,8 @@ class DomainController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = \App\Models\SettingOption::domainRegistrars()->get();
-        $statuses = \App\Models\SettingOption::domainStatuses()->get();
+        $registrars = SettingOption::domainRegistrars()->get();
+        $statuses = SettingOption::domainStatuses()->get();
 
         return view('domains.create', compact('clients', 'registrars', 'statuses'));
     }
@@ -82,42 +85,21 @@ class DomainController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreDomainRequest $request)
     {
-        // Get valid status values from database
-        $validStatuses = \App\Models\SettingOption::domainStatuses()->pluck('value')->implode(',');
-
-        $validated = $request->validate([
-            'domain_name' => 'required|string|max:255|unique:domains,domain_name',
-            'client_id' => 'nullable|exists:clients,id',
-            'registrar' => 'nullable|string|max:255',
-            'status' => 'required|in:' . $validStatuses,
-            'registration_date' => 'nullable|date',
-            'expiry_date' => 'required|date',
-            'annual_cost' => 'nullable|numeric|min:0',
-            'auto_renew' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Ensure boolean value
-        $validated['auto_renew'] = $request->has('auto_renew');
-
-        // Normalize domain name
-        $validated['domain_name'] = strtolower(trim($validated['domain_name']));
-
-        $domain = Domain::create($validated);
+        $domain = Domain::create($request->validated());
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Domain created successfully!',
+                'message' => __('Domain created successfully.'),
                 'domain' => $domain->load('client'),
             ], 201);
         }
 
         return redirect()->route('domains.show', $domain)
-            ->with('success', 'Domain added successfully.');
+            ->with('success', __('Domain created successfully.'));
     }
 
     /**
@@ -136,8 +118,8 @@ class DomainController extends Controller
     public function edit(Domain $domain)
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = \App\Models\SettingOption::domainRegistrars()->get();
-        $statuses = \App\Models\SettingOption::domainStatuses()->get();
+        $registrars = SettingOption::domainRegistrars()->get();
+        $statuses = SettingOption::domainStatuses()->get();
 
         return view('domains.edit', compact('domain', 'clients', 'registrars', 'statuses'));
     }
@@ -145,42 +127,21 @@ class DomainController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Domain $domain)
+    public function update(UpdateDomainRequest $request, Domain $domain)
     {
-        // Get valid status values from database
-        $validStatuses = \App\Models\SettingOption::domainStatuses()->pluck('value')->implode(',');
-
-        $validated = $request->validate([
-            'domain_name' => 'required|string|max:255|unique:domains,domain_name,' . $domain->id,
-            'client_id' => 'nullable|exists:clients,id',
-            'registrar' => 'nullable|string|max:255',
-            'status' => 'required|in:' . $validStatuses,
-            'registration_date' => 'nullable|date',
-            'expiry_date' => 'required|date',
-            'annual_cost' => 'nullable|numeric|min:0',
-            'auto_renew' => 'boolean',
-            'notes' => 'nullable|string',
-        ]);
-
-        // Ensure boolean value
-        $validated['auto_renew'] = $request->has('auto_renew');
-
-        // Normalize domain name
-        $validated['domain_name'] = strtolower(trim($validated['domain_name']));
-
-        $domain->update($validated);
+        $domain->update($request->validated());
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Domain updated successfully!',
-                'domain' => $domain->fresh()->load('client'),
+                'message' => __('Domain updated successfully.'),
+                'domain' => $domain->load('client'),
             ]);
         }
 
         return redirect()->route('domains.show', $domain)
-            ->with('success', 'Domain updated successfully.');
+            ->with('success', __('Domain updated successfully.'));
     }
 
     /**
@@ -191,6 +152,6 @@ class DomainController extends Controller
         $domain->delete();
 
         return redirect()->route('domains.index')
-            ->with('success', 'Domain deleted successfully.');
+            ->with('success', __('Domain deleted successfully.'));
     }
 }

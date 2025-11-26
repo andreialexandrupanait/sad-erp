@@ -15,17 +15,17 @@ class BillingCyclesSeeder extends Seeder
         $cycles = [
             [
                 'label' => 'Saptamanal',
-                'value' => 'saptamanal',
+                'value' => 'weekly',
                 'sort_order' => 1,
             ],
             [
                 'label' => 'Lunar',
-                'value' => 'lunar',
+                'value' => 'monthly',
                 'sort_order' => 2,
             ],
             [
                 'label' => 'Anual',
-                'value' => 'anual',
+                'value' => 'annual',
                 'sort_order' => 3,
             ],
             [

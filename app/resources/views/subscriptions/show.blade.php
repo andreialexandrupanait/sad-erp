@@ -18,9 +18,12 @@
 
     <div class="p-6 space-y-6">
         @if (session('success'))
-            <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                <span>{{ session('success') }}</span>
-            </div>
+            <x-ui.alert variant="success">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <div>{{ session('success') }}</div>
+            </x-ui.alert>
         @endif
 
         <!-- Subscription Overview Card -->
@@ -30,8 +33,8 @@
                     <!-- Price -->
                     <div>
                         <h3 class="text-sm font-medium text-slate-600">{{ __('Price') }}</h3>
-                        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} RON</p>
-                        <p class="text-xs text-slate-500 mt-1">{{ ucfirst($subscription->billing_cycle) }}</p>
+                        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} {{ $subscription->currency ?? 'RON' }}</p>
+                        <p class="text-xs text-slate-500 mt-1">{{ $subscription->billing_cycle_label }}</p>
                     </div>
 
                     <!-- Status -->
@@ -52,7 +55,7 @@
                     <div>
                         <h3 class="text-sm font-medium text-slate-600">{{ $subscription->status === 'active' ? __('Next Renewal') : __('Status') }}</h3>
                         @if($subscription->status === 'active')
-                            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $subscription->next_renewal_date->format('d M Y') }}</p>
+                            <p class="mt-2 text-lg font-semibold text-slate-900">{{ $subscription->next_renewal_date->translatedFormat('d M Y') }}</p>
                         @endif
                         <p class="mt-{{ $subscription->status === 'active' ? '1' : '2' }}">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_badge_color }}">
@@ -73,12 +76,12 @@
                             </div>
                             <div class="flex items-start">
                                 <dt class="text-sm text-slate-600 w-32">{{ __('Start Date') }}:</dt>
-                                <dd class="text-sm text-slate-900">{{ $subscription->start_date->format('d M Y') }}</dd>
+                                <dd class="text-sm text-slate-900">{{ $subscription->start_date->translatedFormat('d M Y') }}</dd>
                             </div>
                             <div class="flex items-start">
                                 <dt class="text-sm text-slate-600 w-32">{{ __('Billing Cycle') }}:</dt>
                                 <dd class="text-sm text-slate-900">
-                                    {{ ucfirst($subscription->billing_cycle) }}
+                                    {{ $subscription->billing_cycle_label }}
                                     @if($subscription->billing_cycle === 'custom' && $subscription->custom_days)
                                         <span class="text-xs text-slate-500">({{ $subscription->custom_days }} {{ __('days') }})</span>
                                     @endif
@@ -131,8 +134,8 @@
 
                     <div class="md:col-span-2 pt-4 border-t border-slate-200">
                         <div class="flex justify-between text-xs text-slate-500">
-                            <span>{{ __('Created') }}: {{ $subscription->created_at->format('d M Y H:i') }}</span>
-                            <span>{{ __('Last Updated') }}: {{ $subscription->updated_at->format('d M Y H:i') }}</span>
+                            <span>{{ __('Created') }}: {{ $subscription->created_at->translatedFormat('d M Y H:i') }}</span>
+                            <span>{{ __('Last Updated') }}: {{ $subscription->updated_at->translatedFormat('d M Y H:i') }}</span>
                         </div>
                     </div>
                 </div>
@@ -158,9 +161,9 @@
                             <tbody class="bg-white divide-y divide-slate-200">
                                 @foreach($subscription->logs as $log)
                                     <x-ui.table-row>
-                                        <x-ui.table-cell>{{ $log->changed_at->format('d M Y H:i') }}</x-ui.table-cell>
-                                        <x-ui.table-cell>{{ $log->old_renewal_date->format('d M Y') }}</x-ui.table-cell>
-                                        <x-ui.table-cell>{{ $log->new_renewal_date->format('d M Y') }}</x-ui.table-cell>
+                                        <x-ui.table-cell>{{ $log->changed_at->translatedFormat('d M Y H:i') }}</x-ui.table-cell>
+                                        <x-ui.table-cell>{{ $log->old_renewal_date->translatedFormat('d M Y') }}</x-ui.table-cell>
+                                        <x-ui.table-cell>{{ $log->new_renewal_date->translatedFormat('d M Y') }}</x-ui.table-cell>
                                         <x-ui.table-cell>{{ $log->change_reason }}</x-ui.table-cell>
                                         <x-ui.table-cell>
                                             @if($log->changedBy)

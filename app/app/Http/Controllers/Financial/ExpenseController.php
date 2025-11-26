@@ -21,6 +21,7 @@ class ExpenseController extends Controller
         $month = $request->get('month', session('financial.filters.month', now()->month));
         $currency = $request->get('currency', session('financial.filters.currency'));
         $categoryId = $request->get('category_id', session('financial.filters.category_id'));
+        $search = $request->get('search', '');
 
         // Store filter values in session for persistence
         session([
@@ -38,14 +39,21 @@ class ExpenseController extends Controller
             $sortBy = 'occurred_at';
         }
 
+        $perPage = $request->get('per_page', 50);
+
         $expenses = FinancialExpense::with(['category', 'files'])
             ->withCount('files')
             ->forYear($year)
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->when($search, fn($q) => $q->where(function($query) use ($search) {
+                $query->where('document_name', 'like', "%{$search}%")
+                      ->orWhere('note', 'like', "%{$search}%");
+            }))
             ->orderBy($sortBy, $sortDir)
-            ->get();
+            ->paginate($perPage)
+            ->withQueryString();
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
         $filteredTotals = FinancialExpense::forYear($year)
@@ -70,6 +78,10 @@ class ExpenseController extends Controller
             ->when($month, fn($q) => $q->where('month', $month))
             ->when($currency, fn($q) => $q->where('currency', $currency))
             ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
+            ->when($search, fn($q) => $q->where(function($query) use ($search) {
+                $query->where('document_name', 'like', "%{$search}%")
+                      ->orWhere('note', 'like', "%{$search}%");
+            }))
             ->count();
 
         // Category breakdown for current filter
@@ -113,6 +125,7 @@ class ExpenseController extends Controller
             'month',
             'currency',
             'categoryId',
+            'search',
             'categories',
             'currencies',
             'availableYears',
@@ -254,7 +267,7 @@ class ExpenseController extends Controller
         // Get year and month from expense
         $year = $expense->year;
         $month = $expense->month;
-        $monthName = $this->getRomanianMonthName($month);
+        $monthName = romanian_month($month);
         $tip = 'Plati'; // Expense files folder
 
         // Generate file name: DD.MM - Document Name.ext
@@ -299,43 +312,4 @@ class ExpenseController extends Controller
         ]);
     }
 
-    /**
-     * Get Romanian month name
-     */
-    private function getRomanianMonthName($monthNumber)
-    {
-        $months = [
-            1 => 'Ianuarie',
-            2 => 'Februarie',
-            3 => 'Martie',
-            4 => 'Aprilie',
-            5 => 'Mai',
-            6 => 'Iunie',
-            7 => 'Iulie',
-            8 => 'August',
-            9 => 'Septembrie',
-            10 => 'Octombrie',
-            11 => 'Noiembrie',
-            12 => 'Decembrie',
-        ];
-
-        return $months[$monthNumber] ?? 'Unknown';
-    }
-
-    /**
-     * Sanitize filename for storage
-     */
-    private function sanitizeFileName($filename)
-    {
-        // Remove accents
-        $filename = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $filename);
-        // Keep only alphanumeric, dash, underscore
-        $filename = preg_replace('/[^a-zA-Z0-9_-]/', '-', $filename);
-        // Remove consecutive dashes
-        $filename = preg_replace('/-+/', '-', $filename);
-        // Trim dashes from ends
-        $filename = trim($filename, '-');
-
-        return $filename ?: 'file';
-    }
 }

@@ -171,7 +171,7 @@ class FileController extends Controller
         $uploadedFiles = [];
 
         // Get Romanian month name for folder structure
-        $monthName = $this->getRomanianMonthName($month);
+        $monthName = romanian_month($month);
 
         // Process each uploaded file
         foreach ($request->file('files') as $file) {
@@ -193,7 +193,7 @@ class FileController extends Controller
 
             // If not a bank statement or rename failed, use standard naming
             if (!$newFileName) {
-                $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
+                $sanitizedName = sanitize_filename(pathinfo($originalName, PATHINFO_FILENAME));
                 $uniqueId = Str::uuid()->toString();
                 $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
             }
@@ -348,7 +348,7 @@ class FileController extends Controller
         }
 
         // Get Romanian month name for folder structure
-        $monthName = $this->getRomanianMonthName($month);
+        $monthName = romanian_month($month);
 
         // Auto-rename bank statements for better readability
         $originalName = $file->getClientOriginalName();
@@ -366,7 +366,7 @@ class FileController extends Controller
 
         // If not a bank statement or rename failed, use standard naming
         if (!$newFileName) {
-            $sanitizedName = $this->sanitizeFileName(pathinfo($originalName, PATHINFO_FILENAME));
+            $sanitizedName = sanitize_filename(pathinfo($originalName, PATHINFO_FILENAME));
             $uniqueId = Str::uuid()->toString();
             $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
         }
@@ -522,46 +522,6 @@ class FileController extends Controller
 
         // Download and delete the temporary ZIP file
         return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
-    }
-
-    /**
-     * Sanitize file name for storage
-     */
-    private function sanitizeFileName($name)
-    {
-        // Remove special characters, keep alphanumeric, dash, underscore
-        $name = preg_replace('/[^A-Za-z0-9\-_]/', '-', $name);
-        // Remove multiple dashes
-        $name = preg_replace('/-+/', '-', $name);
-        // Trim dashes from start and end
-        $name = trim($name, '-');
-        // Limit length
-        $name = Str::limit($name, 100, '');
-
-        return $name ?: 'file';
-    }
-
-    /**
-     * Get Romanian month name from month number
-     */
-    private function getRomanianMonthName($monthNumber)
-    {
-        $months = [
-            1 => 'Ianuarie',
-            2 => 'Februarie',
-            3 => 'Martie',
-            4 => 'Aprilie',
-            5 => 'Mai',
-            6 => 'Iunie',
-            7 => 'Iulie',
-            8 => 'August',
-            9 => 'Septembrie',
-            10 => 'Octombrie',
-            11 => 'Noiembrie',
-            12 => 'Decembrie',
-        ];
-
-        return $months[$monthNumber] ?? 'Unknown';
     }
 
     /**

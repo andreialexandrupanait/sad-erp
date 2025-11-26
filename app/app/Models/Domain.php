@@ -2,15 +2,15 @@
 
 namespace App\Models;
 
+use App\Traits\HasOrganization;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 
 class Domain extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasOrganization;
 
     protected $fillable = [
         'organization_id',
@@ -35,38 +35,11 @@ class Domain extends Model
     // Expiry thresholds
     public const EXPIRY_WARNING_DAYS = 30;
 
-    /**
-     * Boot the model.
-     */
-    protected static function boot()
-    {
-        parent::boot();
-
-        // Automatically set organization_id when creating
-        static::creating(function ($domain) {
-            if (auth()->check() && empty($domain->organization_id)) {
-                // Use user's organization_id, or default to 1 if user doesn't have one
-                $domain->organization_id = auth()->user()->organization_id ?? 1;
-            }
-        });
-
-        // Global scope to filter by organization
-        static::addGlobalScope('organization', function (Builder $builder) {
-            if (auth()->check()) {
-                $orgId = auth()->user()->organization_id ?? 1;
-                $builder->where('organization_id', $orgId);
-            }
-        });
-    }
+    // Organization scoping handled by HasOrganization trait
 
     /**
      * Relationships
      */
-    public function organization()
-    {
-        return $this->belongsTo(Organization::class);
-    }
-
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -138,14 +111,14 @@ class Domain extends Model
     {
         if ($this->is_expired) {
             $daysAgo = abs($this->days_until_expiry);
-            return "Expired {$daysAgo} " . ($daysAgo === 1 ? 'day' : 'days') . " ago";
+            return trans_choice('Expired :count day ago|Expired :count days ago', $daysAgo, ['count' => $daysAgo]);
         }
 
         if ($this->is_expiring_soon) {
-            return "Expires in {$this->days_until_expiry} " . ($this->days_until_expiry === 1 ? 'day' : 'days');
+            return trans_choice('Expires in :count day|Expires in :count days', $this->days_until_expiry, ['count' => $this->days_until_expiry]);
         }
 
-        return "Expires in {$this->days_until_expiry} days";
+        return trans_choice('Expires in :count day|Expires in :count days', $this->days_until_expiry, ['count' => $this->days_until_expiry]);
     }
 
     /**
@@ -252,17 +225,31 @@ class Domain extends Model
 
     /**
      * Get domain statistics
+     * Optimized to use single query with database-level aggregations
      */
     public static function getStatistics()
     {
+        $now = Carbon::now()->startOfDay()->toDateString();
+        $warningDate = Carbon::now()->addDays(self::EXPIRY_WARNING_DAYS)->toDateString();
+
+        $stats = self::selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN expiry_date < ? THEN 1 ELSE 0 END) as expired,
+            SUM(CASE WHEN expiry_date >= ? AND expiry_date <= ? THEN 1 ELSE 0 END) as expiring_soon,
+            SUM(CASE WHEN expiry_date > ? THEN 1 ELSE 0 END) as valid,
+            COALESCE(SUM(annual_cost), 0) as total_annual_cost,
+            SUM(CASE WHEN client_id IS NOT NULL THEN 1 ELSE 0 END) as with_client,
+            SUM(CASE WHEN client_id IS NULL THEN 1 ELSE 0 END) as without_client
+        ", [$now, $now, $warningDate, $warningDate])->first();
+
         return [
-            'total' => self::count(),
-            'expired' => self::expired()->count(),
-            'expiring_soon' => self::expiringSoon()->count(),
-            'valid' => self::valid()->count(),
-            'total_annual_cost' => self::getTotalAnnualCost(),
-            'with_client' => self::whereNotNull('client_id')->count(),
-            'without_client' => self::whereNull('client_id')->count(),
+            'total' => (int) ($stats->total ?? 0),
+            'expired' => (int) ($stats->expired ?? 0),
+            'expiring_soon' => (int) ($stats->expiring_soon ?? 0),
+            'valid' => (int) ($stats->valid ?? 0),
+            'total_annual_cost' => round($stats->total_annual_cost ?? 0, 2),
+            'with_client' => (int) ($stats->with_client ?? 0),
+            'without_client' => (int) ($stats->without_client ?? 0),
         ];
     }
 }
