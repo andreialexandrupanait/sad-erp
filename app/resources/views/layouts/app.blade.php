@@ -38,12 +38,515 @@
         <!-- Livewire Styles (must be in head) -->
         @livewireStyles
 
-        <!-- Choices.js for searchable dropdowns -->
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/styles/choices.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/choices.js@10.2.0/public/assets/scripts/choices.min.js"></script>
+        <!-- Bulk Selection Component - Must load before Alpine.js evaluates x-data -->
+        <script>
+        function bulkSelection(options = {}) {
+            return {
+                selectedIds: [],
+                selectAll: false,
+                isLoading: false,
+                idAttribute: options.idAttribute || 'data-id',
+                rowSelector: options.rowSelector || '[data-selectable]',
 
-        <!-- Task View CSS - ClickUp-style horizontal scroll -->
-        <link rel="stylesheet" href="{{ asset('css/task-view.css') }}">
+                init() {
+                    this.$watch('selectAll', value => {
+                        if (value) {
+                            this.selectAllVisible();
+                        } else {
+                            if (this.selectedIds.length > 0) {
+                                this.clearSelection();
+                            }
+                        }
+                    });
+                },
+
+                get selectedCount() {
+                    return this.selectedIds.length;
+                },
+
+                get hasSelection() {
+                    return this.selectedIds.length > 0;
+                },
+
+                toggleItem(id) {
+                    const index = this.selectedIds.indexOf(id);
+                    if (index > -1) {
+                        this.selectedIds.splice(index, 1);
+                    } else {
+                        this.selectedIds.push(id);
+                    }
+                    this.updateSelectAllState();
+                },
+
+                selectAllVisible() {
+                    const rows = document.querySelectorAll(this.rowSelector);
+                    this.selectedIds = Array.from(rows).map(row => {
+                        const id = row.dataset[this.idAttribute.replace('data-', '').replace(/-([a-z])/g, (g) => g[1].toUpperCase())];
+                        return parseInt(id);
+                    });
+                },
+
+                toggleAll() {
+                    if (this.selectAll) {
+                        this.selectAllVisible();
+                    } else {
+                        this.selectedIds = [];
+                    }
+                },
+
+                updateSelectAllState() {
+                    const rows = document.querySelectorAll(this.rowSelector);
+                    const totalRows = rows.length;
+                    this.selectAll = totalRows > 0 && this.selectedIds.length === totalRows;
+                },
+
+                clearSelection() {
+                    this.selectedIds = [];
+                    this.selectAll = false;
+                },
+
+                async performBulkAction(action, endpoint, options = {}) {
+                    if (this.selectedIds.length === 0) {
+                        this.showToast('Please select at least one item', 'warning');
+                        return;
+                    }
+
+                    const confirmMessage = options.confirmMessage || `Are you sure you want to perform this action on ${this.selectedIds.length} item(s)?`;
+                    if (!confirm(confirmMessage)) {
+                        return;
+                    }
+
+                    this.isLoading = true;
+
+                    try {
+                        if (action === 'export') {
+                            await this.handleExport(endpoint, options);
+                            return;
+                        }
+
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                ids: this.selectedIds,
+                                action: action,
+                                ...options.data
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            this.showToast(options.successMessage || data.message || 'Action completed successfully', 'success');
+                            this.clearSelection();
+                            setTimeout(() => { window.location.reload(); }, 1000);
+                        } else {
+                            this.showToast(data.message || 'Action failed', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Bulk action error:', error);
+                        this.showToast('An error occurred. Please try again.', 'error');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                async handleExport(endpoint, options = {}) {
+                    try {
+                        const response = await fetch(endpoint, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            },
+                            body: JSON.stringify({
+                                ids: this.selectedIds,
+                                action: 'export'
+                            })
+                        });
+
+                        if (response.ok) {
+                            const contentDisposition = response.headers.get('Content-Disposition');
+                            let filename = 'export.csv';
+                            if (contentDisposition) {
+                                const filenameMatch = contentDisposition.match(/filename="?(.+)"?/i);
+                                if (filenameMatch) {
+                                    filename = filenameMatch[1];
+                                }
+                            }
+
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = filename;
+                            document.body.appendChild(a);
+                            a.click();
+                            window.URL.revokeObjectURL(url);
+                            document.body.removeChild(a);
+
+                            this.showToast(options.successMessage || 'Export completed successfully', 'success');
+                            this.clearSelection();
+                        } else {
+                            const data = await response.json().catch(() => ({ message: 'Export failed' }));
+                            this.showToast(data.message || 'Export failed', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Export error:', error);
+                        this.showToast('An error occurred during export. Please try again.', 'error');
+                    } finally {
+                        this.isLoading = false;
+                    }
+                },
+
+                showToast(message, type = 'info') {
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: { message, type }
+                    }));
+                }
+            };
+        }
+        window.bulkSelection = bulkSelection;
+
+        // Category Combobox Component - Searchable hierarchical dropdown
+        window.categoryComboboxConfig = {
+            storeUrl: '{{ route("settings.nomenclature.store") }}'
+        };
+
+        window.categoryCombobox = function(config = {}) {
+            return {
+                categories: config.categories || [],
+                name: config.name || 'category_id',
+                allowCreate: config.allowCreate !== false,
+                allowEmpty: config.allowEmpty !== false,
+                placeholder: config.placeholder || 'Select category...',
+
+                selectedId: config.selected || null,
+                selectedLabel: '',
+                searchQuery: '',
+                open: false,
+                highlightedIndex: -1,
+
+                showCreateForm: false,
+                createMode: 'category',
+                newCategoryName: '',
+                selectedParentId: null,
+                saving: false,
+
+                init() {
+                    // Convert selectedId to number if it's a string
+                    if (this.selectedId && typeof this.selectedId === 'string') {
+                        this.selectedId = parseInt(this.selectedId, 10);
+                    }
+                    // Use nextTick to ensure flatList is computed
+                    this.$nextTick(() => {
+                        this.updateSelectedLabel();
+                    });
+
+                    // Reposition on scroll/resize while open
+                    window.addEventListener('scroll', () => {
+                        if (this.open) this.positionDropdown();
+                    }, true);
+                    window.addEventListener('resize', () => {
+                        if (this.open) this.positionDropdown();
+                    });
+                },
+
+                updateSelectedLabel() {
+                    if (this.selectedId) {
+                        // Use == for loose comparison to handle string/number mismatch
+                        const item = this.flatList.find(i => String(i.id) === String(this.selectedId));
+                        if (item) {
+                            this.selectedLabel = item.isParent
+                                ? item.label
+                                : `${item.parentLabel || this.getParentLabel(item.parentId)} > ${item.label}`;
+                        } else {
+                            // Debug: log if item not found
+                            console.log('Category not found for ID:', this.selectedId, 'Available:', this.flatList.map(i => i.id));
+                        }
+                    } else {
+                        this.selectedLabel = '';
+                    }
+                },
+
+                get flatList() {
+                    const flat = [];
+                    (this.categories || []).forEach(cat => {
+                        flat.push({
+                            id: cat.id,
+                            label: cat.label,
+                            value: cat.value,
+                            isParent: true,
+                            depth: 0,
+                            hasChildren: cat.children && cat.children.length > 0
+                        });
+                        if (cat.children) {
+                            cat.children.forEach(child => {
+                                flat.push({
+                                    id: child.id,
+                                    label: child.label,
+                                    value: child.value,
+                                    isParent: false,
+                                    depth: 1,
+                                    parentId: cat.id,
+                                    parentLabel: cat.label
+                                });
+                            });
+                        }
+                    });
+                    return flat;
+                },
+
+                get filteredList() {
+                    if (!this.searchQuery.trim()) return this.flatList;
+                    const q = this.searchQuery.toLowerCase().trim();
+                    return this.flatList.filter(item => item.label.toLowerCase().includes(q));
+                },
+
+                getParentLabel(parentId) {
+                    const parent = this.flatList.find(i => i.id == parentId);
+                    return parent ? parent.label : '';
+                },
+
+                toggle() {
+                    this.open ? this.close() : this.openDropdown();
+                },
+
+                openDropdown() {
+                    this.open = true;
+                    this.searchQuery = '';
+                    this.highlightedIndex = this.selectedId
+                        ? this.filteredList.findIndex(i => i.id == this.selectedId)
+                        : 0;
+                    this.$nextTick(() => {
+                        const input = this.$refs.searchInput;
+                        if (input) input.focus();
+                        this.positionDropdown();
+                    });
+                },
+
+                positionDropdown() {
+                    const trigger = this.$refs.trigger;
+                    const dropdown = this.$refs.dropdown;
+                    if (!trigger || !dropdown) return;
+
+                    const rect = trigger.getBoundingClientRect();
+                    const viewportHeight = window.innerHeight;
+                    const viewportWidth = window.innerWidth;
+
+                    // Vertical positioning - check if dropdown fits below
+                    const spaceBelow = viewportHeight - rect.bottom;
+                    const spaceAbove = rect.top;
+                    const dropdownHeight = dropdown.offsetHeight || 350;
+
+                    let top;
+                    if (spaceBelow >= dropdownHeight || spaceBelow >= spaceAbove) {
+                        // Position below
+                        top = rect.bottom + 4;
+                    } else {
+                        // Position above
+                        top = rect.top - dropdownHeight - 4;
+                    }
+
+                    // Horizontal positioning - align to trigger left
+                    let left = rect.left;
+
+                    // Ensure dropdown stays within viewport horizontally
+                    const dropdownWidth = dropdown.offsetWidth || 280;
+                    if (left + dropdownWidth > viewportWidth - 8) {
+                        left = viewportWidth - dropdownWidth - 8;
+                    }
+                    if (left < 8) {
+                        left = 8;
+                    }
+
+                    dropdown.style.top = top + 'px';
+                    dropdown.style.left = left + 'px';
+                },
+
+                close() {
+                    this.open = false;
+                    this.searchQuery = '';
+                    this.showCreateForm = false;
+                    this.highlightedIndex = -1;
+                },
+
+                select(item) {
+                    this.selectedId = item.id;
+                    this.selectedLabel = item.isParent
+                        ? item.label
+                        : `${this.getParentLabel(item.parentId)} > ${item.label}`;
+                    this.close();
+                    this.$dispatch('category-selected', { id: item.id, label: item.label });
+                },
+
+                clear() {
+                    this.selectedId = null;
+                    this.selectedLabel = '';
+                    this.$dispatch('category-selected', { id: null, label: '' });
+                },
+
+                onSearch(query) {
+                    this.searchQuery = query;
+                    this.highlightedIndex = 0;
+                },
+
+                onKeydown(e) {
+                    if (!this.open) {
+                        if (['Enter', ' ', 'ArrowDown', 'ArrowUp'].includes(e.key)) {
+                            e.preventDefault();
+                            this.openDropdown();
+                        }
+                        return;
+                    }
+
+                    switch(e.key) {
+                        case 'ArrowDown':
+                            e.preventDefault();
+                            this.highlightedIndex = Math.min(this.highlightedIndex + 1, this.filteredList.length - 1);
+                            this.scrollToHighlighted();
+                            break;
+                        case 'ArrowUp':
+                            e.preventDefault();
+                            this.highlightedIndex = Math.max(this.highlightedIndex - 1, 0);
+                            this.scrollToHighlighted();
+                            break;
+                        case 'Enter':
+                            e.preventDefault();
+                            if (this.showCreateForm) {
+                                this.createCategory();
+                            } else if (this.highlightedIndex >= 0 && this.filteredList[this.highlightedIndex]) {
+                                this.select(this.filteredList[this.highlightedIndex]);
+                            }
+                            break;
+                        case 'Escape':
+                            e.preventDefault();
+                            this.showCreateForm ? (this.showCreateForm = false) : this.close();
+                            break;
+                        case 'Tab':
+                            this.close();
+                            break;
+                    }
+                },
+
+                scrollToHighlighted() {
+                    this.$nextTick(() => {
+                        const list = this.$refs.optionsList;
+                        const highlighted = list?.querySelector('[data-highlighted="true"]');
+                        if (highlighted && list) {
+                            const listRect = list.getBoundingClientRect();
+                            const itemRect = highlighted.getBoundingClientRect();
+                            if (itemRect.bottom > listRect.bottom) {
+                                list.scrollTop += itemRect.bottom - listRect.bottom + 4;
+                            } else if (itemRect.top < listRect.top) {
+                                list.scrollTop -= listRect.top - itemRect.top + 4;
+                            }
+                        }
+                    });
+                },
+
+                showCreate(mode = 'category') {
+                    this.createMode = mode;
+                    this.showCreateForm = true;
+                    this.newCategoryName = '';
+                    if (mode === 'subcategory' && this.highlightedIndex >= 0) {
+                        const item = this.filteredList[this.highlightedIndex];
+                        if (item) this.selectedParentId = item.isParent ? item.id : item.parentId;
+                    } else {
+                        this.selectedParentId = null;
+                    }
+                    this.$nextTick(() => {
+                        const input = this.$refs.newCategoryInput;
+                        if (input) input.focus();
+                    });
+                },
+
+                async createCategory() {
+                    const name = this.newCategoryName.trim();
+                    if (!name || name.length < 2 || this.saving) return;
+
+                    this.saving = true;
+                    try {
+                        const response = await fetch(window.categoryComboboxConfig?.storeUrl || '/settings/nomenclature', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                category: 'expense_categories',
+                                label: name,
+                                parent_id: this.createMode === 'subcategory' ? this.selectedParentId : null
+                            })
+                        });
+
+                        const data = await response.json();
+
+                        if (response.ok && data.success) {
+                            const newItem = {
+                                id: data.setting.id,
+                                label: data.setting.label,
+                                value: data.setting.value,
+                                isParent: !data.setting.parent_id,
+                                parentId: data.setting.parent_id,
+                                depth: data.setting.parent_id ? 1 : 0
+                            };
+
+                            if (newItem.isParent) {
+                                this.categories.push({ id: newItem.id, label: newItem.label, value: newItem.value, children: [] });
+                            } else {
+                                const parent = this.categories.find(c => c.id == newItem.parentId);
+                                if (parent) {
+                                    if (!parent.children) parent.children = [];
+                                    parent.children.push({ id: newItem.id, label: newItem.label, value: newItem.value });
+                                }
+                            }
+
+                            this.select(newItem);
+                            this.showCreateForm = false;
+                            this.newCategoryName = '';
+                            this.selectedParentId = null;
+
+                            window.dispatchEvent(new CustomEvent('toast', { detail: { message: `Category "${name}" created`, type: 'success' } }));
+                            window.dispatchEvent(new CustomEvent('category-created', { detail: { category: data.setting } }));
+                        } else {
+                            alert(data.message || 'Failed to create category');
+                        }
+                    } catch (error) {
+                        console.error('Error creating category:', error);
+                        alert('Failed to create category. Please try again.');
+                    } finally {
+                        this.saving = false;
+                    }
+                },
+
+                onCategoryCreated(event) {
+                    const newCat = event.detail.category;
+                    if (!newCat) return;
+                    const exists = this.flatList.some(i => i.id == newCat.id);
+                    if (exists) return;
+
+                    if (!newCat.parent_id) {
+                        this.categories.push({ id: newCat.id, label: newCat.label, value: newCat.value, children: [] });
+                    } else {
+                        const parent = this.categories.find(c => c.id == newCat.parent_id);
+                        if (parent) {
+                            if (!parent.children) parent.children = [];
+                            parent.children.push({ id: newCat.id, label: newCat.label, value: newCat.value });
+                        }
+                    }
+                },
+
+                isHighlighted(index) { return this.highlightedIndex === index; },
+                isSelected(item) { return this.selectedId == item.id; }
+            };
+        };
+        </script>
 
         <!-- Alpine.js x-cloak - Hide elements until Alpine is ready -->
         <style>
@@ -52,130 +555,31 @@
             }
         </style>
 
-
-        <!-- Custom Styles for smooth transitions -->
+        <!-- Fix for cards with colored headers - ensure border radius clips properly -->
         <style>
-            /* Choices.js custom styling to match Tailwind design */
-            .choices {
-                margin-bottom: 0;
+            /* Cards with rounded corners and internal colored backgrounds need overflow:hidden */
+            .bg-white.rounded-lg,
+            .bg-white.rounded-xl {
+                overflow: hidden;
             }
 
-            .choices__inner {
+            /* Card utility classes */
+            .card {
                 background: white;
+                border-radius: 0.75rem;
+                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
                 border: 1px solid #e2e8f0;
-                border-radius: 0.5rem;
-                padding: 0.5rem 0.75rem;
-                font-size: 0.875rem;
-                line-height: 1.5rem;
-                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                min-height: 40px;
-                height: 40px;
-                display: flex;
-                align-items: center;
+                overflow: hidden;
             }
 
-            .choices__inner:hover {
-                border-color: #cbd5e1;
-            }
-
-            .choices.is-focused .choices__inner {
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-            }
-
-            .choices__list--dropdown {
-                border: 1px solid #e2e8f0;
-                border-radius: 0.5rem;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                z-index: 100;
-                margin-top: 0.25rem;
-            }
-
-            .choices__list--dropdown .choices__list {
-                max-height: 300px;
-            }
-
-            .choices__input {
-                font-size: 0.875rem;
-                padding: 0.625rem 0.875rem;
-                border-radius: 0.5rem;
-                margin: 0.5rem;
-            }
-
-            .choices__input:focus {
-                outline: none;
-            }
-
-            .choices__list--dropdown .choices__item {
-                padding: 0.625rem 0.875rem;
-                font-size: 0.875rem;
-                color: #334155;
-            }
-
-            .choices__list--dropdown .choices__item--selectable {
-                padding-right: 0.875rem;
-            }
-
-            .choices__list--dropdown .choices__item--selectable.is-highlighted {
+            .card-header {
+                padding: 1rem 1.5rem;
+                border-bottom: 1px solid #e2e8f0;
                 background-color: #f8fafc;
-                color: #0f172a;
             }
 
-            .choices__list--dropdown .choices__item--selectable[aria-selected="true"] {
-                background-color: #eff6ff;
-                color: var(--primary-color);
-                font-weight: 500;
-            }
-
-            .choices__item--selectable::after {
-                display: none;
-            }
-
-            .choices[data-type*=select-one] .choices__button {
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M6 18L18 6M6 6l12 12'/%3E%3C/svg%3E");
-                background-size: 12px;
-                width: 12px;
-                height: 12px;
-                opacity: 1;
-                padding: 0;
-                border-left: none;
-                margin-left: 8px;
-                margin-right: 0;
-            }
-
-            .choices__placeholder {
-                opacity: 0.6;
-                color: #94a3b8;
-            }
-
-            /* Optgroup (parent category) styling */
-            .choices__group {
-                padding: 0.5rem 0.875rem;
-                font-weight: 600;
-                font-size: 0.75rem;
-                text-transform: uppercase;
-                letter-spacing: 0.05em;
-                color: #475569;
-                background-color: #f8fafc;
-                border-top: 1px solid #e2e8f0;
-            }
-
-            .choices__group:first-child {
-                border-top: none;
-            }
-
-            /* Child options (inside optgroup) - add indentation */
-            .choices__list[role="listbox"] .choices__item[data-group-id] {
-                padding-left: 2rem;
-                font-size: 0.875rem;
-            }
-
-            /* Add a subtle indicator before child items */
-            .choices__list[role="listbox"] .choices__item[data-group-id]::before {
-                content: '└';
-                position: absolute;
-                left: 1rem;
-                color: #cbd5e1;
+            .card-body {
+                padding: 1.5rem;
             }
         </style>
 
@@ -327,82 +731,360 @@
         <!-- Toast Notifications -->
         <x-toast />
 
-        <!-- Global Choices.js Initialization -->
-        <script>
-        // Auto-initialize Choices.js on all select elements
-        document.addEventListener('DOMContentLoaded', function() {
-            // Find all select elements that aren't already initialized
-            const selects = document.querySelectorAll('select:not(.choices__input)');
-
-            selects.forEach(function(select) {
-                // Skip if already initialized or if it's a native select we want to keep
-                if (select.classList.contains('choices-initialized')) {
-                    return;
-                }
-
-                // Check if select has multiple options (more than 5 = good candidate for search)
-                const optionCount = select.options.length;
-
-                // Initialize Choices.js on selects with many options or data attribute
-                if (optionCount > 10 || select.hasAttribute('data-searchable')) {
-                    try {
-                        new Choices(select, {
-                            searchEnabled: true,
-                            searchPlaceholderValue: 'Caută...',
-                            itemSelectText: '',
-                            shouldSort: false,
-                            removeItemButton: true,
-                            noResultsText: 'Nu s-au găsit rezultate',
-                            noChoicesText: 'Nu există opțiuni',
-                            searchResultLimit: 100
-                        });
-                        select.classList.add('choices-initialized');
-                    } catch (e) {
-                        console.warn('Failed to initialize Choices.js on select:', e);
-                    }
-                }
-            });
-        });
-
-        // Re-initialize on dynamic content (for modals, AJAX, etc.)
-        document.addEventListener('alpine:initialized', function() {
-            // Wait a bit for Alpine to finish rendering
-            setTimeout(function() {
-                const selects = document.querySelectorAll('select:not(.choices__input):not(.choices-initialized)');
-                selects.forEach(function(select) {
-                    const optionCount = select.options.length;
-                    if (optionCount > 10 || select.hasAttribute('data-searchable')) {
-                        try {
-                            new Choices(select, {
-                                searchEnabled: true,
-                                searchPlaceholderValue: 'Caută...',
-                                itemSelectText: '',
-                                shouldSort: false,
-                                removeItemButton: true,
-                                noResultsText: 'Nu s-au găsit rezultate',
-                                noChoicesText: 'Nu există opțiuni',
-                                searchResultLimit: 100
-                            });
-                            select.classList.add('choices-initialized');
-                        } catch (e) {
-                            console.warn('Failed to initialize Choices.js:', e);
-                        }
-                    }
-                });
-            }, 100);
-        });
-        </script>
+        <!-- Global Confirm Dialog -->
+        <x-ui.confirm-dialog />
 
         <!-- Livewire Scripts (MUST load before Alpine.js) -->
         @livewireScripts
 
+        <!-- File Uploader Component for financial forms -->
+        <script>
+        window.fileUploader = function(existingFilesData) {
+            return {
+                existingFiles: existingFilesData || [],
+                newFiles: [],
+                filesToDelete: [],
+
+                handleFileSelect(event) {
+                    const files = Array.from(event.target.files);
+                    this.addFiles(files);
+                },
+
+                handleDrop(event) {
+                    const files = Array.from(event.dataTransfer.files);
+                    this.addFiles(files);
+                    const input = document.getElementById('file-upload');
+                    const dataTransfer = new DataTransfer();
+                    files.forEach(file => dataTransfer.items.add(file));
+                    input.files = dataTransfer.files;
+                },
+
+                addFiles(files) {
+                    const maxSize = 10 * 1024 * 1024; // 10MB
+                    const allowedTypes = [
+                        'application/pdf', 'image/jpeg', 'image/jpg', 'image/png',
+                        'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                        'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                        'application/zip', 'application/x-rar-compressed'
+                    ];
+
+                    files.forEach(file => {
+                        if (file.size > maxSize) {
+                            alert(`${file.name} is too large. Maximum size is 10MB.`);
+                            return;
+                        }
+                        if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpe?g|png|docx?|xlsx?|zip|rar)$/i)) {
+                            alert(`${file.name} has an unsupported file type.`);
+                            return;
+                        }
+                        this.newFiles.push(file);
+                    });
+                },
+
+                removeNewFile(index) {
+                    this.newFiles.splice(index, 1);
+                    const input = document.getElementById('file-upload');
+                    const dataTransfer = new DataTransfer();
+                    this.newFiles.forEach(file => dataTransfer.items.add(file));
+                    input.files = dataTransfer.files;
+                },
+
+                removeExistingFile(fileId) {
+                    if (confirm('Are you sure you want to delete this file?')) {
+                        this.existingFiles = this.existingFiles.filter(f => f.id !== fileId);
+                        this.filesToDelete.push(fileId);
+                    }
+                },
+
+                formatFileSize(bytes) {
+                    if (bytes === 0) return '0 Bytes';
+                    const k = 1024;
+                    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+                },
+
+                getFileIcon(filename) {
+                    const ext = filename.split('.').pop().toLowerCase();
+                    const icons = {
+                        'pdf': '📄',
+                        'doc': '📝',
+                        'docx': '📝',
+                        'xls': '📊',
+                        'xlsx': '📊',
+                        'jpg': '🖼️',
+                        'jpeg': '🖼️',
+                        'png': '🖼️',
+                        'zip': '🗜️',
+                        'rar': '🗜️'
+                    };
+                    return icons[ext] || '📎';
+                }
+            };
+        };
+        </script>
+
+        <!-- Clients Page Component -->
+        <script>
+        function clientsPage(initialData = {}) {
+            return {
+                filters: {
+                    status: initialData.filters?.status || [],
+                    q: initialData.filters?.q || '',
+                    sort: initialData.filters?.sort || 'name:asc',
+                    page: initialData.filters?.page || 1
+                },
+                ui: { viewMode: 'table', grouped: false, perPage: 25, collapsedGroups: {} },
+                clients: [],
+                statuses: initialData.statuses || [],
+                statusCounts: { total: 0, by_status: {} },
+                pagination: { total: 0, per_page: 25, current_page: 1, last_page: 1, from: 0, to: 0 },
+                loading: true,
+                initialLoad: true,
+                selectedIds: [],
+                selectAll: false,
+                savingStatus: {},
+
+                get selectedCount() { return this.selectedIds.length; },
+                get hasSelection() { return this.selectedIds.length > 0; },
+                get sortColumn() { return this.filters.sort.split(':')[0]; },
+                get sortDirection() { return this.filters.sort.split(':')[1] || 'asc'; },
+                get pages() {
+                    const pages = [], current = this.pagination.current_page, last = this.pagination.last_page;
+                    if (last <= 7) { for (let i = 1; i <= last; i++) pages.push(i); }
+                    else {
+                        pages.push(1);
+                        if (current > 3) pages.push('...');
+                        for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
+                        if (current < last - 2) pages.push('...');
+                        pages.push(last);
+                    }
+                    return pages;
+                },
+
+                init() {
+                    this.loadUiPreferences();
+                    this.parseUrlFilters();
+                    this.loadClients();
+                    window.addEventListener('popstate', () => { this.parseUrlFilters(); this.loadClients(); });
+                },
+
+                loadUiPreferences() {
+                    const stored = localStorage.getItem('clients_ui_prefs');
+                    if (stored) {
+                        try {
+                            const prefs = JSON.parse(stored);
+                            this.ui.viewMode = prefs.viewMode || 'table';
+                            this.ui.grouped = prefs.grouped || false;
+                            this.ui.perPage = prefs.perPage || 25;
+                            this.ui.collapsedGroups = prefs.collapsedGroups || {};
+                        } catch (e) { console.error('Failed to parse UI preferences:', e); }
+                    }
+                },
+
+                saveUiPreferences() { localStorage.setItem('clients_ui_prefs', JSON.stringify(this.ui)); },
+
+                parseUrlFilters() {
+                    const params = new URLSearchParams(window.location.search);
+                    if (params.has('status')) this.filters.status = params.get('status').split(',').filter(Boolean);
+                    if (params.has('q')) this.filters.q = params.get('q');
+                    if (params.has('sort')) this.filters.sort = params.get('sort');
+                    if (params.has('page')) this.filters.page = parseInt(params.get('page')) || 1;
+                },
+
+                async loadClients() {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.filters.status.length) params.set('status', this.filters.status.join(','));
+                        if (this.filters.q) params.set('q', this.filters.q);
+                        if (this.filters.sort && this.filters.sort !== 'name:asc') params.set('sort', this.filters.sort);
+                        if (this.filters.page > 1) params.set('page', this.filters.page);
+                        params.set('limit', this.ui.perPage);
+
+                        const response = await fetch(`/clients${params.toString() ? '?' + params.toString() : ''}`, {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                        const data = await response.json();
+                        this.clients = data.clients || [];
+                        this.pagination = data.pagination || this.pagination;
+                        this.statusCounts = data.status_counts || this.statusCounts;
+                        this.clearSelection();
+                    } catch (error) {
+                        console.error('Failed to load clients:', error);
+                        this.showToast('Failed to load clients', 'error');
+                    } finally {
+                        this.loading = false;
+                        this.initialLoad = false;
+                    }
+                },
+
+                updateUrl() {
+                    const params = new URLSearchParams();
+                    if (this.filters.status.length) params.set('status', this.filters.status.join(','));
+                    if (this.filters.q) params.set('q', this.filters.q);
+                    if (this.filters.sort && this.filters.sort !== 'name:asc') params.set('sort', this.filters.sort);
+                    if (this.filters.page > 1) params.set('page', this.filters.page);
+                    history.pushState({}, '', params.toString() ? `?${params.toString()}` : window.location.pathname);
+                },
+
+                toggleStatus(slug) {
+                    const idx = this.filters.status.indexOf(slug);
+                    if (idx === -1) this.filters.status.push(slug);
+                    else this.filters.status.splice(idx, 1);
+                    this.filters.page = 1;
+                    this.updateUrl();
+                    this.loadClients();
+                },
+
+                clearStatusFilter() { this.filters.status = []; this.filters.page = 1; this.updateUrl(); this.loadClients(); },
+
+                setSort(column) {
+                    const [currentCol, currentDir] = this.filters.sort.split(':');
+                    if (currentCol === column) {
+                        this.filters.sort = `${column}:${currentDir === 'asc' ? 'desc' : 'asc'}`;
+                    } else {
+                        const defaultDesc = ['revenue', 'total_incomes', 'created', 'created_at'];
+                        this.filters.sort = `${column}:${defaultDesc.includes(column) ? 'desc' : 'asc'}`;
+                    }
+                    this.filters.page = 1;
+                    this.updateUrl();
+                    this.loadClients();
+                },
+
+                search(query) { this.filters.q = query; this.filters.page = 1; this.updateUrl(); this.loadClients(); },
+
+                goToPage(page) {
+                    if (page < 1 || page > this.pagination.last_page || page === '...') return;
+                    this.filters.page = page;
+                    this.updateUrl();
+                    this.loadClients();
+                },
+
+                setViewMode(mode) { this.ui.viewMode = mode; this.saveUiPreferences(); },
+                toggleGrouped() { this.ui.grouped = !this.ui.grouped; this.saveUiPreferences(); },
+                setPerPage(perPage) { this.ui.perPage = parseInt(perPage); this.filters.page = 1; this.saveUiPreferences(); this.loadClients(); },
+                toggleGroupCollapse(statusId) { const key = statusId || 'null'; this.ui.collapsedGroups[key] = !this.ui.collapsedGroups[key]; this.saveUiPreferences(); },
+                isGroupCollapsed(statusId) { return this.ui.collapsedGroups[statusId || 'null'] || false; },
+
+                toggleItem(id) {
+                    const idx = this.selectedIds.indexOf(id);
+                    if (idx === -1) this.selectedIds.push(id);
+                    else this.selectedIds.splice(idx, 1);
+                    this.updateSelectAllState();
+                },
+                isSelected(id) { return this.selectedIds.includes(id); },
+                toggleSelectAll() { this.selectedIds = this.selectAll ? this.clients.map(c => c.id) : []; },
+                clearSelection() { this.selectedIds = []; this.selectAll = false; },
+                updateSelectAllState() { this.selectAll = this.clients.length > 0 && this.selectedIds.length === this.clients.length; },
+
+                async updateClientStatus(client, newStatusId) {
+                    if (this.savingStatus[client.id]) return;
+                    this.savingStatus[client.id] = true;
+                    try {
+                        const response = await fetch(`/clients/${client.slug || client.id}/status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                            body: JSON.stringify({ status_id: newStatusId })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            const clientIndex = this.clients.findIndex(c => c.id === client.id);
+                            if (clientIndex !== -1) {
+                                const newStatus = this.statuses.find(s => s.id === newStatusId);
+                                this.clients[clientIndex].status_id = newStatusId;
+                                this.clients[clientIndex].status = newStatus ? { id: newStatus.id, name: newStatus.name, slug: newStatus.slug, color_background: newStatus.color_background, color_text: newStatus.color_text } : null;
+                            }
+                            this.showToast(`Status changed to "${this.statuses.find(s => s.id === newStatusId)?.name || 'Updated'}"`, 'success');
+                        } else throw new Error(data.message || 'Failed');
+                    } catch (error) { console.error('Error updating status:', error); this.showToast('Error updating status', 'error'); }
+                    finally { this.savingStatus[client.id] = false; }
+                },
+
+                getStatusCount(statusId) { return this.statusCounts.by_status[statusId] || 0; },
+                getClientsForStatus(statusId) { return this.clients.filter(c => c.status_id === statusId); },
+                getClientsWithoutStatus() { return this.clients.filter(c => !c.status_id); },
+
+                async bulkUpdateStatus(newStatusId) {
+                    if (!this.hasSelection || !confirm(`Update status for ${this.selectedCount} client(s)?`)) return;
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/clients/bulk-update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                            body: JSON.stringify({ ids: this.selectedIds, action: 'update_status', status_id: newStatusId })
+                        });
+                        if (response.ok) { this.showToast('Status updated successfully', 'success'); this.clearSelection(); await this.loadClients(); }
+                        else throw new Error('Failed');
+                    } catch (error) { this.showToast('An error occurred', 'error'); }
+                    finally { this.loading = false; }
+                },
+
+                async bulkExport() {
+                    if (!this.hasSelection || !confirm(`Export ${this.selectedCount} client(s) to CSV?`)) return;
+                    try {
+                        const response = await fetch('/clients/bulk-export', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                            body: JSON.stringify({ ids: this.selectedIds, action: 'export' })
+                        });
+                        if (response.ok) {
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a'); a.href = url; a.download = 'clients_export.csv';
+                            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
+                            this.showToast('Export completed', 'success'); this.clearSelection();
+                        }
+                    } catch (error) { this.showToast('Export failed', 'error'); }
+                },
+
+                async bulkDelete() {
+                    if (!this.hasSelection || !confirm(`Delete ${this.selectedCount} client(s)? This cannot be undone.`)) return;
+                    this.loading = true;
+                    try {
+                        const response = await fetch('/clients/bulk-update', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                            body: JSON.stringify({ ids: this.selectedIds, action: 'delete' })
+                        });
+                        if (response.ok) { this.showToast('Clients deleted', 'success'); this.clearSelection(); await this.loadClients(); }
+                        else throw new Error('Failed');
+                    } catch (error) { this.showToast('An error occurred', 'error'); }
+                    finally { this.loading = false; }
+                },
+
+                showToast(message, type = 'info') {
+                    let container = document.getElementById('toast-container');
+                    if (!container) { container = document.createElement('div'); container.id = 'toast-container'; container.className = 'fixed top-4 right-4 z-50 space-y-2'; document.body.appendChild(container); }
+                    const toast = document.createElement('div');
+                    toast.className = `px-4 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'}`;
+                    toast.innerHTML = `<div class="flex items-center gap-2">${type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'}<span>${message}</span></div>`;
+                    container.appendChild(toast);
+                    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
+                },
+
+                formatCurrency(value) { return new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0) + ' RON'; },
+
+                copyToClipboard(text, event) {
+                    navigator.clipboard.writeText(text).then(() => {
+                        const el = event.currentTarget;
+                        const orig = el.innerHTML;
+                        el.innerHTML = '<span class="flex items-center gap-1 text-green-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!</span>';
+                        setTimeout(() => { el.innerHTML = orig; }, 2000);
+                    });
+                }
+            };
+        }
+        </script>
+
+        <!-- Page-specific Scripts (must load before Alpine.js) -->
+        @stack('scripts')
+
         <!-- Alpine Collapse Plugin (must load before Alpine.js) -->
-        <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js" defer></script>
 
         <!-- Alpine.js for interactivity (loads AFTER Livewire) -->
-        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
-        <!-- Scripts Stack -->
-        @stack('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
     </body>
 </html>

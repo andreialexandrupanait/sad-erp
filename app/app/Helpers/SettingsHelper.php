@@ -3,10 +3,25 @@
 namespace App\Helpers;
 
 use App\Models\SettingOption;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 class SettingsHelper
 {
+    /**
+     * Cache TTL in seconds (1 hour)
+     */
+    private const CACHE_TTL = 3600;
+
+    /**
+     * Get the organization-scoped cache key prefix.
+     */
+    private static function getCachePrefix(): string
+    {
+        $orgId = Auth::check() ? (Auth::user()->organization_id ?? 'global') : 'guest';
+        return "settings.org.{$orgId}";
+    }
+
     /**
      * Get dropdown options for a specific setting group by key
      *
@@ -16,9 +31,10 @@ class SettingsHelper
      */
     public static function getOptions(string $groupKey, bool $withColors = false): array
     {
-        $cacheKey = "settings.{$groupKey}." . ($withColors ? 'with_colors' : 'simple');
+        $prefix = self::getCachePrefix();
+        $cacheKey = "{$prefix}.{$groupKey}." . ($withColors ? 'with_colors' : 'simple');
 
-        return Cache::remember($cacheKey, 3600, function () use ($groupKey, $withColors) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($groupKey, $withColors) {
             $options = SettingOption::where('category', $groupKey)
                 ->where('is_active', true)
                 ->orderBy('sort_order')
@@ -51,9 +67,10 @@ class SettingsHelper
      */
     public static function getOption(string $groupKey, string $value): ?SettingOption
     {
-        $cacheKey = "settings.{$groupKey}.{$value}";
+        $prefix = self::getCachePrefix();
+        $cacheKey = "{$prefix}.{$groupKey}.{$value}";
 
-        return Cache::remember($cacheKey, 3600, function () use ($groupKey, $value) {
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($groupKey, $value) {
             return SettingOption::where('category', $groupKey)
                 ->where('value', $value)
                 ->first();
@@ -89,23 +106,40 @@ class SettingsHelper
     /**
      * Clear cache for a specific group
      *
-     * @param string|null $groupKey If null, clears all settings cache
+     * @param string|null $groupKey If null, clears all settings cache for the current organization
+     * @param int|null $organizationId Optional organization ID to clear cache for
      * @return void
      */
-    public static function clearCache(?string $groupKey = null): void
+    public static function clearCache(?string $groupKey = null, ?int $organizationId = null): void
     {
+        $orgId = $organizationId ?? (Auth::check() ? Auth::user()->organization_id : null);
+        $prefix = $orgId ? "settings.org.{$orgId}" : "settings.org";
+
         if ($groupKey) {
-            Cache::forget("settings.{$groupKey}.simple");
-            Cache::forget("settings.{$groupKey}.with_colors");
+            Cache::forget("{$prefix}.{$groupKey}.simple");
+            Cache::forget("{$prefix}.{$groupKey}.with_colors");
+            Cache::forget("{$prefix}.{$groupKey}.default");
 
             // Clear individual option caches
-            $options = SettingOption::where('category', $groupKey)->get();
+            $options = SettingOption::withoutGlobalScopes()
+                ->where('category', $groupKey)
+                ->when($orgId, fn($q) => $q->where('organization_id', $orgId))
+                ->get();
             foreach ($options as $option) {
-                Cache::forget("settings.{$groupKey}.{$option->value}");
+                Cache::forget("{$prefix}.{$groupKey}.{$option->value}");
             }
         } else {
-            // Clear all settings cache
-            Cache::flush();
+            // Use cache tags if available, otherwise use pattern-based clearing
+            // For now, we'll clear what we can without flushing everything
+            $categories = [
+                'client_statuses', 'domain_registrars', 'domain_statuses',
+                'billing_cycles', 'subscription_statuses', 'payment_methods',
+                'access_platforms', 'expense_categories', 'currencies',
+                'dashboard_quick_actions', 'task_statuses', 'task_priorities'
+            ];
+            foreach ($categories as $category) {
+                self::clearCache($category, $orgId);
+            }
         }
     }
 
@@ -129,7 +163,8 @@ class SettingsHelper
      */
     public static function getDefault(string $groupKey): ?SettingOption
     {
-        $cacheKey = "settings.{$groupKey}.default";
+        $prefix = self::getCachePrefix();
+        $cacheKey = "{$prefix}.{$groupKey}.default";
 
         return Cache::remember($cacheKey, 3600, function () use ($groupKey) {
             return SettingOption::where('category', $groupKey)

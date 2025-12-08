@@ -44,6 +44,7 @@
                 background: rgba(255, 255, 255, 0.95);
                 backdrop-filter: blur(10px);
             }
+
         </style>
     </head>
     <body class="font-sans antialiased">
@@ -55,29 +56,21 @@
 
             <!-- Main Content -->
             <div class="relative w-full max-w-md">
-                <!-- Logo Section -->
-                <div class="text-center mb-8">
-                    @if(isset($globalAppSettings['app_logo']) && $globalAppSettings['app_logo'])
-                        <img src="{{ asset('storage/' . $globalAppSettings['app_logo']) }}"
-                             alt="{{ $globalAppSettings['app_name'] ?? 'Logo' }}"
-                             class="h-16 w-auto mx-auto mb-4">
-                    @else
-                        <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-lg mb-4">
-                            <svg class="w-10 h-10 text-primary-600" fill="currentColor" viewBox="0 0 24 24">
+                <!-- Auth Card with integrated logo -->
+                <div class="glass shadow-2xl rounded-2xl p-8">
+                    <!-- Logo inside card -->
+                    <div class="text-center mb-6">
+                        @if(isset($globalAppSettings['app_logo']) && $globalAppSettings['app_logo'])
+                            <img src="{{ asset('storage/' . $globalAppSettings['app_logo']) }}"
+                                 alt="{{ $globalAppSettings['app_name'] ?? 'Logo' }}"
+                                 class="h-12 w-auto mx-auto">
+                        @else
+                            <svg class="w-12 h-12 mx-auto text-primary-600" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 2L2 7v10c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-10-5zm0 2.18l8 4.09v8.55c0 4.35-2.98 8.41-7.5 9.88-.68-.22-1.37-.5-2.04-.85C7.12 24.39 4 20.48 4 15.82V8.27l8-4.09z"/>
                             </svg>
-                        </div>
-                    @endif
-                    <h1 class="text-3xl font-bold text-white mb-2">
-                        {{ $globalAppSettings['app_name'] ?? config('app.name', 'Laravel') }}
-                    </h1>
-                    <p class="text-blue-100 text-sm">
-                        {{ __('Management System') }}
-                    </p>
-                </div>
-
-                <!-- Auth Card -->
-                <div class="glass shadow-2xl rounded-2xl p-8">
+                        @endif
+                    </div>
+                    <div class="border-t border-slate-200 mb-6"></div>
                     {{ $slot }}
                 </div>
 

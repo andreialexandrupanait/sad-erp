@@ -10,4 +10,4 @@
 .idea
 .DS_Store
 .env.backup
-docker-compose.override.yml
+docker-compose.override.yml/backups/

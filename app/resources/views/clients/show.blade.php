@@ -202,21 +202,60 @@
                             <p class="mt-1 text-sm text-slate-500">{{ __('Get started by adding a revenue entry') }}</p>
                         </div>
                     @else
+                        <!-- Invoice Summary -->
+                        <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-sm text-blue-900">
+                                <span class="font-semibold">{{ $stats['invoices_count'] }}</span> {{ $stats['invoices_count'] === 1 ? __('invoice') : __('invoices') }} •
+                                <span class="font-semibold">{{ number_format($client->total_revenue, 2) }} RON</span> {{ __('total revenue') }}
+                            </p>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="w-full caption-bottom text-sm">
                                 <thead class="[&_tr]:border-b">
                                     <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                        <x-ui.table-head>{{ __('Description') }}</x-ui.table-head>
-                                        <x-ui.table-head>{{ __('Amount') }}</x-ui.table-head>
-                                        <x-ui.table-head>{{ __('Date') }}</x-ui.table-head>
+                                        <x-ui.sortable-header column="document_name" label="{{ __('Invoice') }}" />
+                                        <x-ui.sortable-header column="amount" label="{{ __('Amount') }}" class="text-right" />
+                                        <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
+                                        <x-ui.table-head class="text-right">{{ __('File') }}</x-ui.table-head>
                                     </tr>
                                 </thead>
                                 <tbody class="[&_tr:last-child]:border-0">
                                     @foreach($client->revenues as $revenue)
                                         <x-ui.table-row>
-                                            <x-ui.table-cell>{{ $revenue->description }}</x-ui.table-cell>
-                                            <x-ui.table-cell>{{ number_format($revenue->amount, 2) }} RON</x-ui.table-cell>
-                                            <x-ui.table-cell>{{ $revenue->date->format('d M Y') }}</x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                <div class="text-sm font-medium text-slate-900">{{ $revenue->document_name }}</div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell class="text-right">
+                                                <div class="text-sm font-bold text-green-600">{{ number_format($revenue->amount, 2) }} {{ $revenue->currency }}</div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                <div class="text-sm text-slate-900">{{ $revenue->occurred_at->format('d M Y') }}</div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell class="text-right">
+                                                @if($revenue->files->isNotEmpty())
+                                                    @php
+                                                        $file = $revenue->files->first();
+                                                    @endphp
+                                                    <div class="flex items-center gap-1 justify-end">
+                                                        <!-- View/Preview -->
+                                                        <a href="{{ route('financial.files.show', $file) }}" target="_blank" class="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded-lg transition-colors" title="{{ __('View') }}">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                            </svg>
+                                                        </a>
+                                                        <!-- Download -->
+                                                        <a href="{{ route('financial.files.download', $file) }}" class="p-2 text-green-600 hover:text-green-900 hover:bg-green-50 rounded-lg transition-colors" title="{{ __('Download') }}">
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                            </svg>
+                                                        </a>
+                                                    </div>
+                                                @else
+                                                    <span class="text-slate-400 text-xs">-</span>
+                                                @endif
+                                            </x-ui.table-cell>
                                         </x-ui.table-row>
                                     @endforeach
                                 </tbody>

@@ -12,26 +12,26 @@
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                     </svg>
-                    Back to Settings
+                    {{ __('app.back_to_settings') }}
                 </a>
-                <h1 class="text-3xl font-bold text-slate-900 mt-4">Import Smartbill Invoices</h1>
-                <p class="mt-2 text-slate-600">Upload your CSV or Excel export from Smartbill</p>
+                <h1 class="text-3xl font-bold text-slate-900 mt-4">{{ __('settings.import_invoices_title') }}</h1>
+                <p class="mt-2 text-slate-600">{{ __('settings.upload_csv_excel') }}</p>
             </div>
 
             <!-- Upload Form (shown initially) -->
             <div id="uploadForm" class="bg-white rounded-lg shadow-sm border border-slate-200 p-8">
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-slate-900 mb-2">Step 1: Export from Smartbill</h3>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-2">{{ __('settings.step1_export') }}</h3>
                     <ol class="list-decimal list-inside text-slate-600 space-y-1">
-                        <li>Log in to your Smartbill account</li>
-                        <li>Go to <strong>Rapoarte</strong> → <strong>Export</strong></li>
-                        <li>Select date range and export as CSV or Excel</li>
-                        <li>Download the file</li>
+                        <li>{{ __('settings.log_into_smartbill') }}</li>
+                        <li>{{ __('settings.go_to_reports_export') }}</li>
+                        <li>{{ __('settings.select_date_range') }} - {{ __('settings.export_csv_excel') }}</li>
+                        <li>{{ __('settings.download_the_file') }}</li>
                     </ol>
                 </div>
 
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold text-slate-900 mb-4">Step 2: Upload File</h3>
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('settings.step2_upload') }}</h3>
 
                     <form id="importForm" class="space-y-4">
                         @csrf
@@ -42,8 +42,8 @@
                                 <svg class="w-12 h-12 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
                                 </svg>
-                                <p class="text-lg font-medium text-slate-700">Click to upload or drag and drop</p>
-                                <p class="text-sm text-slate-500 mt-1">CSV, XLS, or XLSX (max 10MB)</p>
+                                <p class="text-lg font-medium text-slate-700">{{ __('app.click_to_upload') }}</p>
+                                <p class="text-sm text-slate-500 mt-1">{{ __('settings.file_types_hint') }}</p>
                             </label>
                         </div>
 
@@ -69,13 +69,13 @@
                         <div class="flex items-center bg-slate-50 rounded-lg p-3">
                             <input type="checkbox" id="downloadPdfs" name="download_pdfs" value="1" checked class="w-4 h-4 text-blue-600 border-slate-300 rounded focus:ring-blue-500">
                             <label for="downloadPdfs" class="ml-3 text-sm text-slate-700">
-                                <span class="font-medium">Download invoice PDFs from Smartbill</span>
-                                <span class="block text-xs text-slate-500 mt-0.5">Automatically fetch and attach PDF files for each invoice (recommended)</span>
+                                <span class="font-medium">{{ __('settings.download_pdfs') }}</span>
+                                <span class="block text-xs text-slate-500 mt-0.5">{{ __('settings.download_pdfs_hint') }}</span>
                             </label>
                         </div>
 
                         <button type="submit" id="submitBtn" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed">
-                            Start Import
+                            {{ __('settings.start_import') }}
                         </button>
                     </form>
                 </div>
@@ -83,12 +83,12 @@
 
             <!-- Progress Display (shown during import) -->
             <div id="progressDisplay" class="hidden bg-white rounded-lg shadow-sm border border-slate-200 p-8">
-                <h3 class="text-xl font-semibold text-slate-900 mb-6">Importing Invoices...</h3>
+                <h3 class="text-xl font-semibold text-slate-900 mb-6">{{ __('settings.importing') }}</h3>
 
                 <!-- Progress Bar -->
                 <div class="mb-6">
                     <div class="flex justify-between text-sm text-slate-600 mb-2">
-                        <span id="progressText">Initializing...</span>
+                        <span id="progressText">{{ __('settings.initializing') }}</span>
                         <span id="progressPercent">0%</span>
                     </div>
                     <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
@@ -99,19 +99,19 @@
                 <!-- Stats Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-slate-50 rounded-lg p-4 border border-slate-200">
-                        <p class="text-sm text-slate-600 mb-1">Total</p>
+                        <p class="text-sm text-slate-600 mb-1">{{ __('app.total') }}</p>
                         <p id="statTotal" class="text-2xl font-bold text-slate-900">0</p>
                     </div>
                     <div class="bg-green-50 rounded-lg p-4 border border-green-200">
-                        <p class="text-sm text-green-600 mb-1">Created</p>
+                        <p class="text-sm text-green-600 mb-1">{{ __('app.created') }}</p>
                         <p id="statCreated" class="text-2xl font-bold text-green-600">0</p>
                     </div>
                     <div class="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
-                        <p class="text-sm text-yellow-600 mb-1">Skipped</p>
+                        <p class="text-sm text-yellow-600 mb-1">{{ __('settings.skipped') }}</p>
                         <p id="statSkipped" class="text-2xl font-bold text-yellow-600">0</p>
                     </div>
                     <div class="bg-red-50 rounded-lg p-4 border border-red-200">
-                        <p class="text-sm text-red-600 mb-1">Errors</p>
+                        <p class="text-sm text-red-600 mb-1">{{ __('settings.errors') }}</p>
                         <p id="statErrors" class="text-2xl font-bold text-red-600">0</p>
                     </div>
                 </div>
@@ -119,7 +119,7 @@
                 <!-- Processing Animation -->
                 <div id="processingAnimation" class="text-center py-8">
                     <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-slate-200 border-t-blue-600"></div>
-                    <p class="mt-4 text-slate-600">Processing your invoices...</p>
+                    <p class="mt-4 text-slate-600">{{ __('settings.processing') }}</p>
                 </div>
 
                 <!-- Completion Message -->
@@ -127,14 +127,14 @@
                     <svg class="w-16 h-16 mx-auto text-green-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
-                    <h3 class="text-2xl font-bold text-slate-900 mb-2">Import Complete!</h3>
+                    <h3 class="text-2xl font-bold text-slate-900 mb-2">{{ __('settings.import_complete') }}</h3>
                     <p id="completionText" class="text-slate-600 mb-6"></p>
                     <div class="flex gap-4 justify-center">
                         <a href="{{ route('financial.revenues.index') }}" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            View Revenues
+                            {{ __('settings.view_revenues') }}
                         </a>
                         <button onclick="resetImport()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
-                            Import Another File
+                            {{ __('settings.import_another') }}
                         </button>
                     </div>
                 </div>
@@ -146,7 +146,7 @@
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
-                            Errors Encountered:
+                            {{ __('settings.errors_encountered') }}
                         </h4>
                         <ul id="errorList" class="list-disc list-inside text-sm text-red-700 space-y-1 mt-2"></ul>
                     </div>
@@ -157,33 +157,53 @@
 </div>
 
 <script>
+// Translations for JS
+const translations = {
+    invalidFileType: '{{ __('settings.invalid_file_type') }}',
+    pleaseSelectFile: '{{ __('settings.please_select_file') }}',
+    uploading: '{{ __('settings.uploading') }}',
+    importFailed: '{{ __('settings.import_failed') }}',
+    tryAgain: '{{ __('settings.try_again') }}',
+    errorProcessing: '{{ __('settings.error_processing') }}'
+};
 let currentFile = null;
 let importId = null;
-let eventSource = null;
+
+// Prevent browser from opening dropped files
+document.addEventListener('dragover', (e) => e.preventDefault());
+document.addEventListener('drop', (e) => e.preventDefault());
 
 // Drag and drop support
 const dropZone = document.getElementById('dropZone');
 dropZone.addEventListener('dragover', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.add('border-blue-500', 'bg-blue-50');
 });
 
-dropZone.addEventListener('dragleave', () => {
+dropZone.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.remove('border-blue-500', 'bg-blue-50');
 });
 
 dropZone.addEventListener('drop', (e) => {
     e.preventDefault();
+    e.stopPropagation();
     dropZone.classList.remove('border-blue-500', 'bg-blue-50');
     const files = e.dataTransfer.files;
     if (files.length > 0) {
-        document.getElementById('csvFile').files = files;
-        handleFileSelect({ files: [files[0]] });
+        // Create a DataTransfer object to set files on the input
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(files[0]);
+        document.getElementById('csvFile').files = dataTransfer.files;
+        handleFileSelect(files[0]);
     }
 });
 
 function handleFileSelect(input) {
-    const file = input.files[0];
+    // Handle both input element (from onchange) and direct File object (from drag-drop)
+    const file = input instanceof File ? input : (input.files ? input.files[0] : null);
     if (!file) return;
 
     // Validate file size (10MB max)
@@ -198,7 +218,7 @@ function handleFileSelect(input) {
     const isValid = validTypes.some(type => fileName.endsWith(type));
 
     if (!isValid) {
-        alert('Invalid file type. Please upload a CSV, XLS, or XLSX file.');
+        alert(translations.invalidFileType);
         return;
     }
 
@@ -224,13 +244,13 @@ document.getElementById('importForm').addEventListener('submit', async function(
     e.preventDefault();
 
     if (!currentFile) {
-        alert('Please select a file first');
+        alert(translations.pleaseSelectFile);
         return;
     }
 
     const submitBtn = document.getElementById('submitBtn');
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Uploading...';
+    submitBtn.textContent = translations.uploading;
 
     const formData = new FormData();
     formData.append('csv_file', currentFile);
@@ -266,28 +286,8 @@ document.getElementById('importForm').addEventListener('submit', async function(
             }
         });
 
-        // Step 3: Connect to SSE for progress updates
-        eventSource = new EventSource(`/settings/smartbill/import/${importId}/progress`);
-
-        eventSource.onmessage = function(event) {
-            const progress = JSON.parse(event.data);
-            updateProgress(progress);
-
-            if (progress.status === 'completed' || progress.status === 'failed') {
-                eventSource.close();
-
-                if (progress.status === 'completed') {
-                    showCompletion(progress);
-                } else {
-                    showError(progress.message);
-                }
-            }
-        };
-
-        eventSource.onerror = function() {
-            eventSource.close();
-            showError('Connection lost. Please refresh the page.');
-        };
+        // Step 3: Poll for progress updates
+        startPolling();
 
     } catch (error) {
         console.error('Import error:', error);
@@ -295,6 +295,35 @@ document.getElementById('importForm').addEventListener('submit', async function(
     }
 });
 
+
+let pollInterval = null;
+
+function startPolling() {
+    pollInterval = setInterval(async () => {
+        try {
+            const response = await fetch(`/settings/smartbill/import/${importId}/progress`);
+            const progress = await response.json();
+
+            if (progress.error) {
+                clearInterval(pollInterval);
+                showError(progress.error);
+                return;
+            }
+
+            updateProgress(progress);
+
+            if (progress.status === 'completed') {
+                clearInterval(pollInterval);
+                showCompletion(progress);
+            } else if (progress.status === 'failed') {
+                clearInterval(pollInterval);
+                showError(progress.message || 'Import failed');
+            }
+        } catch (error) {
+            console.error('Polling error:', error);
+        }
+    }, 1000);
+}
 function updateProgress(progress) {
     const { total, processed, created, skipped, errors, message } = progress;
 
@@ -344,10 +373,10 @@ function showError(message) {
         <svg class="w-16 h-16 mx-auto text-red-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
         </svg>
-        <h3 class="text-2xl font-bold text-slate-900 mb-2">Import Failed</h3>
-        <p class="text-slate-600 mb-6">There was an error processing your import.</p>
+        <h3 class="text-2xl font-bold text-slate-900 mb-2">${translations.importFailed}</h3>
+        <p class="text-slate-600 mb-6">${translations.errorProcessing}</p>
         <button onclick="resetImport()" class="px-6 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition-colors">
-            Try Again
+            ${translations.tryAgain}
         </button>
     `;
 }

@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\FinancialExpense;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class FinancialExpenseObserver
 {
@@ -51,5 +52,10 @@ class FinancialExpenseObserver
         }
         Cache::forget('financial.expenses.yearly_aggregates');
         Cache::forget('financial.available_years');
+        
+        // Clear dashboard cache for organization
+        if (Auth::check()) {
+            Cache::forget('dashboard_stats_' . Auth::user()->organization_id);
+        }
     }
 }

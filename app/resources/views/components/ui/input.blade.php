@@ -1,16 +1,32 @@
 @props([
     'disabled' => false,
     'type' => 'text',
+    'error' => false,
+    'required' => false,
 ])
+
+@php
+    // Auto-detect error from validation errors if name attribute exists
+    $name = $attributes->get('name');
+    $hasError = $error || ($name && $errors->has($name));
+    $errorId = $name ? $name . '-error' : null;
+@endphp
 
 <input
     type="{{ $type }}"
     {{ $disabled ? 'disabled' : '' }}
+    {{ $required ? 'required' : '' }}
+    @if($required) aria-required="true" @endif
+    @if($hasError) aria-invalid="true" @endif
+    @if($hasError && $errorId) aria-describedby="{{ $errorId }}" @endif
     {{ $attributes->class([
-        'flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white',
+        'flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm ring-offset-white transition-colors',
         'file:border-0 file:bg-transparent file:text-sm file:font-medium',
         'placeholder:text-slate-500',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2',
-        'disabled:cursor-not-allowed disabled:opacity-50'
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50',
+        $hasError
+            ? 'border-red-300 text-red-900 placeholder:text-red-300 focus-visible:ring-red-500 pr-10'
+            : 'border-slate-200 focus-visible:ring-slate-950',
     ]) }}
 >

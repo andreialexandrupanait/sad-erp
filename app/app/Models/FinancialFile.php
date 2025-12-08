@@ -34,6 +34,8 @@ class FinancialFile extends Model
         'luna' => 'integer',
     ];
 
+    protected $appends = ['icon'];
+
     protected static function booted()
     {
         // Auto-fill organization_id and user_id
@@ -133,6 +135,14 @@ class FinancialFile extends Model
         return $this->morphTo();
     }
 
+    /**
+     * Expenses that were imported from this bank statement file
+     */
+    public function importedExpenses()
+    {
+        return $this->hasMany(FinancialExpense::class, 'source_file_id');
+    }
+
     // Helper methods
     public function getFormattedSizeAttribute()
     {
@@ -157,7 +167,29 @@ class FinancialFile extends Model
 
     public function getIconAttribute()
     {
-        $extension = pathinfo($this->file_name, PATHINFO_EXTENSION);
+        // Try to get extension from file_name first
+        $extension = strtolower(pathinfo($this->file_name, PATHINFO_EXTENSION));
+
+        // If no extension in file_name, try file_path
+        if (empty($extension) && $this->file_path) {
+            $extension = strtolower(pathinfo($this->file_path, PATHINFO_EXTENSION));
+        }
+
+        // If still no extension, try to determine from mime_type
+        if (empty($extension) && $this->mime_type) {
+            $mimeToExt = [
+                'application/pdf' => 'pdf',
+                'application/msword' => 'doc',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+                'application/vnd.ms-excel' => 'xls',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' => 'xlsx',
+                'image/jpeg' => 'jpg',
+                'image/png' => 'png',
+                'application/zip' => 'zip',
+                'application/x-rar-compressed' => 'rar',
+            ];
+            $extension = $mimeToExt[$this->mime_type] ?? '';
+        }
 
         $icons = [
             'pdf' => '📄',

@@ -5,16 +5,23 @@
     $statusName = $clientStatus ? $clientStatus->name : __('No Status');
 @endphp
 <tr class="border-b transition-colors hover:bg-slate-50/50 client-row"
+    data-selectable
     data-client-id="{{ $client->id }}"
     data-client-slug="{{ $client->slug }}"
     data-status-id="{{ $client->status_id ?? 'null' }}">
-    <td class="p-4 align-middle">
+    <td class="pl-4 pr-2 py-4 align-middle">
+        <x-bulk-checkbox
+            @change="toggleItem({{ $client->id }})"
+            x-bind:checked="selectedIds.includes({{ $client->id }})"
+        />
+    </td>
+    <td class="pl-2 pr-4 py-4 align-middle">
         <div>
             <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors">
                 {{ $client->name }}
             </a>
-            @if($client->company_name)
-                <div class="text-sm text-slate-500">{{ $client->company_name }}</div>
+            @if($client->contact_person)
+                <div class="text-sm text-slate-500">{{ $client->contact_person }}</div>
             @endif
         </div>
     </td>

@@ -38,11 +38,24 @@ if [ ! -f "${BACKUP_FILE}" ]; then
     exit 1
 fi
 
-# Database credentials
+# Database credentials from .env file
 DB_CONTAINER="erp_db"
 DB_NAME="laravel_erp"
 DB_USER="root"
-DB_PASS="root_secure_password_2025"
+
+# Load DB password from .env file
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | grep DB_ROOT_PASSWORD | xargs)
+    DB_PASS="${DB_ROOT_PASSWORD}"
+else
+    echo "Error: .env file not found"
+    exit 1
+fi
+
+if [ -z "$DB_PASS" ]; then
+    echo "Error: DB_ROOT_PASSWORD not set in .env file"
+    exit 1
+fi
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "  ⚠️  WARNING: Database Restore Operation"

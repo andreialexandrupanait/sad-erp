@@ -2,13 +2,24 @@
 
 namespace App\Providers;
 
-use App\Events\Task\TaskAssigned;
-use App\Events\Task\TaskCreated;
-use App\Events\Task\TaskDeleted;
-use App\Events\Task\TaskStatusChanged;
-use App\Events\Task\TaskUpdated;
-use App\Listeners\Task\LogTaskActivity;
-use App\Listeners\Task\SendTaskNotification;
+// Notification Events
+use App\Events\Client\ClientStatusChanged;
+use App\Events\Domain\DomainExpired;
+use App\Events\Domain\DomainExpiringSoon;
+use App\Events\FinancialRevenue\RevenueCreated;
+use App\Events\Subscription\SubscriptionOverdue;
+use App\Events\Subscription\SubscriptionRenewalDue;
+use App\Events\System\SystemErrorOccurred;
+
+// Notification Listeners
+use App\Listeners\Notification\SendClientNotification;
+use App\Listeners\Notification\SendDomainExpiryNotification;
+use App\Listeners\Notification\SendRevenueNotification;
+use App\Listeners\Notification\SendSubscriptionNotification;
+use App\Listeners\Notification\SendSystemErrorNotification;
+use App\Listeners\UpdateLastLogin;
+
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
 
@@ -20,23 +31,40 @@ class EventServiceProvider extends ServiceProvider
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
-        TaskCreated::class => [
-            LogTaskActivity::class . '@handleTaskCreated',
-            SendTaskNotification::class . '@handleTaskCreated',
+        // Auth Events
+        Login::class => [
+            UpdateLastLogin::class,
         ],
-        TaskUpdated::class => [
-            LogTaskActivity::class . '@handleTaskUpdated',
+
+        // Domain Notification Events
+        DomainExpiringSoon::class => [
+            SendDomainExpiryNotification::class . '@handleDomainExpiringSoon',
         ],
-        TaskDeleted::class => [
-            LogTaskActivity::class . '@handleTaskDeleted',
+        DomainExpired::class => [
+            SendDomainExpiryNotification::class . '@handleDomainExpired',
         ],
-        TaskStatusChanged::class => [
-            LogTaskActivity::class . '@handleTaskStatusChanged',
-            SendTaskNotification::class . '@handleTaskStatusChanged',
+
+        // Subscription Notification Events
+        SubscriptionRenewalDue::class => [
+            SendSubscriptionNotification::class . '@handleSubscriptionRenewalDue',
         ],
-        TaskAssigned::class => [
-            LogTaskActivity::class . '@handleTaskAssigned',
-            SendTaskNotification::class . '@handleTaskAssigned',
+        SubscriptionOverdue::class => [
+            SendSubscriptionNotification::class . '@handleSubscriptionOverdue',
+        ],
+
+        // Financial Notification Events
+        RevenueCreated::class => [
+            SendRevenueNotification::class,
+        ],
+
+        // Client Notification Events
+        ClientStatusChanged::class => [
+            SendClientNotification::class,
+        ],
+
+        // System Notification Events
+        SystemErrorOccurred::class => [
+            SendSystemErrorNotification::class,
         ],
     ];
 

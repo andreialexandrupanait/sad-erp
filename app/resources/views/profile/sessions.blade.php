@@ -3,27 +3,27 @@
 
     <div class="p-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-3xl">
                     <section>
                         <header>
-                            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                            <h2 class="text-lg font-medium text-gray-900">
                                 {{ __("Browser Sessions") }}
                             </h2>
-                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                            <p class="mt-1 text-sm text-gray-600">
                                 {{ __("Manage and logout your active sessions on other browsers and devices.") }}
                             </p>
                         </header>
 
                         @if(session('success'))
-                            <div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                                <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
+                            <div class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                                <p class="text-sm text-green-800">{{ session('success') }}</p>
                             </div>
                         @endif
 
                         <div class="mt-6 space-y-4">
                             @foreach($sessions as $session)
-                                <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900 rounded-lg border {{ $session->is_current ? 'border-blue-300 dark:border-blue-700' : 'border-gray-200 dark:border-gray-700' }}">
+                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border {{ $session->is_current ? 'border-blue-300' : 'border-gray-200' }}">
                                     <div class="flex items-center gap-4">
                                         <div class="flex-shrink-0">
                                             @if($session->is_desktop)
@@ -41,13 +41,13 @@
                                             @endif
                                         </div>
                                         <div>
-                                            <p class="font-medium text-gray-900 dark:text-gray-100">
+                                            <p class="font-medium text-gray-900">
                                                 {{ $session->browser }} on {{ $session->platform }}
                                                 @if($session->is_current)
-                                                    <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">{{ __("This device") }}</span>
+                                                    <span class="ml-2 px-2 py-0.5 text-xs bg-blue-100 text-blue-800 rounded-full">{{ __("This device") }}</span>
                                                 @endif
                                             </p>
-                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                            <p class="text-sm text-gray-500">
                                                 {{ $session->ip_address }} &middot; {{ $session->last_active }}
                                             </p>
                                         </div>
@@ -64,7 +64,7 @@
                                                     $refs.sessionPassword.value = pwd;
                                                     $el.closest('form').submit();
                                                 }
-                                            " class="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                            " class="text-sm text-red-600 hover:text-red-800">
                                                 {{ __("Logout") }}
                                             </button>
                                         </form>
@@ -74,7 +74,7 @@
                         </div>
 
                         @if(count($sessions) > 1)
-                            <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                            <div class="mt-6 pt-6 border-t border-gray-200">
                                 <form method="POST" action="{{ route('profile.sessions.destroy-others') }}" x-data>
                                     @csrf
                                     @method('DELETE')
@@ -95,9 +95,9 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
                 <div class="max-w-xl">
-                    <a href="{{ route('profile.edit') }}" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100">
+                    <a href="{{ route('profile.edit') }}" class="text-sm text-gray-600 hover:text-gray-900">
                         &larr; {{ __("Back to Profile") }}
                     </a>
                 </div>

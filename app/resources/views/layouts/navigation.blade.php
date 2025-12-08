@@ -23,9 +23,6 @@
                     <x-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                         {{ __('Clients') }}
                     </x-nav-link>
-                    <x-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*') || request()->routeIs('task-services.*')">
-                        {{ __('Tasks') }}
-                    </x-nav-link>
                     <x-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
                         {{ __('Financial') }}
                     </x-nav-link>
@@ -101,9 +98,6 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.*')">
                 {{ __('Clients') }}
-            </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('tasks.index')" :active="request()->routeIs('tasks.*') || request()->routeIs('task-services.*')">
-                {{ __('Tasks') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
                 {{ __('Financial') }}

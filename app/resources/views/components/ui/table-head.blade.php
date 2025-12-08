@@ -1,3 +1,3 @@
-<th {{ $attributes->merge(['class' => 'h-12 px-4 text-left align-middle font-medium text-slate-500 [&:has([role=checkbox])]:pr-0']) }}>
+<th {{ $attributes->merge(['class' => 'h-12 px-4 text-left align-middle font-medium text-slate-500 [&:has([role=checkbox])]:pr-0']) }} scope="col">
     {{ $slot }}
 </th>

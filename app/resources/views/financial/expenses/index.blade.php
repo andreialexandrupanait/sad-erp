@@ -35,26 +35,17 @@
                     </x-ui.select>
                 </div>
 
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2" x-data @category-selected.window="if ($event.target.closest('[x-data]') === $el) { $el.closest('form').submit(); }">
                     <label class="text-sm font-medium text-slate-700">{{ __('Categorie') }}:</label>
-                    <x-ui.select name="category_id" onchange="this.form.submit()">
-                        <option value="">{{ __('Toate') }}</option>
-                        @foreach($categories as $category)
-                            @if($category->children->count() > 0)
-                                <optgroup label="{{ $category->name }}">
-                                    @foreach($category->children as $child)
-                                        <option value="{{ $child->id }}" {{ ($categoryId ?? '') == $child->id ? 'selected' : '' }}>
-                                            {{ $child->name }}
-                                        </option>
-                                    @endforeach
-                                </optgroup>
-                            @else
-                                <option value="{{ $category->id }}" {{ ($categoryId ?? '') == $category->id ? 'selected' : '' }}>
-                                    {{ $category->name }}
-                                </option>
-                            @endif
-                        @endforeach
-                    </x-ui.select>
+                    <x-category-combobox
+                        :categories="$categories"
+                        :selected="$categoryId ?? null"
+                        name="category_id"
+                        placeholder="{{ __('Toate') }}"
+                        :allow-create="false"
+                        :allow-empty="true"
+                        width="200px"
+                    />
                 </div>
             </form>
 
@@ -67,7 +58,7 @@
         </div>
     </x-slot>
 
-    <div class="p-6" x-data>
+    <div class="p-6" x-data="expenseBulkSelection()">
 
         @if(session('success'))
             <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
@@ -227,6 +218,36 @@
             </script>
         </div>
 
+        <!-- Bulk Actions Toolbar -->
+        <x-bulk-toolbar>
+            <x-ui.button
+                variant="outline"
+                @click="performBulkAction('export', '{{ route('financial.expenses.bulk-export') }}', {
+                    confirmTitle: '{{ __('Export Expenses') }}',
+                    confirmMessage: '{{ __('Export selected expenses to CSV?') }}',
+                    successMessage: '{{ __('Expenses exported successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {{ __('Export to CSV') }}
+            </x-ui.button>
+            <x-ui.button
+                variant="destructive"
+                @click="performBulkAction('delete', '{{ route('financial.expenses.bulk-update') }}', {
+                    confirmTitle: '{{ __('Delete Expenses') }}',
+                    confirmMessage: '{{ __('Are you sure you want to delete the selected expenses? This action cannot be undone.') }}',
+                    successMessage: '{{ __('Expenses deleted successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete Selected') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
+
         <!-- Table -->
         <x-ui.card>
             <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
@@ -251,6 +272,10 @@
                 <table class="w-full caption-bottom text-sm">
                     <thead class="[&_tr]:border-b">
                         <tr class="border-b transition-colors hover:bg-slate-50/50">
+                            <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                <input type="checkbox" x-model="selectAll" @change="toggleAll()"
+                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                            </th>
                             <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
                             <x-ui.sortable-header column="document_name" label="{{ __('Document') }}" />
                             <x-ui.sortable-header column="category_option_id" label="{{ __('Category') }}" />
@@ -261,7 +286,13 @@
                     </thead>
                     <tbody class="[&_tr:last-child]:border-0">
                         @forelse($expenses as $expense)
-                            <x-ui.table-row>
+                            <x-ui.table-row data-selectable data-expense-id="{{ $expense->id }}">
+                                <x-ui.table-cell>
+                                    <input type="checkbox"
+                                           :checked="selectedIds.includes({{ $expense->id }})"
+                                           @change="toggleItem({{ $expense->id }})"
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                </x-ui.table-cell>
                                 <x-ui.table-cell>
                                     <div class="text-sm text-slate-900">{{ $expense->occurred_at->format('d M Y') }}</div>
                                 </x-ui.table-cell>
@@ -270,7 +301,8 @@
                                 </x-ui.table-cell>
                                 <x-ui.table-cell>
                                     @if($expense->category)
-                                        <span class="px-2 py-1 rounded text-xs {{ $expense->category->badge_class }}">
+                                        <span class="px-2 py-1 rounded text-xs font-medium border"
+                                              style="background-color: {{ $expense->category->color_background }}; color: {{ $expense->category->color_text }}; border-color: {{ $expense->category->color_class ?? '#d1d5db' }}">
                                             {{ $expense->category->label }}
                                         </span>
                                     @else
@@ -348,4 +380,88 @@
 
     <!-- Toast Notifications -->
     <x-toast />
+
+    @push('scripts')
+    <script>
+    function expenseBulkSelection() {
+        return {
+            selectedIds: [],
+            selectAll: false,
+            isLoading: false,
+
+            get selectedCount() {
+                return this.selectedIds.length;
+            },
+
+            get hasSelection() {
+                return this.selectedIds.length > 0;
+            },
+
+            toggleItem(id) {
+                const index = this.selectedIds.indexOf(id);
+                if (index > -1) {
+                    this.selectedIds.splice(index, 1);
+                } else {
+                    this.selectedIds.push(id);
+                }
+                this.updateSelectAllState();
+            },
+
+            toggleAll() {
+                if (this.selectAll) {
+                    this.selectAllVisible();
+                } else {
+                    this.selectedIds = [];
+                }
+            },
+
+            selectAllVisible() {
+                const rows = document.querySelectorAll('[data-selectable]');
+                this.selectedIds = Array.from(rows).map(row => parseInt(row.dataset.expenseId));
+            },
+
+            updateSelectAllState() {
+                const rows = document.querySelectorAll('[data-selectable]');
+                this.selectAll = rows.length > 0 && this.selectedIds.length === rows.length;
+            },
+
+            clearSelection() {
+                this.selectedIds = [];
+                this.selectAll = false;
+            },
+
+            async performBulkAction(action, endpoint, options = {}) {
+                if (this.selectedIds.length === 0) return;
+                if (!confirm(options.confirmMessage || 'Are you sure?')) return;
+
+                this.isLoading = true;
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ ids: this.selectedIds, action: action })
+                    });
+
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { message: options.successMessage || 'Success', type: 'success' } }));
+                        this.clearSelection();
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('toast', { detail: { message: data.message || 'Error', type: 'error' } }));
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                } finally {
+                    this.isLoading = false;
+                }
+            }
+        };
+    }
+    </script>
+    @endpush
 </x-app-layout>

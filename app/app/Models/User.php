@@ -7,13 +7,16 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -32,6 +35,7 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'two_factor_confirmed_at',
+        'last_login_at',
     ];
 
     /**
@@ -59,6 +63,7 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
             'two_factor_recovery_codes' => 'encrypted:array',
             'settings' => 'array',
+            'last_login_at' => 'datetime',
         ];
     }
 
@@ -86,6 +91,30 @@ class User extends Authenticatable
     public function userServices(): HasMany
     {
         return $this->hasMany(UserService::class);
+    }
+
+    /**
+     * Get the user's module permissions
+     */
+    public function modulePermissions(): HasMany
+    {
+        return $this->hasMany(UserModulePermission::class);
+    }
+
+    /**
+     * Check if user is super admin (god mode)
+     */
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'superadmin';
+    }
+
+    /**
+     * Check if user is organization admin
+     */
+    public function isOrgAdmin(): bool
+    {
+        return $this->role === 'admin';
     }
 
     /**
@@ -191,5 +220,140 @@ class User extends Authenticatable
         }
         $this->settings = $settings;
         $this->save();
+    }
+
+    /**
+     * Check if user can perform an action on a module.
+     * Uses cached permissions for performance.
+     */
+    public function canAccessModule(string $moduleSlug, string $action = 'view'): bool
+    {
+        // Super admin bypasses all checks
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        // Org admin has full access within their org
+        if ($this->isOrgAdmin()) {
+            return true;
+        }
+
+        // Get cached permissions
+        $permissions = $this->getCachedModulePermissions();
+
+        if (!isset($permissions[$moduleSlug])) {
+            // Fall back to role defaults
+            return $this->getRoleDefaultPermission($moduleSlug, $action);
+        }
+
+        $permission = $permissions[$moduleSlug];
+
+        return match ($action) {
+            'view' => $permission['can_view'] ?? false,
+            'create' => $permission['can_create'] ?? false,
+            'update' => $permission['can_update'] ?? false,
+            'delete' => $permission['can_delete'] ?? false,
+            'export' => $permission['can_export'] ?? false,
+            default => false,
+        };
+    }
+
+    /**
+     * Get all module permissions for user (cached).
+     */
+    public function getCachedModulePermissions(): array
+    {
+        return Cache::remember(
+            "user:{$this->id}:module_permissions",
+            3600,
+            function () {
+                return $this->modulePermissions()
+                    ->with('module')
+                    ->get()
+                    ->filter(fn ($p) => $p->module !== null)
+                    ->keyBy(fn ($p) => $p->module->slug)
+                    ->map(fn ($p) => [
+                        'can_view' => $p->can_view,
+                        'can_create' => $p->can_create,
+                        'can_update' => $p->can_update,
+                        'can_delete' => $p->can_delete,
+                        'can_export' => $p->can_export,
+                    ])
+                    ->toArray();
+            }
+        );
+    }
+
+    /**
+     * Get default permission for role (cached).
+     */
+    protected function getRoleDefaultPermission(string $moduleSlug, string $action): bool
+    {
+        $defaults = RoleModuleDefault::getForRole($this->role ?? 'user');
+
+        if (!isset($defaults[$moduleSlug])) {
+            return false;
+        }
+
+        return $defaults[$moduleSlug]["can_{$action}"] ?? false;
+    }
+
+    /**
+     * Clear permission cache when permissions change.
+     */
+    public function clearPermissionCache(): void
+    {
+        Cache::forget("user:{$this->id}:module_permissions");
+    }
+
+    /**
+     * Get modules user can access (for sidebar).
+     */
+    public function getAccessibleModules(): Collection
+    {
+        if ($this->isSuperAdmin() || $this->isOrgAdmin()) {
+            return Module::getAllCached();
+        }
+
+        $permissions = $this->getCachedModulePermissions();
+
+        return Module::getAllCached()->filter(function ($module) use ($permissions) {
+            if (isset($permissions[$module->slug])) {
+                return $permissions[$module->slug]['can_view'];
+            }
+            return $this->getRoleDefaultPermission($module->slug, 'view');
+        });
+    }
+
+    /**
+     * Get detailed permission info for a module.
+     */
+    public function getModulePermissions(string $moduleSlug): array
+    {
+        if ($this->isSuperAdmin() || $this->isOrgAdmin()) {
+            return [
+                'can_view' => true,
+                'can_create' => true,
+                'can_update' => true,
+                'can_delete' => true,
+                'can_export' => true,
+            ];
+        }
+
+        $permissions = $this->getCachedModulePermissions();
+
+        if (isset($permissions[$moduleSlug])) {
+            return $permissions[$moduleSlug];
+        }
+
+        $defaults = RoleModuleDefault::getForRole($this->role ?? 'user');
+
+        return $defaults[$moduleSlug] ?? [
+            'can_view' => false,
+            'can_create' => false,
+            'can_update' => false,
+            'can_delete' => false,
+            'can_export' => false,
+        ];
     }
 }

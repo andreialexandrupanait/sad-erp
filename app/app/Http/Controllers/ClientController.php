@@ -2,129 +2,213 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use Illuminate\Support\Facades\Response;
+use App\Http\Requests\Client\StoreClientRequest;
+use App\Http\Requests\Client\UpdateClientRequest;
 use App\Models\Client;
 use App\Models\SettingOption;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
+    use HandlesBulkActions;
+    public function __construct()
+    {
+        $this->authorizeResource(Client::class, 'client');
+    }
+
     /**
-     * Display a listing of the clients
+     * Display a listing of the clients.
      */
-    public function index(Request $request)
+    public function index(Request $request): View|JsonResponse
+    {
+        // For AJAX requests, return JSON
+        if ($request->wantsJson() || $request->ajax()) {
+            return $this->indexJson($request);
+        }
+
+        // For initial page load, return view with statuses for filter pills
+        $statuses = SettingOption::clientStatuses()->get();
+
+        // Parse initial filters from URL for server-side rendering fallback
+        $initialFilters = $this->parseUrlFilters($request);
+
+        return view('clients.index', [
+            'statuses' => $statuses,
+            'initialFilters' => $initialFilters,
+        ]);
+    }
+
+    /**
+     * Return clients data as JSON for AJAX requests.
+     */
+    private function indexJson(Request $request): JsonResponse
     {
         $query = Client::with(['status'])
             ->withCount(['revenues as invoices_count']);
 
-        // Search functionality
-        if ($request->filled('search')) {
-            $query->search($request->search);
-        }
+        // Multi-status filter (comma-separated slugs)
+        if ($request->filled('status')) {
+            $statusSlugs = array_filter(explode(',', $request->status));
+            if (!empty($statusSlugs)) {
+                // Get status IDs from slugs
+                $allStatuses = SettingOption::clientStatuses()->get();
+                $statusIds = $allStatuses->filter(function ($status) use ($statusSlugs) {
+                    return in_array($status->slug, $statusSlugs);
+                })->pluck('id')->toArray();
 
-        // Filter by status
-        if ($request->filled('status_id')) {
-            $query->byStatus($request->status_id);
-        }
-
-        // Get view mode (default: table)
-        $viewMode = $request->get('view', 'table');
-
-        // Sort - default to name ascending for better UX
-        if ($viewMode === 'kanban') {
-            $query->ordered();
-        } else {
-            $sortBy = $request->get('sort', 'name');
-            $sortDir = $request->get('dir', 'asc');
-
-            // Whitelist allowed sort columns for security
-            $allowedSortColumns = ['name', 'status_id', 'total_incomes', 'created_at', 'email'];
-            if (!in_array($sortBy, $allowedSortColumns)) {
-                $sortBy = 'name';
+                if (!empty($statusIds)) {
+                    $query->whereIn('status_id', $statusIds);
+                }
             }
-
-            // Validate sort direction
-            $sortDir = in_array($sortDir, ['asc', 'desc']) ? $sortDir : 'asc';
-
-            $query->orderBy($sortBy, $sortDir);
         }
+
+        // Search functionality (q parameter for cleaner URLs)
+        if ($request->filled('q')) {
+            $query->search($request->q);
+        }
+
+        // Sort (format: "column" or "column:direction")
+        $sort = $request->get('sort', 'name:asc');
+        [$column, $direction] = $this->parseSort($sort);
+        $query->orderBy($column, $direction);
+
+        // Pagination
+        $perPage = $request->get('limit', 25);
+        $allowedPerPage = [10, 25, 50, 100];
+        $perPage = in_array((int) $perPage, $allowedPerPage) ? (int) $perPage : 25;
+
+        $clients = $query->paginate($perPage);
 
         // Get status counts for filter pills
-        $statusCounts = Client::selectRaw('status_id, COUNT(*) as count')
+        $statusCounts = $this->getStatusCounts($request);
+
+        return response()->json([
+            'clients' => $clients->map(function ($client) {
+                return [
+                    'id' => $client->id,
+                    'name' => $client->name,
+                    'slug' => $client->slug ?? null,
+                    'email' => $client->email,
+                    'phone' => $client->phone,
+                    'contact_person' => $client->contact_person,
+                    'company_name' => $client->company_name,
+                    'tax_id' => $client->tax_id,
+                    'total_incomes' => $client->total_incomes,
+                    'invoices_count' => $client->invoices_count,
+                    'status_id' => $client->status_id,
+                    'status' => $client->status ? [
+                        'id' => $client->status->id,
+                        'name' => $client->status->name,
+                        'slug' => $client->status->slug,
+                        'color_background' => $client->status->color_background,
+                        'color_text' => $client->status->color_text,
+                    ] : null,
+                    'created_at' => $client->created_at?->toISOString(),
+                    'updated_at' => $client->updated_at?->toISOString(),
+                ];
+            }),
+            'pagination' => [
+                'total' => $clients->total(),
+                'per_page' => $clients->perPage(),
+                'current_page' => $clients->currentPage(),
+                'last_page' => $clients->lastPage(),
+                'from' => $clients->firstItem(),
+                'to' => $clients->lastItem(),
+            ],
+            'status_counts' => $statusCounts,
+        ]);
+    }
+
+    /**
+     * Parse sort parameter (format: "column" or "column:direction").
+     */
+    private function parseSort(string $sort): array
+    {
+        $parts = explode(':', $sort);
+        $column = $parts[0];
+        $direction = $parts[1] ?? null;
+
+        // Map frontend names to DB columns
+        $columnMap = [
+            'name' => 'name',
+            'revenue' => 'total_incomes',
+            'status' => 'status_id',
+            'created' => 'created_at',
+            'email' => 'email',
+            // Also allow direct DB column names
+            'total_incomes' => 'total_incomes',
+            'status_id' => 'status_id',
+            'created_at' => 'created_at',
+        ];
+
+        // Default direction per column (desc for metrics/dates)
+        $defaultDesc = ['revenue', 'total_incomes', 'created', 'created_at'];
+
+        // If no direction specified, use default
+        if ($direction === null) {
+            $direction = in_array($column, $defaultDesc) ? 'desc' : 'asc';
+        }
+
+        return [
+            $columnMap[$column] ?? 'name',
+            in_array($direction, ['asc', 'desc']) ? $direction : 'asc',
+        ];
+    }
+
+    /**
+     * Get status counts for filter pills.
+     */
+    private function getStatusCounts(Request $request): array
+    {
+        // Base counts without any status filter
+        $counts = Client::selectRaw('status_id, COUNT(*) as count')
             ->groupBy('status_id')
             ->pluck('count', 'status_id')
             ->toArray();
 
-        // For kanban view, group by status
-        if ($viewMode === 'kanban') {
-            $clients = $query->get()->groupBy('status_id');
-        } else {
-            // Default to 100 clients per page
-            $clients = $query->paginate(100)->withQueryString();
-        }
+        // Total count
+        $total = array_sum($counts);
 
-        return view('clients.index', compact('clients', 'viewMode', 'statusCounts'));
+        return [
+            'total' => $total,
+            'by_status' => $counts,
+        ];
     }
 
     /**
-     * Show the form for creating a new client
+     * Parse URL filters for initial server-side rendering.
      */
-    public function create()
+    private function parseUrlFilters(Request $request): array
+    {
+        return [
+            'status' => $request->filled('status') ? explode(',', $request->status) : [],
+            'q' => $request->get('q', ''),
+            'sort' => $request->get('sort', 'name:asc'),
+            'page' => (int) $request->get('page', 1),
+        ];
+    }
+
+    /**
+     * Show the form for creating a new client.
+     */
+    public function create(): View
     {
         // Note: $clientStatuses is now automatically available via SettingsComposer
         return view('clients.create');
     }
 
     /**
-     * Store a newly created client in database
+     * Store a newly created client in database.
      */
-    public function store(Request $request)
+    public function store(StoreClientRequest $request): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'tax_id' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('clients')->where(function ($query) use ($request) {
-                    // Only check uniqueness if tax_id is not NULL or '-'
-                    $taxId = $request->input('tax_id');
-                    if ($taxId !== null && $taxId !== '' && $taxId !== '-') {
-                        return $query->where('user_id', auth()->id())
-                                     ->where('tax_id', '!=', '-')
-                                     ->whereNotNull('tax_id');
-                    }
-                    return $query->whereRaw('1 = 0'); // Never match if tax_id is NULL or '-'
-                }),
-            ],
-            'registration_number' => 'nullable|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string',
-            'vat_payer' => 'nullable|boolean',
-            'notes' => 'nullable|string',
-            'status_id' => 'nullable|exists:settings_options,id',
-            'order_index' => 'nullable|integer',
-        ]);
+        $client = Client::create($request->validated());
 
-        // Convert checkbox to boolean
-        $validated['vat_payer'] = $request->has('vat_payer');
-
-        // Sanitize text inputs to prevent XSS
-        $validated['name'] = sanitize_input($validated['name']);
-        if (!empty($validated['company_name'])) {
-            $validated['company_name'] = sanitize_input($validated['company_name']);
-        }
-        if (!empty($validated['contact_person'])) {
-            $validated['contact_person'] = sanitize_input($validated['contact_person']);
-        }
-
-        $client = Client::create($validated);
-
-        // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
@@ -139,12 +223,32 @@ class ClientController extends Controller
     }
 
     /**
-     * Display the specified client
+     * Display the specified client.
      */
-    public function show(Client $client)
+    public function show(Client $client, Request $request): View
     {
-        // Load relationships
-        $client->load(['status', 'revenues', 'domains', 'accessCredentials']);
+        // Get sorting parameters
+        $sortBy = $request->get('sort', 'occurred_at');
+        $sortDir = $request->get('dir', 'desc');
+
+        // Whitelist allowed sort columns for security
+        $allowedSortColumns = ['occurred_at', 'document_name', 'amount'];
+        if (!in_array($sortBy, $allowedSortColumns)) {
+            $sortBy = 'occurred_at';
+        }
+
+        // Validate sort direction
+        $sortDir = in_array($sortDir, ['asc', 'desc']) ? $sortDir : 'desc';
+
+        // Load relationships - revenues ordered by request with files
+        $client->load([
+            'status',
+            'revenues' => function($query) use ($sortBy, $sortDir) {
+                $query->with('files')->orderBy($sortBy, $sortDir);
+            },
+            'domains',
+            'accessCredentials'
+        ]);
 
         // Get active tab from request (default: overview)
         $activeTab = request()->get('tab', 'overview');
@@ -154,69 +258,28 @@ class ClientController extends Controller
             'total_revenue' => $client->total_revenue,
             'active_domains' => $client->active_domains_count,
             'credentials_count' => $client->credentials_count,
+            'invoices_count' => $client->revenues->count(),
         ];
 
         return view('clients.show', compact('client', 'stats', 'activeTab'));
     }
 
     /**
-     * Show the form for editing the specified client
+     * Show the form for editing the specified client.
      */
-    public function edit(Client $client)
+    public function edit(Client $client): View
     {
         // Note: $clientStatuses is now automatically available via SettingsComposer
         return view('clients.edit', compact('client'));
     }
 
     /**
-     * Update the specified client in database
+     * Update the specified client in database.
      */
-    public function update(Request $request, Client $client)
+    public function update(UpdateClientRequest $request, Client $client): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'company_name' => 'nullable|string|max:255',
-            'tax_id' => [
-                'nullable',
-                'string',
-                'max:100',
-                Rule::unique('clients')->where(function ($query) use ($request) {
-                    // Only check uniqueness if tax_id is not NULL or '-'
-                    $taxId = $request->input('tax_id');
-                    if ($taxId !== null && $taxId !== '' && $taxId !== '-') {
-                        return $query->where('user_id', auth()->id())
-                                     ->where('tax_id', '!=', '-')
-                                     ->whereNotNull('tax_id');
-                    }
-                    return $query->whereRaw('1 = 0'); // Never match if tax_id is NULL or '-'
-                })->ignore($client->id),
-            ],
-            'registration_number' => 'nullable|string|max:255',
-            'contact_person' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
-            'address' => 'nullable|string',
-            'vat_payer' => 'nullable|boolean',
-            'notes' => 'nullable|string',
-            'status_id' => 'nullable|exists:settings_options,id',
-            'order_index' => 'nullable|integer',
-        ]);
+        $client->update($request->validated());
 
-        // Convert checkbox to boolean
-        $validated['vat_payer'] = $request->has('vat_payer');
-
-        // Sanitize text inputs to prevent XSS
-        $validated['name'] = sanitize_input($validated['name']);
-        if (!empty($validated['company_name'])) {
-            $validated['company_name'] = sanitize_input($validated['company_name']);
-        }
-        if (!empty($validated['contact_person'])) {
-            $validated['contact_person'] = sanitize_input($validated['contact_person']);
-        }
-
-        $client->update($validated);
-
-        // Return JSON for AJAX requests
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
@@ -231,9 +294,9 @@ class ClientController extends Controller
     }
 
     /**
-     * Update client status (for AJAX requests)
+     * Update client status (for AJAX requests).
      */
-    public function updateStatus(Request $request, Client $client)
+    public function updateStatus(Request $request, Client $client): JsonResponse
     {
         $validated = $request->validate([
             'status_id' => 'nullable|exists:settings_options,id',
@@ -250,9 +313,9 @@ class ClientController extends Controller
     }
 
     /**
-     * Update client order index (for kanban reordering)
+     * Update client order index (for kanban reordering).
      */
-    public function reorder(Request $request, Client $client)
+    public function reorder(Request $request, Client $client): JsonResponse
     {
         $validated = $request->validate([
             'order_index' => 'required|integer|min:0',
@@ -267,9 +330,9 @@ class ClientController extends Controller
     }
 
     /**
-     * Remove the specified client from database
+     * Remove the specified client from database.
      */
-    public function destroy(Client $client)
+    public function destroy(Client $client): RedirectResponse
     {
         $clientName = $client->name;
         $client->delete();
@@ -277,5 +340,47 @@ class ClientController extends Controller
         return redirect()
             ->route('clients.index')
             ->with('success', __('Client deleted successfully.'));
+    }
+
+    protected function getBulkModelClass(): string
+    {
+        return Client::class;
+    }
+
+    protected function getExportEagerLoads(): array
+    {
+        return ['status'];
+    }
+
+    protected function exportToCsv($clients)
+    {
+        $filename = "clients_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($clients) {
+            $file = fopen("php://output", "w");
+
+            fputcsv($file, ["Name", "Email", "Phone", "Company", "Tax ID", "Status", "Total Income"]);
+
+            foreach ($clients as $client) {
+                fputcsv($file, [
+                    $client->name,
+                    $client->email,
+                    $client->phone,
+                    $client->company_name,
+                    $client->tax_id,
+                    $client->status?->name ?? "N/A",
+                    $client->total_incomes,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 }

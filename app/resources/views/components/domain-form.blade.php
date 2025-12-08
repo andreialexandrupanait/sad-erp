@@ -33,14 +33,13 @@
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="client_id">{{ __('Client (Optional)') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="client_id" id="client_id">
-                            <option value="">{{ __('No Client') }}</option>
-                            @foreach($clients as $client)
-                                <option value="{{ $client->id }}" {{ old('client_id', $domain->client_id ?? '') == $client->id ? 'selected' : '' }}>
-                                    {{ $client->display_name }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.searchable-select
+                            name="client_id"
+                            :options="$clients"
+                            :selected="old('client_id', $domain->client_id ?? '')"
+                            :placeholder="__('No Client')"
+                            :emptyLabel="__('No Client')"
+                        />
                     </div>
                     @error('client_id')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

@@ -1,35 +1,61 @@
 <?php
 
+/**
+ * Traduceri profil utilizator
+ */
+
 return [
-    'Profile' => 'Profil',
-    'Profile Information' => 'Informații profil',
-    'Update your account\'s profile information and email address.' => 'Actualizează informațiile profilului și adresa de email.',
-    'Name' => 'Nume',
-    'Email' => 'Email',
-    'Enter your name' => 'Introduceți numele dvs.',
-    'Enter your email' => 'Introduceți email-ul dvs.',
-    'Save' => 'Salvează',
-    'Saved.' => 'Salvat.',
+    // Titluri pagini
+    'title' => 'Profil',
+    'profile_settings' => 'Setări profil',
 
-    // Email Verification
-    'Your email address is unverified.' => 'Adresa dvs. de email nu este verificată.',
-    'Click here to re-send the verification email.' => 'Faceți clic aici pentru a retrimite email-ul de verificare.',
-    'A new verification link has been sent to your email address.' => 'Un nou link de verificare a fost trimis la adresa dvs. de email.',
+    // Informații profil
+    'profile_information' => 'Informații profil',
+    'update_profile' => 'Actualizați informațiile profilului și adresa de email a contului dvs.',
 
-    // Update Password
-    'Update Password' => 'Actualizare parolă',
-    'Ensure your account is using a long, random password to stay secure.' => 'Asigură-te că contul tău folosește o parolă lungă și aleatorie pentru a fi securizat.',
-    'Current Password' => 'Parola curentă',
-    'New Password' => 'Parolă nouă',
-    'Confirm Password' => 'Confirmă parola',
-    'Enter current password' => 'Introduceți parola curentă',
-    'Enter new password' => 'Introduceți parola nouă',
-    'Confirm new password' => 'Confirmați parola nouă',
+    // Verificare email
+    'email_unverified' => 'Adresa dvs. de email nu este verificată.',
+    'resend_verification' => 'Click aici pentru a retrimite email-ul de verificare.',
+    'verification_sent' => 'Un nou link de verificare a fost trimis la adresa dvs. de email.',
 
-    // Delete Account
-    'Delete Account' => 'Șterge cont',
-    'Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.' => 'Odată ce contul tău este șters, toate resursele și datele sale vor fi șterse permanent. Înainte de a șterge contul, te rugăm să descarci orice date sau informații pe care dorești să le păstrezi.',
-    'Are you sure you want to delete your account?' => 'Sigur doriți să vă ștergeți contul?',
-    'Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.' => 'Odată ce contul tău este șters, toate resursele și datele sale vor fi șterse permanent. Te rugăm să introduci parola pentru a confirma că dorești să ștergi permanent contul.',
-    'Cancel' => 'Anulează',
+    // Parolă
+    'update_password' => 'Actualizare parolă',
+    'update_password_desc' => 'Asigurați-vă că contul folosește o parolă lungă și aleatorie pentru securitate.',
+    'current_password' => 'Parola curentă',
+    'new_password' => 'Parolă nouă',
+    'confirm_password' => 'Confirmă parola',
+
+    // Autentificare în doi pași
+    'two_factor_auth' => 'Autentificare 2FA',
+    'two_factor_enabled' => 'Activată',
+    'two_factor_not_enabled' => 'Neactivată',
+    'enable_2fa' => 'Activează autentificarea în doi pași',
+    'disable_2fa' => 'Dezactivează autentificarea în doi pași',
+    'recovery_codes' => 'Coduri de recuperare',
+    'regenerate_codes' => 'Regenerează codurile de recuperare',
+
+    // Sesiuni
+    'sessions' => 'Sesiuni',
+    'manage_devices' => 'Gestionează dispozitive',
+    'active_sessions' => 'Sesiuni active',
+    'logout_other_sessions' => 'Deconectare alte sesiuni browser',
+    'logout_other_desc' => 'Dacă este necesar, puteți să vă deconectați din toate celelalte sesiuni browser de pe toate dispozitivele.',
+    'this_device' => 'Acest dispozitiv',
+    'last_active' => 'Ultima activitate',
+
+    // Tarife servicii
+    'my_rates' => 'Tarifele mele',
+    'hourly_rates' => 'Tarife orare',
+    'service_rates' => 'Tarife servicii',
+    'add_rate' => 'Adaugă tarif',
+
+    // Setări aplicație
+    'app_settings' => 'Setări aplicație',
+    'organization' => 'Organizație',
+
+    // Ștergere cont
+    'delete_account' => 'Șterge contul',
+    'delete_account_desc' => 'Odată ce contul este șters, toate resursele și datele sale vor fi șterse permanent. Înainte de a șterge contul, descărcați orice date sau informații pe care doriți să le păstrați.',
+    'confirm_delete_account' => 'Sigur doriți să ștergeți contul?',
+    'delete_account_warning' => 'Odată ce contul este șters, toate resursele și datele sale vor fi șterse permanent. Introduceți parola pentru a confirma că doriți să ștergeți permanent contul.',
 ];

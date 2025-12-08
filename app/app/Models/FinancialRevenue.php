@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,11 +10,12 @@ use Illuminate\Support\Facades\Auth;
 
 class FinancialRevenue extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'organization_id',
         'user_id',
+        'created_by',
         'document_name',
         'amount',
         'currency',
@@ -40,10 +42,12 @@ class FinancialRevenue extends Model
 
     protected static function booted()
     {
-        // Auto-fill organization_id and user_id
+        // Auto-fill organization_id and created_by
         static::creating(function ($revenue) {
             if (Auth::check()) {
                 $revenue->organization_id = $revenue->organization_id ?? Auth::user()->organization_id;
+                $revenue->created_by = $revenue->created_by ?? Auth::id();
+                // Keep user_id for backwards compatibility
                 $revenue->user_id = $revenue->user_id ?? Auth::id();
             }
 
@@ -57,11 +61,10 @@ class FinancialRevenue extends Model
             }
         });
 
-        // Global scope for organization and user isolation
-        static::addGlobalScope('user_scope', function (Builder $query) {
-            if (Auth::check()) {
-                $query->where('organization_id', Auth::user()->organization_id)
-                      ->where('user_id', Auth::id());
+        // Global scope for organization isolation only (not user-specific)
+        static::addGlobalScope('organization', function (Builder $query) {
+            if (Auth::check() && Auth::user()->organization_id) {
+                $query->where('financial_revenues.organization_id', Auth::user()->organization_id);
             }
         });
     }
@@ -77,6 +80,11 @@ class FinancialRevenue extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function client()
     {
         return $this->belongsTo(Client::class);
@@ -85,6 +93,11 @@ class FinancialRevenue extends Model
     public function files()
     {
         return $this->morphMany(FinancialFile::class, 'entity');
+    }
+
+    public function matchedBankTransaction()
+    {
+        return $this->hasOne(BankTransaction::class, 'matched_revenue_id');
     }
 
     // Scopes

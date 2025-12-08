@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use App\Models\Subscription;
 use App\Models\SubscriptionLog;
 use App\Models\SettingOption;
@@ -13,6 +17,13 @@ use Carbon\Carbon;
 
 class SubscriptionController extends Controller
 {
+    use HandlesBulkActions;
+
+    public function __construct()
+    {
+        $this->authorizeResource(Subscription::class, 'subscription');
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -294,5 +305,87 @@ class SubscriptionController extends Controller
             'changed_by_user_id' => auth()->id(),
             'changed_at' => now(),
         ]);
+    }
+
+    protected function getBulkModelClass(): string
+    {
+        return Subscription::class;
+    }
+
+    protected function exportToCsv($subscriptions)
+    {
+        $filename = "subscriptions_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($subscriptions) {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Vendor", "Price", "Currency", "Billing Cycle", "Start Date", "Next Renewal", "Status"]);
+
+            foreach ($subscriptions as $subscription) {
+                fputcsv($file, [
+                    $subscription->vendor_name,
+                    $subscription->price,
+                    $subscription->currency,
+                    $subscription->billing_cycle,
+                    $subscription->start_date?->format("Y-m-d") ?? "N/A",
+                    $subscription->next_renewal_date?->format("Y-m-d") ?? "N/A",
+                    $subscription->status,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    public function bulkRenew(Request $request)
+    {
+        $validated = $request->validate([
+            "ids" => "required|array|min:1|max:100",
+            "ids.*" => "required|integer",
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $subscriptions = Subscription::whereIn("id", $validated["ids"])->get();
+            $count = 0;
+
+            foreach ($subscriptions as $subscription) {
+                Gate::authorize("update", $subscription);
+                $subscription->calculateNextRenewal();
+                $subscription->save();
+                $count++;
+            }
+
+            DB::commit();
+            return response()->json(["success" => true, "message" => "{$count} subscriptions renewed"]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(["success" => false, "message" => $e->getMessage()], 500);
+        }
+    }
+
+    public function bulkUpdateStatus(Request $request)
+    {
+        $validated = $request->validate([
+            "ids" => "required|array|min:1|max:100",
+            "ids.*" => "required|integer",
+            "status" => "required|in:active,paused,cancelled",
+        ]);
+
+        $subscriptions = Subscription::whereIn("id", $validated["ids"])->get();
+
+        foreach ($subscriptions as $subscription) {
+            Gate::authorize("update", $subscription);
+            $subscription->status = $validated["status"];
+            $subscription->save();
+        }
+
+        return response()->json(["success" => true, "message" => count($subscriptions) . " subscriptions updated"]);
     }
 }

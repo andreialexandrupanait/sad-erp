@@ -39,6 +39,7 @@ class SmartbillService
             $request = Http::withHeaders([
                 'Authorization' => $this->getAuthHeader(),
                 'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
             ]);
 
             if ($method === 'GET') {
@@ -49,16 +50,28 @@ class SmartbillService
                 throw new Exception("Unsupported HTTP method: {$method}");
             }
 
+            $responseData = $response->json();
+
+            // Check for Smartbill-specific error in response body
+            if (isset($responseData['errorText']) && !empty($responseData['errorText'])) {
+                throw new Exception($responseData['errorText']);
+            }
+
+            if (isset($responseData['successfully']) && $responseData['successfully'] === false) {
+                $errorMessage = $responseData['errorText'] ?? 'Unknown Smartbill error';
+                throw new Exception($errorMessage);
+            }
+
             if (!$response->successful()) {
                 Log::error('Smartbill API Error', [
                     'status' => $response->status(),
                     'body' => $response->body(),
                     'url' => $url,
                 ]);
-                throw new Exception('Smartbill API Error: ' . $response->body());
+                throw new Exception('Smartbill API Error: HTTP ' . $response->status());
             }
 
-            return $response->json();
+            return $responseData;
         } catch (Exception $e) {
             Log::error('Smartbill API Exception', [
                 'message' => $e->getMessage(),
@@ -70,36 +83,18 @@ class SmartbillService
 
     /**
      * List invoices for a given period
-     *
-     * IMPORTANT: Smartbill Cloud REST API v1 does NOT have a "list invoices" endpoint.
-     * The API is designed for:
-     * - Creating invoices
-     * - Getting specific invoices (if you know series + number)
-     * - Downloading PDFs (if you know series + number)
-     * - Deleting/canceling invoices
-     *
-     * To import existing invoices, you need to:
-     * 1. Export invoices from Smartbill web interface as CSV/Excel
-     * 2. Parse the CSV file
-     * 3. For each invoice in CSV, fetch details via API using getInvoice()
-     *
-     * This method is kept for potential future API updates.
      */
     public function listInvoices($fromDate, $toDate, $page = 1, $perPage = 50)
     {
         throw new Exception(
             'Smartbill API does not support listing invoices. ' .
             'Please export invoices from Smartbill web interface (Rapoarte > Export) ' .
-            'and use the CSV import feature instead. ' .
-            'Alternatively, provide a list of invoice series and numbers to import specific invoices.'
+            'and use the CSV import feature instead.'
         );
     }
 
     /**
      * Import invoices from CSV data exported from Smartbill
-     *
-     * @param array $csvData Array of invoice data from CSV export
-     * @return array List of invoice details fetched from API
      */
     public function importFromCsvData($csvData)
     {
@@ -202,24 +197,32 @@ class SmartbillService
     public function testConnection()
     {
         try {
-            // Try to fetch taxes list - this is the simplest endpoint that validates credentials
-            // Using the correct endpoint from official Smartbill package: /tax (not /taxes)
+            // Use the /tax endpoint which is the most reliable for testing credentials
             $result = $this->makeRequest('GET', '/tax?cif=' . urlencode($this->cif));
+            
             return [
                 'success' => true,
-                'message' => 'Successfully connected to Smartbill API. Your credentials are working correctly.',
-                'data' => $result,
+                'message' => 'Conectare reușită la Smartbill API! Credențialele sunt valide.',
             ];
         } catch (Exception $e) {
             $errorMessage = $e->getMessage();
 
-            // Parse common Smartbill errors for better user feedback
-            if (str_contains($errorMessage, 'nu mai este disponibila in Cloud')) {
-                $errorMessage = 'The CIF ' . $this->cif . ' is not available in Smartbill Cloud. Please verify: 1) Your CIF is correct, 2) You have an active Smartbill Cloud subscription, 3) Your API access is enabled in Smartbill settings.';
+            // Translate common Smartbill error messages to user-friendly Romanian
+            if (str_contains($errorMessage, 'Autentificare esuata') || str_contains($errorMessage, 'authentication failed')) {
+                $errorMessage = 'Autentificare eșuată. Verificați numele de utilizator și token-ul API. ' .
+                    'Asigurați-vă că folosiți email-ul de logare și token-ul API (nu parola contului). ' .
+                    'Token-ul API îl găsiți în Smartbill: Setări → Integrări → API.';
+            } elseif (str_contains($errorMessage, 'nu mai este disponibila in Cloud') || str_contains($errorMessage, 'not available')) {
+                $errorMessage = 'CIF-ul ' . $this->cif . ' nu este disponibil în Smartbill Cloud. ' .
+                    'Verificați: 1) CIF-ul este corect, 2) Aveți un abonament activ Smartbill Cloud, ' .
+                    '3) Accesul API este activat în setările Smartbill.';
             } elseif (str_contains($errorMessage, 'Unauthorized') || str_contains($errorMessage, '401')) {
-                $errorMessage = 'Invalid username or API token. Please check your credentials in your Smartbill account at: https://cloud.smartbill.ro/core/integrari/';
+                $errorMessage = 'Acces neautorizat. Verificați credențialele în contul Smartbill: ' .
+                    'https://cloud.smartbill.ro/core/integrari/';
             } elseif (str_contains($errorMessage, 'Not Found') || str_contains($errorMessage, '404')) {
-                $errorMessage = 'Smartbill API endpoint not found. The API may have changed or your account may not have access to this endpoint.';
+                $errorMessage = 'Endpoint API negăsit. API-ul Smartbill poate fi indisponibil temporar.';
+            } elseif (str_contains($errorMessage, 'Connection') || str_contains($errorMessage, 'timeout')) {
+                $errorMessage = 'Nu s-a putut conecta la serverul Smartbill. Verificați conexiunea la internet.';
             }
 
             return [

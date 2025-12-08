@@ -2,13 +2,14 @@
 
 namespace App\Http\View\Composers;
 
-use App\Models\TaskSpace;
+use App\Models\Module;
 use Illuminate\View\View;
 
 /**
  * Sidebar Composer
  *
- * Shares task workspace hierarchy data with the sidebar component
+ * Shares common data with the sidebar component including
+ * accessible modules based on user permissions.
  */
 class SidebarComposer
 {
@@ -17,20 +18,24 @@ class SidebarComposer
      */
     public function compose(View $view): void
     {
-        // Load task spaces with their complete hierarchy
-        $taskSpaces = TaskSpace::with([
-            'folders' => function ($query) {
-                $query->ordered()
-                    ->with([
-                        'lists' => function ($query) {
-                            $query->ordered()
-                                ->with('client')
-                                ->withCount('tasks');
-                        }
-                    ]);
-            }
-        ])->ordered()->get();
+        $user = auth()->user();
 
-        $view->with('taskSpaces', $taskSpaces);
+        if (!$user) {
+            $view->with('accessibleModules', collect());
+            $view->with('modulePermissions', []);
+            return;
+        }
+
+        // Get accessible modules for sidebar
+        $accessibleModules = $user->getAccessibleModules();
+
+        // Build permissions map for each module
+        $modulePermissions = [];
+        foreach ($accessibleModules as $module) {
+            $modulePermissions[$module->slug] = $user->getModulePermissions($module->slug);
+        }
+
+        $view->with('accessibleModules', $accessibleModules);
+        $view->with('modulePermissions', $modulePermissions);
     }
 }

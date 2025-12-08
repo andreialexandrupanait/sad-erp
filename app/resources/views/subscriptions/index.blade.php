@@ -10,7 +10,12 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data>
+    <div class="p-6 space-y-6" x-data="{
+        ...bulkSelection({
+            idAttribute: 'data-subscription-id',
+            rowSelector: '[data-selectable]'
+        })
+    }">
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -182,6 +187,49 @@
             </x-ui.card-content>
         </x-ui.card>
 
+        <!-- Bulk Actions Toolbar -->
+        <x-bulk-toolbar>
+            <x-ui.button
+                variant="outline"
+                @click="performBulkAction('renew', '{{ route('subscriptions.bulk-renew') }}', {
+                    confirmTitle: '{{ __('Renew Subscriptions') }}',
+                    confirmMessage: '{{ __('Renew selected subscriptions? The next renewal dates will be advanced according to their billing cycles.') }}',
+                    successMessage: '{{ __('Subscriptions renewed successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                {{ __('Renew Selected') }}
+            </x-ui.button>
+            <x-ui.button
+                variant="outline"
+                @click="performBulkAction('export', '{{ route('subscriptions.bulk-export') }}', {
+                    confirmTitle: '{{ __('Export Subscriptions') }}',
+                    confirmMessage: '{{ __('Export selected subscriptions to CSV?') }}',
+                    successMessage: '{{ __('Subscriptions exported successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {{ __('Export to CSV') }}
+            </x-ui.button>
+            <x-ui.button
+                variant="destructive"
+                @click="performBulkAction('delete', '{{ route('subscriptions.bulk-update') }}', {
+                    confirmTitle: '{{ __('Delete Subscriptions') }}',
+                    confirmMessage: '{{ __('Are you sure you want to delete the selected subscriptions? This action cannot be undone.') }}',
+                    successMessage: '{{ __('Subscriptions deleted successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete Selected') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
+
         <!-- Subscriptions Table -->
         <x-ui.card>
             @if($subscriptions->isEmpty())
@@ -205,6 +253,9 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
+                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
+                                </th>
                                 <x-ui.sortable-header column="vendor_name" label="{{ __('Vendor Name') }}" />
                                 <x-ui.sortable-header column="price" label="{{ __('Price') }}" class="text-right" />
                                 <x-ui.sortable-header column="billing_cycle" label="{{ __('Billing Cycle') }}" />
@@ -214,7 +265,14 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach($subscriptions as $subscription)
-                                <x-ui.table-row>
+                                <x-ui.table-row data-selectable data-subscription-id="{{ $subscription->id }}">
+                                    <x-ui.table-cell>
+                                        <x-bulk-checkbox
+                                            
+                                            @change="toggleItem({{ $subscription->id }})"
+                                            x-bind:checked="selectedIds.includes({{ $subscription->id }})"
+                                        />
+                                    </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="font-medium text-slate-900">
                                             <a href="{{ route('subscriptions.show', $subscription) }}" class="hover:text-slate-600 transition-colors">

@@ -13,7 +13,9 @@ class Subscription extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
+        'organization_id',
         'user_id',
+        'created_by',
         'vendor_name',
         'price',
         'currency',
@@ -33,23 +35,32 @@ class Subscription extends Model
     ];
 
     /**
-     * Boot method - apply global scopes and auto-assign user_id
+     * Boot method - apply global scopes and auto-assign organization_id
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Auto-assign user_id when creating
+        // Auto-assign organization_id and created_by when creating
         static::creating(function ($subscription) {
-            if (auth()->check() && empty($subscription->user_id)) {
-                $subscription->user_id = auth()->id();
+            if (auth()->check()) {
+                if (empty($subscription->organization_id)) {
+                    $subscription->organization_id = auth()->user()->organization_id;
+                }
+                if (empty($subscription->created_by)) {
+                    $subscription->created_by = auth()->id();
+                }
+                // Keep user_id for backwards compatibility
+                if (empty($subscription->user_id)) {
+                    $subscription->user_id = auth()->id();
+                }
             }
         });
 
-        // User-based scoping: Only show subscriptions owned by current user
-        static::addGlobalScope('user', function (Builder $builder) {
-            if (auth()->check()) {
-                $builder->where('user_id', auth()->id());
+        // Organization-based scoping: Show all subscriptions in the user's organization
+        static::addGlobalScope('organization', function (Builder $builder) {
+            if (auth()->check() && auth()->user()->organization_id) {
+                $builder->where('subscriptions.organization_id', auth()->user()->organization_id);
             }
         });
     }
@@ -57,9 +68,19 @@ class Subscription extends Model
     /**
      * Relationships
      */
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function logs()

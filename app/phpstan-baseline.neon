@@ -1,0 +1,463 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Support\\Htmlable\:\:render\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Financial/FileController.php
+
+		-
+			message: '#^Match arm comparison between ''general'' and ''extrase'' is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Financial/FileController.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Financial/FileController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''general''\|''incasare''\|''plata'' and ''extrase'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Financial/FileController.php
+
+		-
+			message: '#^Class App\\Http\\Controllers\\Financial\\ImportController constructor invoked with 0 parameters, 2 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Http/Controllers/Settings/SmartbillController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''admin''\|''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Middleware/CheckRole.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$assignedUser\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$assigned_to\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$due_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$list\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$list_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$position\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$priority\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$service\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$service_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$time_tracked\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$total_amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskMinimalResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$assignedUser\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$attachments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$comments\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$created_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$creator\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$description\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$due_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$list\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$parentTask\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$position\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$priority\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$service\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$status\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$time_tracked\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$total_amount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\Task\\TaskResource\:\:relationLoaded\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Http/Resources/Task/TaskResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Livewire\\Tasks\\TaskList\:\:\$taskCounts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Livewire/Tasks/TaskList.php
+
+		-
+			message: '#^Method App\\Models\\ClickUpMapping\:\:createMapping\(\) should return static\(App\\Models\\ClickUpMapping\) but returns App\\Models\\ClickUpMapping\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/ClickUpMapping.php
+
+		-
+			message: '#^Class App\\Models\\AccessCredential not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Client.php
+
+		-
+			message: '#^Class App\\Models\\Contract not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Client.php
+
+		-
+			message: '#^Class App\\Models\\Offer not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Client.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Models/Domain.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Models/Domain.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/FinancialFile.php
+
+		-
+			message: '#^Class App\\Models\\Contract not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Class App\\Models\\Offer not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Organization.php
+
+		-
+			message: '#^Return type \(Illuminate\\Database\\Eloquent\\Builder\) of method App\\Models\\Service\:\:scopeOrdered\(\) should be compatible with return type \(Illuminate\\Database\\Query\\Builder\) of method Spatie\\EloquentSortable\\Sortable\:\:scopeOrdered\(\)$#'
+			identifier: method.childReturnType
+			count: 1
+			path: app/Models/Service.php
+
+		-
+			message: '#^Method App\\Models\\SettingOption\:\:scopeOrdered\(\) should return Illuminate\\Database\\Query\\Builder but returns Illuminate\\Database\\Eloquent\\Builder\<Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/SettingOption.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Models/Subscription.php
+
+		-
+			message: '#^Offset ''annual''\|''custom''\|''monthly'' on array\{weekly\: \(array\|string\), monthly\: \(array\|string\), annual\: \(array\|string\), custom\: \(array\|string\)\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Subscription.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int\<min, \-1\>\|int\<1, max\> and 0 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/Task.php
+
+		-
+			message: '#^Offset string on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Property App\\Models\\User\:\:\$settings \(string\|null\) does not accept array\<string, mixed\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Observers/DomainObserver.php
+
+		-
+			message: '#^Variable \$total on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Observers/FinancialRevenueObserver.php
+
+		-
+			message: '#^Negated boolean expression is always false\.$#'
+			identifier: booleanNot.alwaysFalse
+			count: 1
+			path: app/Observers/SubscriptionObserver.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/FinancialExpensePolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/FinancialRevenuePolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/TaskPolicy.php
+
+		-
+			message: '#^Property App\\Providers\\EventServiceProvider\:\:\$listen \(array\<class\-string, array\<int, class\-string\>\>\) does not accept default value of type array\<string, list\<string\>\>\.$#'
+			identifier: property.defaultValue
+			count: 1
+			path: app/Providers/EventServiceProvider.php
+
+		-
+			message: '#^Binary operation "\-" between non\-falsy\-string and int\<1, max\> results in an error\.$#'
+			identifier: binaryOp.invalid
+			count: 1
+			path: app/Services/ClickUp/ClickUpRateLimiter.php
+
+		-
+			message: '#^Method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\FinancialExpense\>\:\:select\(\) invoked with 2 parameters, 0\-1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Services/Dashboard/DashboardService.php
+
+		-
+			message: '#^Method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\FinancialRevenue\>\:\:select\(\) invoked with 3 parameters, 0\-1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Services/Dashboard/DashboardService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Notification/Messages/DomainExpiringMessage.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Notification/Messages/DomainExpiringMessage.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Services/Notification/Messages/RevenueCreatedMessage.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 3
+			path: app/Services/Notification/Messages/RevenueCreatedMessage.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Notification/Messages/SubscriptionRenewalMessage.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Notification/Messages/SubscriptionRenewalMessage.php
+
+		-
+			message: '#^Offset ''notifications'' on array\{\}\|string on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Services/Notification/NotificationService.php
+
+		-
+			message: '#^Offset string on array\{\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 2
+			path: app/Services/Notification/NotificationService.php
+
+		-
+			message: '#^Method App\\View\\Components\\Dashboard\\DomainWidget\:\:getDaysUntilExpiry\(\) should return int but returns float\.$#'
+			identifier: return.type
+			count: 1
+			path: app/View/Components/Dashboard/DomainWidget.php

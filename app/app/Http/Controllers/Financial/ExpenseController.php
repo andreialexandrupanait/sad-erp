@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Financial;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use App\Http\Requests\Financial\StoreExpenseRequest;
+use App\Http\Requests\Financial\UpdateExpenseRequest;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Gate;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use App\Models\FinancialExpense;
 use App\Models\FinancialFile;
 use App\Models\SettingOption;
@@ -14,6 +18,8 @@ use Illuminate\Support\Str;
 
 class ExpenseController extends Controller
 {
+    use HandlesBulkActions;
+
     public function index(Request $request)
     {
         // Get filter values from request or session, with defaults
@@ -140,21 +146,9 @@ class ExpenseController extends Controller
         return view('financial.expenses.create', compact('categories', 'currencies'));
     }
 
-    public function store(Request $request)
+    public function store(StoreExpenseRequest $request)
     {
-        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'document_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'currency' => ['required', Rule::in($validCurrencies)],
-            'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:settings_options,id',
-            'note' => 'nullable|string',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
-        ]);
-
-        $expense = FinancialExpense::create($validated);
+        $expense = FinancialExpense::create($request->validated());
 
         // Handle file uploads
         if ($request->hasFile('files')) {
@@ -167,13 +161,13 @@ class ExpenseController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Expense created successfully!',
+                'message' => __('messages.expense_created'),
                 'expense' => $expense->load('category', 'files'),
             ], 201);
         }
 
         return redirect()->route('financial.expenses.index')
-            ->with('success', 'Expense added successfully.');
+            ->with('success', __('messages.expense_added'));
     }
 
     public function show(FinancialExpense $expense)
@@ -190,21 +184,9 @@ class ExpenseController extends Controller
         return view('financial.expenses.edit', compact('expense', 'categories', 'currencies'));
     }
 
-    public function update(Request $request, FinancialExpense $expense)
+    public function update(UpdateExpenseRequest $request, FinancialExpense $expense)
     {
-        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'document_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'currency' => ['required', Rule::in($validCurrencies)],
-            'occurred_at' => 'required|date',
-            'category_option_id' => 'nullable|exists:settings_options,id',
-            'note' => 'nullable|string',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
-            'delete_files' => 'nullable|array',
-            'delete_files.*' => 'integer|exists:financial_files,id',
-        ]);
+        $validated = $request->validated();
 
         // Update year and month based on occurred_at
         $date = \Carbon\Carbon::parse($validated['occurred_at']);
@@ -239,13 +221,13 @@ class ExpenseController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Expense updated successfully!',
+                'message' => __('messages.expense_updated'),
                 'expense' => $expense->fresh()->load('category', 'files'),
             ]);
         }
 
         return redirect()->route('financial.expenses.index')
-            ->with('success', 'Expense updated successfully.');
+            ->with('success', __('messages.expense_updated'));
     }
 
     public function destroy(FinancialExpense $expense)
@@ -253,7 +235,7 @@ class ExpenseController extends Controller
         $expense->delete();
 
         return redirect()->route('financial.expenses.index')
-            ->with('success', 'Expense deleted successfully.');
+            ->with('success', __('messages.expense_deleted'));
     }
 
     /**
@@ -262,7 +244,13 @@ class ExpenseController extends Controller
     private function uploadFile($file, FinancialExpense $expense)
     {
         $originalName = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // Validate extension against allowed types (defense in depth)
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \InvalidArgumentException('Invalid file extension');
+        }
 
         // Get year and month from expense
         $year = $expense->year;
@@ -274,7 +262,11 @@ class ExpenseController extends Controller
         $date = $expense->occurred_at;
         $day = $date->format('d');
         $monthNum = $date->format('m');
-        $documentName = $expense->document_name;
+
+        // Sanitize document name to prevent path traversal and special characters
+        $documentName = Str::slug($expense->document_name, ' ');
+        $documentName = preg_replace('/[^a-zA-Z0-9\s\-_]/', '', $documentName);
+        $documentName = trim($documentName) ?: 'document';
 
         $newFileName = "{$day}.{$monthNum} - {$documentName}.{$extension}";
 
@@ -312,4 +304,44 @@ class ExpenseController extends Controller
         ]);
     }
 
+
+    protected function getBulkModelClass(): string
+    {
+        return \App\Models\FinancialExpense::class;
+    }
+
+    protected function getExportEagerLoads(): array
+    {
+        return ['category'];
+    }
+
+    protected function exportToCsv($expenses)
+    {
+        $filename = "expenses_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($expenses) {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Document Name", "Amount", "Currency", "Date", "Category", "Note"]);
+
+            foreach ($expenses as $expense) {
+                fputcsv($file, [
+                    $expense->document_name ?? "N/A",
+                    $expense->amount,
+                    $expense->currency,
+                    $expense->occurred_at?->format("Y-m-d") ?? "N/A",
+                    $expense->category?->label ?? $expense->category?->name ?? "N/A",
+                    $expense->note ?? "",
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
 }

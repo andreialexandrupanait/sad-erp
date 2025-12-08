@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Organization extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'name',
@@ -55,22 +56,6 @@ class Organization extends Model
     public function clients()
     {
         return $this->hasMany(Client::class);
-    }
-
-    /**
-     * Get all offers belonging to this organization
-     */
-    public function offers()
-    {
-        return $this->hasMany(Offer::class);
-    }
-
-    /**
-     * Get all contracts belonging to this organization
-     */
-    public function contracts()
-    {
-        return $this->hasMany(Contract::class);
     }
 
     /**

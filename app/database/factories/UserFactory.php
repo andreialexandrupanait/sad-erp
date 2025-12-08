@@ -29,6 +29,8 @@ class UserFactory extends Factory
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
+            'organization_id' => \App\Models\Organization::factory(),
+            'role' => 'user',
         ];
     }
 
@@ -37,8 +39,38 @@ class UserFactory extends Factory
      */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn(array $attributes) => [
             'email_verified_at' => null,
+        ]);
+    }
+
+    /**
+     * Indicate that the user is an admin.
+     */
+    public function admin(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'role' => 'admin',
+        ]);
+    }
+
+    /**
+     * Indicate that the user is a superadmin.
+     */
+    public function superadmin(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'role' => 'superadmin',
+        ]);
+    }
+
+    /**
+     * Assign user to specific organization.
+     */
+    public function forOrganization(\App\Models\Organization $organization): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'organization_id' => $organization->id,
         ]);
     }
 }

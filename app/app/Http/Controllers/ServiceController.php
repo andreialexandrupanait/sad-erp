@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Service\StoreServiceRequest;
+use App\Http\Requests\Service\UpdateServiceRequest;
 use App\Models\Service;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,19 +20,10 @@ class ServiceController extends Controller
         return view('settings.services.index', compact('services'));
     }
 
-    public function store(Request $request)
+    public function store(StoreServiceRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'default_rate' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
-            'color_class' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
+        $validated = $request->validated();
         $validated['organization_id'] = Auth::user()->organization_id;
-        $validated['is_active'] = $request->boolean('is_active', true);
 
         $service = Service::create($validated);
 
@@ -46,20 +39,9 @@ class ServiceController extends Controller
             ->with('success', 'Service created successfully.');
     }
 
-    public function update(Request $request, Service $service)
+    public function update(UpdateServiceRequest $request, Service $service)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000',
-            'default_rate' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
-            'color_class' => 'nullable|string|max:50',
-            'is_active' => 'boolean',
-        ]);
-
-        $validated['is_active'] = $request->boolean('is_active', true);
-
-        $service->update($validated);
+        $service->update($request->validated());
 
         if ($request->wantsJson()) {
             return response()->json([

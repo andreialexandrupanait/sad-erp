@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -9,11 +10,12 @@ use Illuminate\Support\Facades\Auth;
 
 class FinancialExpense extends Model
 {
-    use SoftDeletes;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'organization_id',
         'user_id',
+        'created_by',
         'document_name',
         'amount',
         'currency',
@@ -22,6 +24,7 @@ class FinancialExpense extends Model
         'year',
         'month',
         'note',
+        'source_file_id',
     ];
 
     protected $casts = [
@@ -33,10 +36,12 @@ class FinancialExpense extends Model
 
     protected static function booted()
     {
-        // Auto-fill organization_id and user_id
+        // Auto-fill organization_id and created_by
         static::creating(function ($expense) {
             if (Auth::check()) {
                 $expense->organization_id = $expense->organization_id ?? Auth::user()->organization_id;
+                $expense->created_by = $expense->created_by ?? Auth::id();
+                // Keep user_id for backwards compatibility
                 $expense->user_id = $expense->user_id ?? Auth::id();
             }
 
@@ -50,11 +55,10 @@ class FinancialExpense extends Model
             }
         });
 
-        // Global scope for organization and user isolation
-        static::addGlobalScope('user_scope', function (Builder $query) {
-            if (Auth::check()) {
-                $query->where('organization_id', Auth::user()->organization_id)
-                      ->where('user_id', Auth::id());
+        // Global scope for organization isolation only (not user-specific)
+        static::addGlobalScope('organization', function (Builder $query) {
+            if (Auth::check() && Auth::user()->organization_id) {
+                $query->where('financial_expenses.organization_id', Auth::user()->organization_id);
             }
         });
     }
@@ -70,6 +74,11 @@ class FinancialExpense extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function category()
     {
         return $this->belongsTo(SettingOption::class, 'category_option_id');
@@ -78,6 +87,16 @@ class FinancialExpense extends Model
     public function files()
     {
         return $this->morphMany(FinancialFile::class, 'entity');
+    }
+
+    public function matchedBankTransaction()
+    {
+        return $this->hasOne(BankTransaction::class, 'matched_expense_id');
+    }
+
+    public function sourceFile()
+    {
+        return $this->belongsTo(FinancialFile::class, 'source_file_id');
     }
 
     // Scopes

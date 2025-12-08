@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\FinancialRevenue\RevenueCreated;
 use App\Models\FinancialRevenue;
 use App\Models\Client;
 use Illuminate\Support\Facades\Auth;
@@ -9,6 +10,16 @@ use Illuminate\Support\Facades\Cache;
 
 class FinancialRevenueObserver
 {
+    /**
+     * Handle the FinancialRevenue "created" event.
+     * Fires notification event for new revenue.
+     */
+    public function created(FinancialRevenue $revenue): void
+    {
+        // Dispatch notification event for new revenue
+        event(new RevenueCreated($revenue));
+    }
+
     /**
      * Handle the FinancialRevenue "saved" event.
      */
@@ -56,14 +67,18 @@ class FinancialRevenueObserver
         }
         Cache::forget('financial.revenues.yearly_aggregates');
         Cache::forget('financial.available_years');
+        
+        // Clear dashboard cache for organization
+        if (Auth::check()) {
+            Cache::forget('dashboard_stats_' . Auth::user()->organization_id);
+        }
     }
 
     /**
      * Update the client's total_incomes from financial_revenues.
      *
-     * FIXED: Uses model queries with organization_id to maintain multi-tenant isolation.
-     * Previously used raw DB queries that bypassed global scopes, potentially summing
-     * revenues across all organizations.
+     * Uses user_id for client isolation since the clients table uses user_id,
+     * while revenues use organization_id.
      */
     private function updateClientTotal(?int $clientId, ?int $organizationId): void
     {
@@ -71,17 +86,20 @@ class FinancialRevenueObserver
             return;
         }
 
-        // Use model query with explicit organization_id to maintain tenant isolation
-        // We bypass the user scope since the organization scope is what matters for isolation
-        $total = FinancialRevenue::withoutGlobalScope('user_scope')
-            ->where('organization_id', $organizationId)
+        // Get the client first to find its user_id
+        $client = Client::withoutGlobalScopes()->find($clientId);
+        if (!$client) {
+            return;
+        }
+
+        // Sum revenues for this client within the organization
+        $total = FinancialRevenue::withoutGlobalScopes()
             ->where('client_id', $clientId)
+            ->when($organizationId, fn($q) => $q->where('organization_id', $organizationId))
             ->sum('amount');
 
-        // Update the client's total_incomes within the same organization
-        Client::withoutGlobalScope('user_scope')
-            ->where('id', $clientId)
-            ->where('organization_id', $organizationId)
-            ->update(['total_incomes' => $total ?? 0]);
+        // Update the client's total_incomes
+        $client->total_incomes = $total ?? 0;
+        $client->saveQuietly();
     }
 }

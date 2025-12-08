@@ -4,11 +4,14 @@ namespace App\Policies;
 
 use App\Models\Credential;
 use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class CredentialPolicy
 {
+    use HandlesAuthorization;
+
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view any credentials.
      */
     public function viewAny(User $user): bool
     {
@@ -16,15 +19,15 @@ class CredentialPolicy
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can view the credential.
      */
     public function view(User $user, Credential $credential): bool
     {
-        return $this->isSameOrganization($user, $credential);
+        return $credential->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determine whether the user can create credentials.
      */
     public function create(User $user): bool
     {
@@ -32,63 +35,44 @@ class CredentialPolicy
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can update the credential.
      */
     public function update(User $user, Credential $credential): bool
     {
-        return $this->isSameOrganization($user, $credential);
+        return $credential->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the credential.
      */
     public function delete(User $user, Credential $credential): bool
     {
-        if (!$this->isSameOrganization($user, $credential)) {
-            return false;
-        }
-
-        // Only admins and managers can delete credentials
-        return $user->canManage();
+        return $credential->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can restore the credential.
      */
     public function restore(User $user, Credential $credential): bool
     {
-        if (!$this->isSameOrganization($user, $credential)) {
-            return false;
-        }
-
-        return $user->canManage();
+        return $credential->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can permanently delete the credential.
      */
     public function forceDelete(User $user, Credential $credential): bool
     {
-        if (!$this->isSameOrganization($user, $credential)) {
-            return false;
-        }
-
-        return $user->isAdmin();
+        return $credential->organization_id === $user->organization_id;
     }
 
-    /**
-     * Determine whether the user can reveal the password.
-     */
-    public function revealPassword(User $user, Credential $credential): bool
+    public function bulkUpdate(User $user): bool
     {
-        return $this->isSameOrganization($user, $credential);
+        return $user->organization_id  !==  null;
     }
 
-    /**
-     * Check if user belongs to the same organization as the credential.
-     */
-    private function isSameOrganization(User $user, Credential $credential): bool
+    public function bulkDelete(User $user): bool
     {
-        return $user->organization_id === $credential->organization_id;
+        return $user->organization_id  !==  null;
     }
 }

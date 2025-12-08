@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Financial;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use App\Http\Requests\Financial\StoreRevenueRequest;
+use App\Http\Requests\Financial\UpdateRevenueRequest;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Gate;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialFile;
 use App\Models\Client;
@@ -15,6 +19,7 @@ use Illuminate\Support\Str;
 
 class RevenueController extends Controller
 {
+    use HandlesBulkActions;
     public function index(Request $request)
     {
         // Get filter values from request or session, with defaults
@@ -130,21 +135,9 @@ class RevenueController extends Controller
         return view('financial.revenues.create', compact('clients', 'currencies'));
     }
 
-    public function store(Request $request)
+    public function store(StoreRevenueRequest $request)
     {
-        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'document_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'currency' => ['required', Rule::in($validCurrencies)],
-            'occurred_at' => 'required|date',
-            'client_id' => 'nullable|exists:clients,id',
-            'note' => 'nullable|string',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
-        ]);
-
-        $revenue = FinancialRevenue::create($validated);
+        $revenue = FinancialRevenue::create($request->validated());
 
         // Handle file uploads
         if ($request->hasFile('files')) {
@@ -157,13 +150,13 @@ class RevenueController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Revenue created successfully!',
+                'message' => __('messages.revenue_created'),
                 'revenue' => $revenue->load('client', 'files'),
             ], 201);
         }
 
         return redirect()->route('financial.revenues.index')
-            ->with('success', 'Revenue added successfully.');
+            ->with('success', __('messages.revenue_added'));
     }
 
     public function show(FinancialRevenue $revenue)
@@ -180,21 +173,9 @@ class RevenueController extends Controller
         return view('financial.revenues.edit', compact('revenue', 'clients', 'currencies'));
     }
 
-    public function update(Request $request, FinancialRevenue $revenue)
+    public function update(UpdateRevenueRequest $request, FinancialRevenue $revenue)
     {
-        $validCurrencies = SettingOption::currencies()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'document_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'currency' => ['required', Rule::in($validCurrencies)],
-            'occurred_at' => 'required|date',
-            'client_id' => 'nullable|exists:clients,id',
-            'note' => 'nullable|string',
-            'files.*' => 'nullable|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
-            'delete_files' => 'nullable|array',
-            'delete_files.*' => 'integer|exists:financial_files,id',
-        ]);
+        $validated = $request->validated();
 
         // Update year and month based on occurred_at
         $date = \Carbon\Carbon::parse($validated['occurred_at']);
@@ -229,13 +210,13 @@ class RevenueController extends Controller
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Revenue updated successfully!',
+                'message' => __('messages.revenue_updated'),
                 'revenue' => $revenue->fresh()->load('client', 'files'),
             ]);
         }
 
         return redirect()->route('financial.revenues.index')
-            ->with('success', 'Revenue updated successfully.');
+            ->with('success', __('messages.revenue_updated'));
     }
 
     public function destroy(FinancialRevenue $revenue)
@@ -243,7 +224,7 @@ class RevenueController extends Controller
         $revenue->delete();
 
         return redirect()->route('financial.revenues.index')
-            ->with('success', 'Revenue deleted successfully.');
+            ->with('success', __('messages.revenue_deleted'));
     }
 
     /**
@@ -252,7 +233,13 @@ class RevenueController extends Controller
     private function uploadFile($file, FinancialRevenue $revenue)
     {
         $originalName = $file->getClientOriginalName();
-        $extension = $file->getClientOriginalExtension();
+        $extension = strtolower($file->getClientOriginalExtension());
+
+        // Validate extension against allowed types (defense in depth)
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'zip', 'rar'];
+        if (!in_array($extension, $allowedExtensions)) {
+            throw new \InvalidArgumentException('Invalid file extension');
+        }
 
         // Get year and month from revenue
         $year = $revenue->year;
@@ -260,8 +247,10 @@ class RevenueController extends Controller
         $monthName = romanian_month($month);
         $tip = 'Incasari'; // Revenue files folder
 
-        // Generate file name: Factura + Document Name.ext (without date)
-        $documentName = $revenue->document_name;
+        // Sanitize document name to prevent path traversal and special characters
+        $documentName = Str::slug($revenue->document_name, ' ');
+        $documentName = preg_replace('/[^a-zA-Z0-9\s\-_]/', '', $documentName);
+        $documentName = trim($documentName) ?: 'document';
 
         // Always add "Factura " prefix
         $newFileName = "Factura {$documentName}.{$extension}";
@@ -300,4 +289,44 @@ class RevenueController extends Controller
         ]);
     }
 
+
+    protected function getBulkModelClass(): string
+    {
+        return FinancialRevenue::class;
+    }
+
+    protected function getExportEagerLoads(): array
+    {
+        return ['client', 'category'];
+    }
+
+    protected function exportToCsv($revenues)
+    {
+        $filename = "revenues_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($revenues) {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Document", "Client", "Amount", "Currency", "Date", "Category"]);
+
+            foreach ($revenues as $revenue) {
+                fputcsv($file, [
+                    $revenue->document_name,
+                    $revenue->client?->name ?? "N/A",
+                    $revenue->amount,
+                    $revenue->currency,
+                    $revenue->occurred_at?->format("Y-m-d") ?? "N/A",
+                    $revenue->category?->name ?? "N/A",
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
 }

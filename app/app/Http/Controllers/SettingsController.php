@@ -376,7 +376,7 @@ class SettingsController extends Controller
             'notify_new_client',
             'notify_payment_received',
             'notify_monthly_summary',
-            'smtp_enabled'
+            'smtp_enabled',
         ];
 
         foreach ($booleanFields as $field) {
@@ -415,19 +415,68 @@ class SettingsController extends Controller
         ]);
 
         try {
-            \Mail::raw('This is a test email from your ERP system. If you received this, your email configuration is working correctly!', function ($message) use ($request) {
+            // Check if custom SMTP is enabled and configure it
+            $smtpEnabled = ApplicationSetting::get('smtp_enabled', false);
+
+            if ($smtpEnabled) {
+                $smtpHost = ApplicationSetting::get('smtp_host');
+                $smtpPort = ApplicationSetting::get('smtp_port', 587);
+                $smtpUsername = ApplicationSetting::get('smtp_username');
+                $smtpPassword = ApplicationSetting::get('smtp_password');
+                $smtpEncryption = ApplicationSetting::get('smtp_encryption', 'tls');
+                $fromEmail = ApplicationSetting::get('smtp_from_email');
+                $fromName = ApplicationSetting::get('smtp_from_name', config('app.name'));
+
+                if (!$smtpHost || !$smtpUsername) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('SMTP settings are incomplete. Please configure SMTP host and username.')
+                    ], 400);
+                }
+
+                // Decrypt password if encrypted
+                try {
+                    $smtpPassword = decrypt($smtpPassword);
+                } catch (\Exception $e) {
+                    // Password might not be encrypted
+                }
+
+                // Configure SMTP on the fly
+                config([
+                    'mail.default' => 'smtp',
+                    'mail.mailers.smtp.host' => $smtpHost,
+                    'mail.mailers.smtp.port' => (int) $smtpPort,
+                    'mail.mailers.smtp.username' => $smtpUsername,
+                    'mail.mailers.smtp.password' => $smtpPassword,
+                    'mail.mailers.smtp.encryption' => $smtpEncryption === 'none' ? null : $smtpEncryption,
+                    'mail.from.address' => $fromEmail ?: $smtpUsername,
+                    'mail.from.name' => $fromName,
+                ]);
+            } else {
+                // Check if default mail config is usable
+                $defaultMailer = config('mail.default');
+                if ($defaultMailer === 'log') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => __('Email is configured to log only. Enable Custom SMTP or configure MAIL_MAILER in .env to send real emails.')
+                    ], 400);
+                }
+            }
+
+            \Mail::raw(__('This is a test email from your ERP system. If you received this, your email configuration is working correctly!'), function ($message) use ($request) {
                 $message->to($request->test_email)
-                    ->subject('Test Email from ERP System');
+                    ->subject(__('Test Email from ERP System'));
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Test email sent successfully!'
+                'message' => __('Test email sent successfully to :email!', ['email' => $request->test_email])
             ]);
         } catch (\Exception $e) {
+            \Log::error('Test email failed: ' . $e->getMessage(), ['exception' => $e]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send test email: ' . $e->getMessage()
+                'message' => __('Failed to send test email: :error', ['error' => $e->getMessage()])
             ], 500);
         }
     }

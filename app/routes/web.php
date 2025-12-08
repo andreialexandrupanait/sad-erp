@@ -13,9 +13,6 @@ use App\Http\Controllers\InternalAccountController;
 use App\Http\Controllers\DomainController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\TaskController;
-use App\Http\Controllers\TaskServiceController;
-use App\Livewire\Tasks\TaskList;
 use App\Http\Controllers\Financial\DashboardController as FinancialDashboardController;
 use App\Http\Controllers\Financial\RevenueController;
 use App\Http\Controllers\Financial\ExpenseController;
@@ -27,25 +24,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Temporary HTTPS test route - DELETE AFTER TESTING
-Route::get('/test-https-detection', function () {
-    return response()->json([
-        'app_url' => config('app.url'),
-        'current_url' => url()->current(),
-        'request_is_secure' => request()->secure(),
-        'request_scheme' => request()->getScheme(),
-        'server_https' => $_SERVER['HTTPS'] ?? 'not set',
-        'x_forwarded_proto' => request()->header('X-Forwarded-Proto'),
-        'x_forwarded_host' => request()->header('X-Forwarded-Host'),
-        'x_forwarded_port' => request()->header('X-Forwarded-Port'),
-        'x_forwarded_for' => request()->header('X-Forwarded-For'),
-        'route_url_example' => route('clients.index'),
-        'asset_url_example' => asset('css/app.css'),
-    ]);
-})->name('test.https');
-
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'module:dashboard'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
@@ -80,221 +60,164 @@ Route::middleware('auth')->group(function () {
     Route::get('export/{module}', [ImportExportController::class, 'export'])->name('import-export.export');
 
     // Clients Module
-    Route::resource('clients', ClientController::class);
-    Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
-    Route::patch('clients/{client}/reorder', [ClientController::class, 'reorder'])->name('clients.reorder');
+    Route::middleware('module:clients')->group(function () {
+        Route::resource('clients', ClientController::class);
+        Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
+        Route::patch('clients/{client}/reorder', [ClientController::class, 'reorder'])->name('clients.reorder');
+        Route::post('clients/bulk-update', [ClientController::class, 'bulkUpdate'])->name('clients.bulk-update');
+        Route::post('clients/bulk-export', [ClientController::class, 'bulkExport'])->name('clients.bulk-export');
+    });
 
     // Credentials Module
-    Route::resource('credentials', CredentialController::class);
-    Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
-        ->middleware('throttle:6,1') // 6 requests per minute
-        ->name('credentials.reveal-password');
+    Route::middleware('module:credentials')->group(function () {
+        Route::resource('credentials', CredentialController::class);
+        Route::post('credentials/bulk-update', [CredentialController::class, 'bulkUpdate'])->name('credentials.bulk-update');
+        Route::post('credentials/bulk-export', [CredentialController::class, 'bulkExport'])->name('credentials.bulk-export');
+        Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
+            ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
+            ->name('credentials.reveal-password');
+    });
 
     // Internal Accounts Module (Conturi)
-    Route::resource('internal-accounts', InternalAccountController::class);
-    Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])
-        ->middleware('throttle:6,1') // 6 requests per minute
-        ->name('internal-accounts.reveal-password');
+    Route::middleware('module:internal_accounts')->group(function () {
+        Route::resource('internal-accounts', InternalAccountController::class);
+        Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])
+            ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
+            ->name('internal-accounts.reveal-password');
+    });
 
     // Domains Module (Domenii)
-    Route::resource('domains', DomainController::class);
+    Route::middleware('module:domains')->group(function () {
+        Route::resource('domains', DomainController::class);
+        Route::post('domains/bulk-update', [DomainController::class, 'bulkUpdate'])->name('domains.bulk-update');
+        Route::post('domains/bulk-export', [DomainController::class, 'bulkExport'])->name('domains.bulk-export');
+        Route::post('domains/bulk-auto-renew', [DomainController::class, 'bulkToggleAutoRenew'])->name('domains.bulk-auto-renew');
+    });
 
     // Subscriptions Module (Abonamente)
-    Route::resource('subscriptions', SubscriptionController::class);
-    Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
-    Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
-    Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
-
-    // Task Management Module
-    // API endpoints for lazy loading (v2 cache-based)
-    Route::get('api/tasks/status/{status}', [\App\Http\Controllers\Api\TaskApiController::class, 'getTasksByStatus'])->name('api.tasks.by-status');
-    Route::get('api/tasks/status-counts', [\App\Http\Controllers\Api\TaskApiController::class, 'getStatusCounts'])->name('api.tasks.status-counts');
-
-    // Legacy lazy loading endpoint - must be before resource route
-    Route::get('tasks/by-status/{status}', [TaskController::class, 'getTasksByStatus'])->name('tasks.by-status');
-
-    // Livewire task list (replaces tasks.index)
-    Route::get('tasks', TaskList::class)->name('tasks.index');
-
-    // Task resource routes (except index which is handled by Livewire above)
-    Route::resource('tasks', TaskController::class)->except(['index']);
-    Route::patch('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.update-status');
-    Route::patch('tasks/{task}/time', [TaskController::class, 'updateTime'])->name('tasks.update-time');
-    Route::patch('tasks/{task}/position', [TaskController::class, 'updatePosition'])->name('tasks.update-position');
-
-    // Task Side Panel & ClickUp-style features
-    Route::get('tasks/{task}/details', [TaskController::class, 'getDetails'])->name('tasks.details');
-    Route::patch('tasks/{task}/quick-update', [TaskController::class, 'quickUpdate'])->name('tasks.quick-update');
-    Route::patch('tasks/{task}/custom-fields/{customField}', [TaskController::class, 'updateCustomField'])->name('tasks.custom-fields.update');
-    Route::post('tasks/{task}/subtasks', [TaskController::class, 'addSubtask'])->name('tasks.subtasks.store');
-    Route::patch('tasks/{task}/toggle-status', [TaskController::class, 'toggleStatus'])->name('tasks.toggle-status');
-    Route::post('tasks/{task}/comments', [TaskController::class, 'addComment'])->name('tasks.comments.store');
-    Route::delete('tasks/comments/{comment}', [TaskController::class, 'deleteComment'])->name('tasks.comments.destroy');
-    Route::post('tasks/{task}/attachments', [TaskController::class, 'uploadAttachment'])->name('tasks.attachments.store');
-    Route::get('tasks/attachments/{attachment}/download', [TaskController::class, 'downloadAttachment'])->name('tasks.attachments.download');
-    Route::delete('tasks/attachments/{attachment}', [TaskController::class, 'deleteAttachment'])->name('tasks.attachments.destroy');
-
-    // Bulk operations
-    Route::post('tasks/bulk-update', [TaskController::class, 'bulkUpdate'])->name('tasks.bulk-update');
-
-    // Task duplication
-    Route::post('tasks/{task}/duplicate', [TaskController::class, 'duplicate'])->name('tasks.duplicate');
-
-    // Assignees management
-    Route::post('tasks/{task}/assignees', [TaskController::class, 'addAssignee'])->name('tasks.assignees.add');
-    Route::delete('tasks/{task}/assignees/{user}', [TaskController::class, 'removeAssignee'])->name('tasks.assignees.remove');
-
-    // Watchers management
-    Route::post('tasks/{task}/watchers', [TaskController::class, 'addWatcher'])->name('tasks.watchers.add');
-    Route::delete('tasks/{task}/watchers/{user}', [TaskController::class, 'removeWatcher'])->name('tasks.watchers.remove');
-
-    // Tags management
-    Route::post('tasks/{task}/tags', [TaskController::class, 'addTag'])->name('tasks.tags.add');
-    Route::delete('tasks/{task}/tags/{tag}', [TaskController::class, 'removeTag'])->name('tasks.tags.remove');
-
-    // Checklists management
-    Route::post('tasks/{task}/checklists', [\App\Http\Controllers\TaskChecklistController::class, 'store'])->name('tasks.checklists.store');
-    Route::patch('tasks/{task}/checklists/{checklist}', [\App\Http\Controllers\TaskChecklistController::class, 'update'])->name('tasks.checklists.update');
-    Route::delete('tasks/{task}/checklists/{checklist}', [\App\Http\Controllers\TaskChecklistController::class, 'destroy'])->name('tasks.checklists.destroy');
-
-    // Checklist items management
-    Route::post('tasks/{task}/checklists/{checklist}/items', [\App\Http\Controllers\TaskChecklistController::class, 'storeItem'])->name('tasks.checklists.items.store');
-    Route::patch('checklist-items/{item}', [\App\Http\Controllers\TaskChecklistController::class, 'updateItem'])->name('checklist-items.update');
-    Route::post('checklist-items/{item}/toggle', [\App\Http\Controllers\TaskChecklistController::class, 'toggleItem'])->name('checklist-items.toggle');
-    Route::delete('checklist-items/{item}', [\App\Http\Controllers\TaskChecklistController::class, 'destroyItem'])->name('checklist-items.destroy');
-    Route::patch('checklists/{checklist}/items/reorder', [\App\Http\Controllers\TaskChecklistController::class, 'reorderItems'])->name('checklists.items.reorder');
-
-    // Task dependencies management
-    Route::get('tasks/{task}/dependencies', [\App\Http\Controllers\TaskDependencyController::class, 'index'])->name('tasks.dependencies.index');
-    Route::post('tasks/{task}/dependencies', [\App\Http\Controllers\TaskDependencyController::class, 'store'])->name('tasks.dependencies.store');
-    Route::delete('tasks/{task}/dependencies/{dependency}', [\App\Http\Controllers\TaskDependencyController::class, 'destroy'])->name('tasks.dependencies.destroy');
-    Route::get('tasks/{task}/dependencies/search', [\App\Http\Controllers\TaskDependencyController::class, 'search'])->name('tasks.dependencies.search');
-
-    // Task time entries management
-    Route::get('tasks/{task}/time-entries', [\App\Http\Controllers\TaskTimeEntryController::class, 'index'])->name('tasks.time-entries.index');
-    Route::post('tasks/{task}/time-entries', [\App\Http\Controllers\TaskTimeEntryController::class, 'store'])->name('tasks.time-entries.store');
-    Route::patch('tasks/{task}/time-entries/{entry}', [\App\Http\Controllers\TaskTimeEntryController::class, 'update'])->name('tasks.time-entries.update');
-    Route::delete('tasks/{task}/time-entries/{entry}', [\App\Http\Controllers\TaskTimeEntryController::class, 'destroy'])->name('tasks.time-entries.destroy');
-    Route::post('tasks/{task}/time-entries/start', [\App\Http\Controllers\TaskTimeEntryController::class, 'startTimer'])->name('tasks.time-entries.start');
-    Route::post('tasks/{task}/time-entries/{entry}/stop', [\App\Http\Controllers\TaskTimeEntryController::class, 'stopTimer'])->name('tasks.time-entries.stop');
-    Route::get('time-entries/running', [\App\Http\Controllers\TaskTimeEntryController::class, 'getRunningTimer'])->name('time-entries.running');
-
-    // Task Custom Fields Management
-    Route::resource('task-custom-fields', \App\Http\Controllers\TaskCustomFieldController::class)->except(['show']);
-    Route::post('task-custom-fields/reorder', [\App\Http\Controllers\TaskCustomFieldController::class, 'reorder'])->name('task-custom-fields.reorder');
-
-    // Task Hierarchy Management (Spaces, Folders, Lists)
-    Route::post('task-spaces', [\App\Http\Controllers\TaskSpaceController::class, 'store'])->name('task-spaces.store');
-    Route::patch('task-spaces/{space}', [\App\Http\Controllers\TaskSpaceController::class, 'update'])->name('task-spaces.update');
-    Route::delete('task-spaces/{space}', [\App\Http\Controllers\TaskSpaceController::class, 'destroy'])->name('task-spaces.destroy');
-    Route::patch('task-spaces/{space}/position', [\App\Http\Controllers\TaskSpaceController::class, 'updatePosition'])->name('task-spaces.update-position');
-
-    Route::post('task-folders', [\App\Http\Controllers\TaskFolderController::class, 'store'])->name('task-folders.store');
-    Route::patch('task-folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'update'])->name('task-folders.update');
-    Route::delete('task-folders/{folder}', [\App\Http\Controllers\TaskFolderController::class, 'destroy'])->name('task-folders.destroy');
-    Route::patch('task-folders/{folder}/position', [\App\Http\Controllers\TaskFolderController::class, 'updatePosition'])->name('task-folders.update-position');
-
-    Route::post('task-lists', [\App\Http\Controllers\TaskListController::class, 'store'])->name('task-lists.store');
-    Route::patch('task-lists/{list}', [\App\Http\Controllers\TaskListController::class, 'update'])->name('task-lists.update');
-    Route::delete('task-lists/{list}', [\App\Http\Controllers\TaskListController::class, 'destroy'])->name('task-lists.destroy');
-    Route::patch('task-lists/{list}/position', [\App\Http\Controllers\TaskListController::class, 'updatePosition'])->name('task-lists.update-position');
-
-    // Task Services Management
-    Route::resource('task-services', TaskServiceController::class);
-
-    // Settings Module - Main Hub
-    Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
-
-    // Settings - Application
-    Route::get('settings/application', [SettingsController::class, 'application'])->name('settings.application');
-    Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
-
-    // Settings - Business Hub
-    Route::get('settings/business', [SettingsController::class, 'business'])->name('settings.business');
-    Route::get('settings/business-info', [SettingsController::class, 'businessInfo'])->name('settings.business-info');
-    Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
-
-    // Settings - Integrations Hub
-    Route::get('settings/integrations', [SettingsController::class, 'integrations'])->name('settings.integrations');
-
-    // Settings - Nomenclature Hub
-    Route::get('settings/nomenclature', [SettingsController::class, 'nomenclatureIndex'])->name('settings.nomenclature');
-
-    // Settings - Notifications
-    Route::get('settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
-    Route::post('settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
-    Route::post('settings/notifications/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.notifications.test-email');
-
-    // Settings - Yearly Objectives (Budget Thresholds)
-    Route::get('settings/yearly-objectives', [SettingsController::class, 'yearlyObjectives'])->name('settings.yearly-objectives');
-    Route::post('settings/yearly-objectives', [SettingsController::class, 'updateYearlyObjectives'])->name('settings.yearly-objectives.update');
-
-    // Smartbill Integration Settings
-    Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\SmartbillController::class, 'index'])->name('index');
-        Route::post('/credentials', [\App\Http\Controllers\Settings\SmartbillController::class, 'updateCredentials'])->name('credentials.update');
-        Route::post('/test-connection', [\App\Http\Controllers\Settings\SmartbillController::class, 'testConnection'])->name('test-connection');
-        Route::get('/import', [\App\Http\Controllers\Settings\SmartbillController::class, 'showImportForm'])->name('import');
-        Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])->name('import.process');
-        Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
-        Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
+    Route::middleware('module:subscriptions')->group(function () {
+        Route::resource('subscriptions', SubscriptionController::class);
+        Route::post('subscriptions/bulk-update', [SubscriptionController::class, 'bulkUpdate'])->name('subscriptions.bulk-update');
+        Route::post('subscriptions/bulk-export', [SubscriptionController::class, 'bulkExport'])->name('subscriptions.bulk-export');
+        Route::post('subscriptions/bulk-renew', [SubscriptionController::class, 'bulkRenew'])->name('subscriptions.bulk-renew');
+        Route::post('subscriptions/bulk-status', [SubscriptionController::class, 'bulkUpdateStatus'])->name('subscriptions.bulk-status');
+        Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
+        Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
+        Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
     });
 
-    // ClickUp Integration Settings
-    Route::prefix('settings/clickup')->name('settings.clickup.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'index'])->name('index');
-        Route::post('/credentials', [\App\Http\Controllers\Settings\ClickUpController::class, 'updateCredentials'])->name('credentials.update');
-        Route::post('/test-connection', [\App\Http\Controllers\Settings\ClickUpController::class, 'testConnection'])->name('test-connection');
-        Route::get('/workspaces', [\App\Http\Controllers\Settings\ClickUpController::class, 'getWorkspaces'])->name('workspaces');
-        Route::get('/import', [\App\Http\Controllers\Settings\ClickUpController::class, 'showImportForm'])->name('import');
-        Route::post('/import/start', [\App\Http\Controllers\Settings\ClickUpController::class, 'startImport'])->name('import.start');
-        Route::get('/sync/{syncId}/status', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncStatus'])->name('sync.status');
-        Route::get('/sync/{syncId}/progress', [\App\Http\Controllers\Settings\ClickUpController::class, 'getSyncProgress'])->name('sync.progress');
-        Route::post('/sync/{syncId}/cancel', [\App\Http\Controllers\Settings\ClickUpController::class, 'cancelSync'])->name('sync.cancel');
-        Route::delete('/sync/{syncId}', [\App\Http\Controllers\Settings\ClickUpController::class, 'deleteSync'])->name('sync.delete');
-        Route::post('/sync/{syncId}/retry', [\App\Http\Controllers\Settings\ClickUpController::class, 'retrySync'])->name('sync.retry');
+    // Settings Module
+    Route::middleware('module:settings')->group(function () {
+        // Settings - Main Hub
+        Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
+
+        // Settings - Application
+        Route::get('settings/application', [SettingsController::class, 'application'])->name('settings.application');
+        Route::post('settings/application', [SettingsController::class, 'updateApplicationSettings'])->name('settings.application.update');
+
+        // Settings - Business Hub
+        Route::get('settings/business', [SettingsController::class, 'business'])->name('settings.business');
+        Route::get('settings/business-info', [SettingsController::class, 'businessInfo'])->name('settings.business-info');
+        Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
+
+        // Settings - Integrations Hub
+        Route::get('settings/integrations', [SettingsController::class, 'integrations'])->name('settings.integrations');
+
+        // Settings - Nomenclature Hub
+        Route::get('settings/nomenclature', [SettingsController::class, 'nomenclatureIndex'])->name('settings.nomenclature');
+
+        // Settings - Notifications
+        Route::get('settings/notifications', [SettingsController::class, 'notifications'])->name('settings.notifications');
+        Route::post('settings/notifications', [SettingsController::class, 'updateNotifications'])->name('settings.notifications.update');
+        Route::post('settings/notifications/test-email', [SettingsController::class, 'sendTestEmail'])->name('settings.notifications.test-email');
+
+        // Settings - Yearly Objectives (Budget Thresholds)
+        Route::get('settings/yearly-objectives', [SettingsController::class, 'yearlyObjectives'])->name('settings.yearly-objectives');
+        Route::post('settings/yearly-objectives', [SettingsController::class, 'updateYearlyObjectives'])->name('settings.yearly-objectives.update');
+
+        // Settings - Database Backup
+        Route::get('settings/backup', [\App\Http\Controllers\Settings\BackupController::class, 'index'])->name('settings.backup');
+        Route::post('settings/backup/export', [\App\Http\Controllers\Settings\BackupController::class, 'export'])->name('settings.backup.export');
+        Route::post('settings/backup/import', [\App\Http\Controllers\Settings\BackupController::class, 'import'])->name('settings.backup.import');
+        Route::get('settings/backup/download/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'download'])->where('filename', '.*')->name('settings.backup.download');
+        Route::post('settings/backup/restore/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'restore'])->where('filename', '.*')->name('settings.backup.restore');
+        Route::delete('settings/backup/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'destroy'])->where('filename', '.*')->name('settings.backup.destroy');
+
+        // Slack Integration Settings
+        Route::prefix('settings/slack')->name('settings.slack.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\SlackController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Settings\SlackController::class, 'update'])->name('update');
+            Route::post('/test', [\App\Http\Controllers\Settings\SlackController::class, 'test'])->name('test');
+            Route::post('/disconnect', [\App\Http\Controllers\Settings\SlackController::class, 'disconnect'])->name('disconnect');
+        });
+
+        // Email Integration Settings - redirect to unified notifications page
+        Route::get('settings/email', fn() => redirect()->route('settings.notifications'))->name('settings.email.index');
+
+        // ClickUp Integration Settings
+        Route::prefix('settings/clickup')->name('settings.clickup.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'update'])->name('update');
+            Route::post('/test', [\App\Http\Controllers\Settings\ClickUpController::class, 'test'])->name('test');
+            Route::post('/disconnect', [\App\Http\Controllers\Settings\ClickUpController::class, 'disconnect'])->name('disconnect');
+        });
+
+        // Smartbill Integration Settings
+        Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\SmartbillController::class, 'index'])->name('index');
+            Route::post('/credentials', [\App\Http\Controllers\Settings\SmartbillController::class, 'updateCredentials'])->name('credentials.update');
+            Route::post('/test-connection', [\App\Http\Controllers\Settings\SmartbillController::class, 'testConnection'])->name('test-connection');
+            Route::get('/import', [\App\Http\Controllers\Settings\SmartbillController::class, 'showImportForm'])->name('import');
+            Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])->name('import.process');
+            Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
+            Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
+        });
+
+
+        // User Management Settings (Admin only - additional role check in controller)
+        Route::prefix('settings/users')->name('settings.users.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\UserController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Settings\UserController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Settings\UserController::class, 'store'])->name('store');
+            Route::get('/{user}', [\App\Http\Controllers\Settings\UserController::class, 'show'])->name('show');
+            Route::get('/{user}/edit', [\App\Http\Controllers\Settings\UserController::class, 'edit'])->name('edit');
+            Route::put('/{user}', [\App\Http\Controllers\Settings\UserController::class, 'update'])->name('update');
+            Route::delete('/{user}', [\App\Http\Controllers\Settings\UserController::class, 'destroy'])->name('destroy');
+            Route::post('/{user}/restore', [\App\Http\Controllers\Settings\UserController::class, 'restore'])->name('restore');
+            Route::put('/{user}/permissions', [\App\Http\Controllers\Settings\UserController::class, 'updatePermissions'])->name('permissions.update');
+            Route::post('/{user}/reset-permissions', [\App\Http\Controllers\Settings\UserController::class, 'resetToRoleDefaults'])->name('permissions.reset');
+            Route::post('/{user}/resend-invite', [\App\Http\Controllers\Settings\UserController::class, 'resendInvite'])->name('resend-invite');
+        });
+
+        // Nomenclature Settings Pages
+        Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');
+        Route::get('settings/domain-statuses', [SettingsController::class, 'domainStatuses'])->name('settings.domain-statuses');
+        Route::get('settings/subscription-statuses', [SettingsController::class, 'subscriptionStatuses'])->name('settings.subscription-statuses');
+        Route::get('settings/access-platforms', [SettingsController::class, 'accessPlatforms'])->name('settings.access-platforms');
+        Route::get('settings/expense-categories', [SettingsController::class, 'expenseCategories'])->name('settings.expense-categories');
+        Route::get('settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('settings.payment-methods');
+        Route::get('settings/billing-cycles', [SettingsController::class, 'billingCycles'])->name('settings.billing-cycles');
+        Route::get('settings/domain-registrars', [SettingsController::class, 'domainRegistrars'])->name('settings.domain-registrars');
+        Route::get('settings/currencies', [SettingsController::class, 'currencies'])->name('settings.currencies');
+        Route::get('settings/quick-actions', [SettingsController::class, 'quickActions'])->name('settings.quick-actions');
+
+        // Nomenclature CRUD Operations
+        Route::post('settings/nomenclature', [\App\Http\Controllers\NomenclatureController::class, 'store'])->name('settings.nomenclature.store');
+        Route::patch('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'update'])->name('settings.nomenclature.update');
+        Route::delete('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'destroy'])->name('settings.nomenclature.destroy');
+        Route::post('settings/nomenclature/reorder', [\App\Http\Controllers\NomenclatureController::class, 'reorder'])->name('settings.nomenclature.reorder');
+        Route::post('settings/nomenclature/bulk-delete', [\App\Http\Controllers\NomenclatureController::class, 'bulkDelete'])->name('settings.nomenclature.bulk-delete');
+
+        // Services Management (organization-level)
+        Route::get("settings/services", [ServiceController::class, "index"])->name("settings.services");
+        Route::post("settings/services", [ServiceController::class, "store"])->name("settings.services.store");
+        Route::put("settings/services/{service}", [ServiceController::class, "update"])->name("settings.services.update");
+        Route::delete("settings/services/{service}", [ServiceController::class, "destroy"])->name("settings.services.destroy");
+        Route::post("settings/services/reorder", [ServiceController::class, "reorder"])->name("settings.services.reorder");
     });
-
-    // Task Tags Settings
-    Route::get('settings/task-tags', [\App\Http\Controllers\TaskTagController::class, 'index'])->name('settings.task-tags');
-    Route::post('settings/task-tags', [\App\Http\Controllers\TaskTagController::class, 'store'])->name('settings.task-tags.store');
-    Route::patch('settings/task-tags/{tag}', [\App\Http\Controllers\TaskTagController::class, 'update'])->name('settings.task-tags.update');
-    Route::delete('settings/task-tags/{tag}', [\App\Http\Controllers\TaskTagController::class, 'destroy'])->name('settings.task-tags.destroy');
-
-    // Task Statuses Settings
-    Route::get('settings/task-statuses', [\App\Http\Controllers\Settings\TaskStatusController::class, 'index'])->name('settings.task-statuses');
-    Route::post('settings/task-statuses', [\App\Http\Controllers\Settings\TaskStatusController::class, 'store'])->name('settings.task-statuses.store');
-    Route::patch('settings/task-statuses/{status}', [\App\Http\Controllers\Settings\TaskStatusController::class, 'update'])->name('settings.task-statuses.update');
-    Route::delete('settings/task-statuses/{status}', [\App\Http\Controllers\Settings\TaskStatusController::class, 'destroy'])->name('settings.task-statuses.destroy');
-    Route::post('settings/task-statuses/reorder', [\App\Http\Controllers\Settings\TaskStatusController::class, 'reorder'])->name('settings.task-statuses.reorder');
-
-    // Nomenclature Settings Pages (Individual routes for each section)
-    Route::get('settings/client-statuses', [SettingsController::class, 'clientStatuses'])->name('settings.client-statuses');
-    Route::get('settings/domain-statuses', [SettingsController::class, 'domainStatuses'])->name('settings.domain-statuses');
-    Route::get('settings/subscription-statuses', [SettingsController::class, 'subscriptionStatuses'])->name('settings.subscription-statuses');
-    Route::get('settings/access-platforms', [SettingsController::class, 'accessPlatforms'])->name('settings.access-platforms');
-    Route::get('settings/expense-categories', [SettingsController::class, 'expenseCategories'])->name('settings.expense-categories');
-    Route::get('settings/payment-methods', [SettingsController::class, 'paymentMethods'])->name('settings.payment-methods');
-    Route::get('settings/billing-cycles', [SettingsController::class, 'billingCycles'])->name('settings.billing-cycles');
-    Route::get('settings/domain-registrars', [SettingsController::class, 'domainRegistrars'])->name('settings.domain-registrars');
-    Route::get('settings/currencies', [SettingsController::class, 'currencies'])->name('settings.currencies');
-    Route::get('settings/quick-actions', [SettingsController::class, 'quickActions'])->name('settings.quick-actions');
-
-    // Nomenclature CRUD Operations (Generic for all nomenclature types)
-    Route::post('settings/nomenclature', [\App\Http\Controllers\NomenclatureController::class, 'store'])->name('settings.nomenclature.store');
-    Route::patch('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'update'])->name('settings.nomenclature.update');
-    Route::delete('settings/nomenclature/{setting}', [\App\Http\Controllers\NomenclatureController::class, 'destroy'])->name('settings.nomenclature.destroy');
-    Route::post('settings/nomenclature/reorder', [\App\Http\Controllers\NomenclatureController::class, 'reorder'])->name('settings.nomenclature.reorder');
-
-    // Services Management (organization-level)
-    Route::get("settings/services", [ServiceController::class, "index"])->name("settings.services");
-    Route::post("settings/services", [ServiceController::class, "store"])->name("settings.services.store");
-    Route::put("settings/services/{service}", [ServiceController::class, "update"])->name("settings.services.update");
-    Route::delete("settings/services/{service}", [ServiceController::class, "destroy"])->name("settings.services.destroy");
-    Route::post("settings/services/reorder", [ServiceController::class, "reorder"])->name("settings.services.reorder");
 
     // Financial Module
-    Route::prefix('financial')->name('financial.')->group(function () {
+    Route::middleware('module:finance')->prefix('financial')->name('financial.')->group(function () {
         // Dashboard
         Route::get('/', [FinancialDashboardController::class, 'index'])->name('dashboard');
         Route::post('/budget-thresholds', [FinancialDashboardController::class, 'saveBudgetThresholds'])->name('budget-thresholds.save');
@@ -312,25 +235,36 @@ Route::middleware('auth')->group(function () {
         Route::post('revenues/import/{importId}/cancel', [ImportController::class, 'cancelImport'])->name('revenues.import.cancel');
         Route::delete('revenues/import/{importId}', [ImportController::class, 'deleteImport'])->name('revenues.import.delete');
         Route::resource('revenues', RevenueController::class)->parameters(['revenues' => 'revenue']);
+        Route::post("revenues/bulk-update", [RevenueController::class, "bulkUpdate"])->name("revenues.bulk-update");
+        Route::post("revenues/bulk-export", [RevenueController::class, "bulkExport"])->name("revenues.bulk-export");
 
         // Expenses
         Route::get('expenses/import', [ImportController::class, 'showExpenseImportForm'])->name('expenses.import');
         Route::post('expenses/import', [ImportController::class, 'importExpenses'])->name('expenses.import.post');
         Route::get('expenses/import/template', [ImportController::class, 'downloadExpenseTemplate'])->name('expenses.import.template');
         Route::resource('expenses', ExpenseController::class)->parameters(['expenses' => 'expense']);
+        Route::post("expenses/bulk-update", [ExpenseController::class, "bulkUpdate"])->name("expenses.bulk-update");
+        Route::post("expenses/bulk-export", [ExpenseController::class, "bulkExport"])->name("expenses.bulk-export");
 
 
-        // Files
+        // Files - Browse with explicit URL structure
         Route::get('files', [FinancialFileController::class, 'index'])->name('files.index');
+        Route::get('files/{year}', [FinancialFileController::class, 'indexYear'])->name('files.year')->where('year', '[0-9]{4}');
+        Route::get('files/{year}/{month}', [FinancialFileController::class, 'indexMonth'])->name('files.month')->where(['year' => '[0-9]{4}', 'month' => '[0-9]{1,2}']);
+        Route::get('files/{year}/{month}/{category}', [FinancialFileController::class, 'indexCategory'])->name('files.category')->where(['year' => '[0-9]{4}', 'month' => '[0-9]{1,2}', 'category' => 'incasare|plata|extrase|general']);
+        Route::get('files/api/{year}/{month}/{category}', [FinancialFileController::class, 'apiCategoryFiles'])->name('files.api-category')->where(['year' => '[0-9]{4}', 'month' => '[0-9]{1,2}', 'category' => 'incasare|plata|extrase|general']);
+
+        // Files - Operations (must come after browse routes due to route priority)
         Route::get('files/create', [FinancialFileController::class, 'create'])->name('files.create');
         Route::post('files', [FinancialFileController::class, 'store'])->name('files.store');
         Route::post('files/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
+        Route::post('files/bulk-delete', [FinancialFileController::class, 'bulkDelete'])->name('files.bulk-delete');
         Route::get('files/download-yearly-zip/{year}', [FinancialFileController::class, 'downloadYearlyZip'])->name('files.download-yearly-zip');
         Route::get('files/download-monthly-zip/{year}/{month}', [FinancialFileController::class, 'downloadMonthlyZip'])->name('files.download-monthly-zip');
-        Route::get('files/{file}', [FinancialFileController::class, 'show'])->name('files.show');
-        Route::get('files/{file}/download', [FinancialFileController::class, 'download'])->name('files.download');
+        Route::get('files/view/{file}', [FinancialFileController::class, 'show'])->name('files.show');
+        Route::get('files/download/{file}', [FinancialFileController::class, 'download'])->name('files.download');
         Route::patch('files/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');
-        Route::delete('files/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
+        Route::delete('files/delete/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
     });
 });
 

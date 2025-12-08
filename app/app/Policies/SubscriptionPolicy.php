@@ -4,94 +4,84 @@ namespace App\Policies;
 
 use App\Models\Subscription;
 use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
 
 class SubscriptionPolicy
 {
+    use HandlesAuthorization;
+
     /**
-     * Determine whether the user can view any models.
+     * Determine whether the user can view any subscriptions.
      */
     public function viewAny(User $user): bool
     {
-        return true;
+        return $user->organization_id !== null;
     }
 
     /**
-     * Determine whether the user can view the model.
+     * Determine whether the user can view the subscription.
+     * Organization-scoped: any user in the org can view.
      */
     public function view(User $user, Subscription $subscription): bool
     {
-        // User can view their own subscriptions
-        // Admins can view all subscriptions in their organization
-        return $this->isOwner($user, $subscription) || $this->isOrgAdmin($user, $subscription);
+        return $subscription->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can create models.
+     * Determine whether the user can create subscriptions.
      */
     public function create(User $user): bool
     {
-        return true;
+        return $user->organization_id !== null;
     }
 
     /**
-     * Determine whether the user can update the model.
+     * Determine whether the user can update the subscription.
+     * Organization-scoped: any user in the org can update.
      */
     public function update(User $user, Subscription $subscription): bool
     {
-        return $this->isOwner($user, $subscription) || $this->isOrgAdmin($user, $subscription);
+        return $subscription->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can delete the model.
+     * Determine whether the user can delete the subscription.
+     * Organization-scoped: any user in the org can delete.
      */
     public function delete(User $user, Subscription $subscription): bool
     {
-        return $this->isOwner($user, $subscription) || $this->isOrgAdmin($user, $subscription);
+        return $subscription->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can restore the model.
+     * Determine whether the user can restore the subscription.
      */
     public function restore(User $user, Subscription $subscription): bool
     {
-        return $this->isOwner($user, $subscription) || $this->isOrgAdmin($user, $subscription);
+        return $subscription->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can permanently delete the model.
+     * Determine whether the user can permanently delete the subscription.
      */
     public function forceDelete(User $user, Subscription $subscription): bool
     {
-        return $this->isOrgAdmin($user, $subscription);
+        return $subscription->organization_id === $user->organization_id;
     }
 
     /**
-     * Determine whether the user can renew the subscription.
+     * Determine if user can perform bulk updates.
      */
-    public function renew(User $user, Subscription $subscription): bool
+    public function bulkUpdate(User $user): bool
     {
-        return $this->isOwner($user, $subscription) || $this->isOrgAdmin($user, $subscription);
+        return $user->organization_id !== null;
     }
 
     /**
-     * Check if user owns the subscription.
+     * Determine if user can perform bulk deletes.
      */
-    private function isOwner(User $user, Subscription $subscription): bool
+    public function bulkDelete(User $user): bool
     {
-        return $user->id === $subscription->user_id;
-    }
-
-    /**
-     * Check if user is an admin in the same organization.
-     */
-    private function isOrgAdmin(User $user, Subscription $subscription): bool
-    {
-        // Get the subscription owner to check their organization
-        $subscriptionOwner = $subscription->user;
-        if (!$subscriptionOwner) {
-            return false;
-        }
-
-        return $user->organization_id === $subscriptionOwner->organization_id && $user->isAdmin();
+        return $user->organization_id !== null;
     }
 }

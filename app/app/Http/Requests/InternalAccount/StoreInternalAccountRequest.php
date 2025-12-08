@@ -11,7 +11,7 @@ class StoreInternalAccountRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check() && auth()->user()->organization_id !== null;
     }
 
     /**

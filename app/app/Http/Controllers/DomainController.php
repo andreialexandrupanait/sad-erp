@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Gate;
 use App\Models\Domain;
 use App\Models\Client;
 use App\Models\SettingOption;
@@ -11,6 +14,12 @@ use Illuminate\Http\Request;
 
 class DomainController extends Controller
 {
+    use HandlesBulkActions;
+    public function __construct()
+    {
+        $this->authorizeResource(Domain::class, 'domain');
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -153,5 +162,65 @@ class DomainController extends Controller
 
         return redirect()->route('domains.index')
             ->with('success', __('Domain deleted successfully.'));
+    }
+
+    protected function getBulkModelClass(): string
+    {
+        return Domain::class;
+    }
+
+    protected function getExportEagerLoads(): array
+    {
+        return ['client'];
+    }
+
+    protected function exportToCsv($domains)
+    {
+        $filename = "domains_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($domains) {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Domain", "Client", "Registrar", "Expiry Date", "Annual Cost", "Auto-Renew", "Status"]);
+
+            foreach ($domains as $domain) {
+                fputcsv($file, [
+                    $domain->domain_name,
+                    $domain->client?->name ?? "N/A",
+                    $domain->registrar,
+                    $domain->expiry_date?->format("Y-m-d") ?? "N/A",
+                    $domain->annual_cost,
+                    $domain->auto_renew ? "Yes" : "No",
+                    $domain->status,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    public function bulkToggleAutoRenew(Request $request)
+    {
+        $validated = $request->validate([
+            "ids" => "required|array|min:1|max:100",
+            "ids.*" => "required|integer",
+            "auto_renew" => "required|boolean",
+        ]);
+
+        $domains = Domain::whereIn("id", $validated["ids"])->get();
+
+        foreach ($domains as $domain) {
+            Gate::authorize("update", $domain);
+            $domain->auto_renew = $validated["auto_renew"];
+            $domain->save();
+        }
+
+        return response()->json(["success" => true, "message" => "Auto-renew updated for " . count($domains) . " domains"]);
     }
 }

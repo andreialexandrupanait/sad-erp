@@ -13,74 +13,90 @@ use Illuminate\Support\Str;
 class FileController extends Controller
 {
     /**
-     * Display the file management interface with hierarchical organization
+     * Redirect to current year view (default entry point)
      */
-    public function index(Request $request)
+    public function index()
     {
-        // Get filter values from request or session, with defaults
-        $year = (int) $request->get('year', session('financial.filters.year', now()->year));
-        $month = $request->has('month') ? ($request->get('month') ? (int) $request->get('month') : null) : null;
-        $tip = $request->get('tip'); // incasare, plata, extrase, general
+        return redirect()->route('financial.files.year', ['year' => now()->year]);
+    }
 
-        // Store filter values in session for persistence (only if explicitly set)
-        if ($request->has('year')) {
-            session(['financial.filters.year' => $year]);
-        }
-        if ($request->has('month')) {
-            session(['financial.filters.month' => $month]);
-        }
-        if ($request->has('tip')) {
-            session(['financial.filters.tip' => $tip]);
-        }
-
-        // Get available years for the filter - all years from 2019 to current year
-        $currentYear = now()->year;
-        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
-
-        // Build the query
-        $filesQuery = FinancialFile::with('entity')
-            ->where('an', $year);
-
-        if ($month) {
-            $filesQuery->where('luna', $month);
-        }
-
-        if ($tip) {
-            $filesQuery->where('tip', $tip);
-        }
-
-        $files = $filesQuery->latest()->paginate(50);
-
-        // Get summary for tree view - all years
+    /**
+     * Year overview - shows 12 month cards
+     * URL: /financial/files/{year}
+     */
+    public function indexYear(int $year)
+    {
+        $availableYears = $this->getAvailableYears();
         $allYearsSummary = $this->getAllYearsSummary($availableYears);
 
-        // Handle AJAX requests - return JSON for SPA-like navigation
-        if ($request->wantsJson()) {
-            return response()->json([
-                'year' => $year,
-                'month' => $month,
-                'tip' => $tip,
-                'files' => $files->items(),
-                'pagination' => [
-                    'current_page' => $files->currentPage(),
-                    'last_page' => $files->lastPage(),
-                    'per_page' => $files->perPage(),
-                    'total' => $files->total(),
-                    'links' => $files->links()->render(),
-                ],
-                'allYearsSummary' => $allYearsSummary,
-            ]);
-        }
-
-        // Regular page load - return full view
-        return view('financial.files.index', compact(
-            'files',
+        return view('financial.files.year', compact(
             'year',
-            'month',
-            'tip',
             'availableYears',
             'allYearsSummary'
         ));
+    }
+
+    /**
+     * Month overview - shows 4 category cards with file lists
+     * URL: /financial/files/{year}/{month}
+     */
+    public function indexMonth(int $year, int $month)
+    {
+        $availableYears = $this->getAvailableYears();
+        $allYearsSummary = $this->getAllYearsSummary($availableYears);
+
+        // Get files for this month grouped by category
+        $filesByCategory = FinancialFile::with('entity')
+            ->where('an', $year)
+            ->where('luna', $month)
+            ->orderBy('file_name')
+            ->get()
+            ->groupBy('tip');
+
+        return view('financial.files.month', compact(
+            'year',
+            'month',
+            'availableYears',
+            'allYearsSummary',
+            'filesByCategory'
+        ));
+    }
+
+    /**
+     * Category view - shows files table with bulk actions
+     * URL: /financial/files/{year}/{month}/{category}
+     */
+    public function indexCategory(int $year, int $month, string $category)
+    {
+        $availableYears = $this->getAvailableYears();
+        $allYearsSummary = $this->getAllYearsSummary($availableYears);
+
+        // Build the query for this specific category
+        $files = FinancialFile::with('entity')
+            ->withCount('importedExpenses')
+            ->where('an', $year)
+            ->where('luna', $month)
+            ->where('tip', $category)
+            ->latest()
+            ->paginate(50);
+
+        return view('financial.files.category', compact(
+            'year',
+            'month',
+            'category',
+            'files',
+            'availableYears',
+            'allYearsSummary'
+        ));
+    }
+
+    /**
+     * Get available years for navigation
+     */
+    private function getAvailableYears()
+    {
+        $currentYear = now()->year;
+        return collect(range(2019, $currentYear))->reverse()->values();
     }
 
     /**
@@ -229,16 +245,19 @@ class FileController extends Controller
             $uploadedFiles[] = $financialFile;
         }
 
+        $count = count($uploadedFiles);
+        $messageKey = $count === 1 ? 'messages.files_uploaded_single' : 'messages.files_uploaded_plural';
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'files' => $uploadedFiles,
-                'message' => count($uploadedFiles) . ' ' . (count($uploadedFiles) === 1 ? 'fișier încărcat' : 'fișiere încărcate') . ' cu succes',
+                'message' => __($messageKey, ['count' => $count]),
             ]);
         }
 
-        return redirect()->route('financial.files.index', ['year' => $year, 'month' => $month])
-            ->with('success', count($uploadedFiles) . ' ' . (count($uploadedFiles) === 1 ? 'fișier încărcat' : 'fișiere încărcate') . ' cu succes');
+        return redirect()->route('financial.files.category', ['year' => $year, 'month' => $month, 'category' => $tip])
+            ->with('success', __($messageKey, ['count' => $count]));
     }
 
     /**
@@ -287,12 +306,57 @@ class FileController extends Controller
         if (request()->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Fișier șters cu succes',
+                'message' => __('messages.file_deleted'),
             ]);
         }
 
-        return redirect()->route('financial.files.index', ['year' => $year, 'month' => $month, 'tip' => $tip])
-            ->with('success', 'Fișier șters cu succes');
+        return redirect()->route('financial.files.category', ['year' => $year, 'month' => $month, 'category' => $tip])
+            ->with('success', __('messages.file_deleted'));
+    }
+
+    /**
+     * Delete multiple files at once
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:financial_files,id',
+        ]);
+
+        $files = FinancialFile::whereIn('id', $validated['ids'])->get();
+
+        if ($files->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => __('messages.no_files_selected'),
+            ], 404);
+        }
+
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($files as $file) {
+            try {
+                // Physical file deletion is handled in the model's deleted event
+                $file->delete();
+                $deletedCount++;
+            } catch (\Exception $e) {
+                $errors[] = $file->file_name . ': ' . $e->getMessage();
+            }
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => $deletedCount > 0,
+                'deleted_count' => $deletedCount,
+                'message' => __('messages.files_deleted', ['count' => $deletedCount]),
+                'errors' => $errors,
+            ]);
+        }
+
+        return redirect()->back()->with('success', __('messages.files_deleted', ['count' => $deletedCount]));
+    
     }
 
     /**
@@ -312,11 +376,11 @@ class FileController extends Controller
             return response()->json([
                 'success' => true,
                 'file' => $file,
-                'message' => 'Fișier redenumit cu succes',
+                'message' => __('messages.file_renamed'),
             ]);
         }
 
-        return redirect()->back()->with('success', 'Fișier redenumit cu succes');
+        return redirect()->back()->with('success', __('messages.file_renamed'));
     }
 
     /**
@@ -417,7 +481,7 @@ class FileController extends Controller
             ->get();
 
         if ($files->isEmpty()) {
-            return redirect()->back()->with('error', 'Nu există fișiere pentru luna selectată.');
+            return redirect()->back()->with('error', __('messages.no_files_for_month'));
         }
 
         // Get month name in English for the filename
@@ -436,7 +500,7 @@ class FileController extends Controller
         // Create ZIP archive
         $zip = new \ZipArchive();
         if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
+            return redirect()->back()->with('error', __('messages.zip_create_error'));
         }
 
         // Add files to ZIP, organized by type
@@ -477,7 +541,7 @@ class FileController extends Controller
         $files = FinancialFile::where('an', $year)->get();
 
         if ($files->isEmpty()) {
-            return redirect()->back()->with('error', 'Nu există fișiere pentru anul selectat.');
+            return redirect()->back()->with('error', __('messages.no_files_for_year'));
         }
 
         // Create a temporary file for the ZIP with format: Year.zip
@@ -492,7 +556,7 @@ class FileController extends Controller
         // Create ZIP archive
         $zip = new \ZipArchive();
         if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return redirect()->back()->with('error', 'Nu s-a putut crea arhiva ZIP.');
+            return redirect()->back()->with('error', __('messages.zip_create_error'));
         }
 
         // Add files to ZIP, organized by month/type
@@ -526,35 +590,87 @@ class FileController extends Controller
 
     /**
      * Generate friendly name for bank statement files
-     * Converts: Extrase_RO82BTRLEURCRT0512531701_2025-10-01_2025-10-31_SIMPLEAD_S_R_L
-     * To: 10.2025 - Cont curent EUR
+     *
+     * Pattern 1 - BT Export format:
+     * Extrase_RO82BTRLEURCRT0512531701_2025-10-01_2025-10-31_SIMPLEAD_S_R_L
+     * → 10.2025 - Cont curent EUR
+     *
+     * Pattern 2 - BT Monthly format:
+     * 092025_RO35BTRLRONCRT0512531701_CURRENT.pdf
+     * → 09.2025 - Cont curent RON
      */
     private function generateBankStatementName($originalFilename)
     {
-        // Only process files that match the bank export pattern
-        if (!str_starts_with($originalFilename, 'Extrase_')) {
-            return null; // Not a bank statement, keep original name
+        // Remove extension for pattern matching
+        $nameWithoutExt = pathinfo($originalFilename, PATHINFO_FILENAME);
+
+        // Pattern 1: Extrase_IBAN_YYYY-MM-DD_YYYY-MM-DD_COMPANY
+        if (str_starts_with($nameWithoutExt, 'Extrase_')) {
+            // Extract currency from IBAN in filename
+            $currency = $this->detectCurrencyFromFilename($nameWithoutExt);
+
+            // Extract month and year from date range pattern: _YYYY-MM-DD_
+            if (preg_match('/_(\d{4})-(\d{2})-\d{2}_/', $nameWithoutExt, $matches)) {
+                $year = $matches[1];
+                $month = $matches[2];
+
+                return "{$month}.{$year} - Cont curent {$currency}";
+            }
         }
 
-        // Extract currency from IBAN in filename
-        $currency = 'RON'; // Default to RON
-        if (preg_match('/EUR/i', $originalFilename)) {
-            $currency = 'EUR';
-        } elseif (preg_match('/USD/i', $originalFilename)) {
-            $currency = 'USD';
-        } elseif (preg_match('/GBP/i', $originalFilename)) {
-            $currency = 'GBP';
-        }
+        // Pattern 2: MMYYYY_IBAN_CURRENT (e.g., 092025_RO35BTRLRONCRT0512531701_CURRENT)
+        if (preg_match('/^(\d{2})(\d{4})_([A-Z0-9]+)_CURRENT$/i', $nameWithoutExt, $matches)) {
+            $month = $matches[1];
+            $year = $matches[2];
+            $iban = $matches[3];
 
-        // Extract month and year from date range pattern: _YYYY-MM-DD_
-        if (preg_match('/_(\d{4})-(\d{2})-\d{2}_/', $originalFilename, $matches)) {
-            $year = $matches[1];
-            $month = $matches[2];
+            // Extract currency from IBAN
+            $currency = $this->detectCurrencyFromFilename($iban);
 
             return "{$month}.{$year} - Cont curent {$currency}";
         }
 
         // Pattern not matched, keep original name
         return null;
+    }
+
+    /**
+     * Detect currency from IBAN or filename
+     */
+    private function detectCurrencyFromFilename(string $text): string
+    {
+        if (preg_match('/EUR/i', $text)) {
+            return 'EUR';
+        } elseif (preg_match('/USD/i', $text)) {
+            return 'USD';
+        } elseif (preg_match('/GBP/i', $text)) {
+            return 'GBP';
+        }
+        return 'RON'; // Default
+    }
+
+    /**
+     * API endpoint for lazy loading category files in sidebar tree view
+     */
+    public function apiCategoryFiles(int $year, int $month, string $category)
+    {
+        $files = FinancialFile::where('an', $year)
+            ->where('luna', $month)
+            ->where('tip', $category)
+            ->orderBy('file_name')
+            ->get()
+            ->map(function ($file) {
+                return [
+                    'id' => $file->id,
+                    'name' => Str::limit(pathinfo($file->file_name, PATHINFO_FILENAME), 25),
+                    'full_name' => $file->file_name,
+                    'icon' => $file->icon,
+                    'show_url' => route('financial.files.show', $file),
+                ];
+            });
+
+        return response()->json([
+            'files' => $files,
+        ]);
     }
 }

@@ -1,43 +1,57 @@
 <?php
 
+/**
+ * Traduceri autentificare
+ */
+
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Authentication Language Lines
-    |--------------------------------------------------------------------------
-    */
+    // Pagina login
+    'welcome_back' => 'Bine ai revenit',
+    'sign_in_continue' => 'Conectează-te la contul tău pentru a continua',
+    'email' => 'Email',
+    'email_placeholder' => 'email@exemplu.com',
+    'password' => 'Parolă',
+    'password_placeholder' => '••••••••',
+    'remember_me' => 'Ține-mă minte',
+    'forgot_password' => 'Ai uitat parola?',
+    'log_in' => 'Autentificare',
+    'no_account' => 'Nu ai cont?',
+    'sign_up' => 'Înregistrează-te',
 
+    // Înregistrare
+    'create_account' => 'Crează cont',
+    'already_have_account' => 'Ai deja un cont?',
+
+    // Resetare parolă
+    'forgot_password_title' => 'Parolă uitată',
+    'forgot_password_desc' => 'Nicio problemă. Spune-ne adresa ta de email și îți vom trimite un link pentru resetarea parolei.',
+    'email_reset_link' => 'Trimite link resetare parolă',
+    'back_to_login' => 'Înapoi la autentificare',
+    'reset_password' => 'Resetează parola',
+    'enter_new_password' => 'Te rugăm să introduci noua parolă.',
+
+    // Autentificare în doi pași
+    'two_factor_title' => 'Autentificare în doi pași',
+    'enter_code' => 'Te rugăm să introduci codul de autentificare din aplicația de autentificare.',
+    'enter_recovery_code' => 'Te rugăm să introduci unul din codurile de recuperare.',
+    'use_recovery_code' => 'Folosește un cod de recuperare',
+    'use_auth_code' => 'Folosește un cod de autentificare',
+
+    // Mesaje validare
     'failed' => 'Aceste credențiale nu corespund înregistrărilor noastre.',
-    'password' => 'Parola furnizată este incorectă.',
-    'throttle' => 'Prea multe încercări de autentificare. Vă rugăm să încercați din nou în :seconds secunde.',
+    'password_incorrect' => 'Parola introdusă este incorectă.',
+    'throttle' => 'Prea multe încercări de autentificare. Încearcă din nou în :seconds secunde.',
+    'code_invalid' => 'Codul introdus este invalid.',
 
-    // Login
-    'Log in' => 'Autentificare',
-    'Email' => 'Email',
-    'Password' => 'Parolă',
-    'Remember me' => 'Ține-mă minte',
-    'Forgot your password?' => 'Ați uitat parola?',
+    // Mesaje sesiune
+    '2fa_already_enabled' => 'Autentificarea în doi pași este deja activată.',
+    '2fa_not_enabled' => 'Te rugăm să activezi mai întâi autentificarea în doi pași.',
+    '2fa_disabled' => 'Autentificarea în doi pași a fost dezactivată.',
+    'session_terminated' => 'Sesiunea a fost încheiată.',
+    'all_sessions_terminated' => 'Toate celelalte sesiuni au fost încheiate.',
+    'cannot_logout_current' => 'Nu poți deconecta sesiunea curentă. Folosește butonul de deconectare.',
 
-    // Register
-    'Register' => 'Înregistrare',
-    'Name' => 'Nume',
-    'Confirm Password' => 'Confirmă parola',
-    'Already registered?' => 'Deja înregistrat?',
-
-    // Forgot Password
-    'Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.' => 'Ați uitat parola? Nicio problemă. Spuneți-ne adresa dvs. de email și vă vom trimite un link de resetare a parolei care vă va permite să alegeți una nouă.',
-    'Email Password Reset Link' => 'Trimite link de resetare',
-
-    // Reset Password
-    'Reset Password' => 'Resetare parolă',
-
-    // Verify Email
-    'Verify Email Address' => 'Verifică adresa de email',
-    'Thanks for signing up! Before getting started, could you verify your email address by clicking on the link we just emailed to you? If you didn\'t receive the email, we will gladly send you another.' => 'Mulțumim pentru înregistrare! Înainte de a începe, vă rugăm să verificați adresa de email făcând clic pe linkul pe care tocmai vi l-am trimis. Dacă nu ați primit email-ul, cu plăcere vă vom trimite altul.',
-    'A new verification link has been sent to the email address you provided during registration.' => 'Un nou link de verificare a fost trimis la adresa de email pe care ați furnizat-o la înregistrare.',
-    'Resend Verification Email' => 'Retrimite email de verificare',
-
-    // Confirm Password
-    'Confirm Password' => 'Confirmă parola',
-    'This is a secure area of the application. Please confirm your password before continuing.' => 'Aceasta este o zonă securizată a aplicației. Vă rugăm să confirmați parola înainte de a continua.',
+    // Footer
+    'management_system' => 'Sistem de Management',
+    'all_rights_reserved' => 'Toate drepturile rezervate.',
 ];

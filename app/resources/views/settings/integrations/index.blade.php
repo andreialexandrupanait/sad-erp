@@ -75,20 +75,79 @@
                         </a>
                     </div>
 
+                    <!-- Slack -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex-shrink-0 w-12 h-12 bg-[#4A154B]/10 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-[#4A154B]" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Slack</h3>
+                                    <p class="text-sm text-slate-500">{{ __('Notifications & Alerts') }}</p>
+                                </div>
+                            </div>
+                            @if(\App\Models\ApplicationSetting::get('slack_enabled') && \App\Models\ApplicationSetting::get('slack_webhook_url'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ __('Connected') }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    {{ __('Not configured') }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">{{ __('Send notifications to Slack channels for domain expiry, subscription renewals, and system alerts.') }}</p>
+                        <a href="{{ route('settings.slack.index') }}" class="inline-flex items-center text-sm font-medium text-[#4A154B] hover:text-[#611f69]">
+                            {{ __('Configure') }}
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
+
+                    <!-- Email Notifications -->
+                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Email</h3>
+                                    <p class="text-sm text-slate-500">{{ __('Email Notifications') }}</p>
+                                </div>
+                            </div>
+                            @if(\App\Models\ApplicationSetting::get('notifications_enabled'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ __('Enabled') }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    {{ __('Disabled') }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">{{ __('Send notifications via email for domain expiry, subscription renewals, and system alerts.') }}</p>
+                        <a href="{{ route('settings.notifications') }}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            {{ __('Configure') }}
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
                 </div>
 
                 <!-- Future Integrations -->
                 <div class="mt-8">
                     <h2 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Coming Soon') }}</h2>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-slate-50 rounded-lg border border-slate-200 border-dashed p-4 text-center">
-                            <div class="w-10 h-10 bg-slate-200 rounded-lg mx-auto mb-2 flex items-center justify-center">
-                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                            <p class="text-sm font-medium text-slate-600">Slack</p>
-                        </div>
                         <div class="bg-slate-50 rounded-lg border border-slate-200 border-dashed p-4 text-center">
                             <div class="w-10 h-10 bg-slate-200 rounded-lg mx-auto mb-2 flex items-center justify-center">
                                 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

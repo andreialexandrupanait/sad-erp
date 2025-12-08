@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Nomenclature\StoreNomenclatureRequest;
+use App\Http\Requests\Nomenclature\UpdateNomenclatureRequest;
 use App\Models\SettingOption;
+use App\Models\FinancialExpense;
 use App\Http\View\Composers\SettingsComposer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -49,16 +52,9 @@ class NomenclatureController extends Controller
     /**
      * Store a new nomenclature option
      */
-    public function store(Request $request)
+    public function store(StoreNomenclatureRequest $request)
     {
-        $validated = $request->validate([
-            'category' => 'required|string|in:' . implode(',', $this->validCategories),
-            'label' => 'required|string|max:255',
-            'value' => 'nullable|string|max:255',
-            'color' => 'nullable|string|max:7',
-            'parent_id' => 'nullable|integer|exists:settings_options,id',
-        ]);
-
+        $validated = $request->validated();
         $category = $validated['category'];
 
         // Auto-generate value from label if not provided
@@ -106,7 +102,7 @@ class NomenclatureController extends Controller
     /**
      * Update an existing nomenclature option
      */
-    public function update(Request $request, SettingOption $setting)
+    public function update(UpdateNomenclatureRequest $request, SettingOption $setting)
     {
         // Validate category is valid
         if (!in_array($setting->category, $this->validCategories)) {
@@ -116,14 +112,7 @@ class NomenclatureController extends Controller
             ], 400);
         }
 
-        $validated = $request->validate([
-            'label' => 'required|string|max:255',
-            'value' => 'nullable|string|max:255',
-            'color' => 'nullable|string|max:7',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-            'parent_id' => 'nullable|integer|exists:settings_options,id',
-        ]);
+        $validated = $request->validated();
 
         // Auto-generate value from label if not provided
         if (empty($validated['value'])) {
@@ -187,6 +176,22 @@ class NomenclatureController extends Controller
             ], 400);
         }
 
+        // For expense categories, check if any expenses reference this category
+        if ($setting->category === 'expense_categories') {
+            $expenseCount = FinancialExpense::where('category_option_id', $setting->id)->count();
+            if ($expenseCount > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Nu poți șterge această categorie deoarece {$expenseCount} cheltuieli o folosesc. Reassignează cheltuielile la altă categorie mai întâi."
+                ], 400);
+            }
+        }
+
+        // Clear any session filter that might reference this category
+        if (session('financial.filters.category_id') == $setting->id) {
+            session()->forget('financial.filters.category_id');
+        }
+
         // Force delete (permanent removal from database)
         $setting->forceDelete();
 
@@ -195,6 +200,77 @@ class NomenclatureController extends Controller
 
         return response()->json([
             'success' => true
+        ]);
+    }
+
+    /**
+     * Bulk delete nomenclature options
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'integer|exists:settings_options,id',
+        ]);
+
+        $ids = $validated['ids'];
+        $deleted = 0;
+        $errors = [];
+
+        foreach ($ids as $id) {
+            $setting = SettingOption::find($id);
+            if (!$setting) {
+                continue;
+            }
+
+            // Validate category is valid
+            if (!in_array($setting->category, $this->validCategories)) {
+                $errors[] = "Categorie invalidă: {$setting->label}";
+                continue;
+            }
+
+            // Check if this category has children
+            if ($setting->children()->count() > 0) {
+                $errors[] = "{$setting->label} are subcategorii. Șterge mai întâi subcategoriile.";
+                continue;
+            }
+
+            // For expense categories, check if any expenses reference this category
+            if ($setting->category === 'expense_categories') {
+                $expenseCount = FinancialExpense::where('category_option_id', $setting->id)->count();
+                if ($expenseCount > 0) {
+                    $errors[] = "{$setting->label} este folosită de {$expenseCount} cheltuieli.";
+                    continue;
+                }
+            }
+
+            // Clear any session filter that might reference this category
+            if (session('financial.filters.category_id') == $setting->id) {
+                session()->forget('financial.filters.category_id');
+            }
+
+            $setting->forceDelete();
+            $deleted++;
+        }
+
+        // Clear cache
+        SettingsComposer::clearCache();
+
+        if (count($errors) > 0) {
+            return response()->json([
+                'success' => $deleted > 0,
+                'message' => $deleted > 0
+                    ? "Șterse {$deleted} categorii. Erori: " . implode('; ', $errors)
+                    : implode('; ', $errors),
+                'deleted' => $deleted,
+                'errors' => $errors
+            ], $deleted > 0 ? 200 : 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Șterse {$deleted} categorii cu succes.",
+            'deleted' => $deleted
         ]);
     }
 

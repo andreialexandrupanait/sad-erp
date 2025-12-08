@@ -48,12 +48,19 @@
                 <!-- Currency -->
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="currency">
-                        {{ __('Valută') }} <span class="text-red-500">*</span>
+                        {{ __('Valută') }}
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="currency" id="currency" required>
+                        @php
+                            $currentCurrency = old('currency', $expense->currency ?? null);
+                            // Default to RON if no currency is set
+                            if (empty($currentCurrency)) {
+                                $currentCurrency = 'RON';
+                            }
+                        @endphp
+                        <x-ui.select name="currency" id="currency">
                             @foreach($currencies as $currency)
-                                <option value="{{ $currency->value }}" {{ old('currency', $expense->currency ?? 'RON') == $currency->value ? 'selected' : '' }}>
+                                <option value="{{ $currency->value }}" {{ $currentCurrency == $currency->value ? 'selected' : '' }}>
                                     {{ $currency->label }}
                                 </option>
                             @endforeach
@@ -82,24 +89,15 @@
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="category_option_id">{{ __('Categorie') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="category_option_id" id="category_option_id">
-                            <option value="">{{ __('Selectează categorie (opțional)') }}</option>
-                            @foreach($categories as $category)
-                                @if($category->children->count() > 0)
-                                    <optgroup label="{{ $category->name }}">
-                                        @foreach($category->children as $child)
-                                            <option value="{{ $child->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $child->id ? 'selected' : '' }}>
-                                                {{ $child->name }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @else
-                                    <option value="{{ $category->id }}" {{ old('category_option_id', $expense->category_option_id ?? '') == $category->id ? 'selected' : '' }}>
-                                        {{ $category->name }}
-                                    </option>
-                                @endif
-                            @endforeach
-                        </x-ui.select>
+                        <x-category-combobox
+                            :categories="$categories"
+                            :selected="old('category_option_id', $expense->category_option_id ?? null)"
+                            name="category_option_id"
+                            placeholder="{{ __('Selectează categorie (opțional)') }}"
+                            :allow-create="true"
+                            :allow-empty="true"
+                            width="100%"
+                        />
                     </div>
                 </div>
 
@@ -114,9 +112,7 @@
                                 <template x-for="file in existingFiles" :key="file.id">
                                     <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
                                         <div class="flex items-center gap-3">
-                                            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                            </svg>
+                                            <span class="text-xl flex-shrink-0" x-text="file.icon || '📎'"></span>
                                             <div>
                                                 <p class="text-sm font-medium text-slate-900" x-text="file.file_name"></p>
                                                 <p class="text-xs text-slate-500" x-text="formatFileSize(file.file_size)"></p>
@@ -169,9 +165,7 @@
                                 <template x-for="(file, index) in newFiles" :key="index">
                                     <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
                                         <div class="flex items-center gap-3">
-                                            <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                            </svg>
+                                            <span class="text-xl flex-shrink-0" x-text="getFileIcon(file.name)"></span>
                                             <div>
                                                 <p class="text-sm font-medium text-slate-900" x-text="file.name"></p>
                                                 <p class="text-xs text-slate-500" x-text="formatFileSize(file.size)"></p>
@@ -210,102 +204,3 @@
     </x-ui.card>
 </form>
 
-<script>
-function fileUploader(existingFilesData) {
-    return {
-        existingFiles: existingFilesData || [],
-        newFiles: [],
-        filesToDelete: [],
-
-        handleFileSelect(event) {
-            const files = Array.from(event.target.files);
-            console.log(`handleFileSelect: Received ${files.length} files`, files);
-            this.addFiles(files);
-            console.log(`handleFileSelect: newFiles array now has ${this.newFiles.length} files`);
-            // Don't reset the input - keep files for form submission
-        },
-
-        handleDrop(event) {
-            const files = Array.from(event.dataTransfer.files);
-            this.addFiles(files);
-            // Need to programmatically add files to the file input
-            const input = document.getElementById('file-upload');
-            const dataTransfer = new DataTransfer();
-
-            // Add dropped files to DataTransfer
-            files.forEach(file => dataTransfer.items.add(file));
-
-            // Set the files to the input
-            input.files = dataTransfer.files;
-        },
-
-        addFiles(files) {
-            const maxSize = 10 * 1024 * 1024; // 10MB
-            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png',
-                                'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                                'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                'application/zip', 'application/x-rar-compressed'];
-
-            console.log(`addFiles: Processing ${files.length} files`);
-            files.forEach(file => {
-                console.log(`addFiles: Checking file "${file.name}" (type: ${file.type}, size: ${file.size})`);
-                if (file.size > maxSize) {
-                    console.warn(`addFiles: File "${file.name}" rejected - too large (${file.size} bytes)`);
-                    alert(`${file.name} is too large. Maximum size is 10MB.`);
-                    return;
-                }
-                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpe?g|png|docx?|xlsx?|zip|rar)$/i)) {
-                    console.warn(`addFiles: File "${file.name}" rejected - unsupported type (${file.type})`);
-                    alert(`${file.name} has an unsupported file type.`);
-                    return;
-                }
-                console.log(`addFiles: File "${file.name}" accepted`);
-                this.newFiles.push(file);
-            });
-            console.log(`addFiles: Total files in newFiles array: ${this.newFiles.length}`);
-        },
-
-        removeNewFile(index) {
-            this.newFiles.splice(index, 1);
-            // Also update the actual file input
-            const input = document.getElementById('file-upload');
-            const dataTransfer = new DataTransfer();
-            this.newFiles.forEach(file => dataTransfer.items.add(file));
-            input.files = dataTransfer.files;
-        },
-
-        removeExistingFile(fileId) {
-            if (confirm('{{ __("Are you sure you want to delete this file?") }}')) {
-                this.existingFiles = this.existingFiles.filter(f => f.id !== fileId);
-                this.filesToDelete.push(fileId);
-            }
-        },
-
-        formatFileSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-        }
-    };
-}
-
-// Initialize Choices.js for category dropdown
-document.addEventListener('DOMContentLoaded', function() {
-    const categorySelect = document.getElementById('category_option_id');
-    if (categorySelect) {
-        new Choices(categorySelect, {
-            searchEnabled: true,
-            searchPlaceholderValue: '{{ __("Caută categorie...") }}',
-            itemSelectText: '',
-            shouldSort: false,
-            removeItemButton: true,
-            noResultsText: '{{ __("Nu s-au găsit rezultate") }}',
-            noChoicesText: '{{ __("Nu există opțiuni") }}',
-            placeholderValue: '{{ __("Selectează categorie (opțional)") }}',
-            searchResultLimit: 100
-        });
-    }
-});
-</script>

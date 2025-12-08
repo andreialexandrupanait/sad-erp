@@ -12,7 +12,9 @@ class Client extends Model
     use SoftDeletes;
 
     protected $fillable = [
+        'organization_id',
         'user_id',
+        'created_by',
         'status_id',
         'name',
         'company_name',
@@ -36,46 +38,74 @@ class Client extends Model
     ];
 
     /**
-     * Boot function to automatically scope by user
+     * Boot function to automatically scope by organization
      */
     protected static function boot()
     {
         parent::boot();
 
-        // Automatically set user_id when creating
+        // Automatically set organization_id and created_by when creating
         static::creating(function ($client) {
-            if (auth()->check() && empty($client->user_id)) {
-                $client->user_id = auth()->id();
+            if (auth()->check()) {
+                if (empty($client->organization_id)) {
+                    $client->organization_id = auth()->user()->organization_id;
+                }
+                if (empty($client->created_by)) {
+                    $client->created_by = auth()->id();
+                }
+                // Keep user_id for backwards compatibility
+                if (empty($client->user_id)) {
+                    $client->user_id = auth()->id();
+                }
             }
 
             // Auto-generate slug if not provided
             if (empty($client->slug)) {
                 $client->slug = Str::slug($client->name);
 
-                // Ensure unique slug
+                // Ensure unique slug within organization
                 $originalSlug = $client->slug;
                 $counter = 1;
-                while (static::where('slug', $client->slug)->exists()) {
+                while (static::withoutGlobalScopes()
+                    ->where('organization_id', $client->organization_id)
+                    ->where('slug', $client->slug)
+                    ->exists()) {
                     $client->slug = $originalSlug . '-' . $counter;
                     $counter++;
                 }
             }
         });
 
-        // Automatically scope all queries by user (RLS)
-        static::addGlobalScope('user', function (Builder $builder) {
-            if (auth()->check()) {
-                $builder->where('user_id', auth()->id());
+        // Automatically scope all queries by organization (RLS)
+        static::addGlobalScope('organization', function (Builder $builder) {
+            if (auth()->check() && auth()->user()->organization_id) {
+                $builder->where('clients.organization_id', auth()->user()->organization_id);
             }
         });
     }
 
     /**
-     * Get the user that owns the client
+     * Get the organization that owns the client
+     */
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+
+    /**
+     * Get the user that owns the client (legacy, kept for compatibility)
      */
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user who created this client
+     */
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
@@ -84,22 +114,6 @@ class Client extends Model
     public function status()
     {
         return $this->belongsTo(SettingOption::class, 'status_id');
-    }
-
-    /**
-     * Get all offers for this client
-     */
-    public function offers()
-    {
-        return $this->hasMany(Offer::class);
-    }
-
-    /**
-     * Get all contracts for this client
-     */
-    public function contracts()
-    {
-        return $this->hasMany(Contract::class);
     }
 
     /**
@@ -115,15 +129,7 @@ class Client extends Model
      */
     public function accessCredentials()
     {
-        return $this->hasMany(AccessCredential::class);
-    }
-
-    /**
-     * Get all files for this client (polymorphic)
-     */
-    public function files()
-    {
-        return $this->morphMany(File::class, 'fileable');
+        return $this->hasMany(Credential::class);
     }
 
     /**
@@ -198,26 +204,38 @@ class Client extends Model
     }
 
     /**
-     * Calculate total revenue for this client
+     * Get total revenue for this client.
+     * Uses the cached total_incomes column which is synced by FinancialRevenueObserver.
+     * This avoids N+1 queries when accessing total_revenue in lists.
      */
     public function getTotalRevenueAttribute()
     {
-        return $this->revenues()->sum('amount');
+        return $this->total_incomes ?? 0;
     }
 
     /**
-     * Get count of active domains
+     * Get count of active domains.
+     * Note: Use withCount('domains') or eager load for lists to avoid N+1.
      */
     public function getActiveDomainsCountAttribute()
     {
+        // Check if domains are already loaded to avoid N+1
+        if ($this->relationLoaded('domains')) {
+            return $this->domains->where('status', 'active')->count();
+        }
         return $this->domains()->where('status', 'active')->count();
     }
 
     /**
-     * Get count of access credentials
+     * Get count of access credentials.
+     * Note: Use withCount('accessCredentials') for lists to avoid N+1.
      */
     public function getCredentialsCountAttribute()
     {
+        // Check if credentials are already loaded to avoid N+1
+        if ($this->relationLoaded('accessCredentials')) {
+            return $this->accessCredentials->count();
+        }
         return $this->accessCredentials()->count();
     }
 }

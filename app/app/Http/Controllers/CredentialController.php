@@ -2,14 +2,25 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\HandlesBulkActions;
+use App\Http\Requests\Credential\StoreCredentialRequest;
+use App\Http\Requests\Credential\UpdateCredentialRequest;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\Gate;
 use App\Models\Credential;
 use App\Models\Client;
 use App\Models\SettingOption;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class CredentialController extends Controller
 {
+    use HandlesBulkActions;
+
+    public function __construct()
+    {
+        $this->authorizeResource(Credential::class, 'credential');
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -67,20 +78,9 @@ class CredentialController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(StoreCredentialRequest $request)
     {
-        $validPlatforms = SettingOption::accessPlatforms()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'platform' => ['required', Rule::in($validPlatforms)],
-            'url' => 'nullable|url|max:255',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-        ]);
-
-        $credential = Credential::create($validated);
+        $credential = Credential::create($request->validated());
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
@@ -119,18 +119,9 @@ class CredentialController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Credential $credential)
+    public function update(UpdateCredentialRequest $request, Credential $credential)
     {
-        $validPlatforms = SettingOption::accessPlatforms()->pluck('value')->toArray();
-
-        $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'platform' => ['required', Rule::in($validPlatforms)],
-            'url' => 'nullable|url|max:255',
-            'username' => 'nullable|string|max:255',
-            'password' => 'nullable|string|max:500',
-            'notes' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Only update password if a new one is provided
         if (empty($validated['password'])) {
@@ -168,6 +159,9 @@ class CredentialController extends Controller
      */
     public function revealPassword(Credential $credential)
     {
+        // Authorize access to this credential
+        Gate::authorize('view', $credential);
+
         // Track access in database
         $credential->trackAccess();
 
@@ -185,5 +179,44 @@ class CredentialController extends Controller
         return response()->json([
             'password' => $credential->password,
         ]);
+    }
+
+    protected function getBulkModelClass(): string
+    {
+        return \App\Models\Credential::class;
+    }
+
+    protected function getExportEagerLoads(): array
+    {
+        return ['client'];
+    }
+
+    protected function exportToCsv($credentials)
+    {
+        $filename = "credentials_export_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($credentials) {
+            $file = fopen("php://output", "w");
+            fputcsv($file, ["Service Name", "URL", "Username", "Client", "Notes"]);
+
+            foreach ($credentials as $credential) {
+                fputcsv($file, [
+                    $credential->service_name,
+                    $credential->url,
+                    $credential->username,
+                    $credential->client?->name ?? "N/A",
+                    $credential->notes ?? "",
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return Response::stream($callback, 200, $headers);
     }
 }

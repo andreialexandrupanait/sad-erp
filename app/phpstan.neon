@@ -1,0 +1,21 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+    - phpstan-baseline.neon
+
+parameters:
+    level: 4
+
+    paths:
+        - app
+
+    ignoreErrors:
+        - "#Call to an undefined method Illuminate\\\\Database\\\\Eloquent\\\\Builder#"
+        - "#Call to an undefined method Illuminate\\\\Database\\\\Query\\\\Builder#"
+        - "#Access to an undefined property App\\\\Models#"
+        - "#Relation .* is not found in App\\\\Models#"
+        - "#Access to an undefined property Illuminate\\\\Database\\\\Eloquent\\\\Model#"
+        - "#PHPDoc tag @param references unknown parameter#"
+        - "#Using nullsafe property access .* on left side of \\?\\? is unnecessary#"
+        - "#Variable .* in empty\\(\\) always exists#"
+
+    reportUnmatchedIgnoredErrors: false

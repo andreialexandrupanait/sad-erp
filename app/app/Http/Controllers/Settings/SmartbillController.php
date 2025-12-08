@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Models\Organization;
 use App\Services\SmartbillService;
-use App\Services\SmartbillImporter;
+use App\Services\Financial\RevenueImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -190,7 +190,7 @@ class SmartbillController extends Controller
                 'message' => 'Processing CSV data...'
             ]);
 
-            // Process the import
+            // Process the import synchronously
             $this->processImportData($importId, $data);
 
             return response()->json([
@@ -201,7 +201,8 @@ class SmartbillController extends Controller
         } catch (\Exception $e) {
             Log::error('Smartbill import processing failed', [
                 'import_id' => $importId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             $this->updateProgress($importId, [
@@ -217,56 +218,21 @@ class SmartbillController extends Controller
     }
 
     /**
-     * Get import progress (for Server-Sent Events)
+     * Get import progress
      */
     public function getProgress($importId)
     {
-        return response()->stream(function () use ($importId) {
-            $lastProgress = null;
-            $maxDuration = 600; // 10 minutes max
-            $startTime = time();
+        $progress = Cache::get("import:{$importId}:progress");
 
-            while (true) {
-                if (time() - $startTime > $maxDuration) {
-                    echo "data: " . json_encode(['error' => 'Timeout']) . "\n\n";
-                    ob_flush();
-                    flush();
-                    break;
-                }
+        if (!$progress) {
+            return response()->json(['error' => 'Import not found'], 404);
+        }
 
-                $progress = Cache::get("import:{$importId}:progress");
-
-                if (!$progress) {
-                    echo "data: " . json_encode(['error' => 'Import not found']) . "\n\n";
-                    ob_flush();
-                    flush();
-                    break;
-                }
-
-                // Only send if progress changed
-                if ($progress !== $lastProgress) {
-                    echo "data: " . json_encode($progress) . "\n\n";
-                    ob_flush();
-                    flush();
-                    $lastProgress = $progress;
-                }
-
-                // Stop if completed or failed
-                if (in_array($progress['status'] ?? '', ['completed', 'failed'])) {
-                    break;
-                }
-
-                usleep(500000); // 0.5 second
-            }
-        }, 200, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache',
-            'X-Accel-Buffering' => 'no',
-        ]);
+        return response()->json($progress);
     }
 
     /**
-     * Process import data (called internally)
+     * Process import data using RevenueImportService
      */
     private function processImportData($importId, $data)
     {
@@ -275,38 +241,18 @@ class SmartbillController extends Controller
         $userId = $data['user_id'];
         $organizationId = $data['organization_id'];
 
-        // Set auth context
-        auth()->loginUsingId($userId);
+        // Get smartbill settings for PDF downloads
+        $organization = Organization::find($organizationId);
+        $smartbillSettings = $organization->settings['smartbill'] ?? null;
 
-        // Find header row
-        $headerRowIndex = 0;
-        $header = null;
+        // Use the RevenueImportService
+        $importService = new RevenueImportService();
 
-        foreach ($csvData as $index => $row) {
-            $row = array_map('trim', $row);
-            foreach ($row as $cell) {
-                $cell = strtolower($cell);
-                if (in_array($cell, ['serie', 'numar', 'data', 'client', 'total', 'cif', 'moneda'])) {
-                    $headerRowIndex = $index;
-                    $header = $row;
-                    break 2;
-                }
-            }
-        }
-
-        if ($header === null) {
-            $header = array_shift($csvData);
-            $header = array_map('trim', $header);
-        } else {
-            $csvData = array_slice($csvData, $headerRowIndex + 1);
-        }
-
-        // Filter empty rows
-        $csvData = array_filter($csvData, function($row) {
-            return !empty(array_filter($row));
-        });
-
-        $total = count($csvData);
+        // Find header row to get total count
+        [$headerRowIndex, $header] = $importService->findHeaderRow($csvData);
+        $dataRows = array_slice($csvData, $headerRowIndex + 1);
+        $dataRows = array_filter($dataRows, fn($row) => !empty(array_filter($row)));
+        $total = count($dataRows);
 
         $this->updateProgress($importId, [
             'total' => $total,
@@ -314,45 +260,69 @@ class SmartbillController extends Controller
             'message' => "Found {$total} invoices to process..."
         ]);
 
-        // Use the existing ImportController logic
-        $controller = new \App\Http\Controllers\Financial\ImportController();
+        try {
+            // Run the import with progress callback
+            $stats = $importService->import(
+                $csvData,
+                $organizationId,
+                $userId,
+                $downloadPdfs,
+                false, // not a dry run
+                $smartbillSettings,
+                function($processed, $total, $stats) use ($importId) {
+                    $this->updateProgress($importId, [
+                        'total' => $total,
+                        'processed' => $processed,
+                        'created' => $stats['imported'],
+                        'skipped' => $stats['skipped'],
+                        'duplicates' => $stats['duplicates'],
+                        'errors' => count($stats['errors']),
+                        'pdfs_downloaded' => $stats['pdfs_downloaded'],
+                        'status' => 'processing',
+                        'message' => sprintf('Processing %d of %d invoices...', $processed, $total)
+                    ]);
+                    
+                    // Add small delay every 10 rows to prevent timeout
+                    if ($processed % 10 === 0) {
+                    }
+                }
+            );
 
-        $processed = 0;
-        $created = 0;
-        $skipped = 0;
-        $errors = [];
+            // Mark as completed
+            $this->updateProgress($importId, [
+                'total' => $total,
+                'processed' => $total,
+                'created' => $stats['imported'],
+                'skipped' => $stats['skipped'],
+                'duplicates' => $stats['duplicates'],
+                'errors' => count($stats['errors']),
+                'pdfs_downloaded' => $stats['pdfs_downloaded'],
+                'clients_created' => $stats['clients_created'],
+                'status' => 'completed',
+                'message' => sprintf(
+                    'Import completed! %d created, %d duplicates, %d skipped.',
+                    $stats['imported'],
+                    $stats['duplicates'],
+                    $stats['skipped']
+                ),
+                'errors_list' => $stats['errors']
+            ]);
 
-        foreach ($csvData as $index => $row) {
-            try {
-                // Process each row (this is a simplified version - adapt from ImportController)
-                $processed++;
+        } catch (\Exception $e) {
+            Log::error('Import failed', [
+                'import_id' => $importId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
 
-                $this->updateProgress($importId, [
-                    'processed' => $processed,
-                    'created' => $created,
-                    'skipped' => $skipped,
-                    'errors' => count($errors),
-                    'message' => "Processing invoice {$processed} of {$total}..."
-                ]);
+            $this->updateProgress($importId, [
+                'status' => 'failed',
+                'message' => 'Import failed: ' . $e->getMessage(),
+                'errors_list' => [$e->getMessage()]
+            ]);
 
-                // Small delay to prevent overwhelming the system
-                usleep(10000); // 0.01 second
-
-            } catch (\Exception $e) {
-                $errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
-                Log::error('Import row error', [
-                    'row' => $index + 2,
-                    'error' => $e->getMessage()
-                ]);
-            }
+            throw $e;
         }
-
-        // Mark as completed
-        $this->updateProgress($importId, [
-            'status' => 'completed',
-            'message' => "Import completed! {$created} created, {$skipped} skipped.",
-            'errors_list' => $errors
-        ]);
 
         // Clean up data from cache after completion
         Cache::forget("import:{$importId}:data");
@@ -367,4 +337,6 @@ class SmartbillController extends Controller
         $progress = array_merge($progress, $updates);
         Cache::put("import:{$importId}:progress", $progress, now()->addHours(2));
     }
+
+
 }

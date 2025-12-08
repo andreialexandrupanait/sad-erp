@@ -15,14 +15,13 @@
                         {{ __('Client') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="client_id" id="client_id" required>
-                            <option value="">{{ __('Select a client') }}</option>
-                            @foreach($clients as $client)
-                                <option value="{{ $client->id }}" {{ old('client_id', $credential->client_id ?? '') == $client->id ? 'selected' : '' }}>
-                                    {{ $client->display_name }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.searchable-select
+                            name="client_id"
+                            :options="$clients"
+                            :selected="old('client_id', $credential->client_id ?? '')"
+                            :placeholder="__('Select a client')"
+                            :allowEmpty="false"
+                        />
                     </div>
                     @error('client_id')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

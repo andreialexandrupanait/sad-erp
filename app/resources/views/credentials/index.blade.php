@@ -10,7 +10,12 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data>
+    <div class="p-6 space-y-6" x-data="{
+        ...bulkSelection({
+            idAttribute: 'data-credential-id',
+            rowSelector: '[data-selectable]'
+        })
+    }">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -46,14 +51,13 @@
 
                         <!-- Client Filter -->
                         <div class="w-full sm:w-52">
-                            <x-ui.select name="client_id">
-                                <option value="">{{ __('All Clients') }}</option>
-                                @foreach ($clients as $client)
-                                    <option value="{{ $client->id }}" {{ request('client_id') == $client->id ? 'selected' : '' }}>
-                                        {{ $client->display_name }}
-                                    </option>
-                                @endforeach
-                            </x-ui.select>
+                            <x-ui.searchable-select
+                                name="client_id"
+                                :options="$clients"
+                                :selected="request('client_id')"
+                                :placeholder="__('All Clients')"
+                                :emptyLabel="__('All Clients')"
+                            />
                         </div>
 
                         <!-- Platform Filter -->
@@ -87,6 +91,36 @@
             </x-ui.card-content>
         </x-ui.card>
 
+        <!-- Bulk Actions Toolbar -->
+        <x-bulk-toolbar>
+            <x-ui.button
+                variant="outline"
+                @click="performBulkAction('export', '{{ route('credentials.bulk-export') }}', {
+                    confirmTitle: '{{ __('Export Credentials') }}',
+                    confirmMessage: '{{ __('Export selected credentials to CSV? (Passwords will not be included)') }}',
+                    successMessage: '{{ __('Credentials exported successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {{ __('Export to CSV') }}
+            </x-ui.button>
+            <x-ui.button
+                variant="destructive"
+                @click="performBulkAction('delete', '{{ route('credentials.bulk-update') }}', {
+                    confirmTitle: '{{ __('Delete Credentials') }}',
+                    confirmMessage: '{{ __('Are you sure you want to delete the selected credentials? This action cannot be undone.') }}',
+                    successMessage: '{{ __('Credentials deleted successfully!') }}'
+                })"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete Selected') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
+
         <!-- Credentials Table -->
         <x-ui.card>
             @if($credentials->isEmpty())
@@ -110,6 +144,9 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-slate-50/50">
+                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
+                                </th>
                                 <x-ui.sortable-header column="client_id" label="{{ __('Client') }}" />
                                 <x-ui.sortable-header column="platform" label="{{ __('Platform') }}" />
                                 <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
@@ -121,7 +158,14 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach ($credentials as $credential)
-                                <x-ui.table-row>
+                                <x-ui.table-row data-selectable data-credential-id="{{ $credential->id }}">
+                                    <x-ui.table-cell>
+                                        <x-bulk-checkbox
+                                            
+                                            @change="toggleItem({{ $credential->id }})"
+                                            x-bind:checked="selectedIds.includes({{ $credential->id }})"
+                                        />
+                                    </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="font-medium text-slate-900">
                                             {{ $credential->client->display_name }}

@@ -94,9 +94,7 @@
                                     @foreach($expense->files as $file)
                                         <div class="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200 hover:bg-slate-100 transition-colors">
                                             <div class="flex items-center gap-3 flex-1 min-w-0">
-                                                <svg class="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
-                                                </svg>
+                                                <span class="text-2xl flex-shrink-0">{{ $file->icon }}</span>
                                                 <div class="flex-1 min-w-0">
                                                     <p class="text-sm font-medium text-slate-900 truncate">{{ $file->file_name }}</p>
                                                     <div class="flex items-center gap-3 mt-1">

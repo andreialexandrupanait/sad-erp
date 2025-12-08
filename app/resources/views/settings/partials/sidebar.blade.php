@@ -63,20 +63,6 @@
                 </div>
             </a>
 
-            <!-- Notifications -->
-            <a href="{{ route('settings.notifications') }}"
-               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.notifications*') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-50' }}">
-                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.notifications*') ? 'bg-rose-100' : 'bg-slate-100' }}">
-                    <svg class="w-4 h-4 {{ request()->routeIs('settings.notifications*') ? 'text-rose-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                    </svg>
-                </div>
-                <div>
-                    <span class="block">{{ __('Notifications') }}</span>
-                    <span class="text-xs {{ request()->routeIs('settings.notifications*') ? 'text-rose-500' : 'text-slate-400' }}">{{ __('Alerts, reminders') }}</span>
-                </div>
-            </a>
-
             <!-- Yearly Objectives -->
             <a href="{{ route('settings.yearly-objectives') }}"
                class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.yearly-objectives') ? 'bg-teal-50 text-teal-700 border border-teal-200' : 'text-slate-600 hover:bg-slate-50' }}">
@@ -90,6 +76,36 @@
                     <span class="text-xs {{ request()->routeIs('settings.yearly-objectives') ? 'text-teal-500' : 'text-slate-400' }}">{{ __('Budget thresholds') }}</span>
                 </div>
             </a>
+
+            @if(auth()->user()->isOrgAdmin() || auth()->user()->isSuperAdmin())
+            <!-- Users & Permissions -->
+            <a href="{{ route('settings.users.index') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.users.*') ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.users.*') ? 'bg-indigo-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.users.*') ? 'text-indigo-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="block">{{ __('Users & Permissions') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.users.*') ? 'text-indigo-500' : 'text-slate-400' }}">{{ __('Manage team access') }}</span>
+                </div>
+            </a>
+
+            <!-- Database Backup -->
+            <a href="{{ route('settings.backup') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.backup*') ? 'bg-cyan-50 text-cyan-700 border border-cyan-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.backup*') ? 'bg-cyan-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.backup*') ? 'text-cyan-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="block">{{ __('Database Backup') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.backup*') ? 'text-cyan-500' : 'text-slate-400' }}">{{ __('Backup & restore') }}</span>
+                </div>
+            </a>
+            @endif
         </nav>
     </div>
 </aside>

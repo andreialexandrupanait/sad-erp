@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\SettingsHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,15 @@ class SettingOption extends Model implements Sortable
             if (Auth::check() && Auth::user()->organization_id) {
                 $setting->organization_id = $setting->organization_id ?? Auth::user()->organization_id;
             }
+        });
+
+        // Clear cache when settings are modified
+        static::saved(function ($setting) {
+            SettingsHelper::clearCache($setting->category, $setting->organization_id);
+        });
+
+        static::deleted(function ($setting) {
+            SettingsHelper::clearCache($setting->category, $setting->organization_id);
         });
 
         // Global scope for organization isolation
@@ -204,6 +214,14 @@ class SettingOption extends Model implements Sortable
     public function getNameAttribute()
     {
         return $this->label;
+    }
+
+    /**
+     * Generate a URL-friendly slug from the label
+     */
+    public function getSlugAttribute(): string
+    {
+        return \Illuminate\Support\Str::slug($this->label);
     }
 
     public function getBadgeClassAttribute()

@@ -16,11 +16,24 @@ BACKUP_NAME="${1:-backup_${TIMESTAMP}}"
 BACKUP_FILE="${BACKUP_DIR}/${BACKUP_NAME}.sql"
 COMPRESSED_FILE="${BACKUP_FILE}.gz"
 
-# Database credentials from docker-compose.yml
+# Database credentials from .env file
 DB_CONTAINER="erp_db"
 DB_NAME="laravel_erp"
 DB_USER="root"
-DB_PASS="root_secure_password_2025"
+
+# Load DB password from .env file
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | grep DB_ROOT_PASSWORD | xargs)
+    DB_PASS="${DB_ROOT_PASSWORD}"
+else
+    echo "Error: .env file not found"
+    exit 1
+fi
+
+if [ -z "$DB_PASS" ]; then
+    echo "Error: DB_ROOT_PASSWORD not set in .env file"
+    exit 1
+fi
 
 # Create backup directory if it doesn't exist
 mkdir -p "${BACKUP_DIR}"

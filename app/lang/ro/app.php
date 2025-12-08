@@ -14,6 +14,7 @@ return [
     'Clear' => 'Șterge',
     'Filter' => 'Filtrează',
     'Export' => 'Exportă',
+    'Export to CSV' => 'Exportă în CSV',
     'Import' => 'Importă',
     'Add' => 'Adaugă',
     'Close' => 'Închide',
@@ -38,6 +39,15 @@ return [
     'Type' => 'Tip',
     'Category' => 'Categorie',
     'Platform' => 'Platformă',
+    'Invoice' => 'Factură',
+    'invoice' => 'factură',
+    'invoices' => 'facturi',
+    'File' => 'Fișier',
+    'Download' => 'Descarcă',
+    'back_to_settings' => 'Înapoi la Setări',
+    'click_to_upload' => 'Click pentru a încărca sau trage și plasează',
+    'total' => 'Total',
+    'created' => 'Create',
 
     // Placeholders
     'Enter your name' => 'Introduceți numele dvs.',
@@ -268,6 +278,7 @@ return [
     // Import/Export
     'Import' => 'Importă',
     'Export' => 'Exportă',
+    'Export to CSV' => 'Exportă în CSV',
     'Import / Export' => 'Importă / Exportă',
     'Choose File' => 'Alege fișier',
     'No file chosen' => 'Niciun fișier ales',
