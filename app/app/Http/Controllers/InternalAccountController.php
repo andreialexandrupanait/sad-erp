@@ -10,6 +10,14 @@ use Illuminate\Http\Request;
 class InternalAccountController extends Controller
 {
     /**
+     * Apply authorization for resource controller
+     */
+    public function __construct()
+    {
+        $this->authorizeResource(InternalAccount::class, 'internal_account');
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)

@@ -31,6 +31,16 @@ class SyncBankTransactionsJob implements ShouldQueue
     public int $tries = 3;
 
     /**
+     * Calculate the number of seconds to wait before retrying the job.
+     *
+     * Exponential backoff: 1 min, 5 min, 15 min
+     */
+    public function backoff(): array
+    {
+        return [60, 300, 900]; // 1 min, 5 min, 15 min
+    }
+
+    /**
      * Create a new job instance.
      */
     public function __construct(

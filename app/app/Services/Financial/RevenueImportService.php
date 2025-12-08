@@ -6,12 +6,14 @@ use App\Models\Client;
 use App\Models\FinancialFile;
 use App\Models\FinancialRevenue;
 use App\Services\SmartbillService;
+use App\Services\Financial\Import\SmartBillDataMapper;
+use App\Services\Financial\Import\ImportValidator;
+use App\Services\Financial\Import\ClientMatcher;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 /**
@@ -22,13 +24,19 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class RevenueImportService
 {
+    protected SmartBillDataMapper $dataMapper;
+    protected ImportValidator $validator;
+    protected ClientMatcher $clientMatcher;
+
     /**
      * Pre-loaded clients indexed by CIF for fast lookup.
+     * @deprecated Use ClientMatcher instead
      */
     protected array $clientsByCif = [];
 
     /**
      * Pre-loaded clients indexed by name for fallback lookup.
+     * @deprecated Use ClientMatcher instead
      */
     protected Collection $clientsByName;
 
@@ -59,6 +67,16 @@ class RevenueImportService
      * Progress callback function.
      */
     protected ?\Closure $progressCallback = null;
+
+    public function __construct(
+        SmartBillDataMapper $dataMapper,
+        ImportValidator $validator,
+        ClientMatcher $clientMatcher
+    ) {
+        $this->dataMapper = $dataMapper;
+        $this->validator = $validator;
+        $this->clientMatcher = $clientMatcher;
+    }
 
     /**
      * Parse a file (CSV or Excel) into array data.
@@ -108,178 +126,62 @@ class RevenueImportService
 
     /**
      * Detect if the data is from a Smartbill export.
+     * Delegated to SmartBillDataMapper.
      *
      * @param array $header Column headers
      * @return bool
      */
     public function detectSmartbillExport(array $header): bool
     {
-        $smartbillColumns = [
-            'serie', 'Serie',
-            'numar', 'Numar',
-            'cif_client', 'CIF',
-            'Factura',
-            'Data incasarii',
-        ];
-
-        foreach ($smartbillColumns as $col) {
-            if (in_array($col, $header)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->dataMapper->isSmartBillExport($header);
     }
 
     /**
      * Map Smartbill column names to our expected format.
+     * Delegated to SmartBillDataMapper.
      *
      * @param array $data Row data with Smartbill column names
      * @return array Mapped data
      */
     public function mapSmartbillColumns(array $data): array
     {
-        $columnMap = [
-            // Document/Invoice info
-            'Serie' => 'serie',
-            'Numar' => 'numar',
-            'Numar document' => 'numar',
-            'Factura' => 'document_name',
-
-            // Date fields
-            'Data' => 'occurred_at',
-            'Data emitere' => 'occurred_at',
-            'Data factura' => 'occurred_at',
-            'Data incasarii' => 'occurred_at',
-            'Data scadenta' => 'due_date',
-
-            // Amount fields
-            'Total' => 'amount',
-            'Total factura' => 'amount',
-            'Suma' => 'amount',
-            'Valoare' => 'amount',
-            'Valoare totala' => 'amount',
-            'Valoare Totala' => 'amount',
-
-            // Currency
-            'Moneda' => 'currency',
-            'Valuta' => 'currency',
-
-            // Client info
-            'Client' => 'client_name',
-            'Nume client' => 'client_name',
-            'Partener' => 'client_name',
-            'CIF' => 'cif_client',
-            'CIF client' => 'cif_client',
-            'CUI' => 'cif_client',
-
-            // Client address
-            'Adresa' => 'client_address',
-            'Adresa client' => 'client_address',
-            'Adresa Client' => 'client_address',
-
-            // Client contact person
-            'Persoana contact' => 'client_contact',
-            'Persoana de contact' => 'client_contact',
-            'Contact' => 'client_contact',
-
-            // Notes
-            'Observatii' => 'note',
-            'Mentiuni' => 'note',
-            'Nota' => 'note',
-        ];
-
-        $mapped = [];
-
-        foreach ($data as $key => $value) {
-            $mappedKey = $columnMap[$key] ?? null;
-            $mapped[$mappedKey ?? $key] = $value;
-        }
-
-        // Extract serie and numar from document_name if needed
-        if (!empty($mapped['document_name']) && empty($mapped['serie']) && empty($mapped['numar'])) {
-            $docName = trim($mapped['document_name']);
-            if (preg_match('/^([A-Z]+)(\d+)$/i', $docName, $matches)) {
-                $mapped['serie'] = $matches[1];
-                $mapped['numar'] = $matches[2];
-            }
-        }
-
-        // Create document_name from Serie + Numar if not present
-        if (empty($mapped['document_name']) && !empty($mapped['serie']) && !empty($mapped['numar'])) {
-            $mapped['document_name'] = trim($mapped['serie']) . '-' . trim($mapped['numar']);
-        }
-
-        // Set default currency
-        if (empty($mapped['currency'])) {
-            $mapped['currency'] = 'RON';
-        }
-
-        // Convert DD/MM/YYYY to YYYY-MM-DD
-        if (!empty($mapped['occurred_at'])) {
-            $dateStr = trim($mapped['occurred_at']);
-            if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $dateStr, $matches)) {
-                $mapped['occurred_at'] = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-            }
-        }
-
-        return $mapped;
+        return $this->dataMapper->mapColumns($data);
     }
 
     /**
      * Pre-load all clients for fast lookup during import.
+     * Delegated to ClientMatcher.
      *
      * This eliminates N+1 queries by loading all clients once and
      * indexing them by CIF variants (with/without RO prefix).
      */
     public function loadClientsIndex(): void
     {
-        $allClients = Client::all();
-        $this->clientsByCif = [];
-
-        foreach ($allClients as $client) {
-            if (!empty($client->tax_id)) {
-                $this->clientsByCif[$client->tax_id] = $client;
-
-                $cleanCif = preg_replace('/^RO/i', '', $client->tax_id);
-                $cleanCif = preg_replace('/\s+/', '', $cleanCif);
-
-                if ($cleanCif !== $client->tax_id) {
-                    $this->clientsByCif[$cleanCif] = $client;
-                    $this->clientsByCif['RO' . $cleanCif] = $client;
-                }
-            }
-        }
-
-        $this->clientsByName = $allClients->keyBy(fn($c) => strtolower($c->name));
+        $this->clientMatcher->loadIndex();
     }
 
     /**
      * Find client by CIF.
+     * Delegated to ClientMatcher.
      *
      * @param string $cif Client CIF/Tax ID
      * @return Client|null
      */
     public function findClientByCif(string $cif): ?Client
     {
-        $cleanCif = preg_replace('/^RO/i', '', $cif);
-        $cleanCif = preg_replace('/\s+/', '', $cleanCif);
-
-        return $this->clientsByCif[$cif]
-            ?? $this->clientsByCif[$cleanCif]
-            ?? $this->clientsByCif['RO' . $cleanCif]
-            ?? null;
+        return $this->clientMatcher->findByCif($cif);
     }
 
     /**
      * Find client by name (fallback).
+     * Delegated to ClientMatcher.
      *
      * @param string $name Client name
      * @return Client|null
      */
     public function findClientByName(string $name): ?Client
     {
-        return $this->clientsByName[strtolower($name)] ?? null;
+        return $this->clientMatcher->findByName($name);
     }
 
     /**
@@ -299,6 +201,7 @@ class RevenueImportService
 
     /**
      * Find or create client from import data.
+     * Delegated to ClientMatcher with backward compatibility wrapper.
      *
      * @param array $data Row data
      * @param bool $dryRun If true, don't actually create/update
@@ -306,40 +209,13 @@ class RevenueImportService
      */
     public function findOrCreateClient(array $data, bool $dryRun = false): ?int
     {
-        $cif = trim($data['cif_client'] ?? $data['CIF'] ?? '');
-        $clientName = trim($data['client_name'] ?? $data['client'] ?? '');
-        $clientAddress = trim($data['client_address'] ?? '');
-        $clientContact = trim($data['client_contact'] ?? '');
+        $clientId = $this->clientMatcher->findOrCreate($data, $dryRun);
 
-        if (empty($cif) && empty($clientName)) {
-            return null;
-        }
+        // Sync stats from ClientMatcher
+        $this->stats['clients_created'] += $this->clientMatcher->stats['clients_created'];
+        $this->stats['clients_updated'] += $this->clientMatcher->stats['clients_updated'];
 
-        // Try CIF match first
-        if (!empty($cif)) {
-            $client = $this->findClientByCif($cif);
-
-            if ($client) {
-                // Check if it's a placeholder that needs updating
-                $this->updatePlaceholderClient($client, $clientName, $clientAddress, $clientContact, $dryRun);
-                return $client->id;
-            }
-
-            // Create new client if we have a name
-            if (!empty($clientName)) {
-                return $this->createClient($clientName, $cif, $clientAddress, $clientContact, $dryRun);
-            }
-        }
-
-        // Fallback to name match
-        if (!empty($clientName)) {
-            $client = $this->findClientByName($clientName);
-            if ($client) {
-                return $client->id;
-            }
-        }
-
-        return null;
+        return $clientId;
     }
 
     /**
@@ -514,25 +390,15 @@ class RevenueImportService
     }
 
     /**
-     * Validate a revenue row.
+     * Validate a revenue import row.
+     * Delegated to ImportValidator.
      *
      * @param array $data Row data
-     * @return array [isValid, errors]
+     * @return array [bool $isValid, array $errors]
      */
     public function validateRow(array $data): array
     {
-        $validator = Validator::make($data, [
-            'document_name' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'currency' => 'required|in:RON,EUR',
-            'occurred_at' => 'required|date',
-        ]);
-
-        if ($validator->fails()) {
-            return [false, $validator->errors()->all()];
-        }
-
-        return [true, []];
+        return $this->validator->validate($data);
     }
 
     /**

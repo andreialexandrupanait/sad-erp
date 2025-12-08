@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialFile;
 use App\Models\Organization;
+use App\Services\Financial\Import\ClientMatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,7 @@ class SmartbillImporter
     protected $smartbillService;
     protected $organization;
     protected $userId;
+    protected ClientMatcher $clientMatcher;
     protected $stats = [
         'total' => 0,
         'created' => 0,
@@ -27,10 +29,11 @@ class SmartbillImporter
         'pdfs_downloaded' => 0,
     ];
 
-    public function __construct(Organization $organization, $userId)
+    public function __construct(Organization $organization, $userId, ?ClientMatcher $clientMatcher = null)
     {
         $this->organization = $organization;
         $this->userId = $userId;
+        $this->clientMatcher = $clientMatcher ?? app(ClientMatcher::class);
 
         // Get Smartbill credentials from organization settings
         $smartbillSettings = $this->organization->settings['smartbill'] ?? [];
@@ -43,6 +46,9 @@ class SmartbillImporter
         }
 
         $this->smartbillService = new SmartbillService($username, $token, $cif);
+
+        // Load client index for fast lookups
+        $this->clientMatcher->loadIndex();
     }
 
     /**
@@ -195,7 +201,8 @@ class SmartbillImporter
     }
 
     /**
-     * Find or create a client based on Smartbill data
+     * Find or create a client based on Smartbill data.
+     * Delegates to ClientMatcher with Smartbill-specific data mapping.
      */
     protected function findOrCreateClient($clientData, $preview = false)
     {
@@ -206,46 +213,26 @@ class SmartbillImporter
             return null;
         }
 
-        // Try to find existing client by CIF or name
-        $query = Client::withoutGlobalScope('user_scope')
-            ->where('organization_id', $this->organization->id);
+        // Map Smartbill client data to ClientMatcher format
+        $mappedData = [
+            'cif_client' => $cif,
+            'client_name' => $name,
+            'client_address' => $this->buildAddressFromClient($clientData),
+            'client_contact' => $clientData['email'] ?? $clientData['phone'] ?? null,
+        ];
 
-        if ($cif) {
-            $query->where('tax_id', $cif);
-        } else {
-            $query->where('name', $name);
-        }
+        // Use ClientMatcher to find or create
+        $clientId = $this->clientMatcher->findOrCreate($mappedData, $preview);
 
-        $client = $query->first();
+        // Sync stats from ClientMatcher
+        $this->stats['clients_created'] += $this->clientMatcher->stats['clients_created'];
 
-        if ($client) {
-            return $client;
-        }
-
-        // Client doesn't exist - create new one
-        if ($preview) {
-            Log::info('Preview: Would create client', $clientData);
-            $this->stats['clients_created']++;
+        if (!$clientId) {
             return null;
         }
 
-        $clientCreateData = [
-            'organization_id' => $this->organization->id,
-            'user_id' => $this->userId,
-            'name' => $this->formatClientName($name),
-            'type' => 'business',
-            'tax_id' => $cif,
-            'email' => $clientData['email'] ?? null,
-            'phone' => $clientData['phone'] ?? null,
-            'address' => $this->buildAddressFromClient($clientData),
-            'city' => $clientData['city'] ?? null,
-            'country' => $clientData['country'] ?? 'România',
-        ];
-
-        $client = Client::withoutGlobalScope('user_scope')->create($clientCreateData);
-        $this->stats['clients_created']++;
-
-        return $client;
+        // Return the actual Client model
+        return Client::find($clientId);
     }
 
     /**

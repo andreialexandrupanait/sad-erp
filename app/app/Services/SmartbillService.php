@@ -6,13 +6,39 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
+/**
+ * Service for interacting with SmartBill API.
+ *
+ * SmartBill is a Romanian invoicing and accounting platform. This service handles:
+ * - Authentication via Basic Auth
+ * - Invoice retrieval and synchronization
+ * - Client data synchronization
+ * - Tax document management
+ *
+ * @link https://www.smartbill.ro SmartBill Platform
+ * @link https://www.smartbill.ro/api/ SmartBill API Documentation
+ */
 class SmartbillService
 {
+    /** @var string SmartBill username for API authentication */
     protected $username;
+
+    /** @var string SmartBill API token */
     protected $token;
+
+    /** @var string Romanian Tax ID (CIF/VAT code) */
     protected $cif;
+
+    /** @var string SmartBill API base URL */
     protected $baseUrl = 'https://ws.smartbill.ro:8183/SBORO/api';
 
+    /**
+     * Initialize SmartBill service with credentials.
+     *
+     * @param string|null $username SmartBill username (defaults to config)
+     * @param string|null $token SmartBill API token (defaults to config)
+     * @param string|null $cif Romanian CIF/VAT code (defaults to config)
+     */
     public function __construct($username = null, $token = null, $cif = null)
     {
         $this->username = $username ?? config('smartbill.username');
@@ -21,7 +47,9 @@ class SmartbillService
     }
 
     /**
-     * Get the authorization header
+     * Generate Basic Auth header for SmartBill API.
+     *
+     * @return string Base64-encoded Basic Auth header value
      */
     protected function getAuthHeader()
     {
@@ -29,7 +57,13 @@ class SmartbillService
     }
 
     /**
-     * Make an API call to Smartbill
+     * Make an authenticated HTTP request to SmartBill API.
+     *
+     * @param string $method HTTP method (GET or POST)
+     * @param string $endpoint API endpoint path (e.g., '/invoice')
+     * @param array|null $data Request payload for POST or query params for GET
+     * @return array Decoded JSON response
+     * @throws Exception If API request fails or returns error
      */
     protected function makeRequest($method, $endpoint, $data = null)
     {

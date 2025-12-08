@@ -9,175 +9,109 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 
 /**
- * Service for financial dashboard calculations and aggregations.
+ * Financial Dashboard Service
  *
- * Handles caching, data aggregation, and analytics for financial reports.
+ * Orchestrates financial dashboard calculations and aggregations.
+ * Delegates to specialized aggregators for revenue, expenses, and chart data.
  */
 class FinancialDashboardService
 {
     // Cache TTL in seconds (10 minutes)
     private const CACHE_TTL = 600;
 
-    /**
-     * Romanian month names (short).
-     */
-    private const SHORT_MONTHS = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
+    protected RevenueAggregator $revenueAggregator;
+    protected ExpenseAggregator $expenseAggregator;
+    protected ChartDataBuilder $chartBuilder;
+
+    public function __construct(
+        RevenueAggregator $revenueAggregator,
+        ExpenseAggregator $expenseAggregator,
+        ChartDataBuilder $chartBuilder
+    ) {
+        $this->revenueAggregator = $revenueAggregator;
+        $this->expenseAggregator = $expenseAggregator;
+        $this->chartBuilder = $chartBuilder;
+    }
 
     /**
-     * Romanian month names (full).
+     * Get cache key with organization prefix.
      */
-    private const FULL_MONTHS = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+    private function cacheKey(string $key): string
+    {
+        $orgId = auth()->user()->organization_id ?? 'default';
+        return "org.{$orgId}.{$key}";
+    }
 
     /**
      * Get yearly revenue totals by currency.
+     * Delegates to RevenueAggregator.
      */
     public function getYearlyRevenueTotals(int $year): Collection
     {
-        return Cache::remember(
-            "financial.revenues.totals.{$year}",
-            self::CACHE_TTL,
-            fn() => FinancialRevenue::forYear($year)
-                ->select('currency', DB::raw('SUM(amount) as total'))
-                ->groupBy('currency')
-                ->pluck('total', 'currency')
-        );
+        return $this->revenueAggregator->getYearlyTotals($year);
     }
 
     /**
      * Get yearly expense totals by currency.
+     * Delegates to ExpenseAggregator.
      */
     public function getYearlyExpenseTotals(int $year): Collection
     {
-        return Cache::remember(
-            "financial.expenses.totals.{$year}",
-            self::CACHE_TTL,
-            fn() => FinancialExpense::forYear($year)
-                ->select('currency', DB::raw('SUM(amount) as total'))
-                ->groupBy('currency')
-                ->pluck('total', 'currency')
-        );
+        return $this->expenseAggregator->getYearlyTotals($year);
     }
 
     /**
      * Get monthly revenue data for a year (RON only).
+     * Delegates to RevenueAggregator.
      */
     public function getMonthlyRevenueData(int $year): Collection
     {
-        return Cache::remember(
-            "financial.revenues.monthly.{$year}",
-            self::CACHE_TTL,
-            fn() => FinancialRevenue::forYear($year)
-                ->where('currency', 'RON')
-                ->select('month', DB::raw('SUM(amount) as total'))
-                ->groupBy('month')
-                ->orderBy('month')
-                ->get()
-                ->mapWithKeys(fn($item) => [$item->month => $item->total])
-        );
+        return $this->revenueAggregator->getMonthlyData($year);
     }
 
     /**
      * Get monthly expense data for a year (RON only).
+     * Delegates to ExpenseAggregator.
      */
     public function getMonthlyExpenseData(int $year): Collection
     {
-        return Cache::remember(
-            "financial.expenses.monthly.{$year}",
-            self::CACHE_TTL,
-            fn() => FinancialExpense::forYear($year)
-                ->where('currency', 'RON')
-                ->select('month', DB::raw('SUM(amount) as total'))
-                ->groupBy('month')
-                ->orderBy('month')
-                ->get()
-                ->mapWithKeys(fn($item) => [$item->month => $item->total])
-        );
+        return $this->expenseAggregator->getMonthlyData($year);
     }
 
     /**
      * Get category breakdown for expenses.
+     * Delegates to ExpenseAggregator.
      */
     public function getExpenseCategoryBreakdown(int $year, int $limit = 8): Collection
     {
-        return Cache::remember(
-            "financial.expenses.categories.{$year}",
-            self::CACHE_TTL,
-            fn() => FinancialExpense::forYear($year)
-                ->whereNotNull('category_option_id')
-                ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-                ->groupBy('category_option_id')
-                ->with('category')
-                ->get()
-                ->sortByDesc('total')
-                ->take($limit)
-        );
+        return $this->expenseAggregator->getCategoryBreakdown($year, $limit);
     }
 
     /**
      * Prepare chart data for all 12 months.
+     * Delegates to ChartDataBuilder.
      */
     public function prepareChartData(Collection $monthlyRevenues, Collection $monthlyExpenses): array
     {
-        $chartRevenuesRON = [];
-        $chartExpensesRON = [];
-
-        for ($month = 1; $month <= 12; $month++) {
-            $revenueAmount = $monthlyRevenues->get($month, 0);
-            $expenseAmount = $monthlyExpenses->get($month, 0);
-
-            $chartRevenuesRON[] = [
-                'month' => self::SHORT_MONTHS[$month - 1],
-                'amount' => $revenueAmount,
-                'formatted' => number_format($revenueAmount, 2),
-            ];
-
-            $chartExpensesRON[] = [
-                'month' => self::SHORT_MONTHS[$month - 1],
-                'amount' => $expenseAmount,
-                'formatted' => number_format($expenseAmount, 2),
-            ];
-        }
-
-        return [
-            'revenues' => $chartRevenuesRON,
-            'expenses' => $chartExpensesRON,
-        ];
+        return $this->chartBuilder->prepareChartData($monthlyRevenues, $monthlyExpenses);
     }
 
     /**
      * Calculate common max value for chart scaling.
+     * Delegates to ChartDataBuilder.
      */
     public function calculateChartMaxValue(array $chartRevenues, array $chartExpenses): float
     {
-        $maxRevenueAmount = collect($chartRevenues)->max('amount') ?: 0;
-        $maxExpenseAmount = collect($chartExpenses)->max('amount') ?: 0;
-        $commonMaxValue = max($maxRevenueAmount, $maxExpenseAmount);
-
-        // Add 10% padding for better visualization
-        return $commonMaxValue * 1.1;
+        return $this->chartBuilder->calculateChartMaxValue($chartRevenues, $chartExpenses);
     }
 
     /**
      * Build monthly breakdown table data.
+     * Delegates to ChartDataBuilder.
      */
     public function buildMonthlyBreakdown(Collection $monthlyRevenues, Collection $monthlyExpenses): array
     {
-        $monthlyBreakdown = [];
-
-        for ($month = 1; $month <= 12; $month++) {
-            $revenueRON = $monthlyRevenues->get($month, 0);
-            $expenseRON = $monthlyExpenses->get($month, 0);
-
-            $monthlyBreakdown[] = [
-                'month' => $month,
-                'month_name' => self::FULL_MONTHS[$month - 1],
-                'revenues_ron' => $revenueRON,
-                'expenses_ron' => $expenseRON,
-                'profit_ron' => $revenueRON - $expenseRON,
-            ];
-        }
-
-        return $monthlyBreakdown;
+        return $this->chartBuilder->buildMonthlyBreakdown($monthlyRevenues, $monthlyExpenses);
     }
 
     /**
@@ -195,7 +129,7 @@ class FinancialDashboardService
     public function getAvailableYearsFromData(): Collection
     {
         return Cache::remember(
-            'financial.available_years',
+            $this->cacheKey('financial.available_years'),
             self::CACHE_TTL,
             function () {
                 $revenueYears = FinancialRevenue::selectRaw('DISTINCT year')->pluck('year');
@@ -221,7 +155,7 @@ class FinancialDashboardService
     {
         // Get monthly revenues by currency
         $monthlyRevenues = Cache::remember(
-            "financial.cashflow.revenues.{$year}",
+            $this->cacheKey("financial.cashflow.revenues.{$year}"),
             self::CACHE_TTL,
             fn() => FinancialRevenue::forYear($year)
                 ->select('month', 'currency', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
@@ -231,7 +165,7 @@ class FinancialDashboardService
 
         // Get monthly expenses by currency
         $monthlyExpenses = Cache::remember(
-            "financial.cashflow.expenses.{$year}",
+            $this->cacheKey("financial.cashflow.expenses.{$year}"),
             self::CACHE_TTL,
             fn() => FinancialExpense::forYear($year)
                 ->select('month', 'currency', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
@@ -265,7 +199,7 @@ class FinancialDashboardService
 
             $cashflowData[] = [
                 'month' => $month,
-                'month_name' => self::FULL_MONTHS[$month - 1],
+                'month_name' => $this->chartBuilder->getFullMonthName($month),
                 'revenue_ron' => $revenueRON,
                 'revenue_eur' => $revenueEUR,
                 'expense_ron' => $expenseRON,
@@ -303,62 +237,30 @@ class FinancialDashboardService
 
     /**
      * Prepare cashflow chart data.
+     * Delegates to ChartDataBuilder.
      */
     public function prepareCashflowChartData(array $cashflowData, int $year): array
     {
-        $monthsToShow = ($year == now()->year) ? now()->month : 12;
-
-        return [
-            'labels' => collect($cashflowData)->pluck('month_name')->take($monthsToShow)->toArray(),
-            'revenues' => collect($cashflowData)->pluck('revenue_ron')->take($monthsToShow)->toArray(),
-            'expenses' => collect($cashflowData)->pluck('expense_ron')->take($monthsToShow)->toArray(),
-            'net' => collect($cashflowData)->pluck('net_ron')->take($monthsToShow)->toArray(),
-            'balance' => collect($cashflowData)->pluck('balance_ron')->take($monthsToShow)->toArray(),
-        ];
+        return $this->chartBuilder->prepareCashflowChartData($cashflowData, $year);
     }
 
     /**
      * Get yearly report data.
+     * Orchestrates aggregators to build comprehensive yearly summary.
      */
     public function getYearlyReportData(): array
     {
         $availableYears = $this->getAvailableYearsFromData();
 
-        // Revenue aggregations grouped by year and currency
-        $revenueAggregates = Cache::remember(
-            'financial.revenues.yearly_aggregates',
-            self::CACHE_TTL,
-            fn() => FinancialRevenue::select(
-                'year',
-                'currency',
-                DB::raw('SUM(amount) as total'),
-                DB::raw('COUNT(*) as invoice_count'),
-                DB::raw('COUNT(DISTINCT client_id) as client_count')
-            )
-                ->groupBy('year', 'currency')
-                ->get()
-                ->groupBy('year')
-        );
-
-        // Expense aggregations grouped by year and currency
-        $expenseAggregates = Cache::remember(
-            'financial.expenses.yearly_aggregates',
-            self::CACHE_TTL,
-            fn() => FinancialExpense::select(
-                'year',
-                'currency',
-                DB::raw('SUM(amount) as total')
-            )
-                ->groupBy('year', 'currency')
-                ->get()
-                ->groupBy('year')
-        );
+        // Get all years revenue totals
+        $allYearsRevenue = $this->revenueAggregator->getAllYearsTotals();
+        $allYearsExpense = $this->expenseAggregator->getAllYearsTotals();
 
         // Build yearly summary
         $yearlySummary = [];
         foreach ($availableYears as $year) {
-            $yearRevenues = $revenueAggregates->get($year, collect());
-            $yearExpenses = $expenseAggregates->get($year, collect());
+            $yearRevenues = $allYearsRevenue->get($year, collect());
+            $yearExpenses = $allYearsExpense->get($year, collect());
 
             $revenueRON = $yearRevenues->where('currency', 'RON')->first()?->total ?? 0;
             $revenueEUR = $yearRevenues->where('currency', 'EUR')->first()?->total ?? 0;
@@ -425,29 +327,38 @@ class FinancialDashboardService
 
     /**
      * Get analytics data for yearly report.
+     * Orchestrates aggregators and adds business intelligence.
      */
     public function getAnalytics(array $yearlySummary, Collection $availableYears): array
     {
         $bestYear = collect($yearlySummary)->sortByDesc('profit_ron')->keys()->first();
         $worstYear = collect($yearlySummary)->sortBy('profit_ron')->keys()->first();
 
-        // Top clients by revenue (all time)
-        $topClients = FinancialRevenue::with('client')
-            ->whereNotNull('client_id')
-            ->select('client_id', DB::raw('SUM(amount) as total'))
-            ->groupBy('client_id')
-            ->orderByDesc('total')
-            ->take(10)
-            ->get();
+        // Get top clients from revenue aggregator (all time)
+        $topClients = Cache::remember(
+            $this->cacheKey('financial.analytics.top_clients'),
+            self::CACHE_TTL,
+            fn() => FinancialRevenue::with('client')
+                ->whereNotNull('client_id')
+                ->select('client_id', DB::raw('SUM(amount) as total'))
+                ->groupBy('client_id')
+                ->orderByDesc('total')
+                ->take(10)
+                ->get()
+        );
 
-        // Expense breakdown by category (all time)
-        $expenseByCategory = FinancialExpense::with('category')
-            ->whereNotNull('category_option_id')
-            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-            ->groupBy('category_option_id')
-            ->orderByDesc('total')
-            ->take(10)
-            ->get();
+        // Get expense category breakdown (all time)
+        $expenseByCategory = Cache::remember(
+            $this->cacheKey('financial.analytics.expense_categories'),
+            self::CACHE_TTL,
+            fn() => FinancialExpense::with('category')
+                ->whereNotNull('category_option_id')
+                ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+                ->groupBy('category_option_id')
+                ->orderByDesc('total')
+                ->take(10)
+                ->get()
+        );
 
         // Client dependency risk (>30% from single client)
         $totalRevenueRON = collect($yearlySummary)->sum('revenue_ron');
@@ -505,21 +416,23 @@ class FinancialDashboardService
 
     /**
      * Clear all financial dashboard caches.
+     * Delegates to all aggregators and clears orchestration-level caches.
      */
     public function clearCache(?int $year = null): void
     {
+        // Delegate to aggregators
+        $this->revenueAggregator->clearCache($year);
+        $this->expenseAggregator->clearCache($year);
+
+        // Clear cashflow caches (not in aggregators)
         if ($year) {
-            Cache::forget("financial.revenues.totals.{$year}");
-            Cache::forget("financial.expenses.totals.{$year}");
-            Cache::forget("financial.revenues.monthly.{$year}");
-            Cache::forget("financial.expenses.monthly.{$year}");
-            Cache::forget("financial.expenses.categories.{$year}");
-            Cache::forget("financial.cashflow.revenues.{$year}");
-            Cache::forget("financial.cashflow.expenses.{$year}");
+            Cache::forget($this->cacheKey("financial.cashflow.revenues.{$year}"));
+            Cache::forget($this->cacheKey("financial.cashflow.expenses.{$year}"));
         }
 
-        Cache::forget('financial.available_years');
-        Cache::forget('financial.revenues.yearly_aggregates');
-        Cache::forget('financial.expenses.yearly_aggregates');
+        // Clear orchestration-level caches
+        Cache::forget($this->cacheKey('financial.available_years'));
+        Cache::forget($this->cacheKey('financial.analytics.top_clients'));
+        Cache::forget($this->cacheKey('financial.analytics.expense_categories'));
     }
 }

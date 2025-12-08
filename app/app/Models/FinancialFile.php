@@ -12,6 +12,14 @@ class FinancialFile extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Valid entity types for polymorphic relationship
+     */
+    public const VALID_ENTITY_TYPES = [
+        \App\Models\FinancialRevenue::class,
+        \App\Models\FinancialExpense::class,
+    ];
+
     protected $fillable = [
         'organization_id',
         'user_id',
@@ -40,6 +48,13 @@ class FinancialFile extends Model
     {
         // Auto-fill organization_id and user_id
         static::creating(function ($file) {
+            // Validate entity_type if provided
+            if ($file->entity_type && !in_array($file->entity_type, self::VALID_ENTITY_TYPES)) {
+                throw new \InvalidArgumentException(
+                    "Invalid entity_type. Must be one of: " . implode(', ', self::VALID_ENTITY_TYPES)
+                );
+            }
+
             if (Auth::check()) {
                 $file->organization_id = $file->organization_id ?? Auth::user()->organization_id;
                 $file->user_id = $file->user_id ?? Auth::id();
@@ -132,7 +147,7 @@ class FinancialFile extends Model
 
     public function entity()
     {
-        return $this->morphTo();
+        return $this->morphTo()->whereIn('entity_type', self::VALID_ENTITY_TYPES);
     }
 
     /**

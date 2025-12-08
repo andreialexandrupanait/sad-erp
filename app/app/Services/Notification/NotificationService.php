@@ -8,6 +8,31 @@ use App\Services\Notification\Channels\NotificationChannelInterface;
 use App\Services\Notification\Messages\NotificationMessage;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * Notification Service - Central notification dispatcher.
+ *
+ * This service provides a unified interface for sending notifications through
+ * multiple channels (Email, Slack, WhatsApp, etc.). It handles:
+ * - Channel registration and management
+ * - Notification routing and delivery
+ * - Duplicate detection and rate limiting
+ * - Notification logging and auditing
+ * - Channel-specific formatting
+ *
+ * ## Usage Example:
+ * ```php
+ * $message = new DomainExpiryNotificationMessage($domain, 7);
+ * $notificationService->send($message, ['email', 'slack']);
+ * ```
+ *
+ * ## Supported Channels:
+ * - Email (via Laravel Mail)
+ * - Slack (via Slack API)
+ * - WhatsApp (via Twilio/Custom provider)
+ *
+ * @see NotificationChannelInterface For implementing custom channels
+ * @see NotificationMessage For creating notification messages
+ */
 class NotificationService
 {
     /**

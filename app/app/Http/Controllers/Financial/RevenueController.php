@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Financial;
 use App\Http\Controllers\Concerns\HandlesBulkActions;
 use App\Http\Requests\Financial\StoreRevenueRequest;
 use App\Http\Requests\Financial\UpdateRevenueRequest;
+use App\Services\Financial\QueryBuilderService;
+use App\Services\NomenclatureService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use App\Http\Controllers\Controller;
@@ -12,7 +14,6 @@ use Illuminate\Http\Request;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialFile;
 use App\Models\Client;
-use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -20,6 +21,17 @@ use Illuminate\Support\Str;
 class RevenueController extends Controller
 {
     use HandlesBulkActions;
+
+    protected QueryBuilderService $queryBuilder;
+    protected NomenclatureService $nomenclatureService;
+
+    public function __construct(
+        QueryBuilderService $queryBuilder,
+        NomenclatureService $nomenclatureService
+    ) {
+        $this->queryBuilder = $queryBuilder;
+        $this->nomenclatureService = $nomenclatureService;
+    }
     public function index(Request $request)
     {
         // Get filter values from request or session, with defaults
@@ -47,69 +59,57 @@ class RevenueController extends Controller
 
         $perPage = $request->get('per_page', 50);
 
-        $revenues = FinancialRevenue::with(['client', 'files'])
-            ->withCount('files')
-            ->forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('document_name', 'like', "%{$search}%")
-                      ->orWhere('note', 'like', "%{$search}%")
-                      ->orWhereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"));
-            }))
-            ->orderBy($sortBy, $sortDir)
-            ->paginate($perPage)
-            ->withQueryString();
+        // Prepare filters array
+        $filters = [
+            'year' => $year,
+            'month' => $month,
+            'currency' => $currency,
+            'client_id' => $clientId,
+            'search' => $search,
+            'searchFields' => ['client' => ['column' => 'name']],
+        ];
+
+        // Build main paginated query using query builder service
+        $revenues = $this->queryBuilder->buildPaginatedQuery(
+            FinancialRevenue::class,
+            $filters,
+            $sortBy,
+            $sortDir,
+            $perPage,
+            ['client', 'files'],
+            ['files']
+        );
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
-        $filteredTotals = FinancialRevenue::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        $filteredQuery = FinancialRevenue::query();
+        $this->queryBuilder->applyFilters($filteredQuery, $filters);
+        $filteredTotals = $this->queryBuilder->calculateFilteredTotals($filteredQuery);
 
         // Widget 2: Calculate YEARLY totals (all currencies, always full year)
-        $yearTotals = FinancialRevenue::forYear($year)
-            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        $yearTotals = $this->queryBuilder->calculateYearlyTotals(
+            FinancialRevenue::class,
+            $year,
+            $clientId ? ['client_id' => $clientId] : []
+        );
 
         // Count total records
-        $recordCount = FinancialRevenue::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('document_name', 'like', "%{$search}%")
-                      ->orWhere('note', 'like', "%{$search}%")
-                      ->orWhereHas('client', fn($q) => $q->where('name', 'like', "%{$search}%"));
-            }))
-            ->count();
+        $recordCount = $this->queryBuilder->countFiltered(FinancialRevenue::class, $filters);
 
         $clients = Client::orderBy('name')->get();
-        $currencies = SettingOption::currencies()->get();
+        $currencies = $this->nomenclatureService->getCurrencies();
 
-        // Available years - show all years from 2019 to present
-        $currentYear = now()->year;
-        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
+        // Available years
+        $availableYears = $this->queryBuilder->getAvailableYears();
 
-        // Get months with transactions for the selected year (with transaction count and total amount)
-        $monthsWithTransactions = FinancialRevenue::forYear($year)
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
-            ->select('month', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-            ->groupBy('month')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->month => [
-                'count' => $item->count,
-                'total' => $item->total
-            ]]);
+        // Get months with transactions for the selected year
+        $monthsQuery = FinancialRevenue::forYear($year);
+        if ($currency) {
+            $monthsQuery->where('currency', $currency);
+        }
+        if ($clientId) {
+            $monthsQuery->where('client_id', $clientId);
+        }
+        $monthsWithTransactions = $this->queryBuilder->getMonthsWithTransactions($monthsQuery);
 
         return view('financial.revenues.index', compact(
             'revenues',
@@ -131,7 +131,7 @@ class RevenueController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $currencies = SettingOption::currencies()->get();
+        $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.revenues.create', compact('clients', 'currencies'));
     }
 
@@ -169,7 +169,7 @@ class RevenueController extends Controller
     {
         $revenue->load('files');
         $clients = Client::orderBy('name')->get();
-        $currencies = SettingOption::currencies()->get();
+        $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.revenues.edit', compact('revenue', 'clients', 'currencies'));
     }
 

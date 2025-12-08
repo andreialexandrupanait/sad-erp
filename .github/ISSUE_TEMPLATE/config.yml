@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability
+    url: mailto:security@simplead.ro
+    about: Please report security vulnerabilities privately via email
+  - name: General Question
+    url: https://github.com/andreialexandrupanait/sad-erp/discussions
+    about: Ask questions and discuss ideas in GitHub Discussions
+  - name: Documentation
+    url: https://github.com/andreialexandrupanait/sad-erp/wiki
+    about: Check the documentation and wiki for guides

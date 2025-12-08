@@ -28,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Set application locale based on settings
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\AuditLogger::class,
         ]);
 
         // Register middleware aliases

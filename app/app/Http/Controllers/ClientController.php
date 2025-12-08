@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Response;
 use App\Http\Requests\Client\StoreClientRequest;
 use App\Http\Requests\Client\UpdateClientRequest;
 use App\Models\Client;
-use App\Models\SettingOption;
+use App\Services\NomenclatureService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -16,8 +16,12 @@ use Illuminate\Http\Request;
 class ClientController extends Controller
 {
     use HandlesBulkActions;
-    public function __construct()
+
+    protected NomenclatureService $nomenclatureService;
+
+    public function __construct(NomenclatureService $nomenclatureService)
     {
+        $this->nomenclatureService = $nomenclatureService;
         $this->authorizeResource(Client::class, 'client');
     }
 
@@ -32,7 +36,7 @@ class ClientController extends Controller
         }
 
         // For initial page load, return view with statuses for filter pills
-        $statuses = SettingOption::clientStatuses()->get();
+        $statuses = $this->nomenclatureService->getClientStatuses();
 
         // Parse initial filters from URL for server-side rendering fallback
         $initialFilters = $this->parseUrlFilters($request);
@@ -56,7 +60,7 @@ class ClientController extends Controller
             $statusSlugs = array_filter(explode(',', $request->status));
             if (!empty($statusSlugs)) {
                 // Get status IDs from slugs
-                $allStatuses = SettingOption::clientStatuses()->get();
+                $allStatuses = $this->nomenclatureService->getClientStatuses();
                 $statusIds = $allStatuses->filter(function ($status) use ($statusSlugs) {
                     return in_array($status->slug, $statusSlugs);
                 })->pluck('id')->toArray();

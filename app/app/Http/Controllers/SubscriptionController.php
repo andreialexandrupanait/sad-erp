@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesBulkActions;
+use App\Services\NomenclatureService;
+use App\Services\Subscription\SubscriptionCalculationService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use App\Models\Subscription;
 use App\Models\SubscriptionLog;
-use App\Models\SettingOption;
 use App\Http\Requests\Subscription\StoreSubscriptionRequest;
 use App\Http\Requests\Subscription\UpdateSubscriptionRequest;
 use Illuminate\Http\Request;
@@ -19,8 +20,15 @@ class SubscriptionController extends Controller
 {
     use HandlesBulkActions;
 
-    public function __construct()
-    {
+    protected NomenclatureService $nomenclatureService;
+    protected SubscriptionCalculationService $calculationService;
+
+    public function __construct(
+        NomenclatureService $nomenclatureService,
+        SubscriptionCalculationService $calculationService
+    ) {
+        $this->nomenclatureService = $nomenclatureService;
+        $this->calculationService = $calculationService;
         $this->authorizeResource(Subscription::class, 'subscription');
     }
 
@@ -79,9 +87,9 @@ class SubscriptionController extends Controller
         ])->filter()->count();
 
         // Get nomenclature data for forms
-        $billingCycles = SettingOption::billingCycles()->get();
-        $statuses = SettingOption::subscriptionStatuses()->get();
-        $currencies = SettingOption::currencies()->get();
+        $billingCycles = $this->nomenclatureService->getBillingCycles();
+        $statuses = $this->nomenclatureService->getSubscriptionStatuses();
+        $currencies = $this->nomenclatureService->getCurrencies();
 
         return view('subscriptions.index', compact('subscriptions', 'stats', 'activeFilters', 'billingCycles', 'statuses', 'currencies'));
     }
@@ -91,9 +99,9 @@ class SubscriptionController extends Controller
      */
     public function create()
     {
-        $billingCycles = SettingOption::billingCycles()->get();
-        $statuses = SettingOption::subscriptionStatuses()->get();
-        $currencies = SettingOption::currencies()->get();
+        $billingCycles = $this->nomenclatureService->getBillingCycles();
+        $statuses = $this->nomenclatureService->getSubscriptionStatuses();
+        $currencies = $this->nomenclatureService->getCurrencies();
 
         return view('subscriptions.create', compact('billingCycles', 'statuses', 'currencies'));
     }
@@ -133,9 +141,9 @@ class SubscriptionController extends Controller
      */
     public function edit(Subscription $subscription)
     {
-        $billingCycles = SettingOption::billingCycles()->get();
-        $statuses = SettingOption::subscriptionStatuses()->get();
-        $currencies = SettingOption::currencies()->get();
+        $billingCycles = $this->nomenclatureService->getBillingCycles();
+        $statuses = $this->nomenclatureService->getSubscriptionStatuses();
+        $currencies = $this->nomenclatureService->getCurrencies();
 
         return view('subscriptions.edit', compact('subscription', 'billingCycles', 'statuses', 'currencies'));
     }

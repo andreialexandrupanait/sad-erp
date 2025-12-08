@@ -17,7 +17,8 @@ use App\Http\Controllers\Financial\DashboardController as FinancialDashboardCont
 use App\Http\Controllers\Financial\RevenueController;
 use App\Http\Controllers\Financial\ExpenseController;
 use App\Http\Controllers\Financial\FileController as FinancialFileController;
-use App\Http\Controllers\Financial\ImportController;
+use App\Http\Controllers\Financial\RevenueImportController;
+use App\Http\Controllers\Financial\ExpenseImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -55,24 +56,36 @@ Route::middleware('auth')->group(function () {
     // Centralized Import/Export System
     Route::get('import-export', [ImportExportController::class, 'index'])->name('import-export.index');
     Route::get('import-export/{module}', [ImportExportController::class, 'showImportForm'])->name('import-export.import.form');
-    Route::post('import-export/{module}', [ImportExportController::class, 'import'])->name('import-export.import');
+    Route::post('import-export/{module}', [ImportExportController::class, 'import'])
+        ->middleware('throttle:5,1')  // 5 imports per minute
+        ->name('import-export.import');
     Route::get('import-export/{module}/template', [ImportExportController::class, 'downloadTemplate'])->name('import-export.template');
-    Route::get('export/{module}', [ImportExportController::class, 'export'])->name('import-export.export');
+    Route::get('export/{module}', [ImportExportController::class, 'export'])
+        ->middleware('throttle:10,1')  // 10 exports per minute
+        ->name('import-export.export');
 
     // Clients Module
     Route::middleware('module:clients')->group(function () {
         Route::resource('clients', ClientController::class);
         Route::patch('clients/{client}/status', [ClientController::class, 'updateStatus'])->name('clients.update-status');
         Route::patch('clients/{client}/reorder', [ClientController::class, 'reorder'])->name('clients.reorder');
-        Route::post('clients/bulk-update', [ClientController::class, 'bulkUpdate'])->name('clients.bulk-update');
-        Route::post('clients/bulk-export', [ClientController::class, 'bulkExport'])->name('clients.bulk-export');
+        Route::post('clients/bulk-update', [ClientController::class, 'bulkUpdate'])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name('clients.bulk-update');
+        Route::post('clients/bulk-export', [ClientController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name('clients.bulk-export');
     });
 
     // Credentials Module
     Route::middleware('module:credentials')->group(function () {
         Route::resource('credentials', CredentialController::class);
-        Route::post('credentials/bulk-update', [CredentialController::class, 'bulkUpdate'])->name('credentials.bulk-update');
-        Route::post('credentials/bulk-export', [CredentialController::class, 'bulkExport'])->name('credentials.bulk-export');
+        Route::post('credentials/bulk-update', [CredentialController::class, 'bulkUpdate'])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name('credentials.bulk-update');
+        Route::post('credentials/bulk-export', [CredentialController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name('credentials.bulk-export');
         Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
             ->name('credentials.reveal-password');
@@ -89,18 +102,32 @@ Route::middleware('auth')->group(function () {
     // Domains Module (Domenii)
     Route::middleware('module:domains')->group(function () {
         Route::resource('domains', DomainController::class);
-        Route::post('domains/bulk-update', [DomainController::class, 'bulkUpdate'])->name('domains.bulk-update');
-        Route::post('domains/bulk-export', [DomainController::class, 'bulkExport'])->name('domains.bulk-export');
-        Route::post('domains/bulk-auto-renew', [DomainController::class, 'bulkToggleAutoRenew'])->name('domains.bulk-auto-renew');
+        Route::post('domains/bulk-update', [DomainController::class, 'bulkUpdate'])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name('domains.bulk-update');
+        Route::post('domains/bulk-export', [DomainController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name('domains.bulk-export');
+        Route::post('domains/bulk-auto-renew', [DomainController::class, 'bulkToggleAutoRenew'])
+            ->middleware('throttle:10,1')  // 10 bulk operations per minute
+            ->name('domains.bulk-auto-renew');
     });
 
     // Subscriptions Module (Abonamente)
     Route::middleware('module:subscriptions')->group(function () {
         Route::resource('subscriptions', SubscriptionController::class);
-        Route::post('subscriptions/bulk-update', [SubscriptionController::class, 'bulkUpdate'])->name('subscriptions.bulk-update');
-        Route::post('subscriptions/bulk-export', [SubscriptionController::class, 'bulkExport'])->name('subscriptions.bulk-export');
-        Route::post('subscriptions/bulk-renew', [SubscriptionController::class, 'bulkRenew'])->name('subscriptions.bulk-renew');
-        Route::post('subscriptions/bulk-status', [SubscriptionController::class, 'bulkUpdateStatus'])->name('subscriptions.bulk-status');
+        Route::post('subscriptions/bulk-update', [SubscriptionController::class, 'bulkUpdate'])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name('subscriptions.bulk-update');
+        Route::post('subscriptions/bulk-export', [SubscriptionController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name('subscriptions.bulk-export');
+        Route::post('subscriptions/bulk-renew', [SubscriptionController::class, 'bulkRenew'])
+            ->middleware('throttle:10,1')  // 10 bulk renewals per minute
+            ->name('subscriptions.bulk-renew');
+        Route::post('subscriptions/bulk-status', [SubscriptionController::class, 'bulkUpdateStatus'])
+            ->middleware('throttle:10,1')  // 10 bulk status updates per minute
+            ->name('subscriptions.bulk-status');
         Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
         Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
         Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
@@ -137,10 +164,17 @@ Route::middleware('auth')->group(function () {
 
         // Settings - Database Backup
         Route::get('settings/backup', [\App\Http\Controllers\Settings\BackupController::class, 'index'])->name('settings.backup');
-        Route::post('settings/backup/export', [\App\Http\Controllers\Settings\BackupController::class, 'export'])->name('settings.backup.export');
-        Route::post('settings/backup/import', [\App\Http\Controllers\Settings\BackupController::class, 'import'])->name('settings.backup.import');
+        Route::post('settings/backup/export', [\App\Http\Controllers\Settings\BackupController::class, 'export'])
+            ->middleware('throttle:2,10')  // 2 backups per 10 minutes (very resource-intensive)
+            ->name('settings.backup.export');
+        Route::post('settings/backup/import', [\App\Http\Controllers\Settings\BackupController::class, 'import'])
+            ->middleware('throttle:5,1')  // 5 imports per minute
+            ->name('settings.backup.import');
         Route::get('settings/backup/download/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'download'])->where('filename', '.*')->name('settings.backup.download');
-        Route::post('settings/backup/restore/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'restore'])->where('filename', '.*')->name('settings.backup.restore');
+        Route::post('settings/backup/restore/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'restore'])
+            ->middleware('throttle:1,10')  // 1 restore per 10 minutes (extremely dangerous operation)
+            ->where('filename', '.*')
+            ->name('settings.backup.restore');
         Route::delete('settings/backup/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'destroy'])->where('filename', '.*')->name('settings.backup.destroy');
 
         // Slack Integration Settings
@@ -168,8 +202,12 @@ Route::middleware('auth')->group(function () {
             Route::post('/credentials', [\App\Http\Controllers\Settings\SmartbillController::class, 'updateCredentials'])->name('credentials.update');
             Route::post('/test-connection', [\App\Http\Controllers\Settings\SmartbillController::class, 'testConnection'])->name('test-connection');
             Route::get('/import', [\App\Http\Controllers\Settings\SmartbillController::class, 'showImportForm'])->name('import');
-            Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])->name('import.process');
-            Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])->name('import.start');
+            Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])
+                ->middleware('throttle:5,1')  // 5 import initiations per minute
+                ->name('import.process');
+            Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])
+                ->middleware('throttle:3,1')  // 3 import starts per minute
+                ->name('import.start');
             Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
         });
 
@@ -226,25 +264,39 @@ Route::middleware('auth')->group(function () {
         Route::get('/history/export', [FinancialDashboardController::class, 'exportAllYearsCsv'])->name('history.export');
         Route::get('/export/{year}', [FinancialDashboardController::class, 'exportCsv'])->name('export');
 
-        // Revenues
-        Route::get('revenues/import', [ImportController::class, 'showRevenueImportForm'])->name('revenues.import');
-        Route::post('revenues/import', [ImportController::class, 'importRevenues'])->name('revenues.import.post');
-        Route::post('revenues/import/preview', [ImportController::class, 'previewRevenues'])->name('revenues.import.preview');
-        Route::get('revenues/import/template', [ImportController::class, 'downloadRevenueTemplate'])->name('revenues.import.template');
-        Route::get('revenues/import/{importId}/status', [ImportController::class, 'getImportStatus'])->name('revenues.import.status');
-        Route::post('revenues/import/{importId}/cancel', [ImportController::class, 'cancelImport'])->name('revenues.import.cancel');
-        Route::delete('revenues/import/{importId}', [ImportController::class, 'deleteImport'])->name('revenues.import.delete');
+        // Revenues - Import/Export
+        Route::get('revenues/import', [RevenueImportController::class, 'showForm'])->name('revenues.import');
+        Route::post('revenues/import', [RevenueImportController::class, 'import'])
+            ->middleware('throttle:5,1')  // 5 imports per minute
+            ->name('revenues.import.post');
+        Route::post('revenues/import/preview', [RevenueImportController::class, 'preview'])
+            ->middleware('throttle:10,1')  // 10 previews per minute
+            ->name('revenues.import.preview');
+        Route::get('revenues/import/template', [RevenueImportController::class, 'downloadTemplate'])->name('revenues.import.template');
+        Route::get('revenues/import/{importId}/status', [RevenueImportController::class, 'getImportStatus'])->name('revenues.import.status');
+        Route::post('revenues/import/{importId}/cancel', [RevenueImportController::class, 'cancelImport'])->name('revenues.import.cancel');
+        Route::delete('revenues/import/{importId}', [RevenueImportController::class, 'deleteImport'])->name('revenues.import.delete');
         Route::resource('revenues', RevenueController::class)->parameters(['revenues' => 'revenue']);
-        Route::post("revenues/bulk-update", [RevenueController::class, "bulkUpdate"])->name("revenues.bulk-update");
-        Route::post("revenues/bulk-export", [RevenueController::class, "bulkExport"])->name("revenues.bulk-export");
+        Route::post("revenues/bulk-update", [RevenueController::class, "bulkUpdate"])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name("revenues.bulk-update");
+        Route::post("revenues/bulk-export", [RevenueController::class, "bulkExport"])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name("revenues.bulk-export");
 
-        // Expenses
-        Route::get('expenses/import', [ImportController::class, 'showExpenseImportForm'])->name('expenses.import');
-        Route::post('expenses/import', [ImportController::class, 'importExpenses'])->name('expenses.import.post');
-        Route::get('expenses/import/template', [ImportController::class, 'downloadExpenseTemplate'])->name('expenses.import.template');
+        // Expenses - Import/Export
+        Route::get('expenses/import', [ExpenseImportController::class, 'showForm'])->name('expenses.import');
+        Route::post('expenses/import', [ExpenseImportController::class, 'import'])
+            ->middleware('throttle:5,1')  // 5 imports per minute
+            ->name('expenses.import.post');
+        Route::get('expenses/import/template', [ExpenseImportController::class, 'downloadTemplate'])->name('expenses.import.template');
         Route::resource('expenses', ExpenseController::class)->parameters(['expenses' => 'expense']);
-        Route::post("expenses/bulk-update", [ExpenseController::class, "bulkUpdate"])->name("expenses.bulk-update");
-        Route::post("expenses/bulk-export", [ExpenseController::class, "bulkExport"])->name("expenses.bulk-export");
+        Route::post("expenses/bulk-update", [ExpenseController::class, "bulkUpdate"])
+            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->name("expenses.bulk-update");
+        Route::post("expenses/bulk-export", [ExpenseController::class, "bulkExport"])
+            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->name("expenses.bulk-export");
 
 
         // Files - Browse with explicit URL structure
@@ -258,7 +310,9 @@ Route::middleware('auth')->group(function () {
         Route::get('files/create', [FinancialFileController::class, 'create'])->name('files.create');
         Route::post('files', [FinancialFileController::class, 'store'])->name('files.store');
         Route::post('files/upload', [FinancialFileController::class, 'upload'])->name('files.upload');
-        Route::post('files/bulk-delete', [FinancialFileController::class, 'bulkDelete'])->name('files.bulk-delete');
+        Route::post('files/bulk-delete', [FinancialFileController::class, 'bulkDelete'])
+            ->middleware('throttle:10,1')  // 10 bulk deletes per minute
+            ->name('files.bulk-delete');
         Route::get('files/download-yearly-zip/{year}', [FinancialFileController::class, 'downloadYearlyZip'])->name('files.download-yearly-zip');
         Route::get('files/download-monthly-zip/{year}/{month}', [FinancialFileController::class, 'downloadMonthlyZip'])->name('files.download-monthly-zip');
         Route::get('files/view/{file}', [FinancialFileController::class, 'show'])->name('files.show');

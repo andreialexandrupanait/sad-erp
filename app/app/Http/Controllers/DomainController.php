@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Domain;
 use App\Models\Client;
-use App\Models\SettingOption;
+use App\Services\NomenclatureService;
 use App\Http\Requests\Domain\StoreDomainRequest;
 use App\Http\Requests\Domain\UpdateDomainRequest;
 use Illuminate\Http\Request;
@@ -15,8 +15,12 @@ use Illuminate\Http\Request;
 class DomainController extends Controller
 {
     use HandlesBulkActions;
-    public function __construct()
+
+    protected NomenclatureService $nomenclatureService;
+
+    public function __construct(NomenclatureService $nomenclatureService)
     {
+        $this->nomenclatureService = $nomenclatureService;
         $this->authorizeResource(Domain::class, 'domain');
     }
 
@@ -85,8 +89,8 @@ class DomainController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = SettingOption::domainRegistrars()->get();
-        $statuses = SettingOption::domainStatuses()->get();
+        $registrars = $this->nomenclatureService->getDomainRegistrars();
+        $statuses = $this->nomenclatureService->getDomainStatuses();
 
         return view('domains.create', compact('clients', 'registrars', 'statuses'));
     }
@@ -127,8 +131,8 @@ class DomainController extends Controller
     public function edit(Domain $domain)
     {
         $clients = Client::orderBy('name')->get();
-        $registrars = SettingOption::domainRegistrars()->get();
-        $statuses = SettingOption::domainStatuses()->get();
+        $registrars = $this->nomenclatureService->getDomainRegistrars();
+        $statuses = $this->nomenclatureService->getDomainStatuses();
 
         return view('domains.edit', compact('domain', 'clients', 'registrars', 'statuses'));
     }

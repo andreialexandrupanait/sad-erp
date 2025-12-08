@@ -7,6 +7,17 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Skip seeding during tests (organization_id=1 may not exist)
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        // Check if organization_id=1 exists before seeding
+        $organizationExists = DB::table('organizations')->where('id', 1)->exists();
+        if (!$organizationExists) {
+            return;
+        }
+
         $organizationId = 1;
         $now = now();
         $sortOrder = 1;

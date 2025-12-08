@@ -17,8 +17,25 @@ class ImportSmartbillInvoicesJob implements ShouldQueue
 {
     use Queueable;
 
+    /**
+     * The number of seconds the job can run before timing out.
+     */
     public $timeout = 3600; // 1 hour timeout
-    public $tries = 1; // Don't retry failed imports
+
+    /**
+     * The number of times the job may be attempted.
+     */
+    public $tries = 3;
+
+    /**
+     * Calculate the number of seconds to wait before retrying the job.
+     *
+     * Exponential backoff: 2 min, 5 min, 10 min
+     */
+    public function backoff(): array
+    {
+        return [120, 300, 600]; // 2 min, 5 min, 10 min
+    }
 
     protected $importId;
     protected $organizationId;

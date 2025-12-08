@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Import\CsvImportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
@@ -17,6 +18,12 @@ use App\Models\SettingOption;
 
 class ImportExportController extends Controller
 {
+    protected CsvImportService $csvImporter;
+
+    public function __construct(CsvImportService $csvImporter)
+    {
+        $this->csvImporter = $csvImporter;
+    }
     /**
      * Show the centralized import/export page
      */
@@ -95,68 +102,42 @@ class ImportExportController extends Controller
 
     private function importClients(Request $request)
     {
-        $file = $request->file('csv_file');
-        $csvData = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($csvData);
-        $header = array_map('trim', $header);
+        $defaultStatus = SettingOption::clientStatuses()->first();
 
-        $defaultStatus = \App\Models\SettingOption::clientStatuses()->first();
-        $imported = 0;
-        $skipped = 0;
-        $errors = [];
-
-        foreach ($csvData as $index => $row) {
-            $rowNumber = $index + 2;
-            if (empty(array_filter($row))) continue;
-
-            $data = array_combine($header, $row);
-
-            $validator = Validator::make($data, [
+        $result = $this->csvImporter->import(
+            $request->file('csv_file'),
+            [
                 'name' => 'required|string|max:255',
                 'tax_id' => ['nullable', 'string', 'max:100'],
-            ]);
-
-            if ($validator->fails()) {
-                $errors[] = "Row {$rowNumber}: " . implode(', ', $validator->errors()->all());
-                $skipped++;
-                continue;
-            }
-
-            if (!empty($data['tax_id'])) {
-                $exists = Client::where('tax_id', trim($data['tax_id']))
-                    ->where('user_id', auth()->id())
-                    ->exists();
-                if ($exists) {
-                    $errors[] = "Row {$rowNumber}: Client with tax_id '{$data['tax_id']}' already exists";
-                    $skipped++;
-                    continue;
-                }
-            }
-
-            try {
+            ],
+            function($data, $rowNumber) use ($defaultStatus) {
                 Client::create([
-                    'name' => trim($data['name'] ?? ''),
-                    'company_name' => trim($data['company_name'] ?? $data['company'] ?? ''),
-                    'tax_id' => trim($data['tax_id'] ?? $data['cui'] ?? ''),
-                    'registration_number' => trim($data['registration_number'] ?? $data['reg_number'] ?? ''),
-                    'contact_person' => trim($data['contact_person'] ?? ''),
-                    'email' => trim($data['email'] ?? ''),
-                    'phone' => trim($data['phone'] ?? ''),
-                    'address' => trim($data['address'] ?? ''),
-                    'vat_payer' => in_array(strtolower(trim($data['vat_payer'] ?? '')), ['yes', 'da', '1', 'true']),
-                    'notes' => trim($data['notes'] ?? ''),
-                    'status_id' => $defaultStatus ? $defaultStatus->id : null,
+                    'name' => $this->csvImporter->getValue($data, 'name'),
+                    'company_name' => $this->csvImporter->getValue($data, ['company_name', 'company']),
+                    'tax_id' => $this->csvImporter->getValue($data, ['tax_id', 'cui']),
+                    'registration_number' => $this->csvImporter->getValue($data, ['registration_number', 'reg_number']),
+                    'contact_person' => $this->csvImporter->getValue($data, 'contact_person'),
+                    'email' => $this->csvImporter->getValue($data, 'email'),
+                    'phone' => $this->csvImporter->getValue($data, 'phone'),
+                    'address' => $this->csvImporter->getValue($data, 'address'),
+                    'vat_payer' => $this->csvImporter->getBooleanValue($data, 'vat_payer'),
+                    'notes' => $this->csvImporter->getValue($data, 'notes'),
+                    'status_id' => $defaultStatus?->id,
                 ]);
-                $imported++;
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNumber}: " . $e->getMessage();
-                $skipped++;
+            },
+            function($data, $rowNumber) {
+                $taxId = $this->csvImporter->getValue($data, ['tax_id', 'cui']);
+                if ($taxId && Client::where('tax_id', $taxId)->where('user_id', auth()->id())->exists()) {
+                    $this->csvImporter->addDuplicateError($rowNumber, "Client with tax_id '{$taxId}' already exists");
+                    return true;
+                }
+                return false;
             }
-        }
+        );
 
         return redirect()->route('import-export.index')
-            ->with('success', "Clients: {$imported} imported, {$skipped} skipped")
-            ->with('import_errors', $errors);
+            ->with('success', $this->csvImporter->getSuccessMessage('Clients'))
+            ->with('import_errors', $result['errors']);
     }
 
     private function downloadTemplateClients()
@@ -204,38 +185,18 @@ class ImportExportController extends Controller
 
     private function importRevenues(Request $request)
     {
-        $file = $request->file('csv_file');
-        $csvData = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($csvData);
-        $header = array_map('trim', $header);
-
-        $imported = 0;
-        $skipped = 0;
-        $errors = [];
-
-        foreach ($csvData as $index => $row) {
-            $rowNumber = $index + 2;
-            if (empty(array_filter($row))) continue;
-
-            $data = array_combine($header, $row);
-
-            $validator = Validator::make($data, [
+        $result = $this->csvImporter->import(
+            $request->file('csv_file'),
+            [
                 'document_name' => 'required|string|max:255',
                 'amount' => 'required|numeric|min:0',
                 'currency' => 'required|in:RON,EUR',
                 'occurred_at' => 'required|date',
-            ]);
-
-            if ($validator->fails()) {
-                $errors[] = "Row {$rowNumber}: " . implode(', ', $validator->errors()->all());
-                $skipped++;
-                continue;
-            }
-
-            try {
+            ],
+            function($data, $rowNumber) {
                 $clientId = null;
-                if (!empty($data['client_name'] ?? $data['client'] ?? '')) {
-                    $clientName = trim($data['client_name'] ?? $data['client']);
+                $clientName = $this->csvImporter->getValue($data, ['client_name', 'client']);
+                if ($clientName) {
                     $client = Client::where('name', 'like', "%{$clientName}%")->first();
                     $clientId = $client?->id;
                 }
@@ -243,25 +204,21 @@ class ImportExportController extends Controller
                 $occurredAt = Carbon::parse($data['occurred_at']);
 
                 FinancialRevenue::create([
-                    'document_name' => trim($data['document_name']),
+                    'document_name' => $this->csvImporter->getValue($data, 'document_name'),
                     'amount' => (float) $data['amount'],
-                    'currency' => strtoupper(trim($data['currency'])),
+                    'currency' => strtoupper($this->csvImporter->getValue($data, 'currency')),
                     'occurred_at' => $occurredAt,
                     'year' => $occurredAt->year,
                     'month' => $occurredAt->month,
                     'client_id' => $clientId,
-                    'note' => trim($data['note'] ?? ''),
+                    'note' => $this->csvImporter->getValue($data, 'note'),
                 ]);
-                $imported++;
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNumber}: " . $e->getMessage();
-                $skipped++;
             }
-        }
+        );
 
         return redirect()->route('import-export.index')
-            ->with('success', "Revenues: {$imported} imported, {$skipped} skipped")
-            ->with('import_errors', $errors);
+            ->with('success', $this->csvImporter->getSuccessMessage('Revenues'))
+            ->with('import_errors', $result['errors']);
     }
 
     private function downloadTemplateRevenues()
@@ -304,38 +261,18 @@ class ImportExportController extends Controller
 
     private function importExpenses(Request $request)
     {
-        $file = $request->file('csv_file');
-        $csvData = array_map('str_getcsv', file($file->getRealPath()));
-        $header = array_shift($csvData);
-        $header = array_map('trim', $header);
-
-        $imported = 0;
-        $skipped = 0;
-        $errors = [];
-
-        foreach ($csvData as $index => $row) {
-            $rowNumber = $index + 2;
-            if (empty(array_filter($row))) continue;
-
-            $data = array_combine($header, $row);
-
-            $validator = Validator::make($data, [
+        $result = $this->csvImporter->import(
+            $request->file('csv_file'),
+            [
                 'document_name' => 'required|string|max:255',
                 'amount' => 'required|numeric|min:0',
                 'currency' => 'required|in:RON,EUR',
                 'occurred_at' => 'required|date',
-            ]);
-
-            if ($validator->fails()) {
-                $errors[] = "Row {$rowNumber}: " . implode(', ', $validator->errors()->all());
-                $skipped++;
-                continue;
-            }
-
-            try {
+            ],
+            function($data, $rowNumber) {
                 $categoryId = null;
-                if (!empty($data['category'] ?? '')) {
-                    $categoryLabel = trim($data['category']);
+                $categoryLabel = $this->csvImporter->getValue($data, 'category');
+                if ($categoryLabel) {
                     $category = SettingOption::active()->ordered()
                         ->where('name', 'like', "%{$categoryLabel}%")
                         ->first();
@@ -344,26 +281,22 @@ class ImportExportController extends Controller
 
                 $occurredAt = Carbon::parse($data['occurred_at']);
 
-                \App\Models\FinancialExpense::create([
-                    'document_name' => trim($data['document_name']),
+                FinancialExpense::create([
+                    'document_name' => $this->csvImporter->getValue($data, 'document_name'),
                     'amount' => (float) $data['amount'],
-                    'currency' => strtoupper(trim($data['currency'])),
+                    'currency' => strtoupper($this->csvImporter->getValue($data, 'currency')),
                     'occurred_at' => $occurredAt,
                     'year' => $occurredAt->year,
                     'month' => $occurredAt->month,
                     'category_option_id' => $categoryId,
-                    'note' => trim($data['note'] ?? ''),
+                    'note' => $this->csvImporter->getValue($data, 'note'),
                 ]);
-                $imported++;
-            } catch (\Exception $e) {
-                $errors[] = "Row {$rowNumber}: " . $e->getMessage();
-                $skipped++;
             }
-        }
+        );
 
         return redirect()->route('import-export.index')
-            ->with('success', "Expenses: {$imported} imported, {$skipped} skipped")
-            ->with('import_errors', $errors);
+            ->with('success', $this->csvImporter->getSuccessMessage('Expenses'))
+            ->with('import_errors', $result['errors']);
     }
 
     private function downloadTemplateExpenses()

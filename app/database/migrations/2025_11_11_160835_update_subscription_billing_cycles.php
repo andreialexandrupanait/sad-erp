@@ -14,7 +14,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('saptamanal', 'lunar', 'anual', 'custom') NOT NULL DEFAULT 'lunar'");
+        // Skip for SQLite (testing environment)
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('saptamanal', 'lunar', 'anual', 'custom') NOT NULL DEFAULT 'lunar'");
+        }
 
         // Update existing data to match new enum values
         DB::table('subscriptions')->where('billing_cycle', 'monthly')->update(['billing_cycle' => 'lunar']);
@@ -33,7 +36,10 @@ return new class extends Migration
         DB::table('subscriptions')->where('billing_cycle', 'anual')->update(['billing_cycle' => 'annual']);
         DB::table('subscriptions')->where('billing_cycle', 'saptamanal')->update(['billing_cycle' => 'custom']);
 
-        // Revert enum
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('monthly', 'annual', 'custom') NOT NULL DEFAULT 'monthly'");
+        // Skip for SQLite (testing environment)
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            // Revert enum
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('monthly', 'annual', 'custom') NOT NULL DEFAULT 'monthly'");
+        }
     }
 };

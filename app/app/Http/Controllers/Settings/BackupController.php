@@ -3,17 +3,23 @@
 namespace App\Http\Controllers\Settings;
 
 use App\Http\Controllers\Controller;
+use App\Services\Database\DatabaseBackupService;
+use App\Services\Database\DatabaseRestoreService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Schema;
-use Carbon\Carbon;
-use ZipArchive;
 
 class BackupController extends Controller
 {
-    public function __construct()
-    {
+    protected DatabaseBackupService $backupService;
+    protected DatabaseRestoreService $restoreService;
+
+    public function __construct(
+        DatabaseBackupService $backupService,
+        DatabaseRestoreService $restoreService
+    ) {
+        $this->backupService = $backupService;
+        $this->restoreService = $restoreService;
+
         // Only admins can access backup functionality
         $this->middleware(function ($request, $next) {
             if (!in_array(auth()->user()->role, ['admin', 'superadmin'])) {
@@ -24,44 +30,21 @@ class BackupController extends Controller
     }
 
     /**
-     * Tables to include in backup (core business data).
-     */
-    protected array $backupTables = [
-        'organizations',
-        'users',
-        'clients',
-        'domains',
-        'subscriptions',
-        'subscription_logs',
-        'internal_accounts',
-        'access_credentials',
-        'financial_revenues',
-        'financial_expenses',
-        'financial_files',
-        'recurring_expenses',
-        'financial_alerts',
-        'settings_options',
-        'settings_app',
-        'services',
-        'smartbill_imports',
-        'notification_logs',
-    ];
-
-    /**
-     * Show backup management page.
+     * Show backup management page
      */
     public function index()
     {
-        $backups = $this->getExistingBackups();
+        $backups = $this->backupService->getExistingBackups();
+        $tables = $this->backupService->getAvailableTables();
 
         return view('settings.backup.index', [
             'backups' => $backups,
-            'tables' => $this->getAvailableTables(),
+            'tables' => $tables,
         ]);
     }
 
     /**
-     * Export database to JSON file.
+     * Create a new backup
      */
     public function export(Request $request)
     {
@@ -70,39 +53,28 @@ class BackupController extends Controller
             'tables.*' => 'string',
         ]);
 
-        $tables = $request->input('tables', $this->backupTables);
-        $timestamp = Carbon::now()->format('Y-m-d_His');
-        $filename = "backup_{$timestamp}.json";
+        $tables = $request->input('tables');
+        $result = $this->backupService->createBackup($tables);
 
-        $data = [
-            'meta' => [
-                'created_at' => Carbon::now()->toIso8601String(),
-                'version' => '1.0',
-                'tables' => $tables,
-            ],
-            'data' => [],
-        ];
-
-        foreach ($tables as $table) {
-            if (Schema::hasTable($table)) {
-                $data['data'][$table] = DB::table($table)->get()->toArray();
-            }
+        if ($result['success']) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Backup created successfully.'),
+                'filename' => $result['filename'],
+                'download_url' => route('settings.backup.download', $result['filename']),
+                'size' => $result['size'],
+                'tables_count' => $result['tables_count'],
+            ]);
         }
 
-        // Store backup
-        $path = 'backups/' . $filename;
-        Storage::disk('local')->put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
         return response()->json([
-            'success' => true,
-            'message' => __('Backup created successfully.'),
-            'filename' => $filename,
-            'download_url' => route('settings.backup.download', $filename),
-        ]);
+            'success' => false,
+            'message' => __('Backup creation failed.'),
+        ], 500);
     }
 
     /**
-     * Download a backup file.
+     * Download a backup file
      */
     public function download(string $filename)
     {
@@ -118,7 +90,7 @@ class BackupController extends Controller
     }
 
     /**
-     * Import database from JSON file.
+     * Import database from uploaded JSON file
      */
     public function import(Request $request)
     {
@@ -128,84 +100,38 @@ class BackupController extends Controller
         ]);
 
         $file = $request->file('backup_file');
-        $content = file_get_contents($file->getRealPath());
-        $data = json_decode($content, true);
-
-        if (!$data || !isset($data['data'])) {
-            return back()->with('error', __('Invalid backup file format.'));
-        }
-
         $mode = $request->input('mode');
-        $imported = [];
-        $errors = [];
 
-        try {
-            // Disable foreign key checks for the entire operation
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        // Save uploaded file temporarily
+        $tempFilename = 'temp_restore_' . time() . '.json';
+        $tempPath = 'backups/' . $tempFilename;
+        Storage::disk('local')->put($tempPath, file_get_contents($file->getRealPath()));
 
-            foreach ($data['data'] as $table => $rows) {
-                if (!Schema::hasTable($table)) {
-                    $errors[] = __('Table :table does not exist, skipped.', ['table' => $table]);
-                    continue;
-                }
+        // Perform restore
+        $result = $this->restoreService->restoreFromBackup($tempFilename, $mode);
 
-                if ($mode === 'replace') {
-                    // Use DELETE instead of TRUNCATE to avoid implicit commits
-                    DB::table($table)->delete();
-                }
+        // Clean up temp file
+        Storage::disk('local')->delete($tempPath);
 
-                if (empty($rows)) {
-                    $imported[$table] = 0;
-                    continue;
-                }
-
-                $count = 0;
-                foreach ($rows as $row) {
-                    $rowData = (array) $row;
-
-                    if ($mode === 'merge') {
-                        // Try to update existing or insert new
-                        if (isset($rowData['id'])) {
-                            $existing = DB::table($table)->where('id', $rowData['id'])->exists();
-                            if ($existing) {
-                                DB::table($table)->where('id', $rowData['id'])->update($rowData);
-                            } else {
-                                DB::table($table)->insert($rowData);
-                            }
-                        } else {
-                            DB::table($table)->insert($rowData);
-                        }
-                    } else {
-                        DB::table($table)->insert($rowData);
-                    }
-                    $count++;
-                }
-
-                $imported[$table] = $count;
-            }
-
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
+        if ($result['success']) {
             $message = __('Import completed successfully.');
-            if (!empty($errors)) {
+            if (!empty($result['errors'])) {
                 $message .= ' ' . __('Some tables were skipped.');
             }
 
-            return back()->with('success', $message)->with('import_results', [
-                'imported' => $imported,
-                'errors' => $errors,
-            ]);
-
-        } catch (\Exception $e) {
-            // Re-enable foreign key checks even on error
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-            return back()->with('error', __('Import failed: :error', ['error' => $e->getMessage()]));
+            return back()
+                ->with('success', $message)
+                ->with('import_results', [
+                    'imported' => $result['imported'],
+                    'errors' => $result['errors'],
+                ]);
         }
+
+        return back()->with('error', __('Import failed: :error', ['error' => $result['error'] ?? 'Unknown error']));
     }
 
     /**
-     * Restore from an existing backup file.
+     * Restore from an existing backup file
      */
     public function restore(Request $request, string $filename)
     {
@@ -213,147 +139,50 @@ class BackupController extends Controller
             'mode' => 'required|in:merge,replace',
         ]);
 
-        $path = 'backups/' . $filename;
+        $mode = $request->input('mode');
 
-        if (!Storage::disk('local')->exists($path)) {
+        // Validate backup file exists
+        $validation = $this->backupService->validateBackupFile($filename);
+
+        if (!$validation['exists']) {
             return back()->with('error', __('Backup not found.'));
         }
 
-        $content = Storage::disk('local')->get($path);
-        $data = json_decode($content, true);
-
-        if (!$data || !isset($data['data'])) {
+        if (!$validation['valid']) {
             return back()->with('error', __('Invalid backup file format.'));
         }
 
-        $mode = $request->input('mode');
-        $imported = [];
-        $errors = [];
+        // Perform restore
+        $result = $this->restoreService->restoreFromBackup($filename, $mode);
 
-        try {
-            // Disable foreign key checks for the entire operation
-            DB::statement('SET FOREIGN_KEY_CHECKS=0');
-
-            foreach ($data['data'] as $table => $rows) {
-                if (!Schema::hasTable($table)) {
-                    $errors[] = __('Table :table does not exist, skipped.', ['table' => $table]);
-                    continue;
-                }
-
-                if ($mode === 'replace') {
-                    // Use DELETE instead of TRUNCATE to avoid implicit commits
-                    DB::table($table)->delete();
-                }
-
-                if (empty($rows)) {
-                    $imported[$table] = 0;
-                    continue;
-                }
-
-                $count = 0;
-                foreach ($rows as $row) {
-                    $rowData = (array) $row;
-
-                    if ($mode === 'merge') {
-                        if (isset($rowData['id'])) {
-                            $existing = DB::table($table)->where('id', $rowData['id'])->exists();
-                            if ($existing) {
-                                DB::table($table)->where('id', $rowData['id'])->update($rowData);
-                            } else {
-                                DB::table($table)->insert($rowData);
-                            }
-                        } else {
-                            DB::table($table)->insert($rowData);
-                        }
-                    } else {
-                        DB::table($table)->insert($rowData);
-                    }
-                    $count++;
-                }
-
-                $imported[$table] = $count;
-            }
-
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
+        if ($result['success']) {
             $message = __('Restore completed successfully.');
-            if (!empty($errors)) {
+            if (!empty($result['errors'])) {
                 $message .= ' ' . __('Some tables were skipped.');
             }
 
-            return back()->with('success', $message)->with('import_results', [
-                'imported' => $imported,
-                'errors' => $errors,
-            ]);
-
-        } catch (\Exception $e) {
-            // Re-enable foreign key checks even on error
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-            return back()->with('error', __('Restore failed: :error', ['error' => $e->getMessage()]));
+            return back()
+                ->with('success', $message)
+                ->with('import_results', [
+                    'imported' => $result['imported'],
+                    'errors' => $result['errors'],
+                ]);
         }
+
+        return back()->with('error', __('Restore failed: :error', ['error' => $result['error'] ?? 'Unknown error']));
     }
 
     /**
-     * Delete a backup file.
+     * Delete a backup file
      */
     public function destroy(string $filename)
     {
-        $path = 'backups/' . $filename;
+        $deleted = $this->backupService->deleteBackup($filename);
 
-        if (!Storage::disk('local')->exists($path)) {
-            return back()->with('error', __('Backup not found.'));
+        if ($deleted) {
+            return back()->with('success', __('Backup deleted successfully.'));
         }
 
-        Storage::disk('local')->delete($path);
-
-        return back()->with('success', __('Backup deleted successfully.'));
-    }
-
-    /**
-     * Get list of existing backups.
-     */
-    protected function getExistingBackups(): array
-    {
-        $backups = [];
-        $files = Storage::disk('local')->files('backups');
-
-        foreach ($files as $file) {
-            $filename = basename($file);
-            if (str_ends_with($filename, '.json')) {
-                $content = Storage::disk('local')->get($file);
-                $data = json_decode($content, true);
-
-                $backups[] = [
-                    'filename' => $filename,
-                    'size' => Storage::disk('local')->size($file),
-                    'created_at' => $data['meta']['created_at'] ?? null,
-                    'tables' => $data['meta']['tables'] ?? [],
-                ];
-            }
-        }
-
-        // Sort by newest first
-        usort($backups, fn($a, $b) => strcmp($b['created_at'] ?? '', $a['created_at'] ?? ''));
-
-        return $backups;
-    }
-
-    /**
-     * Get list of available tables for backup.
-     */
-    protected function getAvailableTables(): array
-    {
-        $tables = [];
-        foreach ($this->backupTables as $table) {
-            if (Schema::hasTable($table)) {
-                $count = DB::table($table)->count();
-                $tables[] = [
-                    'name' => $table,
-                    'count' => $count,
-                ];
-            }
-        }
-        return $tables;
+        return back()->with('error', __('Backup not found.'));
     }
 }

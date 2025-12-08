@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Financial;
 
 use App\Http\Controllers\Controller;
+use App\Services\Financial\FileUploadService;
+use App\Services\Financial\ZipExportService;
 use Illuminate\Http\Request;
 use App\Models\FinancialFile;
 use App\Models\FinancialRevenue;
@@ -12,6 +14,16 @@ use Illuminate\Support\Str;
 
 class FileController extends Controller
 {
+    protected FileUploadService $fileUploadService;
+    protected ZipExportService $zipExportService;
+
+    public function __construct(
+        FileUploadService $fileUploadService,
+        ZipExportService $zipExportService
+    ) {
+        $this->fileUploadService = $fileUploadService;
+        $this->zipExportService = $zipExportService;
+    }
     /**
      * Redirect to current year view (default entry point)
      */
@@ -184,66 +196,17 @@ class FileController extends Controller
             }
         }
 
-        $uploadedFiles = [];
-
-        // Get Romanian month name for folder structure
-        $monthName = romanian_month($month);
-
-        // Process each uploaded file
-        foreach ($request->file('files') as $file) {
-            $originalName = $file->getClientOriginalName();
-            $extension = $file->getClientOriginalExtension();
-
-            // Auto-rename bank statements for better readability
-            $displayName = $originalName;
-            $newFileName = null;
-
-            if ($tip === 'extrase') {
-                $generatedName = $this->generateBankStatementName($originalName);
-                if ($generatedName) {
-                    $displayName = $generatedName . '.' . $extension;
-                    // Use the exact friendly name for server file (no sanitization, no UUID)
-                    $newFileName = $displayName;
-                }
-            }
-
-            // If not a bank statement or rename failed, use standard naming
-            if (!$newFileName) {
-                $sanitizedName = sanitize_filename(pathinfo($originalName, PATHINFO_FILENAME));
-                $uniqueId = Str::uuid()->toString();
-                $newFileName = "{$sanitizedName}-{$uniqueId}.{$extension}";
-            }
-
-            // Map database tip values to Romanian folder names
-            $folderName = match($tip) {
-                'incasare' => 'Incasari',
-                'plata' => 'Plati',
-                'extrase' => 'Extrase',
-                default => 'General',
-            };
-
-            // Storage path: /year/MonthName/FolderName/filename (matching existing structure)
-            $storagePath = "{$year}/{$monthName}/{$folderName}/{$newFileName}";
-
-            // Store file using the 'financial' disk (which already points to storage/app/financial_files)
-            $path = $file->storeAs(dirname($storagePath), basename($storagePath), 'financial');
-
-            // Create database record
-            $financialFile = FinancialFile::create([
-                'file_name' => $displayName,
-                'file_path' => $path,
-                'file_type' => $file->getClientMimeType(),
-                'mime_type' => $file->getMimeType(),
-                'file_size' => $file->getSize(),
+        // Upload files using service
+        $uploadedFiles = $this->fileUploadService->uploadFiles(
+            $request->file('files'),
+            $year,
+            $month,
+            $tip,
+            [
                 'entity_type' => $validated['entity_type'] ?? null,
                 'entity_id' => $validated['entity_id'] ?? null,
-                'an' => $year,
-                'luna' => $month,
-                'tip' => $tip,
-            ]);
-
-            $uploadedFiles[] = $financialFile;
-        }
+            ]
+        );
 
         $count = count($uploadedFiles);
         $messageKey = $count === 1 ? 'messages.files_uploaded_single' : 'messages.files_uploaded_plural';
@@ -471,62 +434,16 @@ class FileController extends Controller
      */
     public function downloadMonthlyZip($year, $month)
     {
-        // Cast parameters to integers
         $year = (int) $year;
         $month = (int) $month;
 
-        // Get all files for the specified month
-        $files = FinancialFile::where('an', $year)
-            ->where('luna', $month)
-            ->get();
+        $result = $this->zipExportService->createMonthlyZip($year, $month);
 
-        if ($files->isEmpty()) {
+        if (!$result['success']) {
             return redirect()->back()->with('error', __('messages.no_files_for_month'));
         }
 
-        // Get month name in English for the filename
-        $monthName = \Carbon\Carbon::create()->setMonth($month)->locale('en')->format('F');
-        $monthPadded = str_pad($month, 2, '0', STR_PAD_LEFT);
-
-        // Create a temporary file for the ZIP with format: XX - Month.zip
-        $zipFileName = "{$monthPadded} - {$monthName}.zip";
-        $tempZipPath = storage_path("app/temp/{$zipFileName}");
-
-        // Ensure temp directory exists
-        if (!file_exists(storage_path('app/temp'))) {
-            mkdir(storage_path('app/temp'), 0755, true);
-        }
-
-        // Create ZIP archive
-        $zip = new \ZipArchive();
-        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return redirect()->back()->with('error', __('messages.zip_create_error'));
-        }
-
-        // Add files to ZIP, organized by type
-        foreach ($files as $file) {
-            if (Storage::disk('financial')->exists($file->file_path)) {
-                $tip = $file->tip ?? 'general';
-
-                // Map database tip values to Romanian folder names
-                $folderName = match($tip) {
-                    'incasare' => 'Incasari',
-                    'plata' => 'Plati',
-                    'extrase' => 'Extrase',
-                    default => 'General',
-                };
-
-                // Get file contents and add to ZIP using addFromString for better folder structure support
-                $fileContents = Storage::disk('financial')->get($file->file_path);
-                $internalPath = "{$folderName}/{$file->file_name}";
-                $zip->addFromString($internalPath, $fileContents);
-            }
-        }
-
-        $zip->close();
-
-        // Download and delete the temporary ZIP file
-        return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
+        return $this->zipExportService->createDownloadResponse($result['path'], $result['filename']);
     }
 
     /**
@@ -534,58 +451,15 @@ class FileController extends Controller
      */
     public function downloadYearlyZip($year)
     {
-        // Cast parameter to integer
         $year = (int) $year;
 
-        // Get all files for the specified year
-        $files = FinancialFile::where('an', $year)->get();
+        $result = $this->zipExportService->createYearlyZip($year);
 
-        if ($files->isEmpty()) {
+        if (!$result['success']) {
             return redirect()->back()->with('error', __('messages.no_files_for_year'));
         }
 
-        // Create a temporary file for the ZIP with format: Year.zip
-        $zipFileName = "{$year}.zip";
-        $tempZipPath = storage_path("app/temp/{$zipFileName}");
-
-        // Ensure temp directory exists
-        if (!file_exists(storage_path('app/temp'))) {
-            mkdir(storage_path('app/temp'), 0755, true);
-        }
-
-        // Create ZIP archive
-        $zip = new \ZipArchive();
-        if ($zip->open($tempZipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
-            return redirect()->back()->with('error', __('messages.zip_create_error'));
-        }
-
-        // Add files to ZIP, organized by month/type
-        foreach ($files as $file) {
-            if (Storage::disk('financial')->exists($file->file_path)) {
-                $month = $file->luna;
-                $monthName = \Carbon\Carbon::create()->setMonth($month)->locale('en')->format('F');
-                $monthPadded = str_pad($month, 2, '0', STR_PAD_LEFT);
-                $tip = $file->tip ?? 'general';
-
-                // Map database tip values to Romanian folder names
-                $folderName = match($tip) {
-                    'incasare' => 'Incasari',
-                    'plata' => 'Plati',
-                    'extrase' => 'Extrase',
-                    default => 'General',
-                };
-
-                // Get file contents and add to ZIP using addFromString for better folder structure support
-                $fileContents = Storage::disk('financial')->get($file->file_path);
-                $internalPath = "{$monthPadded} - {$monthName}/{$folderName}/{$file->file_name}";
-                $zip->addFromString($internalPath, $fileContents);
-            }
-        }
-
-        $zip->close();
-
-        // Download and delete the temporary ZIP file
-        return response()->download($tempZipPath, $zipFileName)->deleteFileAfterSend(true);
+        return $this->zipExportService->createDownloadResponse($result['path'], $result['filename']);
     }
 
     /**

@@ -65,11 +65,13 @@
                                     <div class="space-y-2 max-h-64 overflow-y-auto border border-slate-200 rounded-xl p-3">
                                         @foreach($tables as $table)
                                             <label class="flex items-center cursor-pointer hover:bg-slate-50 px-2 py-1 rounded-lg">
-                                                <input type="checkbox" name="tables[]" value="{{ $table['name'] }}" checked
+                                                <input type="checkbox" name="tables[]" value="{{ is_array($table) ? $table['name'] : $table }}" checked
                                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                 <span class="ml-2 text-sm text-slate-700">
-                                                    {{ $table['name'] }}
-                                                    <span class="text-slate-400">({{ $table['count'] }} {{ __('records') }})</span>
+                                                    {{ is_array($table) ? $table['name'] : $table }}
+                                                    @if(is_array($table) && isset($table['count']))
+                                                        <span class="text-slate-400">({{ $table['count'] }} {{ __('records') }})</span>
+                                                    @endif
                                                 </span>
                                             </label>
                                         @endforeach
@@ -192,7 +194,7 @@
                                                     {{ number_format($backup['size'] / 1024, 1) }} KB
                                                 </td>
                                                 <td class="px-4 py-3 text-sm text-slate-500">
-                                                    {{ count($backup['tables']) }} {{ __('tables') }}
+                                                    {{ isset($backup['tables']) ? count($backup['tables']) : '-' }}
                                                 </td>
                                                 <td class="px-4 py-3 text-right text-sm space-x-3">
                                                     <a href="{{ route('settings.backup.download', $backup['filename']) }}"

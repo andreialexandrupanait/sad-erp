@@ -149,7 +149,14 @@
       "Bash(/var/www/erp/backup_database.sh:*)",
       "Bash(gzip)",
       "Bash(gunzip:*)",
-      "Bash(source .env)"
+      "Bash(source .env)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(while read f)",
+      "Bash(docker network:*)",
+      "Bash(docker port:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(ss:*)"
     ],
     "deny": [],
     "ask": []

@@ -1,0 +1,152 @@
+<?php
+
+namespace App\Services\Dashboard;
+
+use App\Models\Client;
+use App\Models\Domain;
+use App\Models\Subscription;
+use App\Models\Credential;
+use App\Models\FinancialRevenue;
+use App\Models\FinancialExpense;
+use Illuminate\Support\Facades\Cache;
+
+/**
+ * Metrics Aggregator Service
+ *
+ * Handles aggregation of key metrics including counts for clients, domains,
+ * subscriptions, credentials, and basic financial overview data.
+ */
+class MetricsAggregator
+{
+    private const CACHE_TTL = 300; // 5 minutes
+
+    /**
+     * Get cache key with organization prefix
+     */
+    private function cacheKey(string $key): string
+    {
+        $orgId = auth()->user()->organization_id ?? 'default';
+        return "org.{$orgId}.{$key}";
+    }
+
+    /**
+     * Get key metrics including counts for all main entities
+     */
+    public function getKeyMetrics(): array
+    {
+        $cacheKey = $this->cacheKey('dashboard.metrics');
+
+        $cachedStats = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+            return [
+                'clientCount' => Client::count(),
+                'domainStats' => Domain::selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN expiry_date < NOW() THEN 1 ELSE 0 END) as expired
+                ")->first(),
+                'subscriptionCounts' => Subscription::selectRaw("
+                    COUNT(*) as total,
+                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                    SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
+                    SUM(CASE WHEN status = 'active' AND billing_cycle = 'monthly' THEN price ELSE 0 END) as monthly_cost
+                ")->first(),
+                'credentialCount' => Credential::count(),
+            ];
+        });
+
+        return [
+            'totalClients' => $cachedStats['clientCount'],
+            'activeClients' => $cachedStats['clientCount'],
+            'totalDomains' => $cachedStats['domainStats']->total,
+            'activeDomains' => $cachedStats['domainStats']->active,
+            'expiredDomains' => $cachedStats['domainStats']->expired,
+            'totalSubscriptions' => $cachedStats['subscriptionCounts']->total,
+            'activeSubscriptions' => $cachedStats['subscriptionCounts']->active,
+            'expiredSubscriptions' => $cachedStats['subscriptionCounts']->expired,
+            'monthlySubscriptionCost' => $cachedStats['subscriptionCounts']->monthly_cost,
+            'totalCredentials' => $cachedStats['credentialCount'],
+            'expiringDomains' => Domain::whereBetween('expiry_date', [now(), now()->addDays(30)])->get(),
+        ];
+    }
+
+    /**
+     * Get financial overview for current month and year
+     */
+    public function getFinancialOverview(): array
+    {
+        $currentMonth = now()->month;
+        $currentYear = now()->year;
+
+        $cacheKey = $this->cacheKey("dashboard.financial.{$currentYear}.{$currentMonth}");
+
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($currentYear, $currentMonth) {
+            $currentMonthRevenue = FinancialRevenue::where('year', $currentYear)
+                ->where('month', $currentMonth)
+                ->where('currency', 'RON')
+                ->sum('amount');
+
+            $currentMonthExpenses = FinancialExpense::where('year', $currentYear)
+                ->where('month', $currentMonth)
+                ->where('currency', 'RON')
+                ->sum('amount');
+
+            $yearlyRevenue = FinancialRevenue::where('year', $currentYear)
+                ->where('currency', 'RON')
+                ->sum('amount');
+
+            $yearlyExpenses = FinancialExpense::where('year', $currentYear)
+                ->where('currency', 'RON')
+                ->sum('amount');
+
+            $currentMonthProfit = $currentMonthRevenue - $currentMonthExpenses;
+            $yearlyProfit = $yearlyRevenue - $yearlyExpenses;
+
+            return [
+                'currentMonthRevenue' => $currentMonthRevenue,
+                'currentMonthExpenses' => $currentMonthExpenses,
+                'currentMonthProfit' => $currentMonthProfit,
+                'yearlyRevenue' => $yearlyRevenue,
+                'yearlyExpenses' => $yearlyExpenses,
+                'yearlyProfit' => $yearlyProfit,
+                'currentMonthProfitMargin' => $currentMonthRevenue > 0
+                    ? ($currentMonthProfit / $currentMonthRevenue) * 100
+                    : 0,
+                'yearlyProfitMargin' => $yearlyRevenue > 0
+                    ? ($yearlyProfit / $yearlyRevenue) * 100
+                    : 0,
+            ];
+        });
+    }
+
+    /**
+     * Get recent activity data
+     */
+    public function getRecentActivity(): array
+    {
+        return [
+            'recentClients' => Client::with('status')->latest()->take(5)->get(),
+            'recentDomains' => Domain::with('client')->latest()->take(5)->get(),
+            'recentSubscriptions' => Subscription::latest()->take(5)->get(),
+            'overdueSubscriptions' => Subscription::where('status', 'active')
+                ->where('next_renewal_date', '<', now())
+                ->get(),
+            'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(200)->get(),
+        ];
+    }
+
+    /**
+     * Clear all metrics caches
+     */
+    public function clearCache(): void
+    {
+        Cache::forget($this->cacheKey('dashboard.metrics'));
+
+        // Clear financial overview caches for current and previous months
+        $currentYear = now()->year;
+        $currentMonth = now()->month;
+        $previousMonth = now()->subMonth();
+
+        Cache::forget($this->cacheKey("dashboard.financial.{$currentYear}.{$currentMonth}"));
+        Cache::forget($this->cacheKey("dashboard.financial.{$previousMonth->year}.{$previousMonth->month}"));
+    }
+}

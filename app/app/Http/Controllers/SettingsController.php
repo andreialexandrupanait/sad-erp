@@ -3,12 +3,28 @@
 namespace App\Http\Controllers;
 
 use App\Models\ApplicationSetting;
-use App\Models\SettingOption;
+use App\Services\Settings\ApplicationSettingsService;
+use App\Services\NomenclatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class SettingsController extends Controller
 {
+    protected ApplicationSettingsService $settingsService;
+    protected NomenclatureService $nomenclatureService;
+
+    /**
+     * Ensure only admins and superadmins can access settings
+     */
+    public function __construct(
+        ApplicationSettingsService $settingsService,
+        NomenclatureService $nomenclatureService
+    ) {
+        $this->settingsService = $settingsService;
+        $this->nomenclatureService = $nomenclatureService;
+        $this->middleware('role:admin,superadmin');
+    }
+
     /**
      * Display the main settings hub page - redirects to Application
      */
@@ -22,18 +38,7 @@ class SettingsController extends Controller
      */
     public function application()
     {
-        // Get application settings
-        $appSettings = [
-            'app_name' => ApplicationSetting::get('app_name', 'ERP System'),
-            'app_logo' => ApplicationSetting::get('app_logo'),
-            'app_favicon' => ApplicationSetting::get('app_favicon'),
-            'theme_mode' => ApplicationSetting::get('theme_mode', 'light'),
-            'primary_color' => ApplicationSetting::get('primary_color', '#3b82f6'),
-            'language' => ApplicationSetting::get('language', 'ro'),
-            'timezone' => ApplicationSetting::get('timezone', 'Europe/Bucharest'),
-            'date_format' => ApplicationSetting::get('date_format', 'd/m/Y'),
-        ];
-
+        $appSettings = $this->settingsService->getApplicationSettings();
         return view('settings.application', compact('appSettings'));
     }
 
@@ -58,17 +63,7 @@ class SettingsController extends Controller
      */
     public function nomenclatureIndex()
     {
-        $counts = [
-            'client_statuses' => SettingOption::clientStatuses()->count(),
-            'domain_statuses' => SettingOption::domainStatuses()->count(),
-            'subscription_statuses' => SettingOption::subscriptionStatuses()->count(),
-            'access_platforms' => SettingOption::accessPlatforms()->count(),
-            'expense_categories' => SettingOption::where('category', 'expense_categories')->count(),
-            'payment_methods' => SettingOption::paymentMethods()->count(),
-            'billing_cycles' => SettingOption::billingCycles()->count(),
-            'currencies' => SettingOption::currencies()->count(),
-            'domain_registrars' => SettingOption::domainRegistrars()->count(),
-        ];
+        $counts = $this->nomenclatureService->getCounts();
 
         return view('settings.nomenclature.index', compact('counts'));
     }
@@ -78,7 +73,7 @@ class SettingsController extends Controller
      */
     public function clientStatuses()
     {
-        $data = SettingOption::clientStatuses()->get();
+        $data = $this->nomenclatureService->getClientStatuses();
         return view('settings.nomenclature', [
             'category' => 'client_statuses',
             'title' => 'Status clienti',
@@ -93,7 +88,7 @@ class SettingsController extends Controller
      */
     public function domainStatuses()
     {
-        $data = SettingOption::domainStatuses()->get();
+        $data = $this->nomenclatureService->getDomainStatuses();
         return view('settings.nomenclature', [
             'category' => 'domain_statuses',
             'title' => 'Status domenii',
@@ -108,7 +103,7 @@ class SettingsController extends Controller
      */
     public function subscriptionStatuses()
     {
-        $data = SettingOption::subscriptionStatuses()->get();
+        $data = $this->nomenclatureService->getSubscriptionStatuses();
         return view('settings.nomenclature', [
             'category' => 'subscription_statuses',
             'title' => 'Status abonamente',
@@ -123,7 +118,7 @@ class SettingsController extends Controller
      */
     public function accessPlatforms()
     {
-        $data = SettingOption::accessPlatforms()->get();
+        $data = $this->nomenclatureService->getAccessPlatforms();
         return view('settings.nomenclature', [
             'category' => 'access_platforms',
             'title' => 'Categorii platforme',
@@ -138,7 +133,7 @@ class SettingsController extends Controller
      */
     public function expenseCategories()
     {
-        $data = SettingOption::rootCategories()->with('children')->active()->ordered()->get();
+        $data = $this->nomenclatureService->getExpenseCategories();
         return view('settings.nomenclature', [
             'category' => 'expense_categories',
             'title' => 'Categorii cheltuieli',
@@ -154,7 +149,7 @@ class SettingsController extends Controller
      */
     public function paymentMethods()
     {
-        $data = SettingOption::paymentMethods()->get();
+        $data = $this->nomenclatureService->getPaymentMethods();
         return view('settings.nomenclature', [
             'category' => 'payment_methods',
             'title' => 'Metode de plata',
@@ -169,7 +164,7 @@ class SettingsController extends Controller
      */
     public function billingCycles()
     {
-        $data = SettingOption::billingCycles()->get();
+        $data = $this->nomenclatureService->getBillingCycles();
         return view('settings.nomenclature', [
             'category' => 'billing_cycles',
             'title' => 'Cicluri de facturare',
@@ -184,7 +179,7 @@ class SettingsController extends Controller
      */
     public function domainRegistrars()
     {
-        $data = SettingOption::domainRegistrars()->get();
+        $data = $this->nomenclatureService->getDomainRegistrars();
         return view('settings.nomenclature', [
             'category' => 'domain_registrars',
             'title' => 'Registratori de domenii',
@@ -199,7 +194,7 @@ class SettingsController extends Controller
      */
     public function currencies()
     {
-        $data = SettingOption::currencies()->get();
+        $data = $this->nomenclatureService->getCurrencies();
         return view('settings.nomenclature', [
             'category' => 'currencies',
             'title' => 'Valute',
@@ -214,7 +209,7 @@ class SettingsController extends Controller
      */
     public function quickActions()
     {
-        $data = SettingOption::dashboardQuickActions()->get();
+        $data = $this->nomenclatureService->getQuickActions();
         return view('settings.nomenclature', [
             'category' => 'dashboard_quick_actions',
             'title' => 'Quick Actions Dashboard',
@@ -307,37 +302,7 @@ class SettingsController extends Controller
      */
     public function notifications()
     {
-        $notificationSettings = [
-            // Master toggle
-            'notifications_enabled' => ApplicationSetting::get('notifications_enabled', false),
-
-            // Individual notifications
-            'notify_domain_expiry' => ApplicationSetting::get('notify_domain_expiry', true),
-            'notify_subscription_renewal' => ApplicationSetting::get('notify_subscription_renewal', true),
-            'notify_new_client' => ApplicationSetting::get('notify_new_client', false),
-            'notify_payment_received' => ApplicationSetting::get('notify_payment_received', false),
-            'notify_monthly_summary' => ApplicationSetting::get('notify_monthly_summary', false),
-
-            // Timing
-            'domain_expiry_days_before' => ApplicationSetting::get('domain_expiry_days_before', 30),
-            'subscription_renewal_days' => ApplicationSetting::get('subscription_renewal_days', 7),
-            'monthly_summary_day' => ApplicationSetting::get('monthly_summary_day', 1),
-
-            // Recipients
-            'notification_email_primary' => ApplicationSetting::get('notification_email_primary', auth()->user()->email ?? ''),
-            'notification_email_cc' => ApplicationSetting::get('notification_email_cc', ''),
-
-            // SMTP
-            'smtp_enabled' => ApplicationSetting::get('smtp_enabled', false),
-            'smtp_host' => ApplicationSetting::get('smtp_host', ''),
-            'smtp_port' => ApplicationSetting::get('smtp_port', 587),
-            'smtp_username' => ApplicationSetting::get('smtp_username', ''),
-            'smtp_password' => ApplicationSetting::get('smtp_password', ''),
-            'smtp_encryption' => ApplicationSetting::get('smtp_encryption', 'tls'),
-            'smtp_from_email' => ApplicationSetting::get('smtp_from_email', ''),
-            'smtp_from_name' => ApplicationSetting::get('smtp_from_name', ApplicationSetting::get('app_name', 'ERP System')),
-        ];
-
+        $notificationSettings = $this->settingsService->getNotificationSettings();
         return view('settings.notifications', compact('notificationSettings'));
     }
 
@@ -368,38 +333,12 @@ class SettingsController extends Controller
             'smtp_from_name' => 'nullable|string|max:255',
         ]);
 
-        // Convert checkbox values (null means unchecked = false)
-        $booleanFields = [
-            'notifications_enabled',
-            'notify_domain_expiry',
-            'notify_subscription_renewal',
-            'notify_new_client',
-            'notify_payment_received',
-            'notify_monthly_summary',
-            'smtp_enabled',
-        ];
-
-        foreach ($booleanFields as $field) {
-            $validated[$field] = isset($validated[$field]) && $validated[$field] == '1';
-        }
-
-        // Save all settings
-        foreach ($validated as $key => $value) {
-            $type = 'string';
-
-            if (in_array($key, $booleanFields)) {
-                $type = 'boolean';
-            } elseif (in_array($key, ['smtp_port', 'domain_expiry_days_before', 'subscription_renewal_days', 'monthly_summary_day'])) {
-                $type = 'integer';
-            }
-
-            // Encrypt password before storing
-            if ($key === 'smtp_password' && !empty($value)) {
-                $value = encrypt($value);
-            }
-
-            ApplicationSetting::set($key, $value, $type);
-        }
+        $this->settingsService->updateSettings(
+            $validated,
+            $this->settingsService->getNotificationBooleanFields(),
+            $this->settingsService->getNotificationIntegerFields(),
+            $this->settingsService->getNotificationEncryptedFields()
+        );
 
         return redirect()->route('settings.notifications')
             ->with('success', 'Notification settings updated successfully!');

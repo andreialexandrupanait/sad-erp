@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
+use App\Services\Subscription\SubscriptionCalculationService;
 
 class Subscription extends Model
 {
@@ -257,90 +258,33 @@ class Subscription extends Model
 
     /**
      * Calculate next renewal date based on billing cycle
+     * Delegated to SubscriptionCalculationService
      */
     public function calculateNextRenewal($fromDate = null)
     {
-        $baseDate = $fromDate ? Carbon::parse($fromDate) : $this->next_renewal_date;
-
-        switch ($this->billing_cycle) {
-            case 'weekly':
-                return $baseDate->addWeek();
-            case 'monthly':
-                return $baseDate->addMonth();
-            case 'annual':
-                return $baseDate->addYear();
-            case 'custom':
-                return $baseDate->addDays($this->custom_days ?? 30);
-            default:
-                return $baseDate->addMonth();
-        }
+        $service = app(SubscriptionCalculationService::class);
+        return $service->calculateNextRenewal($this, $fromDate ? Carbon::parse($fromDate) : null);
     }
 
     /**
      * Update renewal date and log the change
+     * Delegated to SubscriptionCalculationService
      */
     public function updateRenewalDate($newDate, $reason = null)
     {
-        $oldDate = $this->next_renewal_date;
-
-        // Update the subscription
-        $this->next_renewal_date = $newDate;
-        $this->save();
-
-        // Create audit log if SubscriptionLog model exists
-        if (class_exists(SubscriptionLog::class)) {
-            SubscriptionLog::create([
-                'subscription_id' => $this->id,
-                'organization_id' => $this->user->organization_id ?? 1,
-                'old_renewal_date' => $oldDate,
-                'new_renewal_date' => $newDate,
-                'change_reason' => $reason ?? __('Manual update'),
-                'changed_by_user_id' => auth()->id(),
-                'changed_at' => now(),
-            ]);
-        }
-
+        $service = app(SubscriptionCalculationService::class);
+        $service->updateRenewalDate($this, Carbon::parse($newDate), $reason);
         return $this;
     }
 
     /**
      * Auto-advance overdue renewals
-     * Optimized: calculates final date in one pass instead of multiple DB writes
+     * Delegated to SubscriptionCalculationService
      */
     public function advanceOverdueRenewals()
     {
-        $today = Carbon::now()->startOfDay();
-        $oldDate = $this->next_renewal_date->copy();
-        $currentDate = $this->next_renewal_date->copy();
-        $cyclesAdvanced = 0;
-
-        // Calculate final date without saving each iteration
-        while ($currentDate->startOfDay()->lt($today)) {
-            $currentDate = $this->calculateNextRenewal($currentDate);
-            $cyclesAdvanced++;
-        }
-
-        // Only save once if we advanced
-        if ($cyclesAdvanced > 0) {
-            $this->next_renewal_date = $currentDate;
-            $this->save();
-
-            // Create single log entry for the entire advancement
-            if (class_exists(SubscriptionLog::class)) {
-                SubscriptionLog::create([
-                    'subscription_id' => $this->id,
-                    'organization_id' => $this->user->organization_id ?? 1,
-                    'old_renewal_date' => $oldDate,
-                    'new_renewal_date' => $currentDate,
-                    'change_reason' => $cyclesAdvanced === 1
-                        ? __('Automatic renewal of expired subscription')
-                        : __('Automatic renewal (:count cycles)', ['count' => $cyclesAdvanced]),
-                    'changed_by_user_id' => null, // System action
-                    'changed_at' => now(),
-                ]);
-            }
-        }
-
+        $service = app(SubscriptionCalculationService::class);
+        $service->advanceOverdueRenewals($this);
         return $this;
     }
 

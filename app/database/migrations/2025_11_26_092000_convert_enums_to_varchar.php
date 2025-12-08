@@ -14,17 +14,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Domains: Convert status ENUM to VARCHAR
-        // Current ENUM: 'Active', 'Expiring', 'Expired', 'Suspended'
-        DB::statement("ALTER TABLE domains MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'");
+        // Skip for SQLite (testing environment) - SQLite doesn't have ENUM type anyway
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            // Domains: Convert status ENUM to VARCHAR
+            // Current ENUM: 'Active', 'Expiring', 'Expired', 'Suspended'
+            DB::statement("ALTER TABLE domains MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'Active'");
 
-        // Subscriptions: Convert status ENUM to VARCHAR
-        // Current ENUM: 'active', 'paused', 'cancelled'
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'active'");
+            // Subscriptions: Convert status ENUM to VARCHAR
+            // Current ENUM: 'active', 'paused', 'cancelled'
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status VARCHAR(50) NOT NULL DEFAULT 'active'");
 
-        // Subscriptions: Convert billing_cycle ENUM to VARCHAR
-        // Current ENUM: 'monthly', 'annual', 'custom', possibly 'weekly'
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle VARCHAR(50) NOT NULL DEFAULT 'monthly'");
+            // Subscriptions: Convert billing_cycle ENUM to VARCHAR
+            // Current ENUM: 'monthly', 'annual', 'custom', possibly 'weekly'
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle VARCHAR(50) NOT NULL DEFAULT 'monthly'");
+        }
     }
 
     /**
@@ -32,9 +35,12 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Revert to ENUMs (note: this may fail if data contains values outside the ENUM)
-        DB::statement("ALTER TABLE domains MODIFY COLUMN status ENUM('Active', 'Expiring', 'Expired', 'Suspended') NOT NULL DEFAULT 'Active'");
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'paused', 'cancelled') NOT NULL DEFAULT 'active'");
-        DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('monthly', 'annual', 'custom', 'weekly') NOT NULL DEFAULT 'monthly'");
+        // Skip for SQLite (testing environment)
+        if (DB::connection()->getDriverName() !== 'sqlite') {
+            // Revert to ENUMs (note: this may fail if data contains values outside the ENUM)
+            DB::statement("ALTER TABLE domains MODIFY COLUMN status ENUM('Active', 'Expiring', 'Expired', 'Suspended') NOT NULL DEFAULT 'Active'");
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN status ENUM('active', 'paused', 'cancelled') NOT NULL DEFAULT 'active'");
+            DB::statement("ALTER TABLE subscriptions MODIFY COLUMN billing_cycle ENUM('monthly', 'annual', 'custom', 'weekly') NOT NULL DEFAULT 'monthly'");
+        }
     }
 };

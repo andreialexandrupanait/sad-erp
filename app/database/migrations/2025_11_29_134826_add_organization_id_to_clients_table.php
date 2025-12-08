@@ -24,13 +24,24 @@ return new class extends Migration
         });
 
         // Migrate existing data: set organization_id based on user's organization
-        DB::statement('
-            UPDATE clients c
-            JOIN users u ON c.user_id = u.id
-            SET c.organization_id = u.organization_id,
-                c.created_by = c.user_id
-            WHERE c.organization_id IS NULL
-        ');
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            // SQLite doesn't support UPDATE ... JOIN syntax
+            DB::statement('
+                UPDATE clients
+                SET organization_id = (SELECT organization_id FROM users WHERE users.id = clients.user_id),
+                    created_by = user_id
+                WHERE organization_id IS NULL
+            ');
+        } else {
+            // MySQL
+            DB::statement('
+                UPDATE clients c
+                JOIN users u ON c.user_id = u.id
+                SET c.organization_id = u.organization_id,
+                    c.created_by = c.user_id
+                WHERE c.organization_id IS NULL
+            ');
+        }
     }
 
     /**

@@ -31,6 +31,17 @@ return new class extends Migration
 
     private function seedDefaultMappings(): void
     {
+        // Skip seeding during tests (organization_id=1 may not exist)
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        // Check if organization_id=1 exists before seeding
+        $organizationExists = \DB::table('organizations')->where('id', 1)->exists();
+        if (!$organizationExists) {
+            return;
+        }
+
         $mappings = [
             ['pattern' => 'Salarii', 'category' => 'salarii'],
             ['pattern' => 'Salariu', 'category' => 'salarii'],

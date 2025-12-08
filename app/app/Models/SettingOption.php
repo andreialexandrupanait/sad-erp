@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Helpers\SettingsHelper;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,7 +13,7 @@ use Spatie\EloquentSortable\SortableTrait;
 
 class SettingOption extends Model implements Sortable
 {
-    use SoftDeletes, SortableTrait;
+    use HasFactory, SoftDeletes, SortableTrait;
 
     protected $table = 'settings_options';
 
@@ -50,14 +51,7 @@ class SettingOption extends Model implements Sortable
             }
         });
 
-        // Clear cache when settings are modified
-        static::saved(function ($setting) {
-            SettingsHelper::clearCache($setting->category, $setting->organization_id);
-        });
-
-        static::deleted(function ($setting) {
-            SettingsHelper::clearCache($setting->category, $setting->organization_id);
-        });
+        // Note: Cache clearing is handled by SettingOptionObserver
 
         // Global scope for organization isolation
         static::addGlobalScope('organization', function (Builder $query) {

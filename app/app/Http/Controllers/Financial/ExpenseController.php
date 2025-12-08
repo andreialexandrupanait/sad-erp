@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Financial;
 use App\Http\Controllers\Concerns\HandlesBulkActions;
 use App\Http\Requests\Financial\StoreExpenseRequest;
 use App\Http\Requests\Financial\UpdateExpenseRequest;
+use App\Services\Financial\QueryBuilderService;
+use App\Services\NomenclatureService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FinancialExpense;
 use App\Models\FinancialFile;
-use App\Models\SettingOption;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -19,6 +20,17 @@ use Illuminate\Support\Str;
 class ExpenseController extends Controller
 {
     use HandlesBulkActions;
+
+    protected QueryBuilderService $queryBuilder;
+    protected NomenclatureService $nomenclatureService;
+
+    public function __construct(
+        QueryBuilderService $queryBuilder,
+        NomenclatureService $nomenclatureService
+    ) {
+        $this->queryBuilder = $queryBuilder;
+        $this->nomenclatureService = $nomenclatureService;
+    }
 
     public function index(Request $request)
     {
@@ -47,79 +59,66 @@ class ExpenseController extends Controller
 
         $perPage = $request->get('per_page', 50);
 
-        $expenses = FinancialExpense::with(['category', 'files'])
-            ->withCount('files')
-            ->forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('document_name', 'like', "%{$search}%")
-                      ->orWhere('note', 'like', "%{$search}%");
-            }))
-            ->orderBy($sortBy, $sortDir)
-            ->paginate($perPage)
-            ->withQueryString();
+        // Prepare filters array
+        $filters = [
+            'year' => $year,
+            'month' => $month,
+            'currency' => $currency,
+            'category_option_id' => $categoryId,
+            'search' => $search,
+        ];
+
+        // Build main paginated query using query builder service
+        $expenses = $this->queryBuilder->buildPaginatedQuery(
+            FinancialExpense::class,
+            $filters,
+            $sortBy,
+            $sortDir,
+            $perPage,
+            ['category', 'files'],
+            ['files']
+        );
 
         // Widget 1: Calculate FILTERED totals (respects ALL filters including month)
-        $filteredTotals = FinancialExpense::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        $filteredQuery = FinancialExpense::query();
+        $this->queryBuilder->applyFilters($filteredQuery, $filters);
+        $filteredTotals = $this->queryBuilder->calculateFilteredTotals($filteredQuery);
 
         // Widget 2: Calculate YEARLY totals (all currencies, always full year)
-        $yearTotals = FinancialExpense::forYear($year)
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->select('currency', DB::raw('SUM(amount) as total'))
-            ->groupBy('currency')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
+        $yearTotals = $this->queryBuilder->calculateYearlyTotals(
+            FinancialExpense::class,
+            $year,
+            $categoryId ? ['category_option_id' => $categoryId] : []
+        );
 
         // Count total records
-        $recordCount = FinancialExpense::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->when($search, fn($q) => $q->where(function($query) use ($search) {
-                $query->where('document_name', 'like', "%{$search}%")
-                      ->orWhere('note', 'like', "%{$search}%");
-            }))
-            ->count();
+        $recordCount = $this->queryBuilder->countFiltered(FinancialExpense::class, $filters);
 
         // Category breakdown for current filter
-        $categoryBreakdown = FinancialExpense::forYear($year)
-            ->when($month, fn($q) => $q->where('month', $month))
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->whereNotNull('category_option_id')
-            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-            ->groupBy('category_option_id')
-            ->with('category')
-            ->get()
-            ->sortByDesc('total')
-            ->take(5);
+        $categoryBreakdownQuery = FinancialExpense::forYear($year);
+        if ($month) {
+            $categoryBreakdownQuery->where('month', $month);
+        }
+        if ($currency) {
+            $categoryBreakdownQuery->where('currency', $currency);
+        }
+        $categoryBreakdown = $this->queryBuilder->getCategoryBreakdown($categoryBreakdownQuery);
 
-        $categories = SettingOption::rootCategories()->with('children')->get();
-        $currencies = SettingOption::currencies()->get();
+        $categories = $this->nomenclatureService->getExpenseCategories();
+        $currencies = $this->nomenclatureService->getCurrencies();
 
-        // Available years - show all years from 2019 to present
-        $currentYear = now()->year;
-        $availableYears = collect(range(2019, $currentYear))->reverse()->values();
+        // Available years
+        $availableYears = $this->queryBuilder->getAvailableYears();
 
-        // Get months with transactions for the selected year (with transaction count and total amount)
-        $monthsWithTransactions = FinancialExpense::forYear($year)
-            ->when($currency, fn($q) => $q->where('currency', $currency))
-            ->when($categoryId, fn($q) => $q->where('category_option_id', $categoryId))
-            ->select('month', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
-            ->groupBy('month')
-            ->get()
-            ->mapWithKeys(fn($item) => [$item->month => [
-                'count' => $item->count,
-                'total' => $item->total
-            ]]);
+        // Get months with transactions for the selected year
+        $monthsQuery = FinancialExpense::forYear($year);
+        if ($currency) {
+            $monthsQuery->where('currency', $currency);
+        }
+        if ($categoryId) {
+            $monthsQuery->where('category_option_id', $categoryId);
+        }
+        $monthsWithTransactions = $this->queryBuilder->getMonthsWithTransactions($monthsQuery);
 
         return view('financial.expenses.index', compact(
             'expenses',
@@ -141,8 +140,8 @@ class ExpenseController extends Controller
 
     public function create()
     {
-        $categories = SettingOption::rootCategories()->with('children')->get();
-        $currencies = SettingOption::currencies()->get();
+        $categories = $this->nomenclatureService->getExpenseCategories();
+        $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.expenses.create', compact('categories', 'currencies'));
     }
 
@@ -179,8 +178,8 @@ class ExpenseController extends Controller
     public function edit(FinancialExpense $expense)
     {
         $expense->load('files');
-        $categories = SettingOption::rootCategories()->with('children')->get();
-        $currencies = SettingOption::currencies()->get();
+        $categories = $this->nomenclatureService->getExpenseCategories();
+        $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.expenses.edit', compact('expense', 'categories', 'currencies'));
     }
 

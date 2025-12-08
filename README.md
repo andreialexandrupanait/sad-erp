@@ -1,524 +1,663 @@
-# Laravel ERP Docker Setup
+# Laravel ERP - Enterprise Resource Planning System
 
-Complete Docker orchestration setup for Laravel 10/11 ERP application on Ubuntu.
+> A comprehensive ERP system for managing clients, subscriptions, domains, financials, and business operations.
 
-## System Requirements
+[![Laravel](https://img.shields.io/badge/Laravel-12.0-red.svg)](https://laravel.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2+-blue.svg)](https://php.net)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-- Ubuntu 20.04+ or compatible Linux distribution
-- Docker 20.10+
-- Docker Compose 2.0+
+[Live Demo](https://intern.simplead.ro) | [Technical Audit](TECHNICAL_AUDIT.md) | [Report Bug](https://github.com/andreialexandrupanait/sad-erp/issues)
+
+---
+
+## 📋 Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Deployment](#deployment)
+- [Development](#development)
+- [Security](#security)
+- [Contributing](#contributing)
+- [License](#license)
+- [Credits](#credits)
+
+---
+
+## 🎯 Overview
+
+Laravel ERP is a modern, multi-tenant enterprise resource planning system designed for agencies and service providers. It provides comprehensive tools for managing the entire business lifecycle from client onboarding to financial reporting.
+
+**Core Capabilities:**
+- **Client Management** - Track clients, contacts, and business relationships
+- **Financial Operations** - Revenue/expense tracking with SmartBill integration
+- **Subscription Management** - Recurring service subscriptions with renewal alerts
+- **Domain Management** - Domain registrations with expiry notifications
+- **Credential Vault** - Encrypted storage for client access credentials
+- **Multi-Channel Notifications** - Email, Slack, WhatsApp alerts
+- **User & Permission Management** - Role-based access with module permissions
+- **Banking Integration** - Transaction sync with Banca Transilvania (optional)
+
+**Target Users:**
+- Digital agencies managing multiple clients
+- IT service providers
+- Subscription-based businesses
+- Organizations needing centralized credential management
+
+**Production Status:** ✅ Currently deployed and operational at https://intern.simplead.ro
+
+---
+
+## ✨ Features
+
+### Core Modules
+
+#### 📊 Dashboard
+- Real-time financial metrics (revenue, expenses, profit margin)
+- Subscription renewal alerts
+- Domain expiry warnings
+- Quick action buttons
+- Customizable widgets
+- Month-over-month growth tracking
+
+#### 👥 Client Management
+- Complete client profiles with CRM data
+- Client status tracking (active, inactive, archived)
+- Bulk operations (import CSV, export, status updates)
+- Revenue aggregation per client
+- Linked subscriptions and domains
+- Romanian tax ID (CUI/CIF) validation
+- Contact person management
+
+#### 💰 Financial Module
+- Revenue & Expense tracking
+- Multi-currency support (RON, EUR, USD)
+- Year/Month/Category organization
+- SmartBill invoice import
+- Bank transaction matching (Banca Transilvania)
+- File attachment system (PDF, Excel, images)
+- Financial dashboard with analytics
+- Profit margin calculations
+- Revenue concentration metrics
+
+#### 🔄 Subscription Management
+- Recurring service subscriptions
+- Automatic renewal calculations
+- Status tracking (active, pending, overdue, cancelled)
+- Email notifications for renewals
+- Cost tracking and reporting
+- Billing cycle management (monthly, quarterly, yearly)
+- Subscription history logging
+
+#### 🌐 Domain Management
+- Domain registration tracking
+- Registrar management
+- Expiry date monitoring (30-day alerts)
+- Renewal cost tracking
+- Domain status (active, expired, pending transfer)
+- Transfer code management
+
+#### 🔐 Credential Vault
+- Encrypted password storage (AES-256-CBC)
+- Platform/service categorization
+- Access tracking and logging
+- Rate-limited password reveal (3 requests/minute)
+- Bulk credential management
+- Auto-masked password display
+
+#### 🔔 Notification System
+- Multi-channel delivery (Email, Slack, WhatsApp)
+- Event-driven notifications
+- Configurable per organization
+- Notification log with delivery tracking
+- Templates for all notification types
+- Scheduled notifications for renewals
+
+#### 👤 User Management
+- Role-based access control (superadmin, admin, user)
+- Module-level permissions (5 actions per module: view, create, update, delete, export)
+- Two-factor authentication (Google Authenticator)
+- Session management
+- Activity audit logging
+- Last login tracking
+
+### Integrations
+
+- **SmartBill API** - Romanian invoicing system synchronization
+- **Banca Transilvania** - PSD2 banking API for transaction sync (optional)
+- **Slack** - Webhook notifications for team collaboration
+- **WhatsApp** - API notifications for critical alerts
+- **ClickUp** - Project management (legacy, can be removed)
+
+---
+
+## 🛠️ Tech Stack
+
+### Backend
+- **Framework:** Laravel 12.0
+- **PHP:** 8.2+
+- **Database:** MySQL 8.0
+- **Cache/Queue:** Redis 7-alpine
+- **Authentication:** Laravel Breeze + Custom 2FA
+
+### Frontend
+- **CSS Framework:** Tailwind CSS 3.1
+- **JavaScript:** Alpine.js 3.4.2
+- **Build Tool:** Vite 7.0.7
+- **HTTP Client:** Axios 1.11.0
+
+### DevOps & Infrastructure
+- **Containerization:** Docker Compose
+- **Web Server:** Nginx with SSL (Let's Encrypt)
+- **Reverse Proxy:** nginx-proxy
+- **SSL Management:** letsencrypt-nginx-proxy-companion
+
+### Key Packages
+- **maatwebsite/excel** ^3.1 - Excel import/export
+- **consoletvs/charts** 6.* - Data visualization
+- **pragmarx/google2fa** ^2.3 - Two-factor authentication
+- **spatie/eloquent-sortable** ^4.5 - Model ordering
+- **smalot/pdfparser** ^2.12 - PDF parsing
+
+---
+
+## 🏗️ Architecture
+
+### Directory Structure
+```
+/var/www/erp/
+├── app/                          # Laravel application
+│   ├── Console/Commands/         # 18 Artisan commands
+│   ├── Events/                   # 7 Domain events
+│   ├── Http/
+│   │   ├── Controllers/          # 37 Controllers
+│   │   ├── Middleware/           # 5 Custom middleware
+│   │   └── Requests/             # 24 Form validation classes
+│   ├── Jobs/                     # 3 Queued jobs
+│   ├── Models/                   # 24 Eloquent models
+│   ├── Observers/                # 6 Model observers
+│   ├── Policies/                 # 7 Authorization policies
+│   ├── Services/                 # 28 Service classes
+│   └── Traits/                   # Reusable code traits
+├── database/
+│   ├── migrations/               # 84 Database migrations
+│   └── seeders/                  # 22 Data seeders
+├── docker/                       # Docker configurations
+├── resources/
+│   ├── js/                       # Alpine.js components
+│   ├── css/                      # Tailwind styles
+│   └── views/                    # 182 Blade templates
+├── docker-compose.yml
+├── backup_database.sh
+└── restore_database.sh
+```
+
+### Service Layer Architecture
+
+The application implements a robust service layer pattern organizing business logic into focused classes:
+
+**Financial Services:**
+- `RevenueImportService` - CSV/Excel revenue import
+- `ExpenseImportService` - Expense data import
+- `FinancialDashboardService` - Metrics and analytics
+
+**Banking Services:**
+- `TransactionImportService` - Bank statement sync
+- `TransactionMatchingService` - Auto-match transactions
+- `BancaTransilvaniaService` - PSD2 API integration
+
+**Notification Services:**
+- `NotificationService` - Multi-channel dispatcher
+- Channel abstraction (Email, Slack, WhatsApp)
+- Event-driven message formatting
+
+**Domain Services:**
+- `CredentialService` - Credential management
+- `DomainService` - Domain operations
+- `SubscriptionService` - Subscription processing
+
+### Event-Driven Architecture
+
+Events trigger multi-channel notifications:
+```
+Domain Expiring Soon → DomainExpiringSoon Event
+                     → SendDomainExpiryNotification Listener
+                     → NotificationService
+                     → [Email Channel + Slack Channel]
+                     → Multi-channel delivery
+
+Subscription Overdue → SubscriptionOverdue Event
+                     → SendSubscriptionNotification Listener
+                     → Email delivery
+```
+
+### Multi-Tenancy
+
+Organization-scoped data isolation at three levels:
+1. **Global Query Scopes** - Automatic filtering by `organization_id`
+2. **Middleware** - `EnsureOrganizationScope` enforces organization membership
+3. **Policies** - Authorization checks organization ownership
+
+### Data Model Summary
+
+**Core Entities:**
+- Organization (tenant root)
+- User (authentication + permissions)
+- Client (business customers)
+- Subscription (recurring services)
+- Domain (domain registrations)
+- FinancialRevenue & FinancialExpense
+- Credential (encrypted passwords)
+
+**Configuration:**
+- SettingOption (dynamic dropdowns)
+- ApplicationSetting (key-value store)
+- Module (feature flags)
+- UserModulePermission (granular access)
+
+---
+
+## 🚀 Installation
+
+### Prerequisites
+
+- Docker 20.10+ and Docker Compose 2.0+
+- Git
 - Minimum 2GB RAM
-- Minimum 10GB disk space
+- 10GB disk space
 
-## Quick Start
+### Quick Start (Docker)
 
-### Option 1: Automated Setup (Recommended)
-
+1. **Clone the repository**
 ```bash
-cd /var/www/erp
-./SETUP.sh
+git clone https://github.com/andreialexandrupanait/sad-erp.git
+cd sad-erp
 ```
 
-The script will automatically:
-1. Verify Docker installation
-2. Create directory structure
-3. Build Docker images
-4. Install Laravel (if not present)
-5. Configure environment
-6. Start all containers
-7. Initialize Laravel application
-
-### Option 2: Manual Setup
-
-Follow the step-by-step commands below for manual installation.
-
-## Architecture
-
-This setup includes 3 main containers:
-
-- **erp_db** - MySQL 8.0 database server
-- **erp_app** - PHP 8.3 FPM application server
-- **erp_web** - Nginx web server (port 8085)
-- **erp_composer** - One-time Composer utility container
-
-All containers run on the `erpnet` Docker network.
-
-## Manual Installation Steps
-
-### Step 1: Verify Docker Installation
-
+2. **Set up environment variables**
 ```bash
-# Check Docker version
-docker --version
-
-# Check Docker Compose version
-docker-compose --version
-
-# Test Docker access
-docker ps
-
-# If needed, add user to docker group
-sudo usermod -aG docker $USER
-# Then log out and log back in
-```
-
-### Step 2: Create Project Structure
-
-```bash
-# Navigate to project root
-cd /var/www/erp
-
-# Create necessary directories
-mkdir -p app
-mkdir -p docker/php
-mkdir -p docker/nginx
-mkdir -p mysql
-mkdir -p logs/nginx
-
-# Verify structure
-tree -L 2
-```
-
-### Step 3: Verify Configuration Files
-
-All configuration files should be in place:
-
-```bash
-# Check all required files exist
-ls -la docker-compose.yml
-ls -la docker/php/Dockerfile
-ls -la docker/php/php.ini
-ls -la docker/php/www.conf
-ls -la docker/nginx/default.conf
-ls -la mysql/my.cnf
-ls -la .env.example
-```
-
-### Step 4: Build Docker Images
-
-```bash
-# Build the PHP-FPM image
-docker-compose build erp_app
-
-# Verify image was created
-docker images | grep erp
-```
-
-### Step 5: Install Laravel
-
-**If app directory is empty**, install Laravel:
-
-```bash
-# Install Laravel 11 using Composer container
-docker-compose run --rm erp_composer create-project laravel/laravel . --prefer-dist
-
-# Set proper permissions
-sudo chown -R $USER:$USER app/
-chmod -R 775 app/storage
-chmod -R 775 app/bootstrap/cache
-```
-
-**If Laravel is already installed**, skip to Step 6.
-
-### Step 6: Configure Laravel Environment
-
-```bash
-# Copy environment file
+# Copy environment files
+cp .env.example .env
 cp app/.env.example app/.env
 
-# Edit database configuration
-nano app/.env
+# Generate secure database passwords (32+ characters)
+openssl rand -base64 32  # Use for DB_ROOT_PASSWORD
+openssl rand -base64 32  # Use for DB_PASSWORD
+
+# Edit .env files with your values
+nano .env         # Set DB passwords
+nano app/.env     # Set DB password + APP_URL
 ```
 
-Update the following values in `.env`:
-
+**Important .env configuration:**
 ```env
+# Root .env (Docker)
+DB_ROOT_PASSWORD=<your_secure_32_char_password>
+DB_PASSWORD=<your_secure_32_char_password>
+
+# app/.env (Laravel)
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-domain.com
+
 DB_CONNECTION=mysql
 DB_HOST=erp_db
 DB_PORT=3306
 DB_DATABASE=laravel_erp
 DB_USERNAME=laravel_user
-DB_PASSWORD=laravel_secure_pass_2025
+DB_PASSWORD=<same_as_docker_DB_PASSWORD>
+
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+REDIS_HOST=erp_redis
 ```
 
-### Step 7: Start Docker Containers
-
+3. **Generate application key**
 ```bash
-# Start all containers in detached mode
-docker-compose up -d
-
-# Check container status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
+docker compose run --rm erp_app php artisan key:generate
 ```
 
-Expected output:
-```
-NAME        IMAGE            STATUS         PORTS
-erp_db      mysql:8.0        Up (healthy)   0.0.0.0:3307->3306/tcp
-erp_app     erp_app:latest   Up             9000/tcp
-erp_web     nginx:latest     Up             0.0.0.0:8085->80/tcp
-```
-
-### Step 8: Initialize Laravel Application
-
+4. **Start Docker containers**
 ```bash
-# Generate application key
-docker-compose exec erp_app php artisan key:generate
-
-# Clear all caches
-docker-compose exec erp_app php artisan config:clear
-docker-compose exec erp_app php artisan cache:clear
-docker-compose exec erp_app php artisan view:clear
-
-# Run database migrations
-docker-compose exec erp_app php artisan migrate
-
-# Check Laravel version
-docker-compose exec erp_app php artisan --version
+docker compose up -d
 ```
 
-### Step 9: Set Proper Permissions
-
+5. **Run database migrations**
 ```bash
-# Set ownership
-sudo chown -R $USER:$USER app/
-
-# Set storage permissions
-chmod -R 775 app/storage
-chmod -R 775 app/bootstrap/cache
+docker compose exec erp_app php artisan migrate --seed
 ```
 
-### Step 10: Access Application
+6. **Create admin user**
+```bash
+docker compose exec erp_app php artisan tinker
 
-Open your browser and navigate to:
-
+# In tinker, run:
+User::create([
+    'name' => 'Admin',
+    'email' => 'admin@example.com',
+    'password' => Hash::make('your-secure-password'),
+    'role' => 'superadmin',
+    'organization_id' => 1,
+]);
 ```
-http://YOUR_SERVER_IP:8085
-```
 
-Or from the server itself:
-
+7. **Access the application**
 ```
 http://localhost:8085
+# or
+https://your-domain.com
 ```
 
-You should see the Laravel welcome page.
+---
 
-## Docker Commands Reference
-
-### Container Management
-
-```bash
-# Start all containers
-docker-compose up -d
-
-# Stop all containers
-docker-compose down
-
-# Restart all containers
-docker-compose restart
-
-# Restart specific container
-docker-compose restart erp_app
-
-# View container logs
-docker-compose logs -f
-docker-compose logs -f erp_app
-docker-compose logs -f erp_web
-docker-compose logs -f erp_db
-
-# Check container status
-docker-compose ps
-
-# View resource usage
-docker stats
-```
-
-### Laravel Artisan Commands
-
-```bash
-# Run any artisan command
-docker-compose exec erp_app php artisan [command]
-
-# Examples:
-docker-compose exec erp_app php artisan migrate
-docker-compose exec erp_app php artisan db:seed
-docker-compose exec erp_app php artisan make:controller UserController
-docker-compose exec erp_app php artisan make:model Product -m
-docker-compose exec erp_app php artisan route:list
-docker-compose exec erp_app php artisan tinker
-```
-
-### Composer Commands
-
-```bash
-# Run composer commands
-docker-compose exec erp_app composer [command]
-
-# Examples:
-docker-compose exec erp_app composer install
-docker-compose exec erp_app composer update
-docker-compose exec erp_app composer require vendor/package
-docker-compose exec erp_app composer dump-autoload
-```
-
-### Database Access
-
-```bash
-# Access MySQL CLI as laravel_user
-docker-compose exec erp_db mysql -u laravel_user -p
-# Password: laravel_secure_pass_2025
-
-# Access MySQL CLI as root
-docker-compose exec erp_db mysql -u root -p
-# Password: root_secure_password_2025
-
-# Export database
-docker-compose exec erp_db mysqldump -u laravel_user -p laravel_erp > backup.sql
-
-# Import database
-docker-compose exec -T erp_db mysql -u laravel_user -p laravel_erp < backup.sql
-```
-
-### Shell Access
-
-```bash
-# Access PHP container shell
-docker-compose exec erp_app sh
-
-# Access Nginx container shell
-docker-compose exec erp_web sh
-
-# Access MySQL container shell
-docker-compose exec erp_db bash
-```
-
-### File Permissions
-
-```bash
-# Fix Laravel permissions
-docker-compose exec erp_app sh -c "chmod -R 775 storage bootstrap/cache"
-docker-compose exec erp_app sh -c "chown -R www:www storage bootstrap/cache"
-```
-
-## Configuration Details
-
-### Port Mappings
-
-- **8085:80** - Web server (Nginx)
-- **3307:3306** - MySQL database
-
-### Volume Mounts
-
-- `./app` → `/var/www/html` (Laravel application)
-- `erp_mysql_data` → `/var/lib/mysql` (MySQL persistent data)
+## ⚙️ Configuration
 
 ### Environment Variables
 
-Database credentials (configured in docker-compose.yml):
+#### Required Variables
+```env
+# Application
+APP_NAME="Laravel ERP"
+APP_ENV=production                  # MUST be 'production' in production
+APP_KEY=base64:...                  # Generated by artisan key:generate
+APP_DEBUG=false                     # MUST be false in production
+APP_URL=https://your-domain.com
 
+# Database
+DB_CONNECTION=mysql
+DB_HOST=erp_db
+DB_PORT=3306
+DB_DATABASE=laravel_erp
+DB_USERNAME=laravel_user
+DB_PASSWORD=<your_secure_password>  # CHANGE THIS
+
+# Redis
+REDIS_HOST=erp_redis
+REDIS_PORT=6379
+CACHE_STORE=redis
+QUEUE_CONNECTION=redis
+SESSION_DRIVER=redis
+
+# Logging
+LOG_LEVEL=error                     # error|warning|info|debug
 ```
-MYSQL_DATABASE=laravel_erp
-MYSQL_USER=laravel_user
-MYSQL_PASSWORD=laravel_secure_pass_2025
-MYSQL_ROOT_PASSWORD=root_secure_password_2025
+
+#### Optional Integrations
+```env
+# SmartBill (Romanian invoicing)
+SMARTBILL_USERNAME=<your_username>
+SMARTBILL_TOKEN=<your_api_token>
+SMARTBILL_TAX_ID=<your_tax_id>
+
+# Slack Notifications
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
+
+# Email Notifications
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=<your_email>
+MAIL_PASSWORD=<your_password>
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@example.com
+
+# Banking (disabled by default)
+# BT_SANDBOX_MODE=true
+# BT_CLIENT_ID=<your_client_id>
+# BT_CLIENT_SECRET=<your_client_secret>
 ```
 
-## Troubleshooting
+### Application Settings
 
-### Container won't start
+Configure via Settings UI after login (`/settings`):
+- Client statuses
+- Subscription statuses
+- Domain registrars
+- Expense categories
+- Payment methods
+- Currency options
+- Billing cycles
+
+### Module Permissions
+
+Enable/disable modules per user role:
+- Dashboard
+- Clients
+- Subscriptions
+- Domains
+- Credentials
+- Finance
+- Settings
+
+---
+
+## 🌍 Deployment
+
+### Production Deployment (Docker)
+
+1. **Set up server with nginx-proxy**
+```bash
+# Install Docker
+curl -fsSL https://get.docker.com | sh
+
+# Create proxy network
+docker network create nginx-proxy
+
+# Start nginx-proxy
+docker run -d -p 80:80 -p 443:443 \
+  --name nginx-proxy \
+  --net nginx-proxy \
+  -v /var/run/docker.sock:/tmp/docker.sock:ro \
+  nginxproxy/nginx-proxy
+
+# Start Let's Encrypt companion
+docker run -d \
+  --name nginx-proxy-letsencrypt \
+  --volumes-from nginx-proxy \
+  -v /var/run/docker.sock:/var/run/docker.sock:ro \
+  nginxproxy/acme-companion
+```
+
+2. **Configure production environment**
+```env
+APP_ENV=production
+APP_DEBUG=false
+LOG_LEVEL=error
+```
+
+3. **Deploy application**
+```bash
+docker compose up -d
+docker compose exec erp_app php artisan migrate --force
+docker compose exec erp_app php artisan config:cache
+docker compose exec erp_app php artisan route:cache
+docker compose exec erp_app php artisan view:cache
+docker compose exec erp_app php artisan storage:link
+```
+
+4. **Verify automated backups**
+```bash
+# Backups run automatically via Laravel Scheduler:
+# - Daily: 02:00 AM
+# - Weekly: Sunday 03:00 AM (includes files)
+# - Monthly: 1st of month 04:00 AM (includes files)
+
+# Check backup schedule
+docker exec erp_app php artisan schedule:list | grep backup
+
+# Create manual backup
+docker exec erp_app php artisan backup:database --type=manual --compress
+
+# Restore from latest backup
+./restore_latest_backup.sh
+```
+
+**📖 For complete backup/restore documentation, see:** [BACKUP_RESTORE_GUIDE.md](BACKUP_RESTORE_GUIDE.md)
+
+**See:** [TECHNICAL_AUDIT.md](TECHNICAL_AUDIT.md) for deployment best practices
+
+---
+
+## 👨‍💻 Development
+
+### Development Workflow
+
+1. **Create feature branch**
+```bash
+git checkout -b feature/your-feature-name
+```
+
+2. **Make changes and test**
+```bash
+# Run tests
+docker compose exec erp_app php artisan test
+
+# Check code style
+docker compose exec erp_app ./vendor/bin/phpstan analyse
+```
+
+3. **Commit changes**
+```bash
+git add .
+git commit -m "feat: your feature description"
+```
+
+4. **Push and create PR**
+```bash
+git push origin feature/your-feature-name
+```
+
+### Coding Standards
+
+- **PSR-12** coding style
+- **Type hints** on all methods
+- **DocBlocks** for complex logic
+- **Single Responsibility Principle**
+- **Service layer** for business logic
+
+### Artisan Commands
 
 ```bash
-# Check logs
-docker-compose logs -f erp_app
+# Database backups
+php artisan backup:database
 
-# Rebuild containers
-docker-compose down
-docker-compose build --no-cache
-docker-compose up -d
+# SmartBill import
+php artisan smartbill:import
+
+# Client import from CSV
+php artisan clients:import clients.csv
+
+# Check expiring domains
+php artisan domains:check-expiring
+
+# Check renewing subscriptions
+php artisan subscriptions:check-renewing
+
+# Sync bank transactions
+php artisan banking:sync-transactions
+
+# Test notifications
+php artisan notification:test email
 ```
 
-### Database connection errors
+---
 
-```bash
-# Check if database is healthy
-docker-compose ps erp_db
+## 🔒 Security
 
-# Test database connection
-docker-compose exec erp_app php artisan migrate:status
+### Security Features
 
-# Verify .env file
-cat app/.env | grep DB_
-```
+- ✅ **Authentication:** Laravel Breeze + 2FA (Google Authenticator)
+- ✅ **Authorization:** Role-based + Module-level permissions
+- ✅ **Password Encryption:** AES-256-CBC for credential vault
+- ✅ **CSRF Protection:** Enabled on all forms
+- ✅ **XSS Prevention:** Input sanitization + Blade escaping
+- ✅ **SQL Injection:** Parameterized queries (Eloquent ORM)
+- ✅ **Mass Assignment:** Explicit `$fillable` on all models
+- ✅ **Rate Limiting:** Sensitive operations (password reveal: 3/min)
+- ✅ **Audit Logging:** All state-changing operations logged
+- ✅ **Session Security:** Regeneration on login/logout
+- ✅ **SSL/TLS:** Let's Encrypt certificates
+- ✅ **Security Headers:** CSP, HSTS, X-Frame-Options
 
-### Permission errors
+### Reporting Vulnerabilities
 
-```bash
-# Fix ownership
-sudo chown -R $USER:$USER app/
+Please report security vulnerabilities to: **security@simplead.ro**
 
-# Fix Laravel permissions
-chmod -R 775 app/storage
-chmod -R 775 app/bootstrap/cache
+**Do not** create public GitHub issues for security vulnerabilities.
 
-# Inside container
-docker-compose exec erp_app sh -c "chown -R www:www /var/www/html"
-```
+---
 
-### Port 8085 already in use
+## 🤝 Contributing
 
-```bash
-# Check what's using the port
-sudo lsof -i :8085
+We welcome contributions! Please follow these guidelines:
 
-# Edit docker-compose.yml and change the port
-nano docker-compose.yml
-# Change "8085:80" to another port like "8086:80"
-```
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Clear all Docker resources
+### Pull Request Guidelines
 
-```bash
-# Stop and remove containers
-docker-compose down -v
+- Follow PSR-12 coding standards
+- Add tests for new features
+- Update documentation
+- Ensure all tests pass
+- Keep commits atomic and well-described
 
-# Remove images
-docker rmi $(docker images | grep erp | awk '{print $3}')
+---
 
-# Remove volumes
-docker volume rm erp_mysql_data
-```
+## 📄 License
 
-## Performance Optimization
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-### PHP-FPM Tuning
+---
 
-Edit [docker/php/www.conf](docker/php/www.conf):
+## 🙏 Credits
 
-```ini
-pm.max_children = 50
-pm.start_servers = 10
-pm.min_spare_servers = 5
-pm.max_spare_servers = 20
-```
+### Development Team
+- **Andrei Alexandru Panait** - Lead Developer (andrei.panait@simplead.ro)
+- **SimpleAd Agency** - Product Owner
 
-### MySQL Tuning
+### Key Dependencies
+- [Laravel Framework](https://laravel.com) - Web application framework
+- [Tailwind CSS](https://tailwindcss.com) - CSS framework
+- [Alpine.js](https://alpinejs.dev) - JavaScript framework
+- [Maatwebsite Excel](https://github.com/SpartnerNL/Laravel-Excel) - Excel integration
+- [Charts](https://github.com/ConsoleTVs/Charts) - Data visualization
 
-Edit [mysql/my.cnf](mysql/my.cnf):
+### Special Thanks
+- Laravel community for excellent documentation
+- All open-source contributors
 
-```ini
-innodb_buffer_pool_size = 512M
-max_connections = 200
-```
+---
 
-### Nginx Caching
+## 📞 Support
 
-Already configured in [docker/nginx/default.conf](docker/nginx/default.conf) for static assets.
+- **Documentation:** [Technical Audit](TECHNICAL_AUDIT.md)
+- **Issues:** [GitHub Issues](https://github.com/andreialexandrupanait/sad-erp/issues)
+- **Email:** andrei.panait@simplead.ro
 
-## Security Recommendations
+---
 
-1. **Change default passwords** in docker-compose.yml
-2. **Set APP_DEBUG=false** in production
-3. **Use HTTPS** with SSL certificates (configure Nginx)
-4. **Restrict database access** (firewall rules)
-5. **Regular backups** of database and application
-6. **Keep Docker images updated**
+## 📊 Project Statistics
 
-## Backup and Restore
+- **24** Eloquent Models
+- **37** Controllers
+- **28** Service Classes
+- **84** Database Migrations
+- **182** Blade Templates
+- **75** Reusable Components
+- **7** Domain Events
+- **6** Model Observers
+- **7** Authorization Policies
 
-### Backup
+---
 
-```bash
-# Backup database
-docker-compose exec erp_db mysqldump -u root -proot_secure_password_2025 laravel_erp > backup_$(date +%Y%m%d).sql
+**Built with ❤️ using Laravel**
 
-# Backup application files
-tar -czf app_backup_$(date +%Y%m%d).tar.gz app/
-
-# Backup entire project
-tar -czf erp_full_backup_$(date +%Y%m%d).tar.gz \
-    docker-compose.yml \
-    docker/ \
-    mysql/ \
-    app/ \
-    --exclude=app/node_modules \
-    --exclude=app/vendor
-```
-
-### Restore
-
-```bash
-# Restore database
-docker-compose exec -T erp_db mysql -u root -proot_secure_password_2025 laravel_erp < backup_20251105.sql
-
-# Restore application
-tar -xzf app_backup_20251105.tar.gz
-
-# Run migrations after restore
-docker-compose exec erp_app php artisan migrate:status
-```
-
-## Maintenance
-
-### Update Laravel
-
-```bash
-docker-compose exec erp_app composer update
-docker-compose exec erp_app php artisan migrate
-docker-compose exec erp_app php artisan config:clear
-```
-
-### Update Docker Images
-
-```bash
-docker-compose pull
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-## Directory Structure
-
-```
-/var/www/erp/
-├── app/                    # Laravel application
-│   ├── app/
-│   ├── bootstrap/
-│   ├── config/
-│   ├── database/
-│   ├── public/
-│   ├── resources/
-│   ├── routes/
-│   ├── storage/
-│   ├── tests/
-│   ├── .env
-│   └── artisan
-├── docker/
-│   ├── nginx/
-│   │   └── default.conf   # Nginx virtual host
-│   └── php/
-│       ├── Dockerfile      # PHP 8.3 FPM image
-│       ├── php.ini         # PHP configuration
-│       └── www.conf        # PHP-FPM pool config
-├── logs/
-│   └── nginx/              # Nginx logs
-├── mysql/
-│   └── my.cnf              # MySQL configuration
-├── docker-compose.yml      # Main orchestration file
-├── .env.example            # Environment example
-├── SETUP.sh                # Automated setup script
-└── README.md               # This file
-```
-
-## Support
-
-For issues and questions:
-- Check logs: `docker-compose logs -f`
-- Laravel docs: https://laravel.com/docs
-- Docker docs: https://docs.docker.com
-
-## License
-
-This Docker setup is provided as-is for Laravel ERP development.
+**Production URL:** https://intern.simplead.ro

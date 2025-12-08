@@ -5,19 +5,22 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\HandlesBulkActions;
 use App\Http\Requests\Credential\StoreCredentialRequest;
 use App\Http\Requests\Credential\UpdateCredentialRequest;
+use App\Services\NomenclatureService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Credential;
 use App\Models\Client;
-use App\Models\SettingOption;
 use Illuminate\Http\Request;
 
 class CredentialController extends Controller
 {
     use HandlesBulkActions;
 
-    public function __construct()
+    protected NomenclatureService $nomenclatureService;
+
+    public function __construct(NomenclatureService $nomenclatureService)
     {
+        $this->nomenclatureService = $nomenclatureService;
         $this->authorizeResource(Credential::class, 'credential');
     }
 
@@ -59,7 +62,7 @@ class CredentialController extends Controller
 
         // Get clients and platforms for filters
         $clients = Client::orderBy('name')->get();
-        $platforms = SettingOption::accessPlatforms()->get();
+        $platforms = $this->nomenclatureService->getAccessPlatforms();
 
         return view('credentials.index', compact('credentials', 'clients', 'platforms'));
     }
@@ -70,7 +73,7 @@ class CredentialController extends Controller
     public function create()
     {
         $clients = Client::orderBy('name')->get();
-        $platforms = SettingOption::accessPlatforms()->get();
+        $platforms = $this->nomenclatureService->getAccessPlatforms();
 
         return view('credentials.create', compact('clients', 'platforms'));
     }
@@ -111,7 +114,7 @@ class CredentialController extends Controller
     public function edit(Credential $credential)
     {
         $clients = Client::orderBy('name')->get();
-        $platforms = SettingOption::accessPlatforms()->get();
+        $platforms = $this->nomenclatureService->getAccessPlatforms();
 
         return view('credentials.edit', compact('credential', 'clients', 'platforms'));
     }

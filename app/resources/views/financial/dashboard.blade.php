@@ -257,9 +257,9 @@
                         @foreach($monthlyBreakdown as $data)
                             <tr class="hover:bg-slate-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{{ $data['month_name'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-700 font-semibold">{{ number_format($data['revenues_ron'], 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-700 font-semibold">{{ number_format($data['expenses_ron'], 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold {{ $data['profit_ron'] >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ number_format($data['profit_ron'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-green-700 font-semibold">{{ number_format($data['revenue'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-red-700 font-semibold">{{ number_format($data['expense'], 2) }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold {{ $data['profit'] >= 0 ? 'text-green-700' : 'text-red-700' }}">{{ number_format($data['profit'], 2) }}</td>
                             </tr>
                         @endforeach
                         <!-- Totals Row -->
