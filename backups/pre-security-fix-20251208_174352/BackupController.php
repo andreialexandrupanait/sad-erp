@@ -75,77 +75,16 @@ class BackupController extends Controller
 
     /**
      * Download a backup file
-     * 
-     * SECURITY FIX: Added path traversal protection
      */
     public function download(string $filename)
     {
-        // SECURITY: Prevent path traversal attacks
-        // Only allow alphanumeric, hyphens, underscores, and dots
-        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
-            \Log::warning('Backup download attempt with invalid filename', [
-                'filename' => $filename,
-                'user_id' => auth()->id(),
-                'ip' => request()->ip(),
-            ]);
-            abort(403, __('Invalid filename format.'));
-        }
+        $path = 'backups/' . $filename;
 
-        // Use basename() to strip any remaining path components
-        $safeFilename = basename($filename);
-
-        // Construct the full path
-        $path = 'backups/' . $safeFilename;
-
-        // Check if file exists
         if (!Storage::disk('local')->exists($path)) {
             abort(404, __('Backup not found.'));
         }
 
-        // SECURITY: Verify the real path is within the backups directory
-        // This prevents symlink attacks
-        $realPath = Storage::disk('local')->path($path);
-        $backupsPath = Storage::disk('local')->path('backups');
-
-        // Ensure both paths exist and are resolved
-        if (!file_exists($realPath)) {
-            abort(404, __('Backup file not found.'));
-        }
-
-        // Get real paths to compare (follows symlinks)
-        $realPathResolved = realpath($realPath);
-        $backupsPathResolved = realpath($backupsPath);
-
-        // Check if the file is actually within the backups directory
-        if ($realPathResolved === false || $backupsPathResolved === false) {
-            \Log::error('Path resolution failed in backup download', [
-                'filename' => $filename,
-                'real_path' => $realPath,
-                'backups_path' => $backupsPath,
-            ]);
-            abort(500, __('Internal server error.'));
-        }
-
-        if (strpos($realPathResolved, $backupsPathResolved) !== 0) {
-            \Log::warning('Backup download attempt outside allowed directory', [
-                'filename' => $filename,
-                'resolved_path' => $realPathResolved,
-                'allowed_path' => $backupsPathResolved,
-                'user_id' => auth()->id(),
-                'ip' => request()->ip(),
-            ]);
-            abort(403, __('Access denied.'));
-        }
-
-        // Log successful download for audit trail
-        \Log::info('Backup file downloaded', [
-            'filename' => $safeFilename,
-            'user_id' => auth()->id(),
-            'user_email' => auth()->user()->email,
-            'ip' => request()->ip(),
-        ]);
-
-        return Storage::disk('local')->download($path, $safeFilename, [
+        return Storage::disk('local')->download($path, $filename, [
             'Content-Type' => 'application/json',
         ]);
     }
@@ -200,16 +139,10 @@ class BackupController extends Controller
             'mode' => 'required|in:merge,replace',
         ]);
 
-        // SECURITY: Apply same filename validation as download
-        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
-            return back()->with('error', __('Invalid filename format.'));
-        }
-
-        $safeFilename = basename($filename);
         $mode = $request->input('mode');
 
         // Validate backup file exists
-        $validation = $this->backupService->validateBackupFile($safeFilename);
+        $validation = $this->backupService->validateBackupFile($filename);
 
         if (!$validation['exists']) {
             return back()->with('error', __('Backup not found.'));
@@ -220,7 +153,7 @@ class BackupController extends Controller
         }
 
         // Perform restore
-        $result = $this->restoreService->restoreFromBackup($safeFilename, $mode);
+        $result = $this->restoreService->restoreFromBackup($filename, $mode);
 
         if ($result['success']) {
             $message = __('Restore completed successfully.');
@@ -244,19 +177,9 @@ class BackupController extends Controller
      */
     public function destroy(string $filename)
     {
-        // SECURITY: Apply same filename validation
-        if (!preg_match('/^[a-zA-Z0-9_\-\.]+$/', $filename)) {
-            return back()->with('error', __('Invalid filename format.'));
-        }
-
-        $safeFilename = basename($filename);
-        $deleted = $this->backupService->deleteBackup($safeFilename);
+        $deleted = $this->backupService->deleteBackup($filename);
 
         if ($deleted) {
-            \Log::info('Backup file deleted', [
-                'filename' => $safeFilename,
-                'user_id' => auth()->id(),
-            ]);
             return back()->with('success', __('Backup deleted successfully.'));
         }
 

@@ -86,7 +86,7 @@ Route::middleware('auth')->group(function () {
         Route::post('credentials/bulk-export', [CredentialController::class, 'bulkExport'])
             ->middleware('throttle:10,1')  // 10 bulk exports per minute
             ->name('credentials.bulk-export');
-        Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
+        Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])->middleware('require.password.confirmation')
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
             ->name('credentials.reveal-password');
     });
@@ -94,7 +94,7 @@ Route::middleware('auth')->group(function () {
     // Internal Accounts Module (Conturi)
     Route::middleware('module:internal_accounts')->group(function () {
         Route::resource('internal-accounts', InternalAccountController::class);
-        Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])
+        Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])->middleware('require.password.confirmation')
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
             ->name('internal-accounts.reveal-password');
     });
@@ -130,6 +130,8 @@ Route::middleware('auth')->group(function () {
             ->name('subscriptions.bulk-status');
         Route::patch('subscriptions/{subscription}/status', [SubscriptionController::class, 'updateStatus'])->name('subscriptions.update-status');
         Route::post('subscriptions/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('subscriptions.renew');
+        Route::post('subscriptions/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
+        Route::post('subscriptions/{subscription}/reactivate', [SubscriptionController::class, 'reactivate'])->name('subscriptions.reactivate');
         Route::post('subscriptions/check-renewals', [SubscriptionController::class, 'checkRenewals'])->name('subscriptions.check-renewals');
     });
 
@@ -170,12 +172,12 @@ Route::middleware('auth')->group(function () {
         Route::post('settings/backup/import', [\App\Http\Controllers\Settings\BackupController::class, 'import'])
             ->middleware('throttle:5,1')  // 5 imports per minute
             ->name('settings.backup.import');
-        Route::get('settings/backup/download/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'download'])->where('filename', '.*')->name('settings.backup.download');
+        Route::get('settings/backup/download/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'download'])->where('filename', '[a-zA-Z0-9_\-\.]+')->name('settings.backup.download');
         Route::post('settings/backup/restore/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'restore'])
             ->middleware('throttle:1,10')  // 1 restore per 10 minutes (extremely dangerous operation)
-            ->where('filename', '.*')
+            ->where('filename', '[a-zA-Z0-9_\-\.]+')
             ->name('settings.backup.restore');
-        Route::delete('settings/backup/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'destroy'])->where('filename', '.*')->name('settings.backup.destroy');
+        Route::delete('settings/backup/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'destroy'])->where('filename', '[a-zA-Z0-9_\-\.]+')->name('settings.backup.destroy');
 
         // Slack Integration Settings
         Route::prefix('settings/slack')->name('settings.slack.')->group(function () {

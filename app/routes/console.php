@@ -48,6 +48,12 @@ Schedule::command('domains:check-expiring')->dailyAt('09:00');
 // Check for subscriptions due for renewal daily at 09:00 (business hours)
 Schedule::command('subscriptions:check-renewals')->dailyAt('09:00');
 
+// Process automatic subscription renewals daily at 01:00 AM (before backup)
+Schedule::command('subscriptions:process-renewals')
+    ->dailyAt('01:00')
+    ->onSuccess(fn() => Log::info('Subscription renewals processed successfully'))
+    ->onFailure(fn() => Log::error('Failed to process subscription renewals'));
+
 // Sync bank transactions every 12 hours (configurable)
 Schedule::command('banking:sync-transactions --all')
     ->cron('0 */' . config('banking.sync.frequency_hours', 12) . ' * * *');

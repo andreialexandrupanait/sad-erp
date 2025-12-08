@@ -178,25 +178,13 @@ class Subscription extends Model
         $days = $this->days_until_renewal;
 
         if ($days === null) return __('Unknown');
-
-        // For subscriptions with auto-renew disabled, show "Cancels in X days"
-        if (!$this->auto_renew) {
-            if ($days < 0) {
-                return __('Cancelled');
-            }
-            if ($days === 0) return __('Cancels today');
-            if ($days === 1) return __('Cancels tomorrow');
-            return trans_choice('Cancels in :count day|Cancels in :count days', $days, ['count' => $days]);
-        }
-
-        // For auto-renewing subscriptions, show "Renews in X days"
         if ($days < 0) {
             $daysOverdue = abs($days);
-            return trans_choice('Overdue :count day|Overdue :count days', $daysOverdue, ['count' => $daysOverdue]);
+            return trans_choice('Expired :count day ago|Expired :count days ago', $daysOverdue, ['count' => $daysOverdue]);
         }
-        if ($days === 0) return __('Renews today');
-        if ($days === 1) return __('Renews tomorrow');
-        return trans_choice('Renews in :count day|Renews in :count days', $days, ['count' => $days]);
+        if ($days === 0) return __('Expires today');
+        if ($days === 1) return __('Expires tomorrow');
+        return trans_choice('Expires in :count day|Expires in :count days', $days, ['count' => $days]);
     }
 
     /**
@@ -231,7 +219,8 @@ class Subscription extends Model
     public function scopeStatus($query, $status)
     {
         if ($status) {
-            return $query->where('status', $status);
+            return $query->where('status',
+        'auto_renew', $status);
         }
         return $query;
     }
@@ -316,7 +305,8 @@ class Subscription extends Model
         ")->first();
 
         // Single query for cost calculations (active subscriptions only)
-        $costs = self::where('status', 'active')
+        $costs = self::where('status',
+        'auto_renew', 'active')
             ->selectRaw("
                 SUM(CASE
                     WHEN billing_cycle = 'weekly' THEN price * 4.33
@@ -335,7 +325,8 @@ class Subscription extends Model
             ")->first();
 
         // Upcoming renewals (next 30 days)
-        $upcomingRenewals = self::where('status', 'active')
+        $upcomingRenewals = self::where('status',
+        'auto_renew', 'active')
             ->whereBetween('next_renewal_date', [
                 Carbon::now()->startOfDay(),
                 Carbon::now()->addDays(30)->endOfDay()

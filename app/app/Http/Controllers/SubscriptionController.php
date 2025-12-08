@@ -262,6 +262,75 @@ class SubscriptionController extends Controller
     }
 
     /**
+     * Cancel a subscription (disable auto-renewal)
+     */
+    public function cancel(Request $request, Subscription $subscription)
+    {
+        // Disable auto-renewal
+        $subscription->update(['auto_renew' => false]);
+
+        // Log the cancellation
+        $this->logStatusChange(
+            $subscription,
+            'auto_renew',
+            'manual_cancel',
+            __('Auto-renewal cancelled by user')
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Subscription :name will cancel on :date.', [
+                    'name' => $subscription->vendor_name,
+                    'date' => $subscription->next_renewal_date->translatedFormat('d M Y')
+                ]),
+            ]);
+        }
+
+        return redirect()->route('subscriptions.index')
+            ->with('success', __('Subscription :name will cancel on :date.', [
+                'name' => $subscription->vendor_name,
+                'date' => $subscription->next_renewal_date->translatedFormat('d M Y')
+            ]));
+    }
+
+    /**
+     * Reactivate a subscription (re-enable auto-renewal)
+     */
+    public function reactivate(Request $request, Subscription $subscription)
+    {
+        // Re-enable auto-renewal
+        $subscription->update(['auto_renew' => true]);
+
+        // If subscription is cancelled/paused, set back to active
+        if (in_array($subscription->status, ['cancelled', 'paused'])) {
+            $subscription->update(['status' => 'active']);
+        }
+
+        // Log the reactivation
+        $this->logStatusChange(
+            $subscription,
+            'manual_cancel',
+            'auto_renew',
+            __('Auto-renewal reactivated by user')
+        );
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Subscription :name has been reactivated.', [
+                    'name' => $subscription->vendor_name
+                ]),
+            ]);
+        }
+
+        return redirect()->route('subscriptions.index')
+            ->with('success', __('Subscription :name has been reactivated.', [
+                'name' => $subscription->vendor_name
+            ]));
+    }
+
+        /**
      * Check and advance overdue renewals
      */
     public function checkRenewals()

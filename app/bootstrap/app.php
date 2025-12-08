@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\AuditLogger::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
         // Register middleware aliases
@@ -36,6 +37,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'module' => \App\Http\Middleware\CheckModuleAccess::class,
             'org' => \App\Http\Middleware\EnsureOrganizationScope::class,
+            'require.password.confirmation' => \App\Http\Middleware\RequirePasswordConfirmation::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

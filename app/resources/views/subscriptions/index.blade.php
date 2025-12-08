@@ -281,16 +281,31 @@
                                         </div>
                                         @if($subscription->status === 'active')
                                             <div class="flex items-center gap-1 mt-1">
-                                                <button
-                                                    type="button"
-                                                    onclick="renewSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
-                                                    class="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
-                                                    title="{{ __('Mark as renewed') }}">
-                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                                    </svg>
-                                                    {{ __('Renew') }}
-                                                </button>
+                                                @if($subscription->auto_renew)
+                                                    {{-- Show Cancel button for auto-renewing subscriptions --}}
+                                                    <button
+                                                        type="button"
+                                                        onclick="cancelSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
+                                                        class="inline-flex items-center text-xs text-red-600 hover:text-red-800 transition-colors"
+                                                        title="{{ __('Cancel subscription') }}">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                        </svg>
+                                                        {{ __('Cancel') }}
+                                                    </button>
+                                                @else
+                                                    {{-- Show Reactivate button for cancelled subscriptions --}}
+                                                    <button
+                                                        type="button"
+                                                        onclick="reactivateSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
+                                                        class="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
+                                                        title="{{ __('Reactivate subscription') }}">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                        </svg>
+                                                        {{ __('Reactivate') }}
+                                                    </button>
+                                                @endif
                                             </div>
                                         @endif
                                     </x-ui.table-cell>
@@ -377,6 +392,74 @@
             })
             .catch(error => {
                 alert('{{ __('Error renewing subscription:') }} ' + error.message);
+            });
+        }
+
+        function cancelSubscription(subscriptionId, vendorName) {
+            const confirmMsg = `Cancel subscription "${vendorName}"?\n\nThe subscription will not renew automatically. You can reactivate it at any time before the renewal date.`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            fetch(`/subscriptions/${subscriptionId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || '{{ __('Error cancelling subscription.') }}');
+                }
+            })
+            .catch(error => {
+                alert('{{ __('Error cancelling subscription:') }} ' + error.message);
+            });
+        }
+
+        function reactivateSubscription(subscriptionId, vendorName) {
+            const confirmMsg = `Reactivate subscription "${vendorName}"?\n\nThe subscription will automatically renew on the next renewal date.`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+
+            fetch(`/subscriptions/${subscriptionId}/reactivate`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    window.location.reload();
+                } else {
+                    alert(data.message || '{{ __('Error reactivating subscription.') }}');
+                }
+            })
+            .catch(error => {
+                alert('{{ __('Error reactivating subscription:') }} ' + error.message);
             });
         }
     </script>
