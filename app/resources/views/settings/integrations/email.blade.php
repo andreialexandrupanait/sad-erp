@@ -3,7 +3,7 @@
 @section('title', __('Email Notifications'))
 
 @section('content')
-<div class="max-w-4xl mx-auto">
+<div class="p-6">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900">{{ __('Email Notifications') }}</h1>
         <p class="text-slate-600 mt-1">{{ __('Configure email notifications for important system events.') }}</p>
@@ -11,7 +11,7 @@
 
     {{-- Mail Configuration Status --}}
     <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-        <div class="px-6 py-4 border-b border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('Mail Configuration') }}</h2>
         </div>
         <div class="p-6">
@@ -44,7 +44,7 @@
         @csrf
         @method('PUT')
 
-        <div class="px-6 py-4 border-b border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
             <div class="flex items-center justify-between">
                 <h2 class="text-lg font-semibold text-slate-900">{{ __('Notification Settings') }}</h2>
                 <label class="relative inline-flex items-center cursor-pointer">
@@ -136,7 +136,7 @@
             </div>
         </div>
 
-        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-100 flex justify-between items-center">
             <button type="button"
                     onclick="testEmail()"
                     class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
@@ -171,7 +171,7 @@
 {{-- Test Email Modal --}}
 <div id="testEmailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-        <div class="px-6 py-4 border-b border-slate-200">
+        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
             <h3 class="text-lg font-semibold text-slate-900">{{ __('Send Test Email') }}</h3>
         </div>
         <div class="p-6">
@@ -190,7 +190,7 @@
                 <div class="p-3 rounded-lg text-sm"></div>
             </div>
         </div>
-        <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end gap-3">
+        <div class="px-6 py-4 border-t border-slate-200 bg-slate-100 flex justify-end gap-3">
             <button type="button"
                     onclick="closeTestModal()"
                     class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50">

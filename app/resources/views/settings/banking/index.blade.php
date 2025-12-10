@@ -7,8 +7,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-6 px-6 space-y-6">
             {{-- Success/Error Messages --}}
             @if (session('success'))
                 <div class="bg-green-50 border-l-4 border-green-500 p-4 rounded-lg">
@@ -103,7 +102,7 @@
             {{-- Connected Accounts --}}
             @if ($credentials->count() > 0)
                 <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-200">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                         <h3 class="text-lg font-semibold text-slate-800">Conturi Conectate</h3>
                     </div>
 
@@ -244,7 +243,7 @@
 
             {{-- System Status --}}
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                     <h3 class="text-lg font-semibold text-slate-800">Status Sistem</h3>
                 </div>
                 <div class="px-6 py-4">
@@ -286,7 +285,6 @@
                     </div>
                 </div>
             </div>
-        </div>
     </div>
 
     <script>

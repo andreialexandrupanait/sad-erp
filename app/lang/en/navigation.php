@@ -15,8 +15,13 @@ return [
 
     // Sidebar section headers
     'clients_section' => 'Clients',
+    'sales_section' => 'Sales',
     'accounting_section' => 'Accounting',
     'resources_section' => 'Internal Resources',
+
+    // Sales section
+    'offers' => 'Offers',
+    'contracts' => 'Contracts',
 
     // Financial section
     'accounting' => 'Accounting',

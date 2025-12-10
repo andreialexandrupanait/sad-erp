@@ -179,14 +179,15 @@ class Subscription extends Model
 
         if ($days === null) return __('Unknown');
 
-        // For subscriptions with auto-renew disabled, show "Cancels in X days"
+        // For subscriptions with auto-renew disabled, show "Expires in X days"
         if (!$this->auto_renew) {
             if ($days < 0) {
-                return __('Cancelled');
+                $daysExpired = abs($days);
+                return trans_choice('Expired :count day ago|Expired :count days ago', $daysExpired, ['count' => $daysExpired]);
             }
-            if ($days === 0) return __('Cancels today');
-            if ($days === 1) return __('Cancels tomorrow');
-            return trans_choice('Cancels in :count day|Cancels in :count days', $days, ['count' => $days]);
+            if ($days === 0) return __('Expires today');
+            if ($days === 1) return __('Expires tomorrow');
+            return trans_choice('Expires in :count day|Expires in :count days', $days, ['count' => $days]);
         }
 
         // For auto-renewing subscriptions, show "Renews in X days"

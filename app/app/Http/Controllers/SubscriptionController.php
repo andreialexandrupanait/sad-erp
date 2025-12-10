@@ -68,8 +68,13 @@ class SubscriptionController extends Controller
             $sortBy = 'next_renewal_date';
         }
 
-        // Always put paused and cancelled subscriptions at the end
-        $query->orderByRaw("CASE WHEN status = 'active' THEN 0 WHEN status = 'paused' THEN 1 ELSE 2 END ASC")
+        // Always put cancelled (auto_renew=false) and paused subscriptions at the end
+        $query->orderByRaw("CASE
+                WHEN status = 'active' AND auto_renew = 1 THEN 0
+                WHEN status = 'active' AND auto_renew = 0 THEN 1
+                WHEN status = 'paused' THEN 2
+                ELSE 3
+            END ASC")
               ->orderBy($sortBy, $sortDir);
 
         // Paginate

@@ -24,7 +24,7 @@
         <!-- Statistics Cards -->
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <!-- Total Accounts - Featured -->
-            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+            <div class="rounded-[10px] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -42,7 +42,7 @@
             </div>
 
             <!-- My Accounts -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -60,7 +60,7 @@
             </div>
 
             <!-- Team Shared -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -130,15 +130,15 @@
             @if ($accounts->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr class="border-b transition-colors hover:bg-slate-50/50">
+                        <thead class="bg-slate-100">
+                            <tr class="border-b border-slate-200">
                                 <x-ui.sortable-header column="account_name" label="{{ __('Account Name') }}" />
                                 <x-ui.sortable-header column="url" label="{{ __('URL') }}" />
                                 <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Access') }}</th>
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Owner') }}</th>
-                                <th class="h-12 px-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Access') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Owner') }}</th>
+                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
@@ -250,7 +250,7 @@
 
                 <!-- Pagination -->
                 @if($accounts->hasPages())
-                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200">
                         {{ $accounts->links() }}
                     </div>
                 @endif

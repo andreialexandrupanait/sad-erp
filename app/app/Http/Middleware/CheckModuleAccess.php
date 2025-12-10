@@ -21,6 +21,8 @@ class CheckModuleAccess
         'analytics' => 'analytics',
         'settings' => 'settings',
         'dashboard' => 'dashboard',
+        'offers' => 'offers',
+        'contracts' => 'contracts',
     ];
 
     /**

@@ -19,10 +19,21 @@ use App\Http\Controllers\Financial\ExpenseController;
 use App\Http\Controllers\Financial\FileController as FinancialFileController;
 use App\Http\Controllers\Financial\RevenueImportController;
 use App\Http\Controllers\Financial\ExpenseImportController;
+use App\Http\Controllers\OfferController;
+use App\Http\Controllers\ContractController;
+use App\Http\Controllers\DocumentTemplateController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return redirect()->route('login');
+});
+
+// Public Offer Routes (no auth required)
+Route::prefix('offers/view')->name('offers.public')->group(function () {
+    Route::get('{token}', [OfferController::class, 'publicView'])->name('');
+    Route::post('{token}/accept', [OfferController::class, 'publicAccept'])->name('.accept');
+    Route::post('{token}/reject', [OfferController::class, 'publicReject'])->name('.reject');
+    Route::post('{token}/request-code', [OfferController::class, 'requestVerificationCode'])->name('.request-code');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -147,6 +158,7 @@ Route::middleware('auth')->group(function () {
         // Settings - Business Hub
         Route::get('settings/business', [SettingsController::class, 'business'])->name('settings.business');
         Route::get('settings/business-info', [SettingsController::class, 'businessInfo'])->name('settings.business-info');
+        Route::put('settings/business-info', [SettingsController::class, 'updateBusinessInfo'])->name('settings.business-info.update');
         Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
 
         // Settings - Integrations Hub
@@ -250,10 +262,44 @@ Route::middleware('auth')->group(function () {
 
         // Services Management (organization-level)
         Route::get("settings/services", [ServiceController::class, "index"])->name("settings.services");
+        Route::get("settings/services/create", [ServiceController::class, "create"])->name("settings.services.create");
         Route::post("settings/services", [ServiceController::class, "store"])->name("settings.services.store");
+        Route::get("settings/services/{service}/edit", [ServiceController::class, "edit"])->name("settings.services.edit");
         Route::put("settings/services/{service}", [ServiceController::class, "update"])->name("settings.services.update");
         Route::delete("settings/services/{service}", [ServiceController::class, "destroy"])->name("settings.services.destroy");
         Route::post("settings/services/reorder", [ServiceController::class, "reorder"])->name("settings.services.reorder");
+    });
+
+    // Offers Module
+    Route::middleware('module:offers')->group(function () {
+        Route::resource('offers', OfferController::class);
+        Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
+        Route::post('offers/{offer}/duplicate', [OfferController::class, 'duplicate'])->name('offers.duplicate');
+        Route::post('offers/{offer}/convert-to-contract', [OfferController::class, 'convertToContract'])->name('offers.convert-to-contract');
+    });
+
+    // Contracts Module
+    Route::middleware('module:contracts')->group(function () {
+        Route::get('contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::get('contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+        Route::get('contracts/{contract}/add-annex', [ContractController::class, 'addAnnexForm'])->name('contracts.add-annex');
+        Route::post('contracts/{contract}/add-annex', [ContractController::class, 'addAnnex'])->name('contracts.add-annex.store');
+        Route::post('contracts/{contract}/terminate', [ContractController::class, 'terminate'])->name('contracts.terminate');
+        Route::get('contracts/{contract}/download', [ContractController::class, 'downloadPdf'])->name('contracts.download');
+        Route::get('contracts/{contract}/annexes/{annex}/download', [ContractController::class, 'downloadAnnexPdf'])->name('contracts.annex.download');
+        Route::get('api/clients/{client}/contracts', [ContractController::class, 'forClient'])->name('api.clients.contracts');
+    });
+
+    // Document Templates (Settings)
+    Route::middleware('module:settings')->prefix('settings')->name('settings.')->group(function () {
+        Route::resource('document-templates', DocumentTemplateController::class);
+        Route::post('document-templates/{documentTemplate}/duplicate', [DocumentTemplateController::class, 'duplicate'])->name('document-templates.duplicate');
+        Route::post('document-templates/{documentTemplate}/set-default', [DocumentTemplateController::class, 'setDefault'])->name('document-templates.set-default');
+        Route::post('document-templates/{documentTemplate}/toggle-active', [DocumentTemplateController::class, 'toggleActive'])->name('document-templates.toggle-active');
+        Route::get('document-templates/{documentTemplate}/preview', [DocumentTemplateController::class, 'preview'])->name('document-templates.preview');
+        Route::get('document-templates/{documentTemplate}/builder', [DocumentTemplateController::class, 'builder'])->name('document-templates.builder');
+        Route::put('document-templates/{documentTemplate}/builder', [DocumentTemplateController::class, 'updateBuilder'])->name('document-templates.builder.update');
+        Route::get('api/template-variables', [DocumentTemplateController::class, 'variables'])->name('api.template-variables');
     });
 
     // Financial Module

@@ -268,18 +268,18 @@
                                 </div>
 
                                 {{-- Status Group Table --}}
-                                <div x-show="!isGroupCollapsed(status.id)" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+                                <div x-show="!isGroupCollapsed(status.id)" class="rounded-[10px] border border-slate-200 bg-white shadow-sm overflow-hidden">
                                     <div class="overflow-x-auto">
                                         <table class="w-full caption-bottom text-sm">
-                                            <thead class="[&_tr]:border-b">
-                                                <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                                    <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                            <thead class="bg-slate-100">
+                                                <tr class="border-b border-slate-200">
+                                                    <th class="px-6 py-4 text-left align-middle font-medium text-slate-600 w-12">
                                                         <input type="checkbox"
                                                                @change="toggleSelectAll()"
                                                                :checked="selectAll"
                                                                class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                     </th>
-                                                    <th @click="setSort('name')" class="h-10 px-4 text-left align-middle font-medium text-slate-500 cursor-pointer hover:text-slate-900">
+                                                    <th @click="setSort('name')" class="px-6 py-4 text-left align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
                                                         <div class="flex items-center gap-1">
                                                             {{ __('Client') }}
                                                             <span x-show="sortColumn === 'name'" class="text-blue-600">
@@ -288,9 +288,9 @@
                                                             </span>
                                                         </div>
                                                     </th>
-                                                    <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
-                                                    <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
-                                                    <th @click="setSort('revenue')" class="h-10 px-4 text-right align-middle font-medium text-slate-500 cursor-pointer hover:text-slate-900">
+                                                    <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
+                                                    <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
+                                                    <th @click="setSort('revenue')" class="px-6 py-4 text-right align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
                                                         <div class="flex items-center justify-end gap-1">
                                                             {{ __('Revenue') }}
                                                             <span x-show="sortColumn === 'revenue' || sortColumn === 'total_incomes'" class="text-blue-600">
@@ -299,19 +299,19 @@
                                                             </span>
                                                         </div>
                                                     </th>
-                                                    <th class="h-10 px-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
+                                                    <th class="px-6 py-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="[&_tr:last-child]:border-0">
                                                 <template x-for="client in getClientsForStatus(status.id)" :key="client.id">
-                                                    <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                                        <td class="pl-4 pr-2 py-4 align-middle">
+                                                    <tr class="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
+                                                        <td class="px-6 py-4 align-middle w-12">
                                                             <input type="checkbox"
                                                                    :checked="isSelected(client.id)"
                                                                    @change="toggleItem(client.id)"
                                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                         </td>
-                                                        <td class="pl-2 pr-4 py-4 align-middle">
+                                                        <td class="px-6 py-4 align-middle">
                                                             <div>
                                                                 <a :href="'/clients/' + (client.slug || client.id)"
                                                                    class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors"
@@ -319,7 +319,7 @@
                                                                 <div x-show="client.contact_person" class="text-sm text-slate-500" x-text="client.contact_person"></div>
                                                             </div>
                                                         </td>
-                                                        <td class="p-4 align-middle">
+                                                        <td class="px-6 py-4 align-middle">
                                                             <div x-show="client.email"
                                                                  @click="copyToClipboard(client.email, $event)"
                                                                  class="text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
@@ -340,7 +340,7 @@
                                                                 </svg>
                                                             </div>
                                                         </td>
-                                                        <td class="p-4 align-middle">
+                                                        <td class="px-6 py-4 align-middle">
                                                             {{-- Status Dropdown --}}
                                                             <div x-data="{ open: false }" @click.away="open = false" class="relative">
                                                                 <button type="button"
@@ -382,13 +382,13 @@
                                                                 </div>
                                                             </div>
                                                         </td>
-                                                        <td class="p-4 align-middle text-right">
+                                                        <td class="px-6 py-4 align-middle text-right">
                                                             <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
                                                             <div x-show="client.invoices_count > 0" class="text-xs text-slate-500">
                                                                 <span x-text="client.invoices_count"></span> {{ __('invoices') }}
                                                             </div>
                                                         </td>
-                                                        <td class="p-4 align-middle text-right">
+                                                        <td class="px-6 py-4 align-middle text-right">
                                                             <div class="flex items-center justify-end gap-1">
                                                                 <a :href="'/clients/' + (client.slug || client.id)"
                                                                    class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
@@ -435,45 +435,45 @@
                                 </span>
                             </div>
 
-                            <div x-show="!isGroupCollapsed(null)" class="rounded-lg border border-slate-200 bg-white shadow-sm">
+                            <div x-show="!isGroupCollapsed(null)" class="rounded-[10px] border border-slate-200 bg-white shadow-sm overflow-hidden">
                                 {{-- Same table structure as above for clients without status --}}
                                 <div class="overflow-x-auto">
                                     <table class="w-full caption-bottom text-sm">
                                         {{-- Similar table content --}}
-                                        <thead class="[&_tr]:border-b">
-                                            <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                        <thead class="bg-slate-100">
+                                            <tr class="border-b border-slate-200">
+                                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                                     <input type="checkbox" @change="toggleSelectAll()" :checked="selectAll" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                 </th>
-                                                <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
-                                                <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
-                                                <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
-                                                <th class="h-10 px-4 text-right align-middle font-medium text-slate-500">{{ __('Revenue') }}</th>
-                                                <th class="h-10 px-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
+                                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
+                                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
+                                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
+                                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Revenue') }}</th>
+                                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
                                             </tr>
                                         </thead>
                                         <tbody class="[&_tr:last-child]:border-0">
                                             <template x-for="client in getClientsWithoutStatus()" :key="client.id">
-                                                <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                                    <td class="pl-4 pr-2 py-4 align-middle">
+                                                <tr class="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
+                                                    <td class="px-6 py-4 align-middle">
                                                         <input type="checkbox" :checked="isSelected(client.id)" @change="toggleItem(client.id)" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                     </td>
-                                                    <td class="pl-2 pr-4 py-4 align-middle">
+                                                    <td class="px-6 py-4 align-middle">
                                                         <a :href="'/clients/' + (client.slug || client.id)" class="text-sm font-semibold text-slate-900 hover:text-slate-600" x-text="client.name"></a>
                                                         <div x-show="client.contact_person" class="text-sm text-slate-500" x-text="client.contact_person"></div>
                                                     </td>
-                                                    <td class="p-4 align-middle">
+                                                    <td class="px-6 py-4 align-middle">
                                                         <div x-show="client.email" class="text-sm text-slate-900" x-text="client.email"></div>
                                                         <div x-show="!client.email" class="text-sm text-slate-500">—</div>
                                                         <div x-show="client.phone" class="text-sm text-slate-500" x-text="client.phone"></div>
                                                     </td>
-                                                    <td class="p-4 align-middle">
+                                                    <td class="px-6 py-4 align-middle">
                                                         <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-600">{{ __('No Status') }}</span>
                                                     </td>
-                                                    <td class="p-4 align-middle text-right">
+                                                    <td class="px-6 py-4 align-middle text-right">
                                                         <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
                                                     </td>
-                                                    <td class="p-4 align-middle text-right">
+                                                    <td class="px-6 py-4 align-middle text-right">
                                                         <a :href="'/clients/' + (client.slug || client.id)" class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                                                         </a>
@@ -493,15 +493,15 @@
                     <x-ui.card>
                         <div class="overflow-x-auto">
                             <table class="w-full caption-bottom text-sm">
-                                <thead class="[&_tr]:border-b">
-                                    <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                        <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                                <thead class="bg-slate-100">
+                                    <tr class="border-b border-slate-200">
+                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                             <input type="checkbox"
                                                    @change="toggleSelectAll()"
                                                    :checked="selectAll"
                                                    class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                         </th>
-                                        <th @click="setSort('name')" class="h-10 px-4 text-left align-middle font-medium text-slate-500 cursor-pointer hover:text-slate-900">
+                                        <th @click="setSort('name')" class="px-6 py-4 text-left align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
                                             <div class="flex items-center gap-1">
                                                 {{ __('Client') }}
                                                 <span x-show="sortColumn === 'name'" class="text-blue-600">
@@ -510,8 +510,8 @@
                                                 </span>
                                             </div>
                                         </th>
-                                        <th class="h-10 px-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
-                                        <th @click="setSort('status')" class="h-10 px-4 text-left align-middle font-medium text-slate-500 cursor-pointer hover:text-slate-900">
+                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
+                                        <th @click="setSort('status')" class="px-6 py-4 text-left align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
                                             <div class="flex items-center gap-1">
                                                 {{ __('Status') }}
                                                 <span x-show="sortColumn === 'status' || sortColumn === 'status_id'" class="text-blue-600">
@@ -520,7 +520,7 @@
                                                 </span>
                                             </div>
                                         </th>
-                                        <th @click="setSort('revenue')" class="h-10 px-4 text-right align-middle font-medium text-slate-500 cursor-pointer hover:text-slate-900">
+                                        <th @click="setSort('revenue')" class="px-6 py-4 text-right align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
                                             <div class="flex items-center justify-end gap-1">
                                                 {{ __('Revenue') }}
                                                 <span x-show="sortColumn === 'revenue' || sortColumn === 'total_incomes'" class="text-blue-600">
@@ -529,19 +529,19 @@
                                                 </span>
                                             </div>
                                         </th>
-                                        <th class="h-10 px-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
+                                        <th class="px-6 py-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody class="[&_tr:last-child]:border-0">
                                     <template x-for="client in clients" :key="client.id">
-                                        <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                            <td class="pl-4 pr-2 py-4 align-middle">
+                                        <tr class="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
+                                            <td class="px-6 py-4 align-middle">
                                                 <input type="checkbox"
                                                        :checked="isSelected(client.id)"
                                                        @change="toggleItem(client.id)"
                                                        class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                             </td>
-                                            <td class="pl-2 pr-4 py-4 align-middle">
+                                            <td class="px-6 py-4 align-middle">
                                                 <div>
                                                     <a :href="'/clients/' + (client.slug || client.id)"
                                                        class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors"
@@ -549,7 +549,7 @@
                                                     <div x-show="client.contact_person" class="text-sm text-slate-500" x-text="client.contact_person"></div>
                                                 </div>
                                             </td>
-                                            <td class="p-4 align-middle">
+                                            <td class="px-6 py-4 align-middle">
                                                 <div x-show="client.email"
                                                      @click="copyToClipboard(client.email, $event)"
                                                      class="text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
@@ -570,7 +570,7 @@
                                                     </svg>
                                                 </div>
                                             </td>
-                                            <td class="p-4 align-middle">
+                                            <td class="px-6 py-4 align-middle">
                                                 {{-- Status Dropdown --}}
                                                 <div x-data="{ open: false }" @click.away="open = false" class="relative">
                                                     <button type="button"
@@ -612,13 +612,13 @@
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td class="p-4 align-middle text-right">
+                                            <td class="px-6 py-4 align-middle text-right">
                                                 <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
                                                 <div x-show="client.invoices_count > 0" class="text-xs text-slate-500">
                                                     <span x-text="client.invoices_count"></span> {{ __('invoices') }}
                                                 </div>
                                             </td>
-                                            <td class="p-4 align-middle text-right">
+                                            <td class="px-6 py-4 align-middle text-right">
                                                 <div class="flex items-center justify-end gap-1">
                                                     <a :href="'/clients/' + (client.slug || client.id)"
                                                        class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
@@ -644,7 +644,7 @@
                         </div>
 
                         {{-- Pagination --}}
-                        <div x-show="pagination.last_page > 1" class="bg-slate-50 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-4">
+                        <div x-show="pagination.last_page > 1" class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-4">
                             <div class="flex items-center gap-2 text-sm text-slate-600">
                                 <span>{{ __('Per page:') }}</span>
                                 <select @change="setPerPage($event.target.value)"

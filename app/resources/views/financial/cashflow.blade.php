@@ -135,20 +135,20 @@
             </x-ui.card-header>
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
-                    <thead class="bg-slate-50 border-b border-slate-200">
+                    <thead class="bg-slate-100 border-b border-slate-200">
                         <tr>
-                            <th class="px-4 py-3 text-left font-semibold text-slate-700">{{ __('Luna') }}</th>
-                            <th class="px-4 py-3 text-right font-semibold text-green-700">{{ __('Intrări RON') }}</th>
-                            <th class="px-4 py-3 text-right font-semibold text-red-700">{{ __('Ieșiri RON') }}</th>
-                            <th class="px-4 py-3 text-right font-semibold text-slate-700">{{ __('Net RON') }}</th>
-                            <th class="px-4 py-3 text-right font-semibold text-blue-700">{{ __('Sold Cumulat') }}</th>
-                            <th class="px-4 py-3 text-center font-semibold text-slate-500">{{ __('Tranzacții') }}</th>
+                            <th class="px-6 py-4 text-left font-semibold text-slate-700">{{ __('Luna') }}</th>
+                            <th class="px-6 py-4 text-right font-semibold text-green-700">{{ __('Intrări RON') }}</th>
+                            <th class="px-6 py-4 text-right font-semibold text-red-700">{{ __('Ieșiri RON') }}</th>
+                            <th class="px-6 py-4 text-right font-semibold text-slate-700">{{ __('Net RON') }}</th>
+                            <th class="px-6 py-4 text-right font-semibold text-blue-700">{{ __('Sold Cumulat') }}</th>
+                            <th class="px-6 py-4 text-center font-semibold text-slate-500">{{ __('Tranzacții') }}</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach($cashflowData as $row)
                             <tr class="{{ $row['is_current_month'] ? 'bg-blue-50' : ($row['is_future'] ? 'opacity-50' : 'hover:bg-slate-50') }}">
-                                <td class="px-4 py-3">
+                                <td class="px-6 py-4">
                                     <a href="{{ route('financial.revenues.index', ['year' => $year, 'month' => $row['month']]) }}" class="font-medium text-slate-900 hover:text-blue-600">
                                         {{ $row['month_name'] }}
                                         @if($row['is_current_month'])
@@ -156,7 +156,7 @@
                                         @endif
                                     </a>
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-6 py-4 text-right">
                                     @if($row['revenue_ron'] > 0)
                                         <span class="text-green-600 font-medium">+{{ number_format($row['revenue_ron'], 0, ',', '.') }}</span>
                                         @if($row['revenue_eur'] > 0)
@@ -166,7 +166,7 @@
                                         <span class="text-slate-400">-</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-6 py-4 text-right">
                                     @if($row['expense_ron'] > 0)
                                         <span class="text-red-600 font-medium">-{{ number_format($row['expense_ron'], 0, ',', '.') }}</span>
                                         @if($row['expense_eur'] > 0)
@@ -176,17 +176,17 @@
                                         <span class="text-slate-400">-</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-6 py-4 text-right">
                                     <span class="font-semibold {{ $row['net_ron'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                         {{ $row['net_ron'] >= 0 ? '+' : '' }}{{ number_format($row['net_ron'], 0, ',', '.') }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-right">
+                                <td class="px-6 py-4 text-right">
                                     <span class="font-semibold {{ $row['balance_ron'] >= 0 ? 'text-blue-600' : 'text-orange-600' }}">
                                         {{ number_format($row['balance_ron'], 0, ',', '.') }}
                                     </span>
                                 </td>
-                                <td class="px-4 py-3 text-center">
+                                <td class="px-6 py-4 text-center">
                                     <span class="text-slate-500">
                                         {{ $row['revenue_count'] }} / {{ $row['expense_count'] }}
                                     </span>
@@ -196,14 +196,14 @@
                     </tbody>
                     <tfoot class="bg-slate-100 border-t-2 border-slate-300">
                         <tr class="font-bold">
-                            <td class="px-4 py-3 text-slate-900">{{ __('TOTAL') }} {{ $year }}</td>
-                            <td class="px-4 py-3 text-right text-green-700">+{{ number_format($totals['revenue_ron'], 0, ',', '.') }}</td>
-                            <td class="px-4 py-3 text-right text-red-700">-{{ number_format($totals['expense_ron'], 0, ',', '.') }}</td>
-                            <td class="px-4 py-3 text-right {{ $totals['net_ron'] >= 0 ? 'text-green-700' : 'text-red-700' }}">
+                            <td class="px-6 py-4 text-slate-900">{{ __('TOTAL') }} {{ $year }}</td>
+                            <td class="px-6 py-4 text-right text-green-700">+{{ number_format($totals['revenue_ron'], 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-right text-red-700">-{{ number_format($totals['expense_ron'], 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-right {{ $totals['net_ron'] >= 0 ? 'text-green-700' : 'text-red-700' }}">
                                 {{ $totals['net_ron'] >= 0 ? '+' : '' }}{{ number_format($totals['net_ron'], 0, ',', '.') }}
                             </td>
-                            <td class="px-4 py-3 text-right text-blue-700">-</td>
-                            <td class="px-4 py-3 text-center text-slate-500">-</td>
+                            <td class="px-6 py-4 text-right text-blue-700">-</td>
+                            <td class="px-6 py-4 text-center text-slate-500">-</td>
                         </tr>
                     </tfoot>
                 </table>

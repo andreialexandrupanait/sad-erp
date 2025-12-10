@@ -2,7 +2,6 @@
     <x-slot name="pageTitle">{{ __("Add User") }}</x-slot>
 
     <div class="p-6">
-        <div class="max-w-2xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
                 <div class="p-6">
                     <div class="mb-6">
@@ -103,6 +102,5 @@
                     </form>
                 </div>
             </div>
-        </div>
     </div>
 </x-app-layout>

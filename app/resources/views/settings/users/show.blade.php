@@ -2,7 +2,6 @@
     <x-slot name="pageTitle">{{ __("User Permissions") }} - {{ $user->name }}</x-slot>
 
     <div class="p-6">
-        <div class="max-w-5xl mx-auto sm:px-6 lg:px-8">
             <!-- User Info Card -->
             <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg mb-6">
                 <div class="p-6">
@@ -108,21 +107,21 @@
 
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead class="bg-gray-50 dark:bg-gray-900">
+                                    <thead class="bg-slate-100 dark:bg-gray-900">
                                         <tr>
-                                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Module") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("View") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Create") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Update") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Delete") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Export") }}</th>
-                                            <th scope="col" class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Source") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Module") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("View") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Create") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Update") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Delete") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Export") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Source") }}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                                         @foreach($permissionMatrix as $slug => $data)
                                             <tr class="{{ $data['is_custom'] ? 'bg-blue-50/50 dark:bg-blue-900/10' : '' }}">
-                                                <td class="px-4 py-3 whitespace-nowrap">
+                                                <td class="px-6 py-4 whitespace-nowrap">
                                                     <div class="flex items-center gap-2">
                                                         @if($data['module']->icon)
                                                             <span class="text-gray-400">{!! $data['module']->icon !!}</span>
@@ -136,7 +135,7 @@
                                                     </div>
                                                 </td>
                                                 @foreach(['can_view', 'can_create', 'can_update', 'can_delete', 'can_export'] as $action)
-                                                    <td class="px-4 py-3 text-center">
+                                                    <td class="px-6 py-4 text-center">
                                                         <input type="checkbox"
                                                             name="permissions[{{ $slug }}][{{ $action }}]"
                                                             value="1"
@@ -144,7 +143,7 @@
                                                             class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring-blue-500">
                                                     </td>
                                                 @endforeach
-                                                <td class="px-4 py-3 text-center">
+                                                <td class="px-6 py-4 text-center">
                                                     @if($data['is_custom'])
                                                         <span class="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded-full">{{ __("Custom") }}</span>
                                                     @else
@@ -206,6 +205,5 @@
                     </dl>
                 </div>
             </div>
-        </div>
     </div>
 </x-app-layout>

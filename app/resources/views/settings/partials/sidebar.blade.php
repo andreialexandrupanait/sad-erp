@@ -77,6 +77,20 @@
                 </div>
             </a>
 
+            <!-- Document Templates -->
+            <a href="{{ route('settings.document-templates.index') }}"
+               class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors {{ request()->routeIs('settings.document-templates.*') ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'text-slate-600 hover:bg-slate-50' }}">
+                <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center {{ request()->routeIs('settings.document-templates.*') ? 'bg-rose-100' : 'bg-slate-100' }}">
+                    <svg class="w-4 h-4 {{ request()->routeIs('settings.document-templates.*') ? 'text-rose-600' : 'text-slate-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="block">{{ __('Document Templates') }}</span>
+                    <span class="text-xs {{ request()->routeIs('settings.document-templates.*') ? 'text-rose-500' : 'text-slate-400' }}">{{ __('Offers, contracts') }}</span>
+                </div>
+            </a>
+
             @if(auth()->user()->isOrgAdmin() || auth()->user()->isSuperAdmin())
             <!-- Users & Permissions -->
             <a href="{{ route('settings.users.index') }}"

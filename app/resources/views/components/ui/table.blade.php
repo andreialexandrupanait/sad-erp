@@ -3,10 +3,10 @@
 <div {{ $attributes->merge(['class' => 'relative w-full overflow-auto']) }}>
     <table class="w-full caption-bottom text-sm">
         @if(!empty($headers))
-            <thead class="[&_tr]:border-b">
-                <tr class="border-b transition-colors hover:bg-slate-50/50">
+            <thead class="bg-slate-100">
+                <tr class="border-b border-slate-200">
                     @foreach($headers as $header)
-                        <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 [&:has([role=checkbox])]:pr-0">
+                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
                             {{ $header }}
                         </th>
                     @endforeach

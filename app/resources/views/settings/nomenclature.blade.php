@@ -35,12 +35,29 @@
                 return this.selectedIds.length > 0;
             },
 
-            toggleItem(id) {
+            toggleItem(id, childIds = []) {
                 const index = this.selectedIds.indexOf(id);
                 if (index > -1) {
+                    // Deselecting - remove this item and all children
                     this.selectedIds.splice(index, 1);
+                    if (childIds.length > 0) {
+                        childIds.forEach(childId => {
+                            const childIndex = this.selectedIds.indexOf(childId);
+                            if (childIndex > -1) {
+                                this.selectedIds.splice(childIndex, 1);
+                            }
+                        });
+                    }
                 } else {
+                    // Selecting - add this item and all children
                     this.selectedIds.push(id);
+                    if (childIds.length > 0) {
+                        childIds.forEach(childId => {
+                            if (!this.selectedIds.includes(childId)) {
+                                this.selectedIds.push(childId);
+                            }
+                        });
+                    }
                 }
                 this.updateSelectAllState();
             },
@@ -303,8 +320,6 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-sm border border-slate-200">
-                    <div class="p-6">
                         <!-- Add Form (Compact) -->
                         <div x-show="showForm" x-cloak class="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <form @submit.prevent="saveOption()">
@@ -353,12 +368,13 @@
                             <div class="space-y-4">
                                 @forelse($data as $parent)
                                     {{-- Parent Category Card --}}
-                                    <div class="rounded-lg border border-slate-200 overflow-hidden" data-option-id="{{ $parent->id }}">
+                                    <x-ui.card>
+                                    <div data-option-id="{{ $parent->id }}">
                                         {{-- Parent Header --}}
-                                        <div class="flex items-center gap-3 px-4 py-3 bg-slate-50 border-l-4" style="border-left-color: {{ $parent->color_class ?? '#3b82f6' }}">
+                                        <div class="flex items-center gap-3 px-6 py-4 border-l-4" style="border-left-color: {{ $parent->color_class ?? '#3b82f6' }}">
                                             <input type="checkbox"
                                                    :checked="selectedIds.includes({{ $parent->id }})"
-                                                   @change="toggleItem({{ $parent->id }})"
+                                                   @change="toggleItem({{ $parent->id }}, [{{ $parent->children->pluck('id')->implode(', ') }}])"
                                                    class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
 
                                             <div class="flex-1 flex items-center gap-2">
@@ -426,9 +442,10 @@
 
                                         {{-- Children List --}}
                                         @if($parent->children->count() > 0)
-                                            <div class="divide-y divide-slate-100">
+                                            <div class="divide-y divide-slate-100 border-t border-slate-100">
                                                 @foreach($parent->children as $child)
-                                                    <div class="flex items-center gap-3 px-4 py-2.5 pl-10 hover:bg-slate-50 transition-colors" data-option-id="{{ $child->id }}">
+                                                    <div class="flex items-center gap-3 px-6 py-4 hover:bg-slate-50 transition-colors" data-option-id="{{ $child->id }}">
+                                                        <div class="w-6"></div>{{-- Spacer for indent --}}
                                                         <input type="checkbox"
                                                                :checked="selectedIds.includes({{ $child->id }})"
                                                                @change="toggleItem({{ $child->id }})"
@@ -462,7 +479,8 @@
                                                     </div>
 
                                                     {{-- Inline Edit Form for Child --}}
-                                                    <div x-show="editingId === {{ $child->id }}" x-cloak class="px-4 py-2.5 pl-10 bg-amber-50 border-t border-amber-200">
+                                                    <div x-show="editingId === {{ $child->id }}" x-cloak class="px-6 py-4 bg-amber-50 border-t border-amber-200">
+                                                        <div class="flex items-center gap-2 ml-10">{{-- ml-10 = w-6 spacer + gap-3 --}}
                                                         <form @submit.prevent="saveOption()" class="flex items-center gap-2">
                                                             <select x-model="formData.parent_id" class="px-2 py-1.5 text-sm border border-slate-300 rounded focus:ring-1 focus:ring-blue-500">
                                                                 <option value="">{{ __('settings.main') }}</option>
@@ -476,36 +494,41 @@
                                                             <button type="submit" :disabled="isSubmitting" class="px-3 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded transition-colors disabled:opacity-50">{{ __('settings.save') }}</button>
                                                             <button type="button" @click="closeForm()" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded transition-colors">{{ __('settings.cancel_action') }}</button>
                                                         </form>
+                                                        </div>
                                                     </div>
                                                 @endforeach
                                             </div>
                                         @endif
                                     </div>
+                                    </x-ui.card>
                                 @empty
+                                    <x-ui.card>
                                     <div class="py-12 text-center text-slate-500">
                                         <svg class="mx-auto h-12 w-12 text-slate-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
                                         </svg>
                                         <p>{{ __('settings.no_categories') }}</p>
                                     </div>
+                                    </x-ui.card>
                                 @endforelse
                             </div>
                         @else
                             {{-- NON-HIERARCHICAL VIEW - Table Based --}}
+                            <x-ui.card>
                             <div class="overflow-x-auto">
-                            <table class="w-full">
-                                <thead>
+                            <table class="w-full caption-bottom text-sm">
+                                <thead class="bg-slate-100">
                                     <tr class="border-b border-slate-200">
-                                        <th class="text-left py-3 px-4 w-10">
+                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                             <input type="checkbox" x-model="selectAll" @change="toggleAll()"
                                                    class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                         </th>
-                                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase">{{ __('settings.name') }}</th>
+                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('settings.name') }}</th>
                                         @if($hasColors)
-                                            <th class="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase w-20">{{ __('settings.color') }}</th>
+                                            <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-20">{{ __('settings.color') }}</th>
                                         @endif
-                                        <th class="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase w-20">{{ __('settings.status') }}</th>
-                                        <th class="text-right py-3 px-4 text-xs font-semibold text-slate-600 uppercase w-32">{{ __('settings.actions') }}</th>
+                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-20">{{ __('settings.status') }}</th>
+                                        <th class="px-6 py-4 text-right align-middle font-medium text-slate-500 w-32">{{ __('settings.actions') }}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -513,26 +536,26 @@
                                         @forelse($data as $option)
                                             <tr class="border-b border-slate-100 hover:bg-slate-50 transition-colors"
                                                 data-option-id="{{ $option->id }}">
-                                                <td class="py-3 px-4">
+                                                <td class="px-6 py-4 align-middle">
                                                     <input type="checkbox"
                                                            :checked="selectedIds.includes({{ $option->id }})"
                                                            @change="toggleItem({{ $option->id }})"
                                                            class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                                 </td>
-                                                <td class="py-3 px-4 text-sm text-slate-900">{{ $option->label }}</td>
+                                                <td class="px-6 py-4 align-middle text-sm text-slate-900">{{ $option->label }}</td>
                                                 @if($hasColors)
-                                                    <td class="py-3 px-4">
+                                                    <td class="px-6 py-4 align-middle">
                                                         @if($option->color_class)
                                                             <div class="w-8 h-8 rounded border border-slate-300" style="background-color: {{ $option->color_class }}"></div>
                                                         @endif
                                                     </td>
                                                 @endif
-                                                <td class="py-3 px-4">
+                                                <td class="px-6 py-4 align-middle">
                                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ $option->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                                         {{ $option->is_active ? __('settings.active') : __('settings.inactive') }}
                                                     </span>
                                                 </td>
-                                                <td class="py-3 px-4 text-right">
+                                                <td class="px-6 py-4 align-middle text-right">
                                                     <div class="flex justify-end gap-1">
                                                         <button @click="openEditForm({{ $option->id }}, '{{ addslashes($option->label) }}', '{{ $option->color_class ?? '#3b82f6' }}', null, true)"
                                                                 class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded" title="{{ __('settings.edit') }}">
@@ -551,7 +574,7 @@
 
                                             {{-- Inline Edit Form --}}
                                             <tr x-show="editingId === {{ $option->id }}" x-cloak class="bg-yellow-50 border-l-4 border-l-yellow-400">
-                                                <td colspan="{{ $hasColors ? '5' : '4' }}" class="py-2 px-4">
+                                                <td colspan="{{ $hasColors ? '5' : '4' }}" class="px-6 py-4">
                                                     <form @submit.prevent="saveOption()" class="flex items-center gap-2">
                                                         <!-- Name -->
                                                         <input type="text" x-model="formData.label" @input="autoGenerateValue()" required
@@ -583,9 +606,8 @@
                                 </tbody>
                             </table>
                             </div>
+                            </x-ui.card>
                         @endif
-                    </div>
-                </div>
             </div>
         </div>
     </div>

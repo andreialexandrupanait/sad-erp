@@ -276,14 +276,89 @@ class SettingsController extends Controller
     }
 
     /**
-     * Business Information Settings (Placeholder)
+     * Business Information Settings
      */
     public function businessInfo()
     {
-        return view('settings.coming-soon', [
-            'title' => 'Business Information',
-            'description' => 'Configure your company details, VAT number, address, and contact information.'
+        $organization = auth()->user()->organization;
+        return view('settings.business-info', compact('organization'));
+    }
+
+    /**
+     * Update Business Information
+     */
+    public function updateBusinessInfo(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'tax_id' => 'required|string|max:50',
+            'trade_registry' => 'required|string|max:50',
+            'address' => 'required|string|max:500',
+            'city' => 'required|string|max:100',
+            'county' => 'required|string|max:100',
+            'country' => 'required|string|max:100',
+            'phone' => 'nullable|string|max:50',
+            'email' => 'nullable|email|max:255',
+            'logo' => 'nullable|image|max:2048',
+            'bank_accounts' => 'nullable|array',
+            'bank_accounts.*.iban' => 'nullable|string|max:50',
+            'bank_accounts.*.bank' => 'nullable|string|max:100',
+            'bank_accounts.*.currency' => 'nullable|string|max:3',
+            'bank_accounts.*.description' => 'nullable|string|max:100',
         ]);
+
+        $organization = auth()->user()->organization;
+
+        // Handle logo upload
+        if ($request->hasFile('logo')) {
+            // Delete old logo if exists
+            if ($organization->logo && \Storage::disk('public')->exists($organization->logo)) {
+                \Storage::disk('public')->delete($organization->logo);
+            }
+            $logoPath = $request->file('logo')->store('logos', 'public');
+            $organization->logo = $logoPath;
+        }
+
+        // Handle logo removal
+        if ($request->has('remove_logo') && $organization->logo) {
+            if (\Storage::disk('public')->exists($organization->logo)) {
+                \Storage::disk('public')->delete($organization->logo);
+            }
+            $organization->logo = null;
+        }
+
+        // Update basic fields
+        $organization->name = $request->name;
+        $organization->tax_id = $request->tax_id;
+        $organization->address = $request->address;
+        $organization->phone = $request->phone;
+        $organization->email = $request->email;
+
+        // Update settings JSON with all new fields
+        $settings = $organization->settings ?? [];
+        $settings['trade_registry'] = $request->trade_registry;
+        $settings['vat_id'] = $request->vat_id;
+        $settings['share_capital'] = $request->share_capital;
+        $settings['city'] = $request->city;
+        $settings['county'] = $request->county;
+        $settings['country'] = $request->country;
+        $settings['vat_payer'] = (bool) $request->vat_payer;
+        $settings['fax'] = $request->fax;
+        $settings['website'] = $request->website;
+        $settings['additional_info'] = $request->additional_info;
+
+        // Process bank accounts - filter out empty ones
+        $bankAccounts = collect($request->bank_accounts ?? [])
+            ->filter(fn($account) => !empty($account['iban']) || !empty($account['bank']))
+            ->values()
+            ->toArray();
+        $settings['bank_accounts'] = $bankAccounts;
+
+        $organization->settings = $settings;
+
+        $organization->save();
+
+        return redirect()->route('settings.business-info')->with('success', __('Informațiile companiei au fost actualizate.'));
     }
 
     /**

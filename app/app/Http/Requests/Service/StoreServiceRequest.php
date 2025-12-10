@@ -24,7 +24,7 @@ class StoreServiceRequest extends FormRequest
             'description' => 'nullable|string|max:1000',
             'default_rate' => 'nullable|numeric|min:0',
             'currency' => 'required|string|size:3',
-            'color_class' => 'nullable|string|max:50',
+            'unit' => 'required|string|in:ora,zi,luna,buc,proiect',
             'is_active' => 'boolean',
         ];
     }

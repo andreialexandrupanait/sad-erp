@@ -147,7 +147,7 @@ class FinancialFile extends Model
 
     public function entity()
     {
-        return $this->morphTo()->whereIn('entity_type', self::VALID_ENTITY_TYPES);
+        return $this->morphTo();
     }
 
     /**

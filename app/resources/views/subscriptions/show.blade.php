@@ -149,7 +149,7 @@
                     <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Renewal Change History') }}</h3>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
+                            <thead class="bg-slate-100">
                                 <tr>
                                     <x-ui.table-head>{{ __('Date Changed') }}</x-ui.table-head>
                                     <x-ui.table-head>{{ __('Old Date') }}</x-ui.table-head>

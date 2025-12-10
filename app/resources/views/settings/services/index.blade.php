@@ -1,215 +1,318 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __("Services Catalog") }}</x-slot>
+    <x-slot name="pageTitle">{{ __("Catalog servicii") }}</x-slot>
 
-    <div class="p-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
-                                {{ __("Services Catalog") }}
-                            </h2>
-                            <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                {{ __("Manage the services your organization offers. Users can set their own rates for each service.") }}
-                            </p>
-                        </div>
-                        <button type="button" onclick="openAddModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            {{ __("Add Service") }}
-                        </button>
+    <div class="flex min-h-screen bg-slate-50">
+        @include('settings.partials.sidebar')
+
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+                <!-- Header -->
+                <div class="mb-8">
+                    <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                        <a href="{{ route('settings.business') }}" class="hover:text-slate-700">{{ __('Setări afacere') }}</a>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                        <span>{{ __('Catalog servicii') }}</span>
                     </div>
-
-                    @if(session('success'))
-                        <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                            <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
-                        </div>
-                    @endif
-
-                    @if(session('error'))
-                        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                            <p class="text-sm text-red-800 dark:text-red-200">{{ session('error') }}</p>
-                        </div>
-                    @endif
-
-                    <div class="overflow-hidden">
-                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead class="bg-gray-50 dark:bg-gray-900">
-                                <tr>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Service") }}</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Default Rate") }}</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Users") }}</th>
-                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Status") }}</th>
-                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Actions") }}</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700" id="services-list">
-                                @forelse($services as $service)
-                                    <tr data-id="{{ $service->id }}">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex items-center gap-3">
-                                                @if($service->color_class)
-                                                    <span class="w-3 h-3 rounded-full {{ $service->badge_class }}"></span>
-                                                @endif
-                                                <div>
-                                                    <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $service->name }}</div>
-                                                    @if($service->description)
-                                                        <div class="text-sm text-gray-500 dark:text-gray-400">{{ Str::limit($service->description, 50) }}</div>
-                                                    @endif
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
-                                            {{ $service->formatted_rate }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                            {{ $service->user_services_count }} {{ trans_choice('{0} users|{1} user|[2,*] users', $service->user_services_count) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            @if($service->is_active)
-                                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full">{{ __("Active") }}</span>
-                                            @else
-                                                <span class="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 rounded-full">{{ __("Inactive") }}</span>
-                                            @endif
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button type="button" onclick="openEditModal({{ json_encode($service) }})" class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-3">{{ __("Edit") }}</button>
-                                            <form method="POST" action="{{ route('settings.services.destroy', $service) }}" class="inline" onsubmit="return confirm('{{ __("Are you sure you want to delete this service?") }}')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">{{ __("Delete") }}</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                                            </svg>
-                                            <p class="mt-2">{{ __("No services defined yet.") }}</p>
-                                            <a href="#" onclick="openAddModal(); return false;" class="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                {{ __("Add your first service") }} &rarr;
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                    <h1 class="text-2xl font-bold text-slate-900">{{ __('Catalog servicii') }}</h1>
+                    <p class="text-slate-500 mt-1">{{ __('Gestionează serviciile oferite de organizația ta') }}</p>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Add/Edit Modal -->
-    <div id="serviceModal" class="fixed inset-0 z-50 hidden" x-data="{ open: false }">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-                <div class="relative transform overflow-hidden rounded-lg bg-white dark:bg-gray-800 px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                    <form id="serviceForm" method="POST">
-                        @csrf
-                        <input type="hidden" name="_method" id="formMethod" value="POST">
+                @if(session('success'))
+                    <div class="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <p class="text-sm text-green-800">{{ session('success') }}</p>
+                    </div>
+                @endif
 
-                        <h3 id="modalTitle" class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __("Add Service") }}</h3>
+                @if(session('error'))
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p class="text-sm text-red-800">{{ session('error') }}</p>
+                    </div>
+                @endif
 
-                        <div class="space-y-4">
-                            <div>
-                                <x-ui.label for="name">{{ __("Service Name") }} *</x-ui.label>
-                                <x-ui.input type="text" name="name" id="name" required />
-                            </div>
+                <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                    <!-- Section Header -->
+                    <div class="px-6 py-4 bg-slate-100 border-b border-slate-200 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ __('Adaugă serviciu nou') }}</h3>
+                    </div>
 
-                            <div>
-                                <x-ui.label for="description">{{ __("Description") }}</x-ui.label>
-                                <textarea name="description" id="description" rows="2" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <x-ui.label for="default_rate">{{ __("Default Hourly Rate") }}</x-ui.label>
-                                    <x-ui.input type="number" name="default_rate" id="default_rate" step="0.01" min="0" />
+                    <!-- Add new service form -->
+                    <div class="p-6">
+                        <form id="addServiceForm" action="{{ route('settings.services.store') }}" method="POST">
+                            @csrf
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                                <div class="md:col-span-3">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Nume serviciu') }} <span class="text-red-500">*</span></label>
+                                    <input type="text" name="name" required
+                                           class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                           placeholder="{{ __('ex: Dezvoltare web') }}">
                                 </div>
-                                <div>
-                                    <x-ui.label for="currency">{{ __("Currency") }}</x-ui.label>
-                                    <select name="currency" id="currency" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Tarif') }}</label>
+                                    <input type="number" name="default_rate" step="0.01" min="0"
+                                           class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                           placeholder="0.00">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Moneda') }}</label>
+                                    <select name="currency" class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
                                         <option value="RON">RON</option>
                                         <option value="EUR">EUR</option>
                                         <option value="USD">USD</option>
                                     </select>
                                 </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Unitate') }}</label>
+                                    <select name="unit" class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                        @foreach(\App\Models\Service::UNITS as $value => $label)
+                                            <option value="{{ $value }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="md:col-span-3">
+                                    <button type="submit" class="w-full h-10 px-4 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 whitespace-nowrap">
+                                        {{ __('Adaugă serviciu') }}
+                                    </button>
+                                </div>
                             </div>
+                        </form>
+                    </div>
 
-                            <div>
-                                <x-ui.label for="color_class">{{ __("Color") }}</x-ui.label>
-                                <select name="color_class" id="color_class" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    <option value="">{{ __("No color") }}</option>
-                                    <option value="blue">{{ __("Blue") }}</option>
-                                    <option value="green">{{ __("Green") }}</option>
-                                    <option value="red">{{ __("Red") }}</option>
-                                    <option value="yellow">{{ __("Yellow") }}</option>
-                                    <option value="purple">{{ __("Purple") }}</option>
-                                    <option value="orange">{{ __("Orange") }}</option>
-                                    <option value="pink">{{ __("Pink") }}</option>
-                                    <option value="cyan">{{ __("Cyan") }}</option>
-                                </select>
-                            </div>
-
-                            <div class="flex items-center">
-                                <input type="checkbox" name="is_active" id="is_active" value="1" checked class="rounded border-gray-300 dark:border-gray-700 text-blue-600 shadow-sm focus:ring-blue-500">
-                                <label for="is_active" class="ml-2 text-sm text-gray-600 dark:text-gray-400">{{ __("Active") }}</label>
-                            </div>
+                    <!-- Services List Header -->
+                    <div class="px-6 py-4 bg-slate-100 border-t border-b border-slate-200 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                            </svg>
                         </div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ __('Lista servicii') }}</h3>
+                    </div>
 
-                        <div class="mt-6 flex justify-end gap-3">
-                            <button type="button" onclick="closeModal()" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
-                                {{ __("Cancel") }}
-                            </button>
-                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                {{ __("Save") }}
-                            </button>
+                    <!-- Services table -->
+                    @if($services->count() > 0)
+                        <div class="overflow-x-auto">
+                            <table class="w-full" id="servicesTable">
+                                <thead>
+                                    <tr class="border-b border-slate-200 text-left text-xs font-medium text-slate-500 uppercase tracking-wider bg-slate-100">
+                                        <th class="px-6 py-4">{{ __('Serviciu') }}</th>
+                                        <th class="px-6 py-4 w-32">{{ __('Tarif') }}</th>
+                                        <th class="px-6 py-4 w-24">{{ __('Moneda') }}</th>
+                                        <th class="px-6 py-4 w-28">{{ __('Unitate') }}</th>
+                                        <th class="px-6 py-4 text-center w-24">{{ __('Status') }}</th>
+                                        <th class="px-6 py-4 w-28"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($services as $service)
+                                    <tr class="border-b border-slate-100 last:border-0 hover:bg-slate-50 service-row" data-id="{{ $service->id }}">
+                                        <!-- View Mode -->
+                                        <td class="px-6 py-4 view-mode">
+                                            <div class="text-sm font-medium text-slate-900">{{ $service->name }}</div>
+                                            @if($service->description)
+                                                <div class="text-xs text-slate-500 mt-0.5">{{ Str::limit($service->description, 60) }}</div>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 view-mode">
+                                            <div class="text-sm text-slate-900">{{ $service->default_rate ? number_format($service->default_rate, 2, ',', '.') : '-' }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 view-mode">
+                                            <div class="text-sm text-slate-700">{{ $service->currency }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 view-mode">
+                                            <div class="text-sm text-slate-700">{{ $service->unit_label }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 text-center view-mode">
+                                            @if($service->is_active)
+                                                <span class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded-full">{{ __("Activ") }}</span>
+                                            @else
+                                                <span class="px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-500 rounded-full">{{ __("Inactiv") }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="px-6 py-4 view-mode">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <button type="button" onclick="startEdit({{ $service->id }})" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="{{ __('Editează') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </button>
+                                                <form method="POST" action="{{ route('settings.services.destroy', $service) }}" class="inline" onsubmit="return confirm('{{ __("Sigur doriți să ștergeți acest serviciu?") }}')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="{{ __('Șterge') }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                        </svg>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+
+                                        <!-- Edit Mode (hidden by default) -->
+                                        <td class="px-6 py-4 edit-mode hidden" colspan="6">
+                                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
+                                                <div class="md:col-span-3">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Nume') }}</label>
+                                                    <input type="text" name="name" value="{{ $service->name }}" required
+                                                           class="w-full h-9 border border-slate-300 rounded px-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                                </div>
+                                                <div class="md:col-span-3">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Descriere') }}</label>
+                                                    <input type="text" name="description" value="{{ $service->description }}"
+                                                           class="w-full h-9 border border-slate-300 rounded px-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                                           placeholder="{{ __('Descriere opțională') }}">
+                                                </div>
+                                                <div class="md:col-span-1">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Tarif') }}</label>
+                                                    <input type="number" name="default_rate" value="{{ $service->default_rate }}" step="0.01" min="0"
+                                                           class="w-full h-9 border border-slate-300 rounded px-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                                </div>
+                                                <div class="md:col-span-1">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Moneda') }}</label>
+                                                    <select name="currency" class="w-full h-9 border border-slate-300 rounded px-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                                        <option value="RON" {{ $service->currency === 'RON' ? 'selected' : '' }}>RON</option>
+                                                        <option value="EUR" {{ $service->currency === 'EUR' ? 'selected' : '' }}>EUR</option>
+                                                        <option value="USD" {{ $service->currency === 'USD' ? 'selected' : '' }}>USD</option>
+                                                    </select>
+                                                </div>
+                                                <div class="md:col-span-1">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Unitate') }}</label>
+                                                    <select name="unit" class="w-full h-9 border border-slate-300 rounded px-2 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                                        @foreach(\App\Models\Service::UNITS as $value => $label)
+                                                            <option value="{{ $value }}" {{ $service->unit === $value ? 'selected' : '' }}>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="md:col-span-1">
+                                                    <label class="block text-xs font-medium text-slate-600 mb-1">{{ __('Activ') }}</label>
+                                                    <label class="inline-flex items-center cursor-pointer mt-1.5">
+                                                        <input type="checkbox" name="is_active" {{ $service->is_active ? 'checked' : '' }} class="sr-only peer">
+                                                        <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-slate-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-500"></div>
+                                                    </label>
+                                                </div>
+                                                <div class="md:col-span-2 flex items-end gap-1 pb-0.5">
+                                                    <button type="button" onclick="saveEdit({{ $service->id }})" class="h-9 px-3 bg-green-600 text-white text-sm font-medium rounded hover:bg-green-700 flex items-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                        </svg>
+                                                        {{ __('Salvează') }}
+                                                    </button>
+                                                    <button type="button" onclick="cancelEdit({{ $service->id }})" class="h-9 px-3 bg-slate-100 text-slate-700 text-sm font-medium rounded hover:bg-slate-200 flex items-center gap-1">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                        </svg>
+                                                        {{ __('Anulează') }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                    </form>
+                    @else
+                        <div class="text-center py-12 text-sm text-slate-500">
+                            {{ __('Nu ai definit încă niciun serviciu. Adaugă primul serviciu folosind formularul de mai sus.') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
 
+    @push('scripts')
     <script>
-        function openAddModal() {
-            document.getElementById('modalTitle').textContent = '{{ __("Add Service") }}';
-            document.getElementById('serviceForm').action = '{{ route("settings.services.store") }}';
-            document.getElementById('formMethod').value = 'POST';
-            document.getElementById('name').value = '';
-            document.getElementById('description').value = '';
-            document.getElementById('default_rate').value = '';
-            document.getElementById('currency').value = 'RON';
-            document.getElementById('color_class').value = '';
-            document.getElementById('is_active').checked = true;
-            document.getElementById('serviceModal').classList.remove('hidden');
+        let currentEditingId = null;
+
+        function startEdit(id) {
+            // Cancel any existing edit
+            if (currentEditingId && currentEditingId !== id) {
+                cancelEdit(currentEditingId);
+            }
+
+            const row = document.querySelector(`.service-row[data-id="${id}"]`);
+            if (!row) return;
+
+            // Hide view mode cells, show edit mode cell
+            row.querySelectorAll('.view-mode').forEach(el => el.classList.add('hidden'));
+            row.querySelectorAll('.edit-mode').forEach(el => el.classList.remove('hidden'));
+
+            currentEditingId = id;
         }
 
-        function openEditModal(service) {
-            document.getElementById('modalTitle').textContent = '{{ __("Edit Service") }}';
-            document.getElementById('serviceForm').action = '{{ url("settings/services") }}' + '/'+service.id;
-            document.getElementById('formMethod').value = 'PUT';
-            document.getElementById('name').value = service.name;
-            document.getElementById('description').value = service.description || '';
-            document.getElementById('default_rate').value = service.default_rate || '';
-            document.getElementById('currency').value = service.currency;
-            document.getElementById('color_class').value = service.color_class || '';
-            document.getElementById('is_active').checked = service.is_active;
-            document.getElementById('serviceModal').classList.remove('hidden');
+        function cancelEdit(id) {
+            const row = document.querySelector(`.service-row[data-id="${id}"]`);
+            if (!row) return;
+
+            // Show view mode, hide edit mode
+            row.querySelectorAll('.view-mode').forEach(el => el.classList.remove('hidden'));
+            row.querySelectorAll('.edit-mode').forEach(el => el.classList.add('hidden'));
+
+            currentEditingId = null;
         }
 
-        function closeModal() {
-            document.getElementById('serviceModal').classList.add('hidden');
+        function saveEdit(id) {
+            const row = document.querySelector(`.service-row[data-id="${id}"]`);
+            if (!row) return;
+
+            // Get values from edit inputs
+            const name = row.querySelector('.edit-mode input[name="name"]').value;
+            const description = row.querySelector('.edit-mode input[name="description"]').value;
+            const defaultRate = row.querySelector('.edit-mode input[name="default_rate"]').value;
+            const currency = row.querySelector('.edit-mode select[name="currency"]').value;
+            const unit = row.querySelector('.edit-mode select[name="unit"]').value;
+            const isActive = row.querySelector('.edit-mode input[name="is_active"]').checked;
+
+            // Validate
+            if (!name.trim()) {
+                alert('{{ __("Numele serviciului este obligatoriu") }}');
+                return;
+            }
+
+            // Send AJAX request
+            fetch(`{{ url('settings/services') }}/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: name,
+                    description: description || null,
+                    default_rate: defaultRate || null,
+                    currency: currency,
+                    unit: unit,
+                    is_active: isActive
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Reload page to show updated data
+                    window.location.reload();
+                } else {
+                    alert(data.message || '{{ __("A apărut o eroare") }}');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('{{ __("A apărut o eroare la salvare") }}');
+            });
         }
 
-        document.getElementById('serviceModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
+        // Handle Escape key to cancel edit
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && currentEditingId) {
+                cancelEdit(currentEditingId);
+            }
         });
     </script>
+    @endpush
 </x-app-layout>

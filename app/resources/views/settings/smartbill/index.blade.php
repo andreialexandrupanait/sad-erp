@@ -4,8 +4,8 @@
     <div class="flex min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
-    <div class="flex-1 p-8">
-        <div class="max-w-4xl mx-auto">
+    <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
             <!-- Header -->
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-slate-900">{{ __('Smartbill Integration') }}</h1>

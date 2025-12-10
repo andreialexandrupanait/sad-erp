@@ -36,18 +36,16 @@
                     @csrf
 
                     <!-- Expense Budget -->
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-red-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-slate-900">{{ __('Expense Budget') }}</h3>
-                                    <p class="text-sm text-slate-500">{{ __('Set maximum expense limits for the year') }}</p>
-                                </div>
+                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ __('Expense Budget') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Set maximum expense limits for the year') }}</p>
                             </div>
                         </div>
                         <div class="p-6">
@@ -95,18 +93,16 @@
                     </div>
 
                     <!-- Revenue Target -->
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-green-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-slate-900">{{ __('Revenue Target') }}</h3>
-                                    <p class="text-sm text-slate-500">{{ __('Set revenue goals for the year') }}</p>
-                                </div>
+                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ __('Revenue Target') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Set revenue goals for the year') }}</p>
                             </div>
                         </div>
                         <div class="p-6">
@@ -154,18 +150,16 @@
                     </div>
 
                     <!-- Profit Margin -->
-                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                            <div class="flex items-center gap-3">
-                                <div class="p-2 bg-blue-100 rounded-lg">
-                                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-semibold text-slate-900">{{ __('Profit Margin') }}</h3>
-                                    <p class="text-sm text-slate-500">{{ __('Set minimum acceptable profit margin') }}</p>
-                                </div>
+                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ __('Profit Margin') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Set minimum acceptable profit margin') }}</p>
                             </div>
                         </div>
                         <div class="p-6">
@@ -202,7 +196,7 @@
                     </div>
 
                     <!-- Info Box -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-[10px] p-4 mb-6">
                         <div class="flex items-start gap-3">
                             <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>

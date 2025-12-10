@@ -40,7 +40,7 @@
 
                     <!-- Master Toggle -->
                     <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Master Settings') }}</h3>
                         </div>
                         <div class="p-6">
@@ -60,7 +60,7 @@
 
                     <!-- Notification Types -->
                     <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Notification Types') }}</h3>
                         </div>
                         <div class="p-6 space-y-6">
@@ -183,7 +183,7 @@
 
                     <!-- Email Recipients -->
                     <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Email Recipients') }}</h3>
                         </div>
                         <div class="p-6 space-y-6">
@@ -223,7 +223,7 @@
 
                     <!-- SMTP Configuration -->
                     <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('SMTP Configuration') }}</h3>
                         </div>
                         <div class="p-6 space-y-6">

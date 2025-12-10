@@ -142,18 +142,18 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                        <thead class="bg-slate-100">
+                            <tr class="border-b border-slate-200">
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                     <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
                                 </th>
                                 <x-ui.sortable-header column="client_id" label="{{ __('Client') }}" />
                                 <x-ui.sortable-header column="platform" label="{{ __('Platform') }}" />
                                 <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('URL') }}</th>
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Last Accessed') }}</th>
-                                <th class="h-12 px-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('URL') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Last Accessed') }}</th>
+                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
@@ -287,7 +287,7 @@
                 </div>
 
                 @if($credentials->hasPages())
-                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200">
                         {{ $credentials->links() }}
                     </div>
                 @endif

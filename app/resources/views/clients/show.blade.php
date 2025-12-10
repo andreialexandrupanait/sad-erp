@@ -131,7 +131,7 @@
                     <div class="space-y-6">
                         <!-- Quick Stats Grid -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,7 +167,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-slate-50 p-6 rounded-lg border border-slate-200">
+                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,8 +212,8 @@
 
                         <div class="overflow-x-auto">
                             <table class="w-full caption-bottom text-sm">
-                                <thead class="[&_tr]:border-b">
-                                    <tr class="border-b transition-colors hover:bg-slate-50/50">
+                                <thead class="bg-slate-100">
+                                    <tr class="border-b border-slate-200">
                                         <x-ui.sortable-header column="document_name" label="{{ __('Invoice') }}" />
                                         <x-ui.sortable-header column="amount" label="{{ __('Amount') }}" class="text-right" />
                                         <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
@@ -274,8 +274,8 @@
                     @else
                         <div class="overflow-x-auto">
                             <table class="w-full caption-bottom text-sm">
-                                <thead class="[&_tr]:border-b">
-                                    <tr class="border-b transition-colors hover:bg-slate-50/50">
+                                <thead class="bg-slate-100">
+                                    <tr class="border-b border-slate-200">
                                         <x-ui.table-head>{{ __('Domain Name') }}</x-ui.table-head>
                                         <x-ui.table-head>{{ __('Registrar') }}</x-ui.table-head>
                                         <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
@@ -321,7 +321,7 @@
                     @else
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-slate-200">
-                                <thead class="bg-slate-50">
+                                <thead class="bg-slate-100">
                                     <tr>
                                         <x-ui.table-head>{{ __('Platform') }}</x-ui.table-head>
                                         <x-ui.table-head>{{ __('URL') }}</x-ui.table-head>

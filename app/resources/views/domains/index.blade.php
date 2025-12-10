@@ -29,7 +29,7 @@
         <!-- Statistics Cards -->
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
             <!-- Total Domains - Featured -->
-            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+            <div class="rounded-[10px] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -47,7 +47,7 @@
             </div>
 
             <!-- Expired -->
-            <div class="rounded-lg border border-red-200 bg-red-50 shadow-sm">
+            <div class="rounded-[10px] border border-red-200 bg-red-50 shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -65,7 +65,7 @@
             </div>
 
             <!-- Expiring Soon -->
-            <div class="rounded-lg border border-yellow-200 bg-yellow-50 shadow-sm">
+            <div class="rounded-[10px] border border-yellow-200 bg-yellow-50 shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -83,7 +83,7 @@
             </div>
 
             <!-- Valid -->
-            <div class="rounded-lg border border-green-200 bg-green-50 shadow-sm">
+            <div class="rounded-[10px] border border-green-200 bg-green-50 shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -101,7 +101,7 @@
             </div>
 
             <!-- Annual Cost -->
-            <div class="rounded-lg border border-blue-200 bg-blue-50 shadow-sm">
+            <div class="rounded-[10px] border border-blue-200 bg-blue-50 shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -240,17 +240,17 @@
             @if ($domains->count() > 0)
                 <div class="overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                        <thead class="bg-slate-100">
+                            <tr class="border-b border-slate-200">
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                     <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
                                 </th>
                                 <x-ui.sortable-header column="domain_name" label="{{ __('Domain Name') }}" />
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
                                 <x-ui.sortable-header column="registrar" label="{{ __('Registrar') }}" />
                                 <x-ui.sortable-header column="expiry_date" label="{{ __('Expiry Date') }}" />
                                 <x-ui.sortable-header column="annual_cost" label="{{ __('Cost') }}" class="text-right" />
-                                <th class="h-12 px-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
+                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
@@ -314,7 +314,7 @@
 
                 <!-- Pagination -->
                 @if($domains->hasPages())
-                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200">
                         {{ $domains->links() }}
                     </div>
                 @endif

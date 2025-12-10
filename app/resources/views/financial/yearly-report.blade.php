@@ -220,21 +220,21 @@
 
         {{-- Section 4: Yearly Summary Table --}}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                 <h3 class="text-lg font-semibold text-slate-900">{{ __('Rezumat pe Ani') }}</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
+                    <thead class="bg-slate-100">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('An') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Venituri RON') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Cheltuieli RON') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Profit RON') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Marjă %') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Creștere YoY') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Clienți') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Facturi') }}</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('An') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Venituri RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Cheltuieli RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Profit RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Marjă %') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Creștere YoY') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Clienți') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Facturi') }}</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-200">

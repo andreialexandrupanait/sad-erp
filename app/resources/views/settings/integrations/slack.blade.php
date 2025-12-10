@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6 max-w-4xl">
+            <div class="p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-3 mb-2">
@@ -55,7 +55,7 @@
 
                     <!-- Connection Settings -->
                     <div class="bg-white rounded-xl border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 rounded-t-xl">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Connection Settings') }}</h3>
                         </div>
                         <div class="p-6 space-y-6">
@@ -136,7 +136,7 @@
 
                     <!-- Notification Types -->
                     <div class="bg-white rounded-xl border border-slate-200 mb-6">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 rounded-t-xl">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Notification Types') }}</h3>
                             <p class="text-sm text-slate-500 mt-1">{{ __('Choose which notifications to send to Slack') }}</p>
                         </div>

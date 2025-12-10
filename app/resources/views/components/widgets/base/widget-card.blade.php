@@ -8,7 +8,7 @@
 ])
 
 @php
-    $baseClasses = 'rounded-xl shadow-sm transition-all duration-200';
+    $baseClasses = 'rounded-[10px] shadow-sm transition-all duration-200 overflow-hidden';
     $hoverClasses = $clickable ? 'hover:shadow-lg cursor-pointer' : '';
 
     $colorClasses = match($color) {
@@ -31,7 +31,7 @@
     @endif
 >
     @if($title || $icon)
-        <div class="flex items-center justify-between px-6 py-4 border-b {{ $gradient ? 'border-white/20' : 'border-slate-200' }}">
+        <div class="flex items-center justify-between px-6 py-4 border-b {{ $gradient ? 'border-white/20' : 'border-slate-200 bg-slate-100' }}">
             <h3 class="text-base font-semibold {{ $gradient ? 'text-white' : 'text-slate-900' }}">
                 {{ $title }}
             </h3>

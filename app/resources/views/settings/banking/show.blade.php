@@ -13,8 +13,7 @@
         </div>
     </x-slot>
 
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+    <div class="py-6 px-6 space-y-6">
             {{-- Statistics Cards --}}
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="bg-white rounded-lg shadow-sm p-6">
@@ -37,7 +36,7 @@
 
             {{-- Account Info --}}
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                     <h3 class="text-lg font-semibold text-slate-800">Informații Cont</h3>
                 </div>
                 <div class="px-6 py-5">
@@ -80,19 +79,19 @@
 
             {{-- Recent Sync Logs --}}
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
                     <h3 class="text-lg font-semibold text-slate-800">Istoric Sincronizări</h3>
                 </div>
                 @if ($credential->syncLogs->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
+                            <thead class="bg-slate-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tip</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tranzacții</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Durată</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Tip</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Tranzacții</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Durată</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-slate-200">
@@ -133,7 +132,7 @@
 
             {{-- Recent Transactions --}}
             <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-                <div class="px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+                <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex justify-between items-center">
                     <h3 class="text-lg font-semibold text-slate-800">Tranzacții Recente</h3>
                     <a href="{{ route('financial.revenues.index') }}" class="text-sm text-blue-600 hover:text-blue-700">
                         Vezi toate →
@@ -142,13 +141,13 @@
                 @if ($credential->transactions->count() > 0)
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
-                            <thead class="bg-slate-50">
+                            <thead class="bg-slate-100">
                                 <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Tip</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Descriere</th>
-                                    <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Sumă</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status Potrivire</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Tip</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Descriere</th>
+                                    <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase">Sumă</th>
+                                    <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">Status Potrivire</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-slate-200">
@@ -194,6 +193,5 @@
                     </div>
                 @endif
             </div>
-        </div>
     </div>
 </x-app-layout>

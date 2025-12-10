@@ -98,7 +98,7 @@
         <!-- Widgets Container - 3 Widgets -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Widget 1: Venituri (RON + EUR) -->
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['revenue_target_ron'] && $revenueProgress < 50 ? 'ring-2 ring-amber-300' : '' }}">
+            <div class="bg-white rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['revenue_target_ron'] && $revenueProgress < 50 ? 'ring-2 ring-amber-300' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-700 uppercase">{{ __('Revenues') }}</h3>
                     <div class="flex items-center gap-2">
@@ -140,7 +140,7 @@
             </div>
 
             <!-- Widget 2: Cheltuieli (RON + EUR) -->
-            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['expense_budget_ron'] && $expenseProgress >= 100 ? 'ring-2 ring-red-300' : ($budgetThresholds['expense_budget_ron'] && $expenseProgress >= 80 ? 'ring-2 ring-amber-300' : '') }}">
+            <div class="bg-white rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['expense_budget_ron'] && $expenseProgress >= 100 ? 'ring-2 ring-red-300' : ($budgetThresholds['expense_budget_ron'] && $expenseProgress >= 80 ? 'ring-2 ring-amber-300' : '') }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-700 uppercase">{{ __('Expenses') }}</h3>
                     <div class="flex items-center gap-2">
@@ -184,7 +184,7 @@
             </div>
 
             <!-- Widget 3: Profit Net (RON + EUR) -->
-            <div class="bg-gradient-to-br {{ $yearlyProfitRON >= 0 ? 'from-emerald-500 to-green-600' : 'from-red-500 to-rose-600' }} rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['profit_margin_min'] && $profitMargin < $budgetThresholds['profit_margin_min'] ? 'ring-2 ring-red-300' : '' }}">
+            <div class="bg-gradient-to-br {{ $yearlyProfitRON >= 0 ? 'from-emerald-500 to-green-600' : 'from-red-500 to-rose-600' }} rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['profit_margin_min'] && $profitMargin < $budgetThresholds['profit_margin_min'] ? 'ring-2 ring-red-300' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-white uppercase">{{ __('Net Profit') }}</h3>
                     <div class="flex items-center gap-2">
@@ -219,18 +219,28 @@
         <!-- Charts Section -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Revenue Chart (RON Only) -->
-            <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
-                <h3 class="text-base font-semibold text-slate-900 mb-4">{{ __('Revenues (monthly)') }}</h3>
-                <div style="height: 320px;">
-                    {!! $revenueChart->container() !!}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-100">
+                    <h3 class="text-base font-semibold text-slate-900">{{ __('Revenues (monthly)') }}</h3>
+                    <a href="{{ route('financial.revenues.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('app.View all') }} →</a>
+                </div>
+                <div class="p-6">
+                    <div style="height: 320px;">
+                        {!! $revenueChart->container() !!}
+                    </div>
                 </div>
             </div>
 
             <!-- Expense Chart (RON Only) -->
-            <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
-                <h3 class="text-base font-semibold text-slate-900 mb-4">{{ __('Expenses (monthly)') }}</h3>
-                <div style="height: 320px;">
-                    {!! $expenseChart->container() !!}
+            <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-100">
+                    <h3 class="text-base font-semibold text-slate-900">{{ __('Expenses (monthly)') }}</h3>
+                    <a href="{{ route('financial.expenses.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('app.View all') }} →</a>
+                </div>
+                <div class="p-6">
+                    <div style="height: 320px;">
+                        {!! $expenseChart->container() !!}
+                    </div>
                 </div>
             </div>
 
@@ -240,17 +250,14 @@
 
         <!-- Monthly Breakdown Table -->
         <x-ui.card>
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50">
-                <h3 class="text-lg font-semibold text-slate-900">{{ __('Monthly Summary (RON)') }}</h3>
-            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50">
+                    <thead class="bg-slate-100">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Month') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Revenues RON') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Expenses RON') }}</th>
-                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Profit RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Month') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Revenues RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Expenses RON') }}</th>
+                            <th scope="col" class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">{{ __('Profit RON') }}</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-slate-200">

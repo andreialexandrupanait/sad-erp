@@ -16,7 +16,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
                     <!-- SmartBill -->
-                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="bg-white rounded-[10px] border border-slate-200 p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center gap-4">
                                 <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -49,7 +49,7 @@
                     </div>
 
                     <!-- ClickUp -->
-                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="bg-white rounded-[10px] border border-slate-200 p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center gap-4">
                                 <div class="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -76,7 +76,7 @@
                     </div>
 
                     <!-- Slack -->
-                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="bg-white rounded-[10px] border border-slate-200 p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center gap-4">
                                 <div class="flex-shrink-0 w-12 h-12 bg-[#4A154B]/10 rounded-lg flex items-center justify-center">
@@ -110,7 +110,7 @@
 
 
                     <!-- Email Notifications -->
-                    <div class="bg-white rounded-xl border border-slate-200 p-6">
+                    <div class="bg-white rounded-[10px] border border-slate-200 p-6">
                         <div class="flex items-start justify-between mb-4">
                             <div class="flex items-center gap-4">
                                 <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">

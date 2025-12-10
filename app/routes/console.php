@@ -48,6 +48,12 @@ Schedule::command('domains:check-expiring')->dailyAt('09:00');
 // Check for subscriptions due for renewal daily at 09:00 (business hours)
 Schedule::command('subscriptions:check-renewals')->dailyAt('09:00');
 
+// Check for expiring contracts daily at 09:30 (business hours)
+Schedule::command('contracts:check-expiring')->dailyAt('09:30');
+
+// Mark expired offers daily at 00:30 (shortly after midnight)
+Schedule::command('offers:check-expired')->dailyAt('00:30');
+
 // Process automatic subscription renewals daily at 01:00 AM (before backup)
 Schedule::command('subscriptions:process-renewals')
     ->dailyAt('01:00')

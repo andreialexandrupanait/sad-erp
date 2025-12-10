@@ -4,8 +4,8 @@
     <div class="flex min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
-    <div class="flex-1 p-8">
-        <div class="max-w-4xl mx-auto">
+    <div class="flex-1 overflow-y-auto">
+        <div class="p-6">
             <!-- Header -->
             <div class="mb-8">
                 <a href="{{ route('settings.smartbill.index') }}" class="text-blue-600 hover:text-blue-700 mb-4 inline-flex items-center">

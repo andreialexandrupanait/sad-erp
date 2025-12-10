@@ -25,7 +25,7 @@
     $ariaSort = $isActive ? ($currentDir === 'asc' ? 'ascending' : 'descending') : 'none';
 @endphp
 
-<th {{ $attributes->merge(['class' => 'h-12 px-4 text-left align-middle font-medium text-slate-500']) }} 
+<th {{ $attributes->merge(['class' => 'px-6 py-4 text-left align-middle font-medium text-slate-500']) }}
     scope="col"
     aria-sort="{{ $ariaSort }}">
     <a href="{{ route(Route::currentRouteName(), $allParams) }}"

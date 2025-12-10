@@ -84,27 +84,27 @@
             @else
                 <div class="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
                     <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
+                        <thead class="bg-slate-100">
                             <tr>
-                                <th class="w-12 px-4 py-3">
+                                <th class="w-12 px-6 py-4">
                                     <input type="checkbox"
                                            @change="toggleAll($event.target.checked)"
                                            :checked="allSelected"
                                            :indeterminate="someSelected && !allSelected"
                                            class="h-4 w-4 rounded border-slate-300 text-primary-600 focus:ring-primary-500">
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nume fisier</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tip</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dimensiune</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Incarcat la</th>
-                                <th class="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actiuni</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nume fisier</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tip</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Dimensiune</th>
+                                <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Incarcat la</th>
+                                <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Actiuni</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-slate-200">
                             @foreach($files as $file)
                                 <tr class="hover:bg-slate-50 transition-colors" :class="{ 'bg-primary-50': selectedIds.includes({{ $file->id }}) }">
                                     <!-- Checkbox -->
-                                    <td class="w-12 px-4 py-4">
+                                    <td class="w-12 px-6 py-4">
                                         <input type="checkbox"
                                                @change="toggleFile({{ $file->id }})"
                                                :checked="selectedIds.includes({{ $file->id }})"

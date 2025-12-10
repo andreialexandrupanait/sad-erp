@@ -20,6 +20,16 @@ class ServiceController extends Controller
         return view('settings.services.index', compact('services'));
     }
 
+    public function create()
+    {
+        return view('settings.services.create');
+    }
+
+    public function edit(Service $service)
+    {
+        return view('settings.services.edit', compact('service'));
+    }
+
     public function store(StoreServiceRequest $request)
     {
         $validated = $request->validated();
@@ -36,7 +46,7 @@ class ServiceController extends Controller
         }
 
         return redirect()->route('settings.services')
-            ->with('success', 'Service created successfully.');
+            ->with('success', __('Serviciul a fost creat cu succes.'));
     }
 
     public function update(UpdateServiceRequest $request, Service $service)
@@ -46,13 +56,13 @@ class ServiceController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Service updated successfully.',
+                'message' => __('Serviciul a fost actualizat cu succes.'),
                 'service' => $service->fresh(),
             ]);
         }
 
         return redirect()->route('settings.services')
-            ->with('success', 'Service updated successfully.');
+            ->with('success', __('Serviciul a fost actualizat cu succes.'));
     }
 
     public function destroy(Service $service)
@@ -62,12 +72,12 @@ class ServiceController extends Controller
             if (request()->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot delete service with active user assignments. Deactivate it instead.',
+                    'message' => __('Nu puteți șterge un serviciu cu utilizatori asignați. Dezactivați-l în schimb.'),
                 ], 422);
             }
 
             return redirect()->route('settings.services')
-                ->with('error', 'Cannot delete service with active user assignments. Deactivate it instead.');
+                ->with('error', __('Nu puteți șterge un serviciu cu utilizatori asignați. Dezactivați-l în schimb.'));
         }
 
         $service->delete();
@@ -75,12 +85,12 @@ class ServiceController extends Controller
         if (request()->wantsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Service deleted successfully.',
+                'message' => __('Serviciul a fost șters cu succes.'),
             ]);
         }
 
         return redirect()->route('settings.services')
-            ->with('success', 'Service deleted successfully.');
+            ->with('success', __('Serviciul a fost șters cu succes.'));
     }
 
     public function reorder(Request $request)

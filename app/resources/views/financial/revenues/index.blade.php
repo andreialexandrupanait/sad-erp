@@ -237,29 +237,11 @@
 
         <!-- Table -->
         <x-ui.card>
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
-                <p class="text-sm text-slate-600">
-                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $revenues->firstItem() ?? 0 }}-{{ $revenues->lastItem() ?? 0 }}</span> {{ __('din') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
-                    @if($month)
-                        @php
-                            $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
-                        @endphp
-                        <span class="text-slate-500">{{ __('pentru') }} {{ $romanianMonths[$month - 1] }} {{ $year }}</span>
-                    @else
-                        <span class="text-slate-500">{{ __('pentru anul') }} {{ $year }}</span>
-                    @endif
-                </p>
-                @if($revenues->hasPages())
-                    <div class="flex items-center gap-2">
-                        <span class="text-sm text-slate-500">{{ __('Pagina') }} {{ $revenues->currentPage() }} {{ __('din') }} {{ $revenues->lastPage() }}</span>
-                    </div>
-                @endif
-            </div>
             <div class="overflow-x-auto">
                 <table class="w-full caption-bottom text-sm">
-                    <thead class="[&_tr]:border-b">
-                        <tr class="border-b transition-colors hover:bg-slate-50/50">
-                            <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                    <thead class="bg-slate-100">
+                        <tr class="border-b border-slate-200">
+                            <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                 <input type="checkbox" x-model="selectAll" @change="toggleAll()"
                                        class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                             </th>
@@ -349,12 +331,25 @@
                 </table>
             </div>
 
-            {{-- Pagination --}}
-            @if($revenues->hasPages())
-                <div class="px-6 py-4 border-t border-slate-200 bg-slate-50">
-                    {{ $revenues->links() }}
-                </div>
-            @endif
+            {{-- Pagination & Info --}}
+            <div class="px-6 py-4 border-t border-slate-200 flex items-center justify-between">
+                <p class="text-sm text-slate-600">
+                    {{ __('Afișare') }} <span class="font-semibold text-slate-900">{{ $revenues->firstItem() ?? 0 }}-{{ $revenues->lastItem() ?? 0 }}</span> {{ __('din') }} <span class="font-semibold text-slate-900">{{ $recordCount }}</span> {{ __('înregistrări') }}
+                    @if($month)
+                        @php
+                            $romanianMonths = ['Ianuarie', 'Februarie', 'Martie', 'Aprilie', 'Mai', 'Iunie', 'Iulie', 'August', 'Septembrie', 'Octombrie', 'Noiembrie', 'Decembrie'];
+                        @endphp
+                        <span class="text-slate-500">{{ __('pentru') }} {{ $romanianMonths[$month - 1] }} {{ $year }}</span>
+                    @else
+                        <span class="text-slate-500">{{ __('pentru anul') }} {{ $year }}</span>
+                    @endif
+                </p>
+                @if($revenues->hasPages())
+                    <div>
+                        {{ $revenues->links() }}
+                    </div>
+                @endif
+            </div>
         </x-ui.card>
     </div>
 

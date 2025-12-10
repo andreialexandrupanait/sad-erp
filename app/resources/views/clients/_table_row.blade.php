@@ -9,13 +9,13 @@
     data-client-id="{{ $client->id }}"
     data-client-slug="{{ $client->slug }}"
     data-status-id="{{ $client->status_id ?? 'null' }}">
-    <td class="pl-4 pr-2 py-4 align-middle">
+    <td class="px-6 py-4 align-middle">
         <x-bulk-checkbox
             @change="toggleItem({{ $client->id }})"
             x-bind:checked="selectedIds.includes({{ $client->id }})"
         />
     </td>
-    <td class="pl-2 pr-4 py-4 align-middle">
+    <td class="px-6 py-4 align-middle">
         <div>
             <a href="{{ route('clients.show', $client) }}" class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors">
                 {{ $client->name }}
@@ -25,7 +25,7 @@
             @endif
         </div>
     </td>
-    <td class="p-4 align-middle">
+    <td class="px-6 py-4 align-middle">
         @if($client->email)
             <div class="text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
                  onclick="copyToClipboard('{{ $client->email }}', this)"
@@ -49,7 +49,7 @@
             </div>
         @endif
     </td>
-    <td class="p-4 align-middle">
+    <td class="px-6 py-4 align-middle">
         {{-- Status dropdown --}}
         <div x-data="statusDropdown({{ $client->status_id ?? 'null' }}, '{{ $statusBg }}', '{{ $statusText }}', '{{ addslashes($statusName) }}', '{{ $client->slug }}')"
              @click.away="open = false"
@@ -101,7 +101,7 @@
             </div>
         </div>
     </td>
-    <td class="p-4 align-middle text-right">
+    <td class="px-6 py-4 align-middle text-right">
         <div class="text-sm font-semibold text-slate-900">
             {{ number_format($client->total_incomes, 2) }} RON
         </div>
@@ -109,7 +109,7 @@
             <div class="text-xs text-slate-500">{{ $client->invoices_count }} {{ __('invoices') }}</div>
         @endif
     </td>
-    <td class="p-4 align-middle text-right">
+    <td class="px-6 py-4 align-middle text-right">
         <x-table-actions
             :viewUrl="route('clients.show', $client)"
             :editUrl="route('clients.edit', $client)"

@@ -15,8 +15,13 @@ return [
 
     // Titluri secțiuni sidebar
     'clients_section' => 'Clienți',
+    'sales_section' => 'Vânzări',
     'accounting_section' => 'Contabilitate',
     'resources_section' => 'Resurse interne',
+
+    // Secțiune vânzări
+    'offers' => 'Oferte',
+    'contracts' => 'Contracte',
 
     // Secțiune financiar
     'accounting' => 'Contabilitate',

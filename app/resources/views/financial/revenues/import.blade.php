@@ -202,7 +202,7 @@
                             </div>
                             <div class="max-h-80 overflow-y-auto">
                                 <table class="min-w-full divide-y divide-slate-200">
-                                    <thead class="bg-slate-50 sticky top-0">
+                                    <thead class="bg-slate-100 sticky top-0">
                                         <tr>
                                             <th class="px-3 py-2 text-left text-xs font-medium text-slate-500">#</th>
                                             <th class="px-3 py-2 text-left text-xs font-medium text-slate-500">Status</th>

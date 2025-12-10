@@ -50,10 +50,17 @@
 
                 <div class="grid gap-6 lg:grid-cols-2">
                     <!-- Export Section -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Export Backup') }}</h3>
-                            <p class="mt-1 text-sm text-slate-500">{{ __('Create a backup of your database.') }}</p>
+                    <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ __('Export Backup') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Create a backup of your database.') }}</p>
+                            </div>
                         </div>
                         <div class="p-6">
                             <form id="export-form" class="space-y-4">
@@ -102,10 +109,17 @@
                     </div>
 
                     <!-- Import Section -->
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Import Backup') }}</h3>
-                            <p class="mt-1 text-sm text-slate-500">{{ __('Restore data from a backup file.') }}</p>
+                    <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900">{{ __('Import Backup') }}</h3>
+                                <p class="text-sm text-slate-500">{{ __('Restore data from a backup file.') }}</p>
+                            </div>
                         </div>
                         <div class="p-6">
                             <form id="import-form" action="{{ route('settings.backup.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
@@ -165,10 +179,17 @@
                 </div>
 
                 <!-- Existing Backups -->
-                <div class="mt-6 bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
-                        <h3 class="text-lg font-semibold text-slate-900">{{ __('Existing Backups') }}</h3>
-                        <p class="mt-1 text-sm text-slate-500">{{ count($backups) }} {{ __('backup(s) available') }}</p>
+                <div class="mt-6 bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ __('Existing Backups') }}</h3>
+                            <p class="text-sm text-slate-500">{{ count($backups) }} {{ __('backup(s) available') }}</p>
+                        </div>
                     </div>
                     <div class="p-6">
                         @if(count($backups) > 0)
@@ -176,27 +197,27 @@
                                 <table class="min-w-full divide-y divide-slate-200">
                                     <thead>
                                         <tr>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Filename') }}</th>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Created') }}</th>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Size') }}</th>
-                                            <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Tables') }}</th>
-                                            <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Actions') }}</th>
+                                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Filename') }}</th>
+                                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Created') }}</th>
+                                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Size') }}</th>
+                                            <th class="px-6 py-4 text-left text-xs font-medium text-slate-500 uppercase">{{ __('Tables') }}</th>
+                                            <th class="px-6 py-4 text-right text-xs font-medium text-slate-500 uppercase">{{ __('Actions') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-slate-200">
                                         @foreach($backups as $backup)
                                             <tr class="hover:bg-slate-50">
-                                                <td class="px-4 py-3 text-sm text-slate-900 font-medium">{{ $backup['filename'] }}</td>
-                                                <td class="px-4 py-3 text-sm text-slate-500">
+                                                <td class="px-6 py-4 text-sm text-slate-900 font-medium">{{ $backup['filename'] }}</td>
+                                                <td class="px-6 py-4 text-sm text-slate-500">
                                                     {{ $backup['created_at'] ? \Carbon\Carbon::parse($backup['created_at'])->format('d M Y, H:i') : '-' }}
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-slate-500">
+                                                <td class="px-6 py-4 text-sm text-slate-500">
                                                     {{ number_format($backup['size'] / 1024, 1) }} KB
                                                 </td>
-                                                <td class="px-4 py-3 text-sm text-slate-500">
+                                                <td class="px-6 py-4 text-sm text-slate-500">
                                                     {{ isset($backup['tables']) ? count($backup['tables']) : '-' }}
                                                 </td>
-                                                <td class="px-4 py-3 text-right text-sm space-x-3">
+                                                <td class="px-6 py-4 text-right text-sm space-x-3">
                                                     <a href="{{ route('settings.backup.download', $backup['filename']) }}"
                                                        class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium">
                                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

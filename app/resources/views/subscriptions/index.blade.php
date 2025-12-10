@@ -38,7 +38,7 @@
         <!-- Statistics Cards -->
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <!-- Monthly Cost - Featured -->
-            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+            <div class="rounded-[10px] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -56,7 +56,7 @@
             </div>
 
             <!-- Annual Cost -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -74,7 +74,7 @@
             </div>
 
             <!-- Active Subscriptions -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -92,7 +92,7 @@
             </div>
 
             <!-- Upcoming Renewals -->
-            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -251,9 +251,9 @@
             @else
                 <div class="overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
-                        <thead class="[&_tr]:border-b">
-                            <tr class="border-b transition-colors hover:bg-slate-50/50">
-                                <th class="h-12 px-4 text-left align-middle font-medium text-slate-500 w-12">
+                        <thead class="bg-slate-100">
+                            <tr class="border-b border-slate-200">
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
                                     <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
                                 </th>
                                 <x-ui.sortable-header column="vendor_name" label="{{ __('Vendor Name') }}" />
@@ -265,7 +265,7 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach($subscriptions as $subscription)
-                                <x-ui.table-row data-selectable data-subscription-id="{{ $subscription->id }}">
+                                <x-ui.table-row data-selectable data-subscription-id="{{ $subscription->id }}" class="{{ !$subscription->auto_renew ? 'bg-slate-100/70 opacity-75' : '' }}">
                                     <x-ui.table-cell>
                                         <x-bulk-checkbox
                                             
@@ -326,12 +326,20 @@
                                         @elseif($subscription->status === 'cancelled')
                                             <x-ui.badge variant="destructive">{{ __('Cancelled') }}</x-ui.badge>
                                         @else
-                                            <div class="text-sm font-medium text-slate-900">
+                                            <div class="text-sm font-medium {{ !$subscription->auto_renew ? 'text-slate-500' : 'text-slate-900' }}">
                                                 {{ $subscription->next_renewal_date->translatedFormat('d M Y') }}
                                             </div>
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600')) }}">
-                                                {{ $subscription->renewal_text }}
-                                            </span>
+                                            @if(!$subscription->auto_renew)
+                                                {{-- Cancelled subscription (auto_renew disabled) - show in orange/gray --}}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-600">
+                                                    {{ $subscription->renewal_text }}
+                                                </span>
+                                            @else
+                                                {{-- Active subscription - show renewal status with urgency colors --}}
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600')) }}">
+                                                    {{ $subscription->renewal_text }}
+                                                </span>
+                                            @endif
                                         @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
@@ -349,7 +357,7 @@
                 </div>
 
                 @if($subscriptions->hasPages())
-                    <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200">
                         {{ $subscriptions->links() }}
                     </div>
                 @endif

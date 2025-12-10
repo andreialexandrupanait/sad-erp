@@ -156,7 +156,20 @@
       "Bash(docker network:*)",
       "Bash(docker port:*)",
       "Bash(docker-compose down:*)",
-      "Bash(ss:*)"
+      "Bash(ss:*)",
+      "Bash(python3:*)",
+      "Bash(sudo ss:*)",
+      "Bash(netstat:*)",
+      "Bash(systemctl status:*)",
+      "Bash(systemctl stop:*)",
+      "Bash(systemctl disable:*)",
+      "Bash(pkill:*)",
+      "Bash(sudo systemctl stop:*)",
+      "Bash(sudo systemctl disable:*)",
+      "Bash(sudo -S systemctl stop:*)",
+      "Bash(sudo -S systemctl disable:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose:*)"
     ],
     "deny": [],
     "ask": []

@@ -22,9 +22,17 @@ class Service extends Model implements Sortable
         'description',
         'default_rate',
         'currency',
-        'color_class',
+        'unit',
         'is_active',
         'sort_order',
+    ];
+
+    public const UNITS = [
+        'ora' => 'oră',
+        'zi' => 'zi',
+        'luna' => 'lună',
+        'buc' => 'bucată',
+        'proiect' => 'proiect',
     ];
 
     protected $casts = [
@@ -100,29 +108,13 @@ class Service extends Model implements Sortable
             return '-';
         }
 
-        return number_format($this->default_rate, 2, ',', '.') . ' ' . $this->currency . '/h';
+        $unitLabel = self::UNITS[$this->unit] ?? $this->unit;
+        return number_format($this->default_rate, 2, ',', '.') . ' ' . $this->currency . '/' . $unitLabel;
     }
 
-    public function getBadgeClassAttribute(): string
+    public function getUnitLabelAttribute(): string
     {
-        if (!$this->color_class) {
-            return 'bg-slate-100 text-slate-700 border-slate-300';
-        }
-
-        $colorMap = [
-            'slate' => 'bg-slate-100 text-slate-700 border-slate-300',
-            'blue' => 'bg-blue-100 text-blue-700 border-blue-300',
-            'green' => 'bg-green-100 text-green-700 border-green-300',
-            'red' => 'bg-red-100 text-red-700 border-red-300',
-            'yellow' => 'bg-yellow-100 text-yellow-700 border-yellow-300',
-            'purple' => 'bg-purple-100 text-purple-700 border-purple-300',
-            'orange' => 'bg-orange-100 text-orange-700 border-orange-300',
-            'pink' => 'bg-pink-100 text-pink-700 border-pink-300',
-            'cyan' => 'bg-cyan-100 text-cyan-700 border-cyan-300',
-            'amber' => 'bg-amber-100 text-amber-700 border-amber-300',
-        ];
-
-        return $colorMap[$this->color_class] ?? $colorMap['slate'];
+        return self::UNITS[$this->unit] ?? $this->unit;
     }
 
     public function getRateForUser(User $user): ?float
