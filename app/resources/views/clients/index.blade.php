@@ -118,69 +118,49 @@
             </x-ui.card-content>
         </x-ui.card>
 
-        {{-- Bulk Actions Toolbar --}}
-        <div x-show="hasSelection"
-             x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 transform -translate-y-2"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             x-transition:leave="transition ease-in duration-150"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="sticky top-0 z-40 bg-blue-50 border border-blue-200 rounded-lg p-4 shadow-sm">
-            <div class="flex items-center justify-between flex-wrap gap-3">
-                <div class="flex items-center gap-3">
-                    <span class="text-sm font-medium text-blue-900">
-                        <span x-text="selectedCount"></span> {{ __('selected') }}
-                    </span>
-                    <button @click="clearSelection()" class="text-sm text-blue-600 hover:text-blue-800">
-                        {{ __('Clear') }}
-                    </button>
-                </div>
+        {{-- Bulk Actions Toolbar (Fixed Bottom Bar) --}}
+        <x-bulk-toolbar resource="clienți">
+            {{-- Bulk Status Update Dropdown --}}
+            <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                <x-ui.button variant="outline" class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700" @click="open = !open">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+                    </svg>
+                    {{ __('Update Status') }}
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                </x-ui.button>
 
-                <div class="flex items-center gap-2 flex-wrap">
-                    {{-- Bulk Status Update Dropdown --}}
-                    <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                        <x-ui.button variant="outline" @click="open = !open">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-                            </svg>
-                            {{ __('Update Status') }}
-                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                            </svg>
-                        </x-ui.button>
-
-                        <div x-show="open"
-                             x-transition
-                             class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
-                             style="display: none;">
-                            <template x-for="status in statuses" :key="status.id">
-                                <button type="button"
-                                        @click="bulkUpdateStatus(status.id); open = false"
-                                        class="w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50 flex items-center gap-2 transition-colors">
-                                    <span class="w-3 h-3 rounded-full flex-shrink-0" :style="'background-color: ' + status.color_background"></span>
-                                    <span class="font-medium" x-text="status.name"></span>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
-
-                    <x-ui.button variant="outline" @click="bulkExport()">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                        </svg>
-                        {{ __('Export') }}
-                    </x-ui.button>
-
-                    <x-ui.button variant="destructive" @click="bulkDelete()">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                        </svg>
-                        {{ __('Delete') }}
-                    </x-ui.button>
+                <div x-show="open"
+                     x-transition
+                     class="absolute bottom-full mb-2 left-0 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
+                     style="display: none;">
+                    <template x-for="status in statuses" :key="status.id">
+                        <button type="button"
+                                @click="bulkUpdateStatus(status.id); open = false"
+                                class="w-full px-3 py-2 text-left text-sm text-slate-900 hover:bg-slate-50 flex items-center gap-2 transition-colors">
+                            <span class="w-3 h-3 rounded-full flex-shrink-0" :style="'background-color: ' + status.color_background"></span>
+                            <span class="font-medium" x-text="status.name"></span>
+                        </button>
+                    </template>
                 </div>
             </div>
-        </div>
+
+            <x-ui.button variant="outline" class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700" @click="bulkExport()">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {{ __('Export') }}
+            </x-ui.button>
+
+            <x-ui.button variant="destructive" @click="bulkDelete()">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
 
         {{-- Status Filter Pills --}}
         <div x-show="ui.viewMode === 'table'" class="flex flex-wrap gap-2">

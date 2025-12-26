@@ -169,7 +169,19 @@
       "Bash(sudo -S systemctl stop:*)",
       "Bash(sudo -S systemctl disable:*)",
       "Bash(docker-compose restart:*)",
-      "Bash(docker-compose:*)"
+      "Bash(docker-compose:*)",
+      "Bash(/usr/bin/npm install)",
+      "Bash(/usr/local/bin/npm install)",
+      "Bash(node -e:*)",
+      "Bash(comm:*)",
+      "Bash(jq:*)",
+      "Bash(/var/www/html/database/migrations/2025_12_18_140000_add_project_fields_to_access_credentials_table.php )",
+      "Bash(/var/www/html/app/Models/Credential.php )",
+      "Bash(/var/www/html/app/Http/Requests/Credential/StoreCredentialRequest.php )",
+      "Bash(/var/www/html/app/Http/Requests/Credential/UpdateCredentialRequest.php )",
+      "Bash(/var/www/html/resources/views/credentials/index.blade.php )",
+      "Bash(/var/www/html/resources/views/credentials/show.blade.php )",
+      "Bash(/var/www/html/resources/views/components/credential-form.blade.php)"
     ],
     "deny": [],
     "ask": []

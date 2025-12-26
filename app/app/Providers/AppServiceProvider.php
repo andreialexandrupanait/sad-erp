@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\BankingCredential;
 use App\Models\BankTransaction;
 use App\Models\Client;
+use App\Models\Contract;
 use App\Models\Credential;
 use App\Models\Domain;
 use App\Models\FinancialFile;
@@ -27,9 +28,11 @@ use App\Observers\ServiceObserver;
 use App\Observers\SettingOptionObserver;
 use App\Observers\SubscriptionObserver;
 use App\Observers\UserObserver;
+use App\Observers\ContractObserver;
 use App\Policies\BankingCredentialPolicy;
 use App\Policies\BankTransactionPolicy;
 use App\Policies\ClientPolicy;
+use App\Policies\ContractPolicy;
 use App\Policies\CredentialPolicy;
 use App\Policies\DomainPolicy;
 use App\Policies\FinancialExpensePolicy;
@@ -75,6 +78,9 @@ class AppServiceProvider extends ServiceProvider
         BankTransaction::observe(BankTransactionObserver::class);
         FinancialFile::observe(FinancialFileObserver::class);
 
+        // Register contract observer for audit trail
+        Contract::observe(ContractObserver::class);
+
         // Register authorization policies
         Gate::policy(BankingCredential::class, BankingCredentialPolicy::class);
         Gate::policy(BankTransaction::class, BankTransactionPolicy::class);
@@ -87,5 +93,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FinancialExpense::class, FinancialExpensePolicy::class);
         Gate::policy(FinancialFile::class, FinancialFilePolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
+        Gate::policy(Contract::class, ContractPolicy::class);
     }
 }

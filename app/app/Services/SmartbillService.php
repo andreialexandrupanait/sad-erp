@@ -186,22 +186,53 @@ class SmartbillService
             urlencode($number)
         );
 
+        Log::info('Smartbill PDF Download attempt', [
+            'series' => $seriesName,
+            'number' => $number,
+            'cif' => $this->cif,
+            'url' => $url,
+        ]);
+
         try {
             $response = Http::withHeaders([
                 'Authorization' => $this->getAuthHeader(),
                 'Accept' => 'application/octet-stream',
             ])->timeout(30)->get($url);
 
+            Log::info('Smartbill PDF response', [
+                'status' => $response->status(),
+                'content_type' => $response->header('Content-Type'),
+                'body_length' => strlen($response->body()),
+                'is_pdf' => str_starts_with($response->body(), '%PDF'),
+            ]);
+
             if (!$response->successful()) {
                 Log::error('Smartbill PDF Download Error', [
                     'status' => $response->status(),
-                    'body' => $response->body(),
+                    'body' => substr($response->body(), 0, 500),
                     'url' => $url,
                 ]);
                 return null;
             }
 
-            return $response->body();
+            // Check if response is actually a PDF
+            $body = $response->body();
+            if (!str_starts_with($body, '%PDF')) {
+                Log::warning('Smartbill PDF response is not a PDF', [
+                    'content_preview' => substr($body, 0, 200),
+                    'series' => $seriesName,
+                    'number' => $number,
+                ]);
+                return null;
+            }
+
+            Log::info('Smartbill PDF downloaded successfully', [
+                'series' => $seriesName,
+                'number' => $number,
+                'size' => strlen($body),
+            ]);
+
+            return $body;
         } catch (Exception $e) {
             Log::error('Smartbill PDF Download Exception', [
                 'message' => $e->getMessage(),
@@ -231,13 +262,50 @@ class SmartbillService
     public function testConnection()
     {
         try {
-            // Use the /tax endpoint which is the most reliable for testing credentials
-            $result = $this->makeRequest('GET', '/tax?cif=' . urlencode($this->cif));
-            
-            return [
-                'success' => true,
-                'message' => 'Conectare reușită la Smartbill API! Credențialele sunt valide.',
-            ];
+            // Use the /tax endpoint to test credentials
+            // Note: This endpoint returns "Firma este neplatitoare de tva" for non-VAT payers,
+            // which is actually a successful response (credentials are valid)
+            $url = $this->baseUrl . '/tax?cif=' . urlencode($this->cif);
+
+            $response = Http::withHeaders([
+                'Authorization' => $this->getAuthHeader(),
+                'Accept' => 'application/json',
+            ])->timeout(15)->get($url);
+
+            $responseData = $response->json();
+
+            // Check for authentication errors (401)
+            if ($response->status() === 401) {
+                throw new Exception('Autentificare eșuată');
+            }
+
+            // Check for company not found in cloud
+            if (isset($responseData['errorText']) &&
+                str_contains($responseData['errorText'], 'nu mai este disponibila in Cloud')) {
+                throw new Exception($responseData['errorText']);
+            }
+
+            // "Firma este neplatitoare de tva" is actually a successful response
+            // It means the API connected successfully and the company exists
+            if ($response->status() === 400 &&
+                isset($responseData['errorText']) &&
+                str_contains($responseData['errorText'], 'neplatitoare de tva')) {
+                return [
+                    'success' => true,
+                    'message' => 'Conectare reușită la Smartbill API! Credențialele sunt valide. (Firma este neplătitoare de TVA)',
+                ];
+            }
+
+            // Any successful response means credentials are valid
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'message' => 'Conectare reușită la Smartbill API! Credențialele sunt valide.',
+                ];
+            }
+
+            throw new Exception('Eroare necunoscută: HTTP ' . $response->status());
+
         } catch (Exception $e) {
             $errorMessage = $e->getMessage();
 

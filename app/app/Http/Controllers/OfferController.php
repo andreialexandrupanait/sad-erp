@@ -2,23 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Offer;
-use App\Models\OfferItem;
+use App\Http\Requests\Offer\BulkActionRequest;
+use App\Http\Requests\Offer\StoreOfferRequest;
+use App\Http\Requests\Offer\UpdateOfferRequest;
 use App\Models\Client;
-use App\Models\Contract;
 use App\Models\DocumentTemplate;
-use App\Models\ExchangeRate;
+use App\Models\Offer;
 use App\Models\Service;
+use App\Services\Offer\OfferBulkActionService;
+use App\Services\Offer\OfferPublicService;
+use App\Services\Offer\OfferService;
+use App\Services\Offer\SimpleBlockRenderer;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class OfferController extends Controller
 {
-    public function __construct()
-    {
+    public function __construct(
+        protected OfferService $offerService,
+        protected OfferPublicService $offerPublicService,
+        protected OfferBulkActionService $bulkActionService
+    ) {
         $this->middleware('auth')->except(['publicView', 'publicAccept', 'publicReject']);
     }
 
@@ -28,103 +35,24 @@ class OfferController extends Controller
     public function index(Request $request): View|JsonResponse
     {
         if ($request->wantsJson() || $request->ajax()) {
-            return $this->indexJson($request);
+            return $this->offerService->getOffersJson($request);
         }
 
-        $stats = Offer::getStatistics();
+        // Cache statistics for 5 minutes (cleared when offers are created/updated/deleted)
+        $stats = cache()->remember(
+            'offer_stats_' . auth()->user()->organization_id,
+            now()->addMinutes(5),
+            fn() => Offer::getStatistics()
+        );
 
-        return view('offers.index', compact('stats'));
-    }
+        // Cache client dropdown for 10 minutes
+        $clients = cache()->remember(
+            'client_dropdown_' . auth()->user()->organization_id,
+            now()->addMinutes(10),
+            fn() => Client::orderBy('name')->get(['id', 'name', 'company_name'])
+        );
 
-    /**
-     * Return offers data as JSON.
-     */
-    private function indexJson(Request $request): JsonResponse
-    {
-        $query = Offer::with(['client', 'creator']);
-
-        // Status filter
-        if ($request->filled('status')) {
-            $statuses = array_filter(explode(',', $request->status));
-            if (!empty($statuses)) {
-                $query->whereIn('status', $statuses);
-            }
-        }
-
-        // Client filter
-        if ($request->filled('client_id')) {
-            $query->where('client_id', $request->client_id);
-        }
-
-        // Search
-        if ($request->filled('q')) {
-            $query->search($request->q);
-        }
-
-        // Sort
-        $sort = $request->get('sort', 'created_at:desc');
-        [$column, $direction] = $this->parseSort($sort);
-        $query->orderBy($column, $direction);
-
-        // Pagination
-        $perPage = min((int) $request->get('limit', 25), 100);
-        $offers = $query->paginate($perPage);
-
-        return response()->json([
-            'offers' => $offers->map(function ($offer) {
-                return [
-                    'id' => $offer->id,
-                    'offer_number' => $offer->offer_number,
-                    'title' => $offer->title,
-                    'status' => $offer->status,
-                    'status_label' => $offer->status_label,
-                    'status_color' => $offer->status_color,
-                    'total' => $offer->total,
-                    'currency' => $offer->currency,
-                    'valid_until' => $offer->valid_until?->format('Y-m-d'),
-                    'client' => $offer->client ? [
-                        'id' => $offer->client->id,
-                        'name' => $offer->client->display_name,
-                        'slug' => $offer->client->slug,
-                    ] : null,
-                    'creator' => $offer->creator ? [
-                        'id' => $offer->creator->id,
-                        'name' => $offer->creator->name,
-                    ] : null,
-                    'created_at' => $offer->created_at?->toISOString(),
-                    'sent_at' => $offer->sent_at?->toISOString(),
-                    'accepted_at' => $offer->accepted_at?->toISOString(),
-                ];
-            }),
-            'pagination' => [
-                'total' => $offers->total(),
-                'per_page' => $offers->perPage(),
-                'current_page' => $offers->currentPage(),
-                'last_page' => $offers->lastPage(),
-            ],
-            'stats' => Offer::getStatistics(),
-        ]);
-    }
-
-    private function parseSort(string $sort): array
-    {
-        $parts = explode(':', $sort);
-        $column = $parts[0];
-        $direction = $parts[1] ?? 'desc';
-
-        $columnMap = [
-            'number' => 'offer_number',
-            'title' => 'title',
-            'total' => 'total',
-            'status' => 'status',
-            'valid_until' => 'valid_until',
-            'created_at' => 'created_at',
-        ];
-
-        return [
-            $columnMap[$column] ?? 'created_at',
-            in_array($direction, ['asc', 'desc']) ? $direction : 'desc',
-        ];
+        return view('offers.index', compact('stats', 'clients'));
     }
 
     /**
@@ -132,161 +60,48 @@ class OfferController extends Controller
      */
     public function create(Request $request): View
     {
-        $clients = Client::orderBy('name')->get(['id', 'name', 'company_name', 'slug']);
-        $templates = DocumentTemplate::active()->ofType('offer')->get();
-        $services = Service::where('is_active', true)->orderBy('sort_order')->get();
-        $contracts = [];
+        $data = $this->offerService->getBuilderData($request->client_id);
 
-        // Pre-select client if provided
-        $selectedClient = null;
-        if ($request->filled('client_id')) {
-            $selectedClient = Client::find($request->client_id);
-        }
-
-        // Get contracts for the client (for adding annexes)
-        if ($selectedClient) {
-            $contracts = Contract::where('client_id', $selectedClient->id)
-                ->where('status', 'active')
-                ->get();
-        }
-
-        // Get organization for logo/branding
-        $organization = auth()->user()->organization;
-        $offer = null;
-
-        // Get exchange rates for currency conversion
-        $exchangeRates = $this->getExchangeRatesForView();
-
-        // Get bank accounts from organization settings
-        $bankAccounts = collect($organization->settings['bank_accounts'] ?? [])
-            ->filter(fn($a) => !empty($a['iban']));
-
-        // Use builder view
-        return view('offers.builder', compact('clients', 'templates', 'services', 'selectedClient', 'contracts', 'organization', 'offer', 'exchangeRates', 'bankAccounts'));
+        return view('offers.builder', $data);
     }
 
     /**
      * Store a newly created offer.
      */
-    public function store(Request $request): JsonResponse|RedirectResponse
+    public function store(StoreOfferRequest $request): JsonResponse|RedirectResponse
     {
-        // Determine validation rules based on whether we're creating a new client
-        $clientRules = $request->has('new_client') && $request->new_client
-            ? ['client_id' => 'nullable']
-            : ['client_id' => 'required|exists:clients,id'];
+        $validated = $request->validated();
+        $items = $validated['items'] ?? [];
+        unset($validated['items']);
 
-        $newClientRules = $request->has('new_client') && $request->new_client
-            ? [
-                'new_client' => 'required|array',
-                'new_client.company_name' => 'required|string|max:255',
-                'new_client.contact_person' => 'nullable|string|max:255',
-                'new_client.email' => 'nullable|email|max:255',
-                'new_client.phone' => 'nullable|string|max:50',
-                'new_client.tax_id' => 'nullable|string|max:50',
-                'new_client.address' => 'nullable|string|max:500',
-            ]
-            : [];
-
-        $validated = $request->validate(array_merge($clientRules, $newClientRules, [
-            'template_id' => 'nullable|exists:document_templates,id',
-            'contract_id' => 'nullable|exists:contracts,id',
-            'title' => 'required|string|max:255',
-            'introduction' => 'nullable|string',
-            'terms' => 'nullable|string',
-            'blocks' => 'nullable|array',
-            'valid_until' => 'required|date|after:today',
-            'discount_percent' => 'nullable|numeric|min:0|max:100',
-            'discount_amount' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.title' => 'required|string|max:255',
-            'items.*.description' => 'nullable|string',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit' => 'nullable|string',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.currency' => 'nullable|string|size:3',
-            'items.*.is_recurring' => 'boolean',
-            'items.*.billing_cycle' => 'nullable|string',
-            'items.*.custom_cycle_days' => 'nullable|integer|min:1',
-            'items.*.service_id' => 'nullable|exists:services,id',
-        ]));
-
-        DB::beginTransaction();
-        try {
-            // Handle inline client creation
-            $clientId = $validated['client_id'] ?? null;
-
-            if (!$clientId && !empty($validated['new_client'])) {
-                // Create a new client from the inline form data
-                $client = Client::create([
-                    'name' => $validated['new_client']['company_name'],
-                    'company_name' => $validated['new_client']['company_name'],
-                    'contact_person' => $validated['new_client']['contact_person'] ?? null,
-                    'email' => $validated['new_client']['email'] ?? null,
-                    'phone' => $validated['new_client']['phone'] ?? null,
-                    'tax_id' => $validated['new_client']['tax_id'] ?? null,
-                    'address' => $validated['new_client']['address'] ?? null,
-                ]);
-                $clientId = $client->id;
-            }
-
-            $offer = Offer::create([
-                'client_id' => $clientId,
-                'template_id' => $validated['template_id'] ?? null,
-                'contract_id' => $validated['contract_id'] ?? null,
-                'title' => $validated['title'],
-                'introduction' => $validated['introduction'] ?? null,
-                'terms' => $validated['terms'] ?? null,
-                'blocks' => $validated['blocks'] ?? null,
-                'valid_until' => $validated['valid_until'],
-                'discount_percent' => $validated['discount_percent'] ?? null,
-                'discount_amount' => $validated['discount_amount'] ?? 0,
-                'currency' => $validated['currency'],
-                'notes' => $validated['notes'] ?? null,
+        // Handle inline client creation
+        if (!empty($validated['new_client'])) {
+            $client = \App\Models\Client::create([
+                'name' => $validated['new_client']['company_name'],
+                'company_name' => $validated['new_client']['company_name'],
+                'contact_person' => $validated['new_client']['contact_person'] ?? null,
+                'email' => $validated['new_client']['email'] ?? null,
+                'phone' => $validated['new_client']['phone'] ?? null,
+                'tax_id' => $validated['new_client']['tax_id'] ?? null,
+                'address' => $validated['new_client']['address'] ?? null,
             ]);
-
-            // Create items
-            foreach ($validated['items'] as $index => $itemData) {
-                $offer->items()->create([
-                    'service_id' => $itemData['service_id'] ?? null,
-                    'title' => $itemData['title'],
-                    'description' => $itemData['description'] ?? null,
-                    'quantity' => $itemData['quantity'],
-                    'unit' => $itemData['unit'],
-                    'unit_price' => $itemData['unit_price'],
-                    'currency' => $itemData['currency'] ?? $validated['currency'],
-                    'is_recurring' => $itemData['is_recurring'] ?? false,
-                    'billing_cycle' => $itemData['billing_cycle'] ?? null,
-                    'custom_cycle_days' => $itemData['custom_cycle_days'] ?? null,
-                    'sort_order' => $index,
-                ]);
-            }
-
-            // Recalculate totals
-            $offer->calculateTotals();
-
-            // Log activity
-            $offer->logActivity('created');
-
-            DB::commit();
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => __('Offer created successfully.'),
-                    'offer' => $offer->load(['client', 'items']),
-                ], 201);
-            }
-
-            return redirect()
-                ->route('offers.show', $offer)
-                ->with('success', __('Offer created successfully.'));
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            $validated['client_id'] = $client->id;
+            unset($validated['new_client']);
         }
+
+        $offer = $this->offerService->create($validated, $items);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer created successfully.'),
+                'offer' => $offer,
+            ], 201);
+        }
+
+        return redirect()
+            ->route('offers.show', $offer)
+            ->with('success', __('Offer created successfully.'));
     }
 
     /**
@@ -294,7 +109,7 @@ class OfferController extends Controller
      */
     public function show(Offer $offer): View
     {
-        $offer->load(['client', 'creator', 'template', 'items.service', 'activities.user', 'contract']);
+        $offer = $this->offerService->getOfferForShow($offer);
 
         return view('offers.show', compact('offer'));
     }
@@ -311,172 +126,97 @@ class OfferController extends Controller
         }
 
         $offer->load(['items', 'client']);
-        $clients = Client::orderBy('name')->get(['id', 'name', 'company_name', 'slug']);
-        $templates = DocumentTemplate::active()->ofType('offer')->get();
-        $services = Service::where('is_active', true)->orderBy('sort_order')->get();
-        $contracts = Contract::where('client_id', $offer->client_id)
-            ->where('status', 'active')
-            ->get();
+        $data = $this->offerService->getBuilderData($offer->client_id, $offer);
 
-        // Get organization for logo/branding
-        $organization = auth()->user()->organization;
-        $selectedClient = $offer->client;
-
-        // Get exchange rates for currency conversion
-        $exchangeRates = $this->getExchangeRatesForView();
-
-        // Get bank accounts from organization settings
-        $bankAccounts = collect($organization->settings['bank_accounts'] ?? [])
-            ->filter(fn($a) => !empty($a['iban']));
-
-        // Use builder view for editing
-        return view('offers.builder', compact('offer', 'clients', 'templates', 'services', 'contracts', 'organization', 'selectedClient', 'exchangeRates', 'bankAccounts'));
+        return view('offers.builder', $data);
     }
 
     /**
      * Update the specified offer.
      */
-    public function update(Request $request, Offer $offer): JsonResponse|RedirectResponse
+    public function update(UpdateOfferRequest $request, Offer $offer): JsonResponse|RedirectResponse
     {
-        if (!$offer->canBeEdited()) {
-            if ($request->expectsJson()) {
-                return response()->json(['error' => __('This offer cannot be edited.')], 403);
-            }
-            return redirect()
-                ->route('offers.show', $offer)
-                ->with('error', __('This offer cannot be edited.'));
-        }
+        $validated = $request->validated();
+        $items = $validated['items'] ?? [];
+        unset($validated['items']);
 
-        $validated = $request->validate([
-            'client_id' => 'required|exists:clients,id',
-            'template_id' => 'nullable|exists:document_templates,id',
-            'contract_id' => 'nullable|exists:contracts,id',
-            'title' => 'required|string|max:255',
-            'introduction' => 'nullable|string',
-            'terms' => 'nullable|string',
-            'blocks' => 'nullable|array',
-            'valid_until' => 'required|date|after:today',
-            'discount_percent' => 'nullable|numeric|min:0|max:100',
-            'discount_amount' => 'nullable|numeric|min:0',
-            'currency' => 'required|string|size:3',
-            'notes' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.id' => 'nullable|exists:offer_items,id',
-            'items.*.title' => 'required|string|max:255',
-            'items.*.description' => 'nullable|string',
-            'items.*.quantity' => 'required|numeric|min:0.01',
-            'items.*.unit' => 'nullable|string',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'items.*.currency' => 'nullable|string|size:3',
-            'items.*.is_recurring' => 'boolean',
-            'items.*.billing_cycle' => 'nullable|string',
-            'items.*.custom_cycle_days' => 'nullable|integer|min:1',
-            'items.*.service_id' => 'nullable|exists:services,id',
-        ]);
+        $offer = $this->offerService->update($offer, $validated, $items);
 
-        DB::beginTransaction();
-        try {
-            $offer->update([
-                'client_id' => $validated['client_id'],
-                'template_id' => $validated['template_id'] ?? null,
-                'contract_id' => $validated['contract_id'] ?? null,
-                'title' => $validated['title'],
-                'introduction' => $validated['introduction'] ?? null,
-                'terms' => $validated['terms'] ?? null,
-                'blocks' => $validated['blocks'] ?? null,
-                'valid_until' => $validated['valid_until'],
-                'discount_percent' => $validated['discount_percent'] ?? null,
-                'discount_amount' => $validated['discount_amount'] ?? 0,
-                'currency' => $validated['currency'],
-                'notes' => $validated['notes'] ?? null,
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer updated successfully.'),
+                'offer' => $offer,
             ]);
-
-            // Get existing item IDs
-            $existingIds = $offer->items()->pluck('id')->toArray();
-            $updatedIds = [];
-
-            // Update or create items
-            foreach ($validated['items'] as $index => $itemData) {
-                if (!empty($itemData['id'])) {
-                    // Update existing
-                    $item = $offer->items()->find($itemData['id']);
-                    if ($item) {
-                        $item->update([
-                            'service_id' => $itemData['service_id'] ?? null,
-                            'title' => $itemData['title'],
-                            'description' => $itemData['description'] ?? null,
-                            'quantity' => $itemData['quantity'],
-                            'unit' => $itemData['unit'],
-                            'unit_price' => $itemData['unit_price'],
-                            'currency' => $itemData['currency'] ?? $validated['currency'],
-                            'is_recurring' => $itemData['is_recurring'] ?? false,
-                            'billing_cycle' => $itemData['billing_cycle'] ?? null,
-                            'custom_cycle_days' => $itemData['custom_cycle_days'] ?? null,
-                            'sort_order' => $index,
-                        ]);
-                        $updatedIds[] = $item->id;
-                    }
-                } else {
-                    // Create new
-                    $item = $offer->items()->create([
-                        'service_id' => $itemData['service_id'] ?? null,
-                        'title' => $itemData['title'],
-                        'description' => $itemData['description'] ?? null,
-                        'quantity' => $itemData['quantity'],
-                        'unit' => $itemData['unit'],
-                        'unit_price' => $itemData['unit_price'],
-                        'currency' => $itemData['currency'] ?? $validated['currency'],
-                        'is_recurring' => $itemData['is_recurring'] ?? false,
-                        'billing_cycle' => $itemData['billing_cycle'] ?? null,
-                        'custom_cycle_days' => $itemData['custom_cycle_days'] ?? null,
-                        'sort_order' => $index,
-                    ]);
-                    $updatedIds[] = $item->id;
-                }
-            }
-
-            // Delete removed items
-            $toDelete = array_diff($existingIds, $updatedIds);
-            if (!empty($toDelete)) {
-                OfferItem::whereIn('id', $toDelete)->delete();
-            }
-
-            // Recalculate totals
-            $offer->calculateTotals();
-
-            // Log activity
-            $offer->logActivity('updated');
-
-            DB::commit();
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => __('Offer updated successfully.'),
-                    'offer' => $offer->fresh()->load(['client', 'items']),
-                ]);
-            }
-
-            return redirect()
-                ->route('offers.show', $offer)
-                ->with('success', __('Offer updated successfully.'));
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
         }
+
+        return redirect()
+            ->route('offers.show', $offer)
+            ->with('success', __('Offer updated successfully.'));
     }
 
     /**
      * Remove the specified offer.
      */
-    public function destroy(Offer $offer): RedirectResponse
+    public function destroy(Offer $offer): JsonResponse|RedirectResponse
     {
-        $offer->delete();
+        $this->offerService->delete($offer);
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer deleted successfully.')
+            ]);
+        }
 
         return redirect()
             ->route('offers.index')
             ->with('success', __('Offer deleted successfully.'));
+    }
+
+    /**
+     * Handle bulk actions on offers.
+     */
+    public function bulkAction(BulkActionRequest $request)
+    {
+        $action = $request->input('action');
+
+        switch ($action) {
+            case 'export':
+                $format = $request->input('format', 'xlsx');
+                $offerIds = $request->boolean('export_all') ? null : $request->input('offer_ids', []);
+                $statusFilter = $request->input('status_filter');
+                return $this->bulkActionService->export($offerIds, $statusFilter, $format);
+
+            case 'delete':
+                $result = $this->bulkActionService->bulkDelete($request->input('offer_ids', []));
+                return response()->json($result);
+
+            case 'status_change':
+                $result = $this->bulkActionService->bulkStatusChange(
+                    $request->input('offer_ids', []),
+                    $request->input('new_status')
+                );
+                return response()->json($result);
+
+            default:
+                return response()->json(['error' => __('Invalid action.')], 400);
+        }
+    }
+
+    /**
+     * Legacy bulk delete endpoint.
+     * @deprecated Use bulkAction with action=delete instead.
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:offers,id',
+        ]);
+
+        $result = $this->bulkActionService->bulkDeleteLegacy($validated['ids']);
+        return response()->json($result);
     }
 
     /**
@@ -491,19 +231,74 @@ class OfferController extends Controller
             return back()->with('error', __('This offer cannot be sent.'));
         }
 
-        $offer->send();
+        try {
+            $this->offerService->send($offer);
 
-        // TODO: Send email notification to client
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer sent successfully.'),
+                    'public_url' => $offer->public_url,
+                ]);
+            }
 
-        if (request()->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => __('Offer sent successfully.'),
-                'public_url' => $offer->public_url,
-            ]);
+            return back()->with('success', __('Offer sent successfully.'));
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Resend offer to client (for already sent offers).
+     */
+    public function resend(Offer $offer): JsonResponse|RedirectResponse
+    {
+        // Allow resending for sent, viewed, or even rejected/expired offers
+        if ($offer->status === 'draft') {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => __('Cannot resend a draft offer. Use Send instead.')], 403);
+            }
+            return back()->with('error', __('Cannot resend a draft offer. Use Send instead.'));
         }
 
-        return back()->with('success', __('Offer sent successfully.'));
+        try {
+            $this->offerService->resend($offer);
+
+            if (request()->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer resent successfully.'),
+                ]);
+            }
+
+            return back()->with('success', __('Offer resent successfully.'));
+        } catch (\Exception $e) {
+            if (request()->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Download offer as PDF.
+     */
+    public function downloadPdf(Offer $offer)
+    {
+        try {
+            $pdfPath = $this->offerService->generatePdfForDownload($offer);
+
+            return response()->download(
+                storage_path('app/' . $pdfPath),
+                $offer->offer_number . '.pdf',
+                ['Content-Type' => 'application/pdf']
+            );
+        } catch (\Exception $e) {
+            return back()->with('error', __('Failed to generate PDF: ') . $e->getMessage());
+        }
     }
 
     /**
@@ -511,44 +306,36 @@ class OfferController extends Controller
      */
     public function duplicate(Offer $offer): RedirectResponse
     {
-        DB::beginTransaction();
+        $newOffer = $this->offerService->duplicate($offer);
+
+        return redirect()
+            ->route('offers.edit', $newOffer)
+            ->with('success', __('Offer duplicated successfully.'));
+    }
+
+    /**
+     * Approve offer and generate contract.
+     */
+    public function approve(Request $request, Offer $offer): JsonResponse
+    {
         try {
-            $newOffer = $offer->replicate([
-                'offer_number',
-                'public_token',
-                'status',
-                'sent_at',
-                'viewed_at',
-                'accepted_at',
-                'rejected_at',
-                'accepted_from_ip',
-                'verification_code',
-                'verification_code_expires_at',
-                'rejection_reason',
+            $contract = $this->offerService->approveAndConvert(
+                $offer,
+                $request->ip(),
+                $request->signature_text
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer approved successfully! Contract has been generated.'),
+                'contract_id' => $contract->id,
+                'offer_id' => $offer->id,
             ]);
-
-            $newOffer->status = 'draft';
-            $newOffer->valid_until = now()->addDays(30);
-            $newOffer->save();
-
-            // Duplicate items
-            foreach ($offer->items as $item) {
-                $newItem = $item->replicate();
-                $newItem->offer_id = $newOffer->id;
-                $newItem->save();
-            }
-
-            $newOffer->logActivity('created');
-
-            DB::commit();
-
-            return redirect()
-                ->route('offers.edit', $newOffer)
-                ->with('success', __('Offer duplicated successfully.'));
-
         } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -566,8 +353,7 @@ class OfferController extends Controller
         }
 
         try {
-            $contract = $offer->convertToContract();
-            $offer->logActivity('converted');
+            $contract = $this->offerService->convertToContract($offer);
 
             return redirect()
                 ->route('contracts.show', $contract)
@@ -582,16 +368,62 @@ class OfferController extends Controller
      */
     public function publicView(string $token): View
     {
-        $offer = Offer::withoutGlobalScopes()
-            ->where('public_token', $token)
-            ->firstOrFail();
+        $offer = $this->offerPublicService->getOfferByToken($token);
 
-        // Mark as viewed
-        $offer->markAsViewed(request()->ip(), request()->userAgent());
+        // Record the view
+        $this->offerPublicService->recordView($offer, request()->ip(), request()->userAgent());
 
-        $offer->load(['client', 'items']);
+        // Load relationships without global scopes
+        $offer->load(['items']);
+        $offer->setRelation('client', $offer->client_id ? \App\Models\Client::withoutGlobalScopes()->find($offer->client_id) : null);
+        $offer->setRelation('organization', \App\Models\Organization::find($offer->organization_id));
 
         return view('offers.public', compact('offer'));
+    }
+
+    /**
+     * Public API endpoint to get current offer state for real-time sync.
+     */
+    public function publicState(string $token): JsonResponse
+    {
+        try {
+            return response()->json($this->offerPublicService->getPublicState($token));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
+     * Public API endpoint to update customer's service selections.
+     */
+    public function publicUpdateSelections(Request $request, string $token): JsonResponse
+    {
+        $validated = $request->validate([
+            'deselected_services' => 'array',
+            'deselected_services.*' => 'integer',
+            'selected_cards' => 'array',
+            'selected_cards.*' => 'integer',
+            'selected_optional_services' => 'array',
+            'selected_optional_services.*' => 'string',
+        ]);
+
+        try {
+            $result = $this->offerPublicService->updateSelections($token, $validated);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 403);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
@@ -599,48 +431,27 @@ class OfferController extends Controller
      */
     public function publicAccept(Request $request, string $token): JsonResponse|RedirectResponse
     {
-        $offer = Offer::withoutGlobalScopes()
-            ->where('public_token', $token)
-            ->firstOrFail();
+        try {
+            $this->offerPublicService->acceptPublic(
+                $token,
+                $request->verification_code,
+                $request->ip()
+            );
 
-        if (!$offer->canBeAccepted()) {
             if ($request->expectsJson()) {
-                return response()->json(['error' => __('This offer cannot be accepted.')], 403);
-            }
-            return back()->with('error', __('This offer cannot be accepted.'));
-        }
-
-        // Verify code if required
-        if ($offer->verification_code) {
-            $validated = $request->validate([
-                'verification_code' => 'required|string|size:6',
-            ]);
-
-            if ($validated['verification_code'] !== $offer->verification_code) {
-                if ($request->expectsJson()) {
-                    return response()->json(['error' => __('Invalid verification code.')], 422);
-                }
-                return back()->with('error', __('Invalid verification code.'));
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer accepted successfully. Thank you!'),
+                ]);
             }
 
-            if ($offer->verification_code_expires_at < now()) {
-                if ($request->expectsJson()) {
-                    return response()->json(['error' => __('Verification code has expired.')], 422);
-                }
-                return back()->with('error', __('Verification code has expired.'));
+            return back()->with('success', __('Offer accepted successfully. Thank you!'));
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
             }
+            return back()->with('error', $e->getMessage());
         }
-
-        $offer->accept($request->ip());
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => __('Offer accepted successfully. Thank you!'),
-            ]);
-        }
-
-        return back()->with('success', __('Offer accepted successfully. Thank you!'));
     }
 
     /**
@@ -648,31 +459,23 @@ class OfferController extends Controller
      */
     public function publicReject(Request $request, string $token): JsonResponse|RedirectResponse
     {
-        $offer = Offer::withoutGlobalScopes()
-            ->where('public_token', $token)
-            ->firstOrFail();
+        try {
+            $this->offerPublicService->rejectPublic($token, $request->reason);
 
-        if ($offer->status !== 'sent' && $offer->status !== 'viewed') {
             if ($request->expectsJson()) {
-                return response()->json(['error' => __('This offer cannot be rejected.')], 403);
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer rejected.'),
+                ]);
             }
-            return back()->with('error', __('This offer cannot be rejected.'));
+
+            return back()->with('success', __('Offer rejected.'));
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 403);
+            }
+            return back()->with('error', $e->getMessage());
         }
-
-        $validated = $request->validate([
-            'reason' => 'nullable|string|max:1000',
-        ]);
-
-        $offer->reject($validated['reason'] ?? null);
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => __('Offer rejected.'),
-            ]);
-        }
-
-        return back()->with('success', __('Offer rejected.'));
     }
 
     /**
@@ -680,44 +483,452 @@ class OfferController extends Controller
      */
     public function requestVerificationCode(string $token): JsonResponse
     {
-        $offer = Offer::withoutGlobalScopes()
-            ->where('public_token', $token)
-            ->firstOrFail();
+        try {
+            $this->offerPublicService->sendVerificationCode($token);
 
-        if (!$offer->canBeAccepted()) {
-            return response()->json(['error' => __('This offer cannot be accepted.')], 403);
+            return response()->json([
+                'success' => true,
+                'message' => __('Verification code sent.'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 403);
         }
+    }
 
-        $code = $offer->generateVerificationCode();
+    /**
+     * Save current offer layout as a template.
+     */
+    public function saveAsTemplate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'blocks' => 'required|array',
+            'services' => 'nullable|array',
+            'is_default' => 'boolean',
+        ]);
 
-        // TODO: Send code via email/SMS to client
+        // Create template content (blocks + services)
+        $content = json_encode([
+            'blocks' => $validated['blocks'],
+            'services' => $validated['services'] ?? [],
+        ]);
+
+        $template = DocumentTemplate::create([
+            'name' => $validated['name'],
+            'type' => 'offer',
+            'content' => $content,
+            'is_default' => $validated['is_default'] ?? false,
+            'is_active' => true,
+        ]);
 
         return response()->json([
             'success' => true,
-            'message' => __('Verification code sent.'),
+            'message' => __('Template saved successfully.'),
+            'template' => [
+                'id' => $template->id,
+                'name' => $template->name,
+            ],
+        ], 201);
+    }
+
+    // ========================================================================
+    // SIMPLE BUILDER METHODS
+    // ========================================================================
+
+    /**
+     * Show the simple builder for creating a new offer.
+     */
+    public function simpleCreate(Request $request): View
+    {
+        $blockRenderer = new SimpleBlockRenderer();
+
+        $organization = auth()->user()->organization;
+        $offerDefaults = $organization->settings['offer_defaults'] ?? [];
+
+        // Cache client dropdown for 10 minutes
+        $clients = cache()->remember(
+            'client_dropdown_full_' . auth()->user()->organization_id,
+            now()->addMinutes(10),
+            fn() => Client::orderBy('name')->get(['id', 'name', 'company_name', 'email'])
+        );
+
+        // Cache predefined services for 10 minutes
+        $predefinedServices = cache()->remember(
+            'predefined_services_' . auth()->user()->organization_id,
+            now()->addMinutes(10),
+            fn() => Service::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'description', 'default_rate', 'unit', 'currency'])
+        );
+
+        $data = [
+            'offer' => null,
+            'clients' => $clients,
+            'predefinedServices' => $predefinedServices,
+            'defaultBlocks' => $blockRenderer->getDefaultBlocks(),
+            'existingItems' => [],
+            'selectedClientId' => $request->client_id,
+            'organization' => $organization,
+            'bankAccounts' => collect($organization->settings['bank_accounts'] ?? []),
+            'offerDefaults' => $offerDefaults,
+        ];
+
+        return view('offers.simple-builder', $data);
+    }
+
+    /**
+     * Show the simple builder for editing an existing offer.
+     */
+    public function simpleEdit(Offer $offer): View|RedirectResponse
+    {
+        if (!$offer->canBeEdited()) {
+            return redirect()
+                ->route('offers.show', $offer)
+                ->with('error', __('This offer cannot be edited.'));
+        }
+
+        $offer->load(['items', 'client']);
+        $blockRenderer = new SimpleBlockRenderer();
+
+        // Get blocks from offer, or use defaults
+        $blocks = $offer->blocks;
+        if (empty($blocks)) {
+            $blocks = $blockRenderer->getDefaultBlocks();
+        } elseif (is_string($blocks)) {
+            $blocks = json_decode($blocks, true) ?? $blockRenderer->getDefaultBlocks();
+        }
+
+        $organization = auth()->user()->organization;
+        $offerDefaults = $organization->settings['offer_defaults'] ?? [];
+
+        // Convert items to the format expected by the builder
+        // Read type and is_selected from database
+        $existingItems = $offer->items->map(function ($item, $index) {
+            return [
+                '_key' => $item->id ?? (now()->timestamp * 1000 + $index),
+                '_type' => $item->type ?? 'custom',
+                '_selected' => $item->is_selected ?? true,
+                'id' => $item->id,
+                'service_id' => $item->service_id,
+                'title' => $item->title,
+                'description' => $item->description,
+                'quantity' => floatval($item->quantity),
+                'unit' => $item->unit ?? 'buc',
+                'unit_price' => floatval($item->unit_price),
+                'discount_percent' => floatval($item->discount_percent ?? 0),
+                'currency' => $item->currency ?? $offer->currency ?? 'EUR',
+                'total' => floatval($item->total_price ?? ($item->quantity * $item->unit_price)),
+            ];
+        })->toArray();
+
+        // Check if offer has any card-type items
+        $hasCardItems = collect($existingItems)->where('_type', 'card')->isNotEmpty();
+
+        // If no card items exist in the offer, add default card services from organization settings
+        if (!$hasCardItems && !empty($offerDefaults['default_services'])) {
+            $defaultCardServices = collect($offerDefaults['default_services'])
+                ->filter(fn($svc) => ($svc['type'] ?? 'custom') === 'card')
+                ->values();
+
+            foreach ($defaultCardServices as $index => $svc) {
+                $existingItems[] = [
+                    '_key' => now()->timestamp * 1000 + 1000 + $index,
+                    '_type' => 'card',
+                    '_selected' => false, // Card services start unselected
+                    'id' => null, // Not saved to DB yet
+                    'service_id' => $svc['service_id'] ?? null,
+                    'title' => $svc['title'] ?? '',
+                    'description' => $svc['description'] ?? '',
+                    'quantity' => 1,
+                    'unit' => $svc['unit'] ?? 'buc',
+                    'unit_price' => floatval($svc['unit_price'] ?? 0),
+                    'discount_percent' => 0,
+                    'currency' => $offer->currency ?? 'EUR',
+                    'total' => floatval($svc['unit_price'] ?? 0),
+                ];
+            }
+        }
+
+        // Cache client dropdown for 10 minutes
+        $clients = cache()->remember(
+            'client_dropdown_full_' . auth()->user()->organization_id,
+            now()->addMinutes(10),
+            fn() => Client::orderBy('name')->get(['id', 'name', 'company_name', 'email'])
+        );
+
+        // Cache predefined services for 10 minutes
+        $predefinedServices = cache()->remember(
+            'predefined_services_' . auth()->user()->organization_id,
+            now()->addMinutes(10),
+            fn() => Service::where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'description', 'default_rate', 'unit', 'currency'])
+        );
+
+        $data = [
+            'offer' => $offer,
+            'clients' => $clients,
+            'predefinedServices' => $predefinedServices,
+            'defaultBlocks' => $blocks,
+            'existingItems' => $existingItems,
+            'selectedClientId' => $offer->client_id,
+            'organization' => $organization,
+            'bankAccounts' => collect($organization->settings['bank_accounts'] ?? []),
+            'offerDefaults' => $offerDefaults,
+        ];
+
+        return view('offers.simple-builder', $data);
+    }
+
+    /**
+     * Store a new offer from the simple builder.
+     */
+    public function simpleStore(Request $request): JsonResponse|RedirectResponse
+    {
+        $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+            'temp_client_name' => 'nullable|string|max:255',
+            'temp_client_email' => 'nullable|email|max:255',
+            'temp_client_phone' => 'nullable|string|max:50',
+            'temp_client_company' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'valid_until' => 'nullable|date',
+            'currency' => 'required|string|max:10',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
+            'blocks' => 'required|array',
+            'header_data' => 'nullable|array',
+            'items' => 'nullable|array',
+            'items.*.title' => 'required|string|max:255',
+            'items.*.description' => 'nullable|string',
+            'items.*.quantity' => 'required|numeric|min:0',
+            'items.*.unit' => 'nullable|string|max:50',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.type' => 'nullable|string|in:custom,card',
+            'items.*.is_selected' => 'nullable|boolean',
+        ]);
+
+        // Validate that we have either client_id or temp_client_name
+        if (empty($validated['client_id']) && empty($validated['temp_client_name'])) {
+            return response()->json([
+                'error' => __('Please select an existing client or enter a new client name.'),
+                'errors' => ['client_id' => [__('Client is required.')]]
+            ], 422);
+        }
+
+        // Create the offer
+        $offer = Offer::create([
+            'client_id' => $validated['client_id'] ?? null,
+            'temp_client_name' => $validated['temp_client_name'] ?? null,
+            'temp_client_email' => $validated['temp_client_email'] ?? null,
+            'temp_client_phone' => $validated['temp_client_phone'] ?? null,
+            'temp_client_company' => $validated['temp_client_company'] ?? null,
+            'title' => $validated['title'],
+            'valid_until' => $validated['valid_until'],
+            'currency' => $validated['currency'],
+            'discount_percent' => $validated['discount_percent'] ?? 0,
+            'blocks' => $validated['blocks'],
+            'header_data' => $validated['header_data'] ?? null,
+            'status' => 'draft',
+        ]);
+
+        // Create ALL items (including card services that are not selected yet)
+        $items = $validated['items'] ?? [];
+        $sortOrder = 0;
+        foreach ($items as $index => $itemData) {
+            $quantity = $itemData['quantity'];
+            $unitPrice = $itemData['unit_price'];
+            $discountPercent = $itemData['discount_percent'] ?? 0;
+            $subtotal = $quantity * $unitPrice;
+            $discount = $subtotal * ($discountPercent / 100);
+
+            $offer->items()->create([
+                'service_id' => $itemData['service_id'] ?? null,
+                'type' => $itemData['type'] ?? 'custom',
+                'is_selected' => $itemData['is_selected'] ?? true,
+                'title' => $itemData['title'],
+                'description' => $itemData['description'] ?? null,
+                'quantity' => $quantity,
+                'unit' => $itemData['unit'] ?? 'buc',
+                'unit_price' => $unitPrice,
+                'discount_percent' => $discountPercent,
+                'total_price' => $subtotal - $discount,
+                'currency' => $validated['currency'],
+                'sort_order' => $sortOrder++,
+            ]);
+        }
+
+        // Calculate and update totals
+        $this->updateOfferTotals($offer);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer created successfully.'),
+                'offer' => $offer->fresh(['items']),
+                'redirect' => route('offers.show', $offer),
+            ], 201);
+        }
+
+        return redirect()
+            ->route('offers.show', $offer)
+            ->with('success', __('Offer created successfully.'));
+    }
+
+    /**
+     * Update an offer from the simple builder.
+     */
+    public function simpleUpdate(Request $request, Offer $offer): JsonResponse|RedirectResponse
+    {
+        if (!$offer->canBeEdited()) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => __('This offer cannot be edited.')], 403);
+            }
+            return back()->with('error', __('This offer cannot be edited.'));
+        }
+
+        $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+            'temp_client_name' => 'nullable|string|max:255',
+            'temp_client_email' => 'nullable|email|max:255',
+            'temp_client_phone' => 'nullable|string|max:50',
+            'temp_client_company' => 'nullable|string|max:255',
+            'title' => 'nullable|string|max:255',
+            'valid_until' => 'nullable|date',
+            'currency' => 'required|string|max:10',
+            'discount_percent' => 'nullable|numeric|min:0|max:100',
+            'blocks' => 'required|array',
+            'header_data' => 'nullable|array',
+            'items' => 'nullable|array',
+            'items.*.title' => 'required|string|max:255',
+            'items.*.description' => 'nullable|string',
+            'items.*.quantity' => 'required|numeric|min:0',
+            'items.*.unit' => 'nullable|string|max:50',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.service_id' => 'nullable|exists:services,id',
+            'items.*.type' => 'nullable|string|in:custom,card',
+            'items.*.is_selected' => 'nullable|boolean',
+        ]);
+
+        // Validate that we have either client_id or temp_client_name
+        if (empty($validated['client_id']) && empty($validated['temp_client_name'])) {
+            return response()->json([
+                'error' => __('Please select an existing client or enter a new client name.'),
+                'errors' => ['client_id' => [__('Client is required.')]]
+            ], 422);
+        }
+
+        // Update the offer
+        $offer->update([
+            'client_id' => $validated['client_id'] ?? null,
+            'temp_client_name' => $validated['temp_client_name'] ?? null,
+            'temp_client_email' => $validated['temp_client_email'] ?? null,
+            'temp_client_phone' => $validated['temp_client_phone'] ?? null,
+            'temp_client_company' => $validated['temp_client_company'] ?? null,
+            'title' => $validated['title'],
+            'valid_until' => $validated['valid_until'],
+            'currency' => $validated['currency'],
+            'discount_percent' => $validated['discount_percent'] ?? 0,
+            'blocks' => $validated['blocks'],
+            'header_data' => $validated['header_data'] ?? null,
+        ]);
+
+        // Sync items - delete all and recreate ALL items (including unselected cards)
+        $offer->items()->delete();
+
+        $items = $validated['items'] ?? [];
+        $sortOrder = 0;
+        foreach ($items as $index => $itemData) {
+            $quantity = $itemData['quantity'];
+            $unitPrice = $itemData['unit_price'];
+            $discountPercent = $itemData['discount_percent'] ?? 0;
+            $subtotal = $quantity * $unitPrice;
+            $discount = $subtotal * ($discountPercent / 100);
+
+            $offer->items()->create([
+                'service_id' => $itemData['service_id'] ?? null,
+                'type' => $itemData['type'] ?? 'custom',
+                'is_selected' => $itemData['is_selected'] ?? true,
+                'title' => $itemData['title'],
+                'description' => $itemData['description'] ?? null,
+                'quantity' => $quantity,
+                'unit' => $itemData['unit'] ?? 'buc',
+                'unit_price' => $unitPrice,
+                'discount_percent' => $discountPercent,
+                'total_price' => $subtotal - $discount,
+                'currency' => $validated['currency'],
+                'sort_order' => $sortOrder++,
+            ]);
+        }
+
+        // Calculate and update totals
+        $this->updateOfferTotals($offer);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer updated successfully.'),
+                'offer' => $offer->fresh(['items']),
+            ]);
+        }
+
+        return redirect()
+            ->route('offers.show', $offer)
+            ->with('success', __('Offer updated successfully.'));
+    }
+
+    /**
+     * Update offer totals based on items.
+     */
+    protected function updateOfferTotals(Offer $offer): void
+    {
+        $offer->refresh();
+
+        $subtotal = $offer->items->sum('total_price');
+        $discountAmount = $subtotal * (($offer->discount_percent ?? 0) / 100);
+
+        // Get VAT from summary block if exists
+        $vatPercent = 19; // Default VAT
+        $blocks = is_string($offer->blocks) ? json_decode($offer->blocks, true) : ($offer->blocks ?? []);
+        foreach ($blocks as $block) {
+            if (($block['type'] ?? '') === 'summary') {
+                $vatPercent = $block['data']['vatPercent'] ?? 19;
+                break;
+            }
+        }
+
+        $netTotal = $subtotal - $discountAmount;
+        $vatAmount = $netTotal * ($vatPercent / 100);
+        $grandTotal = $netTotal + $vatAmount;
+
+        $offer->update([
+            'subtotal' => $subtotal,
+            'discount_amount' => $discountAmount,
+            'vat_percent' => $vatPercent,
+            'vat_amount' => $vatAmount,
+            'total' => $grandTotal,
         ]);
     }
 
     /**
-     * Get exchange rates formatted for view
+     * Upload image for offer blocks (brands, etc.)
      */
-    private function getExchangeRatesForView(): array
+    public function uploadImage(Request $request): JsonResponse
     {
-        $rates = ExchangeRate::latest('effective_date')
-            ->get()
-            ->groupBy(function ($rate) {
-                return $rate->from_currency . '_' . $rate->to_currency;
-            })
-            ->map(function ($group) {
-                $latest = $group->first();
-                return [
-                    'rate' => (float) $latest->rate,
-                    'effective_date' => $latest->effective_date->format('Y-m-d'),
-                    'source' => $latest->source,
-                ];
-            })
-            ->toArray();
+        $request->validate([
+            'image' => 'required|image|max:5120', // 5MB max
+            'type' => 'nullable|string|in:brands,general'
+        ]);
 
-        return $rates;
+        $type = $request->input('type', 'general');
+        $path = $request->file('image')->store("offers/{$type}", 'public');
+
+        return response()->json([
+            'success' => true,
+            'url' => Storage::url($path),
+            'path' => $path,
+        ]);
     }
 }

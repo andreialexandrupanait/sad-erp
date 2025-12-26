@@ -15,43 +15,95 @@
          x-init="init()">
 
         {{-- Statistics Cards --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-slate-600" x-text="stats.draft"></div>
-                    <div class="text-sm text-slate-500">{{ __('Draft') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-blue-600" x-text="stats.sent"></div>
-                    <div class="text-sm text-slate-500">{{ __('Sent') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-purple-600" x-text="stats.viewed"></div>
-                    <div class="text-sm text-slate-500">{{ __('Viewed') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-green-600" x-text="stats.accepted"></div>
-                    <div class="text-sm text-slate-500">{{ __('Accepted') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-red-600" x-text="stats.rejected"></div>
-                    <div class="text-sm text-slate-500">{{ __('Rejected') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-yellow-600" x-text="stats.expiring_soon"></div>
-                    <div class="text-sm text-slate-500">{{ __('Expiring Soon') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
+        @php
+            $formatMoney = function($moneyArr) {
+                if (empty($moneyArr)) return '';
+                $parts = [];
+                foreach ($moneyArr as $currency => $amount) {
+                    $parts[] = number_format($amount, 2, ',', '.') . ' ' . $currency;
+                }
+                return implode(' + ', $parts);
+            };
+        @endphp
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <x-widgets.metrics.stat-card
+                :title="__('Draft')"
+                :value="$stats['draft']"
+                :subtitle="$formatMoney($stats['money']['draft'] ?? [])"
+                color="blue"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Sent')"
+                :value="$stats['sent']"
+                :subtitle="$formatMoney($stats['money']['sent'] ?? [])"
+                color="blue"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Viewed')"
+                :value="$stats['viewed']"
+                :subtitle="$formatMoney($stats['money']['viewed'] ?? [])"
+                color="purple"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Accepted')"
+                :value="$stats['accepted']"
+                :subtitle="$formatMoney($stats['money']['accepted'] ?? [])"
+                color="green"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Rejected')"
+                :value="$stats['rejected']"
+                :subtitle="$formatMoney($stats['money']['rejected'] ?? [])"
+                color="red"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Expiring Soon')"
+                :value="$stats['expiring_soon']"
+                :subtitle="__('next 7 days')"
+                color="orange"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
         </div>
 
         {{-- Success/Error Messages --}}
@@ -65,58 +117,87 @@
         {{-- Search and Filters --}}
         <x-ui.card>
             <x-ui.card-content>
-                <div class="flex flex-col sm:flex-row gap-3 items-center">
-                    <div class="flex-1 w-full">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    {{-- Search --}}
+                    <div class="flex-1">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                             </div>
-                            <input type="text"
-                                   x-model="filters.q"
-                                   @input.debounce.300ms="search($event.target.value)"
-                                   placeholder="{{ __('Search offers...') }}"
-                                   class="block w-full pl-10 pr-3 py-2 border border-slate-300 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <x-ui.input
+                                type="text"
+                                x-model="filters.q"
+                                @input.debounce.300ms="fetchOffers()"
+                                placeholder="{{ __('Search by offer number, client, title...') }}"
+                                class="pl-10"
+                            />
                         </div>
+                    </div>
+
+                    {{-- Client Filter --}}
+                    <div class="w-full sm:w-52">
+                        <x-ui.select x-model="filters.client_id" @change="fetchOffers()">
+                            <option value="">{{ __('All Clients') }}</option>
+                            @foreach($clients as $client)
+                                <option value="{{ $client->id }}">{{ $client->display_name }}</option>
+                            @endforeach
+                        </x-ui.select>
+                    </div>
+
+                    {{-- Status Filter --}}
+                    <div class="w-full sm:w-40">
+                        <x-ui.select x-model="filters.status" @change="fetchOffers()">
+                            <option value="">{{ __('All Statuses') }}</option>
+                            <option value="draft">{{ __('Draft') }}</option>
+                            <option value="sent">{{ __('Sent') }}</option>
+                            <option value="viewed">{{ __('Viewed') }}</option>
+                            <option value="accepted">{{ __('Accepted') }}</option>
+                            <option value="rejected">{{ __('Rejected') }}</option>
+                            <option value="expired">{{ __('Expired') }}</option>
+                        </x-ui.select>
+                    </div>
+
+                    {{-- Search Button --}}
+                    <div class="flex gap-2">
+                        <x-ui.button type="button" variant="default" @click="fetchOffers()">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                            </svg>
+                            {{ __('Search') }}
+                        </x-ui.button>
+                        <template x-if="filters.q || filters.client_id || filters.status">
+                            <x-ui.button variant="outline" @click="clearFilters()">
+                                {{ __('Clear') }}
+                            </x-ui.button>
+                        </template>
                     </div>
                 </div>
             </x-ui.card-content>
         </x-ui.card>
 
-        {{-- Status Filter Pills --}}
-        <div class="flex flex-wrap gap-2">
-            <button @click="setStatusFilter('')"
-                    :class="!filters.status ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('All') }}
-            </button>
-            <button @click="setStatusFilter('draft')"
-                    :class="filters.status === 'draft' ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('Draft') }}
-            </button>
-            <button @click="setStatusFilter('sent')"
-                    :class="filters.status === 'sent' ? 'bg-blue-600 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('Sent') }}
-            </button>
-            <button @click="setStatusFilter('viewed')"
-                    :class="filters.status === 'viewed' ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-700 hover:bg-purple-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('Viewed') }}
-            </button>
-            <button @click="setStatusFilter('accepted')"
-                    :class="filters.status === 'accepted' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('Accepted') }}
-            </button>
-            <button @click="setStatusFilter('rejected')"
-                    :class="filters.status === 'rejected' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700 hover:bg-red-200'"
-                    class="px-3 py-1.5 rounded-full text-sm font-medium transition-colors">
-                {{ __('Rejected') }}
-            </button>
-        </div>
+        {{-- Bulk Actions Toolbar (Fixed at bottom) --}}
+        <x-bulk-toolbar resource="oferte">
+            <x-ui.button
+                variant="outline"
+                @click="bulkExport()"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+                {{ __('Export to CSV') }}
+            </x-ui.button>
+            <x-ui.button
+                variant="destructive"
+                @click="bulkDelete()"
+            >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete Selected') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
 
         {{-- Loading --}}
         <div x-show="loading" class="flex justify-center py-8">
@@ -128,19 +209,31 @@
             <x-ui.card>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm">
-                        <thead class="bg-slate-100 border-b border-slate-200">
-                            <tr>
-                                <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Offer') }}</th>
-                                <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Client') }}</th>
-                                <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Status') }}</th>
-                                <th class="px-6 py-4 text-right font-medium text-slate-600">{{ __('Total') }}</th>
-                                <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Valid Until') }}</th>
-                                <th class="px-6 py-4 text-right font-medium text-slate-600">{{ __('Actions') }}</th>
+                        <thead class="bg-slate-100">
+                            <tr class="border-b border-slate-200">
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
+                                    <input type="checkbox"
+                                           x-model="selectAll"
+                                           @change="toggleAll()"
+                                           class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                </th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Offer') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Status') }}</th>
+                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Total') }}</th>
+                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Valid Until') }}</th>
+                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200">
                             <template x-for="offer in offers" :key="offer.id">
-                                <tr class="hover:bg-slate-50">
+                                <tr class="hover:bg-slate-50" :class="{ 'bg-blue-50': isSelected(offer.id) }">
+                                    <td class="px-6 py-4 w-12">
+                                        <input type="checkbox"
+                                               :checked="isSelected(offer.id)"
+                                               @change="toggleItem(offer.id)"
+                                               class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    </td>
                                     <td class="px-6 py-4">
                                         <a :href="'/offers/' + offer.id" class="font-medium text-slate-900 hover:text-blue-600">
                                             <span x-text="offer.offer_number"></span>
@@ -148,7 +241,20 @@
                                         <div class="text-sm text-slate-500" x-text="offer.title"></div>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <a x-show="offer.client" :href="'/clients/' + offer.client?.slug" class="text-slate-900 hover:text-blue-600" x-text="offer.client?.name"></a>
+                                        <template x-if="offer.client && !offer.client.is_temporary">
+                                            <a :href="'/clients/' + offer.client?.slug" class="text-slate-900 hover:text-blue-600" x-text="offer.client?.name"></a>
+                                        </template>
+                                        <template x-if="offer.client && offer.client.is_temporary">
+                                            <span class="inline-flex items-center gap-1.5 px-2 py-1 rounded text-sm font-medium bg-amber-100 text-amber-700">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                </svg>
+                                                <span x-text="offer.client?.name"></span>
+                                            </span>
+                                        </template>
+                                        <template x-if="!offer.client">
+                                            <span class="text-slate-400">—</span>
+                                        </template>
                                     </td>
                                     <td class="px-6 py-4">
                                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -168,23 +274,41 @@
                                     </td>
                                     <td class="px-6 py-4 text-slate-600" x-text="offer.valid_until"></td>
                                     <td class="px-6 py-4 text-right">
-                                        <div class="flex items-center justify-end gap-1">
+                                        <div class="flex items-center justify-end gap-3">
+                                            {{-- View --}}
                                             <a :href="'/offers/' + offer.id"
-                                               class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded"
+                                               class="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors"
                                                title="{{ __('View') }}">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
                                             </a>
-                                            <a x-show="offer.status === 'draft'"
-                                               :href="'/offers/' + offer.id + '/edit'"
-                                               class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded"
+                                            {{-- Edit --}}
+                                            <a :href="'/offers/' + offer.id + '/edit'"
+                                               class="inline-flex items-center text-blue-600 hover:text-blue-900 transition-colors"
                                                title="{{ __('Edit') }}">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
                                             </a>
+                                            {{-- Send/Resend Email --}}
+                                            <button x-show="offer.status !== 'rejected' && offer.status !== 'expired'"
+                                                    @click="sendOffer(offer.id)"
+                                                    class="inline-flex items-center text-green-600 hover:text-green-900 transition-colors"
+                                                    :title="offer.status === 'draft' ? '{{ __('Send to Client') }}' : '{{ __('Resend') }}'">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                                </svg>
+                                            </button>
+                                            {{-- Delete --}}
+                                            <button @click="deleteOffer(offer.id, offer.offer_number)"
+                                                    class="inline-flex items-center text-red-600 hover:text-red-900 transition-colors"
+                                                    title="{{ __('Delete') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -237,20 +361,126 @@
             filters: {
                 q: '',
                 status: '',
+                client_id: '',
                 page: 1
             },
             pagination: {},
+
+            // Selection state (compatible with bulk-toolbar component)
+            selectedIds: [],
+            selectAll: false,
+            isLoading: false,
+
+            // Computed properties for bulk-toolbar
+            get selectedCount() {
+                return this.selectedIds.length;
+            },
+
+            get hasSelection() {
+                return this.selectedIds.length > 0;
+            },
 
             init() {
                 this.fetchOffers();
             },
 
+            // Selection methods
+            isSelected(id) {
+                return this.selectedIds.includes(id);
+            },
+
+            toggleItem(id) {
+                const index = this.selectedIds.indexOf(id);
+                if (index > -1) {
+                    this.selectedIds.splice(index, 1);
+                } else {
+                    this.selectedIds.push(id);
+                }
+                this.updateSelectAllState();
+            },
+
+            toggleAll() {
+                if (this.selectAll) {
+                    this.selectedIds = this.offers.map(o => o.id);
+                } else {
+                    this.selectedIds = [];
+                }
+            },
+
+            updateSelectAllState() {
+                this.selectAll = this.offers.length > 0 && this.selectedIds.length === this.offers.length;
+            },
+
+            clearSelection() {
+                this.selectedIds = [];
+                this.selectAll = false;
+            },
+
+            clearFilters() {
+                this.filters.q = '';
+                this.filters.status = '';
+                this.filters.client_id = '';
+                this.filters.page = 1;
+                this.fetchOffers();
+            },
+
+            async bulkExport() {
+                if (this.selectedIds.length === 0) return;
+
+                // For now, just show a message - you can implement export endpoint later
+                alert('{{ __('Export functionality coming soon!') }}');
+            },
+
+            async bulkDelete() {
+                if (this.selectedIds.length === 0) return;
+
+                const count = this.selectedIds.length;
+                if (!confirm(`{{ __('Are you sure you want to delete') }} ${count} {{ __('offer(s)? This action cannot be undone.') }}`)) {
+                    return;
+                }
+
+                this.isLoading = true;
+
+                try {
+                    const response = await fetch('/offers/bulk-delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ ids: this.selectedIds })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success || response.ok) {
+                        this.$dispatch('notify', {
+                            type: 'success',
+                            message: result.message || `{{ __('Successfully deleted') }} ${count} {{ __('offer(s)') }}`
+                        });
+
+                        this.clearSelection();
+                        await this.fetchOffers();
+                    } else {
+                        throw new Error(result.error || result.message || '{{ __('Failed to delete offers') }}');
+                    }
+                } catch (error) {
+                    console.error('Error bulk deleting offers:', error);
+                    alert(error.message || '{{ __('Failed to delete offers. Please try again.') }}');
+                } finally {
+                    this.isLoading = false;
+                }
+            },
+
             async fetchOffers() {
                 this.loading = true;
+                this.clearSelection(); // Clear selection when fetching new data
                 try {
                     const params = new URLSearchParams();
                     if (this.filters.q) params.append('q', this.filters.q);
                     if (this.filters.status) params.append('status', this.filters.status);
+                    if (this.filters.client_id) params.append('client_id', this.filters.client_id);
                     params.append('page', this.filters.page);
 
                     const response = await fetch(`/offers?${params.toString()}`, {
@@ -294,6 +524,82 @@
                     style: 'currency',
                     currency: currency
                 }).format(amount || 0);
+            },
+
+            async sendOffer(offerId) {
+                const offer = this.offers.find(o => o.id === offerId);
+                if (!offer) return;
+
+                const action = offer.status === 'draft' ? 'send' : 'resend';
+                const actionText = offer.status === 'draft' ? '{{ __('send') }}' : '{{ __('resend') }}';
+
+                if (!confirm(`{{ __('Are you sure you want to') }} ${actionText} {{ __('this offer to the client?') }}`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/offers/${offerId}/${action}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success || response.ok) {
+                        // Show success message
+                        this.$dispatch('notify', {
+                            type: 'success',
+                            message: result.message || '{{ __('Offer sent successfully!') }}'
+                        });
+
+                        // Refresh the list to update status
+                        await this.fetchOffers();
+                    } else {
+                        throw new Error(result.error || result.message || '{{ __('Failed to send offer') }}');
+                    }
+                } catch (error) {
+                    console.error('Error sending offer:', error);
+                    alert(error.message || '{{ __('Failed to send offer. Please try again.') }}');
+                }
+            },
+
+            async deleteOffer(offerId, offerNumber) {
+                if (!confirm(`{{ __('Are you sure you want to delete offer') }} ${offerNumber}? {{ __('This action cannot be undone.') }}`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/offers/${offerId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success || response.ok) {
+                        // Show success message
+                        this.$dispatch('notify', {
+                            type: 'success',
+                            message: result.message || '{{ __('Offer deleted successfully!') }}'
+                        });
+
+                        // Refresh the list
+                        await this.fetchOffers();
+                    } else {
+                        throw new Error(result.error || result.message || '{{ __('Failed to delete offer') }}');
+                    }
+                } catch (error) {
+                    console.error('Error deleting offer:', error);
+                    alert(error.message || '{{ __('Failed to delete offer. Please try again.') }}');
+                }
             }
         };
     }

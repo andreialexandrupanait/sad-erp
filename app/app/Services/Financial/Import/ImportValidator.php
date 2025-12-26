@@ -12,6 +12,11 @@ class ImportValidator
 {
     public function validate(array $data): array
     {
+        // Check if this is a summary/total row that should be silently skipped
+        if ($this->isSummaryRow($data)) {
+            return [false, []]; // Empty errors = silent skip
+        }
+
         $validator = Validator::make($data, [
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
@@ -29,6 +34,33 @@ class ImportValidator
         }
 
         return [true, []];
+    }
+
+    /**
+     * Check if this row is a summary/total row that should be silently skipped.
+     * SmartBill exports often have total rows at the end.
+     */
+    private function isSummaryRow(array $data): bool
+    {
+        // No document name = likely a summary row
+        $docName = trim($data['document_name'] ?? '');
+        if (empty($docName)) {
+            return true;
+        }
+
+        // Check if it's a "Total" or summary indicator
+        $summaryIndicators = ['total', 'subtotal', 'suma', 'totaluri', 'grand total'];
+        if (in_array(strtolower($docName), $summaryIndicators)) {
+            return true;
+        }
+
+        // No date = likely a summary row
+        $date = trim($data['occurred_at'] ?? '');
+        if (empty($date)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**

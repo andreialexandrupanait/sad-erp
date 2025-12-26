@@ -155,6 +155,16 @@
 
                                     <!-- Actions -->
                                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-1">
+                                        @if($file->tip === 'extrase' && in_array($file->file_type, ['application/pdf', 'application/x-pdf']))
+                                            {{-- Import transactions from bank statement PDF --}}
+                                            <a href="{{ route('financial.files.import-transactions', $file) }}"
+                                               class="inline-flex items-center justify-center w-8 h-8 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                               title="Importa tranzactii din extras">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                                </svg>
+                                            </a>
+                                        @endif
 
                                         <a href="{{ route('financial.files.show', $file) }}" target="_blank"
                                            class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"

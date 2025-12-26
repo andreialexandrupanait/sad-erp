@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ContractTemplate;
 use App\Models\DocumentTemplate;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -35,49 +36,112 @@ class DocumentTemplateController extends Controller
 
     /**
      * Return templates data as JSON.
+     * Includes both DocumentTemplate (offers) and ContractTemplate records.
      */
     private function indexJson(Request $request): JsonResponse
     {
-        $query = DocumentTemplate::query();
+        $searchTerm = $request->filled('q') ? '%' . $request->q . '%' : null;
+        $typeFilter = $request->filled('type') ? $request->type : null;
+        $activeFilter = $request->has('is_active') && $request->is_active !== '' ? $request->boolean('is_active') : null;
 
-        // Type filter
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
+        $allTemplates = collect();
 
-        // Active filter
-        if ($request->has('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
+        // Fetch DocumentTemplates (offers) - unless filtering for contract only
+        if (!$typeFilter || $typeFilter === 'offer') {
+            $docQuery = DocumentTemplate::query();
 
-        $templates = $query->orderBy('type')->orderBy('name')->get();
+            if ($searchTerm) {
+                $docQuery->where('name', 'like', $searchTerm);
+            }
+            if ($activeFilter !== null) {
+                $docQuery->where('is_active', $activeFilter);
+            }
 
-        return response()->json([
-            'templates' => $templates->map(function ($template) {
+            $docTemplates = $docQuery->orderBy('name')->get()->map(function ($template) {
                 return [
                     'id' => $template->id,
                     'name' => $template->name,
-                    'type' => $template->type,
-                    'type_label' => $template->type_label,
+                    'type' => 'offer',
+                    'type_label' => __('Offer'),
+                    'model_type' => 'document_template',
                     'is_default' => $template->is_default,
                     'is_active' => $template->is_active,
                     'created_at' => $template->created_at?->toISOString(),
                     'updated_at' => $template->updated_at?->toISOString(),
                 ];
-            }),
-            'types' => DocumentTemplate::getTypes(),
+            });
+
+            $allTemplates = $allTemplates->merge($docTemplates);
+        }
+
+        // Fetch ContractTemplates - unless filtering for offer only
+        if (!$typeFilter || $typeFilter === 'contract') {
+            $contractQuery = ContractTemplate::query();
+
+            if ($searchTerm) {
+                $contractQuery->where('name', 'like', $searchTerm);
+            }
+            if ($activeFilter !== null) {
+                $contractQuery->where('is_active', $activeFilter);
+            }
+
+            $contractTemplates = $contractQuery->orderBy('name')->get()->map(function ($template) {
+                return [
+                    'id' => $template->id,
+                    'name' => $template->name,
+                    'type' => 'contract',
+                    'type_label' => __('Contract'),
+                    'model_type' => 'contract_template',
+                    'category' => $template->category,
+                    'is_default' => $template->is_default,
+                    'is_active' => $template->is_active,
+                    'created_at' => $template->created_at?->toISOString(),
+                    'updated_at' => $template->updated_at?->toISOString(),
+                ];
+            });
+
+            $allTemplates = $allTemplates->merge($contractTemplates);
+        }
+
+        // Sort by type then name
+        $sortedTemplates = $allTemplates->sortBy([
+            ['type', 'asc'],
+            ['name', 'asc'],
+        ])->values();
+
+        return response()->json([
+            'templates' => $sortedTemplates,
+            'types' => [
+                'offer' => __('Offer'),
+                'contract' => __('Contract'),
+            ],
         ]);
     }
 
     /**
      * Show the form for creating a new template.
+     * For offer templates, creates a blank template and redirects to builder.
      */
-    public function create(Request $request): View
+    public function create(Request $request): View|RedirectResponse
     {
-        $types = DocumentTemplate::getTypes();
-        $selectedType = $request->get('type', 'offer');
+        $type = $request->get('type', 'offer');
 
-        // Get available variables for preview
+        // For offer templates, create a blank template and redirect to builder
+        if ($type === 'offer') {
+            $template = DocumentTemplate::create([
+                'name' => __('New Offer Template'),
+                'type' => 'offer',
+                'content' => json_encode(['blocks' => [], 'services' => []]),
+                'is_default' => false,
+                'is_active' => true,
+            ]);
+
+            return redirect()->route('settings.document-templates.builder', $template);
+        }
+
+        // For other types, show the form
+        $types = DocumentTemplate::getTypes();
+        $selectedType = $type;
         $template = new DocumentTemplate(['type' => $selectedType]);
         $variables = $template->getAvailableVariables();
 
@@ -121,8 +185,24 @@ class DocumentTemplateController extends Controller
     /**
      * Display the specified template.
      */
-    public function show(DocumentTemplate $documentTemplate): View
+    public function show(Request $request, DocumentTemplate $documentTemplate): View|JsonResponse
     {
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            $content = is_string($documentTemplate->content)
+                ? json_decode($documentTemplate->content, true)
+                : $documentTemplate->content;
+
+            return response()->json([
+                'id' => $documentTemplate->id,
+                'name' => $documentTemplate->name,
+                'type' => $documentTemplate->type,
+                'content' => $content,
+                'is_default' => $documentTemplate->is_default,
+                'is_active' => $documentTemplate->is_active,
+            ]);
+        }
+
         $variables = $documentTemplate->getAvailableVariables();
 
         return view('document-templates.show', [
@@ -183,35 +263,102 @@ class DocumentTemplateController extends Controller
     /**
      * Remove the specified template.
      */
-    public function destroy(DocumentTemplate $documentTemplate): RedirectResponse
+    public function destroy(Request $request, DocumentTemplate $documentTemplate): JsonResponse|RedirectResponse
     {
         // Check if template is in use
         $offersCount = $documentTemplate->offers()->count();
         $contractsCount = $documentTemplate->contracts()->count();
 
         if ($offersCount > 0 || $contractsCount > 0) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => __('Cannot delete template that is in use.'),
+                ], 422);
+            }
             return back()->with('error', __('Cannot delete template that is in use.'));
         }
 
         $documentTemplate->delete();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Template deleted successfully.'),
+            ]);
+        }
+
         return redirect()
-            ->route('document-templates.index')
+            ->route('settings.document-templates.index')
             ->with('success', __('Template deleted successfully.'));
+    }
+
+    /**
+     * Bulk delete templates.
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:document_templates,id',
+        ]);
+
+        $deleted = 0;
+        $errors = [];
+
+        foreach ($validated['ids'] as $id) {
+            $template = DocumentTemplate::find($id);
+            if (!$template) {
+                continue;
+            }
+
+            // Check if template is in use
+            $offersCount = $template->offers()->count();
+            $contractsCount = $template->contracts()->count();
+
+            if ($offersCount > 0 || $contractsCount > 0) {
+                $errors[] = __('Template ":name" is in use and cannot be deleted.', ['name' => $template->name]);
+                continue;
+            }
+
+            $template->delete();
+            $deleted++;
+        }
+
+        if (count($errors) > 0) {
+            return response()->json([
+                'success' => $deleted > 0,
+                'message' => __(':count template(s) deleted.', ['count' => $deleted]),
+                'errors' => $errors,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => __(':count template(s) deleted successfully.', ['count' => $deleted]),
+        ]);
     }
 
     /**
      * Duplicate a template.
      */
-    public function duplicate(DocumentTemplate $documentTemplate): RedirectResponse
+    public function duplicate(Request $request, DocumentTemplate $documentTemplate): JsonResponse|RedirectResponse
     {
         $newTemplate = $documentTemplate->replicate(['is_default']);
         $newTemplate->name = $documentTemplate->name . ' (' . __('Copy') . ')';
         $newTemplate->is_default = false;
         $newTemplate->save();
 
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Template duplicated successfully.'),
+                'template' => $newTemplate,
+            ]);
+        }
+
         return redirect()
-            ->route('document-templates.edit', $newTemplate)
+            ->route('settings.document-templates.edit', $newTemplate)
             ->with('success', __('Template duplicated successfully.'));
     }
 

@@ -443,6 +443,17 @@
                                 @if($client->email)
                                     <p>{{ $client->email }}</p>
                                 @endif
+                            @elseif($offer->temp_client_name || $offer->temp_client_company)
+                                <div class="client-name">{{ $offer->temp_client_company ?: $offer->temp_client_name }}</div>
+                                @if($offer->temp_client_company && $offer->temp_client_name)
+                                    <p>{{ __('Attn') }}: {{ $offer->temp_client_name }}</p>
+                                @endif
+                                @if($offer->temp_client_email)
+                                    <p>{{ $offer->temp_client_email }}</p>
+                                @endif
+                                @if($offer->temp_client_phone)
+                                    <p>{{ $offer->temp_client_phone }}</p>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -533,6 +544,15 @@
 
         @else
             {{-- Blocks-based layout --}}
+            @php
+                // Build variables for block rendering
+                $renderer = new \App\Services\Offer\OfferBlockRenderer($offer, $client, $organization);
+                $variables = $renderer->getVariables();
+
+                // Get bank accounts if available
+                $bankAccounts = collect($organization->settings['bank_accounts'] ?? []);
+            @endphp
+
             @foreach($blocks as $block)
                 @if($block['visible'] ?? true)
                     @php
@@ -548,144 +568,64 @@
                         if (!empty($style['border'])) $styleClasses[] = 'border-' . $style['border'];
                         if (!empty($style['padding'])) $styleClasses[] = 'p-' . $style['padding'];
                         $styleClass = implode(' ', $styleClasses);
+
+                        // Prepare items array for block components
+                        $itemsArray = $items->map(fn($item) => [
+                            'title' => $item->title,
+                            'description' => $item->description,
+                            'quantity' => $item->quantity,
+                            'unit' => $item->unit,
+                            'unit_price' => $item->unit_price,
+                            'currency' => $item->currency ?? $offer->currency,
+                            'total' => $item->total_price,
+                        ])->toArray();
                     @endphp
 
                     @switch($block['type'])
                         @case('header')
-                            <div class="header {{ $styleClass }}">
-                                <div class="header-row">
-                                    <div class="client-info">
-                                        <div class="client-box">
-                                            <div class="client-label">{{ __('TO') }}:</div>
-                                            @if($client)
-                                                <div class="client-name">{{ $client->display_name }}</div>
-                                                @if($client->contact_person)
-                                                    <p>{{ __('Attn') }}: {{ $client->contact_person }}</p>
-                                                @endif
-                                                @if($client->address)
-                                                    <p>{{ $client->address }}</p>
-                                                @endif
-                                                @if($client->tax_id)
-                                                    <p>{{ __('Tax ID') }}: {{ $client->tax_id }}</p>
-                                                @endif
-                                                @if($client->email)
-                                                    <p>{{ $client->email }}</p>
-                                                @endif
-                                            @endif
-                                        </div>
-                                    </div>
-                                    <div class="company-info">
-                                        <div class="company-name">{{ $organization?->name ?? config('app.name') }}</div>
-                                        <div class="company-details">
-                                            @if($organization?->address)
-                                                <p>{{ $organization->address }}</p>
-                                            @endif
-                                            @if($organization?->tax_id)
-                                                <p>{{ __('Tax ID') }}: {{ $organization->tax_id }}</p>
-                                            @endif
-                                            @if($organization?->phone)
-                                                <p>{{ $organization->phone }}</p>
-                                            @endif
-                                            @if($organization?->email)
-                                                <p>{{ $organization->email }}</p>
-                                            @endif
-                                        </div>
-                                        <div class="offer-number-box">
-                                            <div class="offer-number">{{ $offer->offer_number }}</div>
-                                            <div class="offer-dates">
-                                                <p>{{ __('Date') }}: {{ $offer->created_at?->format('d.m.Y') ?? now()->format('d.m.Y') }}</p>
-                                                @if($offer->valid_until)
-                                                    <p>{{ __('Valid until') }}: {{ $offer->valid_until->format('d.m.Y') }}</p>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            @include('components.offer.blocks.header-pdf', [
+                                'block' => $block,
+                                'offer' => $offer,
+                                'variables' => $variables,
+                                'organization' => $organization,
+                                'client' => $client,
+                                'bankAccounts' => $bankAccounts,
+                            ])
                             @break
 
                         @case('services')
-                            @if($items->isNotEmpty())
-                                <div class="{{ $styleClass }}">
-                                    <h3 style="font-size: 12pt; font-weight: bold; color: #1e293b; margin-bottom: 15px;">{{ __('Proposed Services') }}</h3>
-                                    <table class="items-table">
-                                        <thead>
-                                            <tr>
-                                                <th style="width: 5%;">#</th>
-                                                <th style="width: 45%;">{{ __('Description') }}</th>
-                                                <th style="width: 10%;" class="text-center">{{ __('Qty') }}</th>
-                                                <th style="width: 10%;" class="text-center">{{ __('Unit') }}</th>
-                                                <th style="width: 15%;" class="text-right">{{ __('Unit Price') }}</th>
-                                                <th style="width: 15%;" class="text-right">{{ __('Total') }}</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($items as $index => $item)
-                                                <tr>
-                                                    <td class="text-center">{{ $index + 1 }}</td>
-                                                    <td>
-                                                        <div class="item-title">{{ $item->title }}</div>
-                                                        @if($item->description)
-                                                            <div class="item-description">{{ $item->description }}</div>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-center">{{ number_format($item->quantity, 2) }}</td>
-                                                    <td class="text-center">{{ __($item->unit ?? 'pcs') }}</td>
-                                                    <td class="text-right">
-                                                        {{ number_format($item->unit_price, 2) }}
-                                                        @if($item->original_currency && $item->original_currency !== $offer->currency)
-                                                            <span class="currency-badge">{{ $item->original_currency }}</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-right">{{ number_format($item->total_price, 2) }}</td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endif
+                            @include('components.offer.blocks.services-pdf', [
+                                'block' => $block,
+                                'offer' => $offer,
+                                'variables' => $variables,
+                                'items' => $itemsArray,
+                            ])
                             @break
 
                         @case('summary')
-                            <div class="summary-section {{ $styleClass }}">
-                                <div class="summary-title">{{ __('Investment Summary') }}</div>
-                                <table class="summary-table">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 50%;">{{ __('Service') }}</th>
-                                            <th style="width: 15%;" class="text-right">{{ __('Qty') }}</th>
-                                            <th style="width: 15%;" class="text-right">{{ __('Unit Price') }}</th>
-                                            <th style="width: 20%;" class="text-right">{{ __('Total') }}</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($items as $item)
-                                            <tr>
-                                                <td>{{ $item->title }}</td>
-                                                <td class="text-right">{{ number_format($item->quantity, 2) }} {{ __($item->unit ?? 'pcs') }}</td>
-                                                <td class="text-right">{{ number_format($item->unit_price, 2) }}</td>
-                                                <td class="text-right" style="font-weight: bold;">{{ number_format($item->total_price, 2) }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <div class="totals">
-                                    <div class="totals-row">
-                                        <span class="totals-label">{{ __('Subtotal') }}</span>
-                                        <span class="totals-value">{{ number_format($offer->subtotal, 2) }} {{ $offer->currency }}</span>
-                                    </div>
-                                    @if($offer->discount_percent > 0)
-                                        <div class="totals-row discount">
-                                            <span class="totals-label">{{ __('Discount') }} ({{ $offer->discount_percent }}%)</span>
-                                            <span class="totals-value">-{{ number_format($offer->discount_amount, 2) }} {{ $offer->currency }}</span>
-                                        </div>
-                                    @endif
-                                    <div class="totals-row total">
-                                        <span class="totals-label">{{ __('TOTAL') }}</span>
-                                        <span class="totals-value">{{ number_format($offer->total, 2) }} {{ $offer->currency }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                            @include('components.offer.blocks.summary-pdf', [
+                                'block' => $block,
+                                'offer' => $offer,
+                                'variables' => $variables,
+                                'items' => $itemsArray,
+                            ])
+                            @break
+
+                        @case('brands')
+                            @include('components.offer.blocks.brands-pdf', [
+                                'block' => $block,
+                                'offer' => $offer,
+                                'variables' => $variables,
+                            ])
+                            @break
+
+                        @case('acceptance')
+                            @include('components.offer.blocks.acceptance-pdf', [
+                                'block' => $block,
+                                'offer' => $offer,
+                                'variables' => $variables,
+                                'client' => $client,
+                            ])
                             @break
 
                         @case('content')

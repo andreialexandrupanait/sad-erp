@@ -54,11 +54,11 @@ class SecurityHeaders
         // Adjust these based on your application's actual needs
         $csp = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net", // Allow Tailwind CDN and Chart.js
-            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net", // Allow Google Fonts alternative
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com", // Allow Tailwind CDN, Chart.js, Quill.js, and unpkg
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com", // Allow Google Fonts, Quill.js styles, jsDelivr, and unpkg
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net", // Allow font files from Bunny Fonts
-            "connect-src 'self'",
+            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net", // Allow source map fetching
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

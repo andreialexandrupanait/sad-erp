@@ -33,6 +33,8 @@ class RoleModuleDefaultsSeeder extends Seeder
                 'internal_accounts' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
                 'analytics' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
                 'settings' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
+                'offers' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
+                'contracts' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
             ],
 
             // Manager gets most access but limited settings
@@ -46,6 +48,8 @@ class RoleModuleDefaultsSeeder extends Seeder
                 'internal_accounts' => ['view' => true, 'create' => true, 'update' => true, 'delete' => false, 'export' => false],
                 'analytics' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'export' => true],
                 'settings' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'export' => false],
+                'offers' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
+                'contracts' => ['view' => true, 'create' => true, 'update' => true, 'delete' => true, 'export' => true],
             ],
 
             // User gets basic access
@@ -59,6 +63,8 @@ class RoleModuleDefaultsSeeder extends Seeder
                 'internal_accounts' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'export' => false],
                 'analytics' => ['view' => true, 'create' => false, 'update' => false, 'delete' => false, 'export' => false],
                 'settings' => ['view' => false, 'create' => false, 'update' => false, 'delete' => false, 'export' => false],
+                'offers' => ['view' => true, 'create' => true, 'update' => true, 'delete' => false, 'export' => false],
+                'contracts' => ['view' => true, 'create' => true, 'update' => true, 'delete' => false, 'export' => false],
             ],
         ];
 

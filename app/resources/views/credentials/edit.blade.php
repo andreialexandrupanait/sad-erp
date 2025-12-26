@@ -7,6 +7,8 @@
                 :credential="$credential"
                 :clients="$clients"
                 :platforms="$platforms"
+                :credentialTypes="$credentialTypes"
+                :sites="$sites"
                 :action="route('credentials.update', $credential)"
                 method="PUT"
             />

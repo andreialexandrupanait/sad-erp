@@ -6,11 +6,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 class Client extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, Notifiable;
 
     protected $fillable = [
         'organization_id',
@@ -193,7 +194,23 @@ class Client extends Model
      */
     public function getDisplayNameAttribute()
     {
-        return $this->company_name ?: $this->name;
+        return $this->name ?: $this->company_name;
+    }
+
+    /**
+     * Get full address (alias for address field for compatibility)
+     */
+    public function getFullAddressAttribute()
+    {
+        return $this->address;
+    }
+
+    /**
+     * Get fiscal code (alias for tax_id for compatibility)
+     */
+    public function getFiscalCodeAttribute()
+    {
+        return $this->tax_id;
     }
 
     /**

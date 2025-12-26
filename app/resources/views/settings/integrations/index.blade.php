@@ -29,7 +29,11 @@
                                     <p class="text-sm text-slate-500">{{ __('Invoice import and sync') }}</p>
                                 </div>
                             </div>
-                            @if(config('services.smartbill.token'))
+                            @php
+                                $smartbillSettings = auth()->user()->organization->settings['smartbill'] ?? [];
+                                $smartbillConfigured = !empty($smartbillSettings['username']) && !empty($smartbillSettings['token']) && !empty($smartbillSettings['cif']);
+                            @endphp
+                            @if($smartbillConfigured)
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     {{ __('Connected') }}
                                 </span>
@@ -135,6 +139,39 @@
                         </div>
                         <p class="text-sm text-slate-600 mb-4">{{ __('Send notifications via email for domain expiry, subscription renewals, and system alerts.') }}</p>
                         <a href="{{ route('settings.notifications') }}" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-700">
+                            {{ __('Configure') }}
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+
+                    <!-- Anthropic (Claude AI) -->
+                    <div class="bg-white rounded-[10px] border border-slate-200 p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex items-center gap-4">
+                                <div class="flex-shrink-0 w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-semibold text-slate-900">Claude AI</h3>
+                                    <p class="text-sm text-slate-500">{{ __('AI Design Generation') }}</p>
+                                </div>
+                            </div>
+                            @if(\App\Models\ApplicationSetting::get('anthropic_enabled') && \App\Models\ApplicationSetting::get('anthropic_api_key'))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ __('Connected') }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
+                                    {{ __('Not configured') }}
+                                </span>
+                            @endif
+                        </div>
+                        <p class="text-sm text-slate-600 mb-4">{{ __('Generate landing page designs and analyze copy using Claude AI from Anthropic.') }}</p>
+                        <a href="{{ route('settings.anthropic.index') }}" class="inline-flex items-center text-sm font-medium text-amber-600 hover:text-amber-700">
                             {{ __('Configure') }}
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

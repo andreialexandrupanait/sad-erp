@@ -53,13 +53,19 @@
                                            class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                                            placeholder="{{ __('ex: Dezvoltare web') }}">
                                 </div>
-                                <div class="md:col-span-2">
+                                <div class="md:col-span-3">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Descriere') }}</label>
+                                    <input type="text" name="description"
+                                           class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                           placeholder="{{ __('Descriere opțională') }}">
+                                </div>
+                                <div class="md:col-span-1">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Tarif') }}</label>
                                     <input type="number" name="default_rate" step="0.01" min="0"
                                            class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
                                            placeholder="0.00">
                                 </div>
-                                <div class="md:col-span-2">
+                                <div class="md:col-span-1">
                                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Moneda') }}</label>
                                     <select name="currency" class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
                                         <option value="RON">RON</option>
@@ -75,7 +81,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="md:col-span-3">
+                                <div class="md:col-span-2">
                                     <button type="submit" class="w-full h-10 px-4 bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 whitespace-nowrap">
                                         {{ __('Adaugă serviciu') }}
                                     </button>

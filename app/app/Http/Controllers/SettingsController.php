@@ -69,155 +69,109 @@ class SettingsController extends Controller
     }
 
     /**
-     * Display client statuses settings
+     * Nomenclature category configurations
      */
-    public function clientStatuses()
+    private function getNomenclatureConfig(): array
     {
-        $data = $this->nomenclatureService->getClientStatuses();
-        return view('settings.nomenclature', [
-            'category' => 'client_statuses',
-            'title' => 'Status clienti',
-            'description' => 'Gestioneaza statusurile clientilor folosite in aplicatie',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
+        return [
+            'client_statuses' => [
+                'title' => 'Status clienti',
+                'description' => 'Gestioneaza statusurile clientilor folosite in aplicatie',
+                'getter' => 'getClientStatuses',
+                'hasColors' => true,
+            ],
+            'domain_statuses' => [
+                'title' => 'Status domenii',
+                'description' => 'Gestioneaza statusurile domeniilor',
+                'getter' => 'getDomainStatuses',
+                'hasColors' => true,
+            ],
+            'subscription_statuses' => [
+                'title' => 'Status abonamente',
+                'description' => 'Gestioneaza statusurile abonamentelor',
+                'getter' => 'getSubscriptionStatuses',
+                'hasColors' => true,
+            ],
+            'access_platforms' => [
+                'title' => 'Categorii platforme',
+                'description' => 'Gestioneaza tipurile de platforme de acces',
+                'getter' => 'getAccessPlatforms',
+                'hasColors' => true,
+            ],
+            'expense_categories' => [
+                'title' => 'Categorii cheltuieli',
+                'description' => 'Gestioneaza categoriile de cheltuieli',
+                'getter' => 'getExpenseCategories',
+                'hasColors' => true,
+                'isHierarchical' => true,
+            ],
+            'payment_methods' => [
+                'title' => 'Metode de plata',
+                'description' => 'Gestioneaza metodele de plata disponibile',
+                'getter' => 'getPaymentMethods',
+                'hasColors' => true,
+            ],
+            'billing_cycles' => [
+                'title' => 'Cicluri de facturare',
+                'description' => 'Gestioneaza ciclurile de facturare pentru abonamente',
+                'getter' => 'getBillingCycles',
+                'hasColors' => true,
+            ],
+            'domain_registrars' => [
+                'title' => 'Registratori de domenii',
+                'description' => 'Gestioneaza registratorii de domenii',
+                'getter' => 'getDomainRegistrars',
+                'hasColors' => true,
+            ],
+            'currencies' => [
+                'title' => 'Valute',
+                'description' => 'Gestioneaza valutele disponibile in aplicatie',
+                'getter' => 'getCurrencies',
+                'hasColors' => true,
+            ],
+            'dashboard_quick_actions' => [
+                'title' => 'Quick Actions Dashboard',
+                'description' => 'Gestioneaza butoanele de actiune rapida de pe dashboard',
+                'getter' => 'getQuickActions',
+                'hasColors' => true,
+            ],
+        ];
     }
 
     /**
-     * Display domain statuses settings
+     * Generic nomenclature view handler
      */
-    public function domainStatuses()
+    private function showNomenclature(string $category): \Illuminate\View\View
     {
-        $data = $this->nomenclatureService->getDomainStatuses();
+        $config = $this->getNomenclatureConfig()[$category] ?? null;
+
+        if (!$config) {
+            abort(404);
+        }
+
+        $data = $this->nomenclatureService->{$config['getter']}();
+
         return view('settings.nomenclature', [
-            'category' => 'domain_statuses',
-            'title' => 'Status domenii',
-            'description' => 'Gestioneaza statusurile domeniilor',
+            'category' => $category,
+            'title' => $config['title'],
+            'description' => $config['description'],
             'data' => $data,
-            'hasColors' => true,
+            'hasColors' => $config['hasColors'] ?? false,
+            'isHierarchical' => $config['isHierarchical'] ?? false,
         ]);
     }
 
-    /**
-     * Display subscription statuses settings
-     */
-    public function subscriptionStatuses()
-    {
-        $data = $this->nomenclatureService->getSubscriptionStatuses();
-        return view('settings.nomenclature', [
-            'category' => 'subscription_statuses',
-            'title' => 'Status abonamente',
-            'description' => 'Gestioneaza statusurile abonamentelor',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display access platforms settings
-     */
-    public function accessPlatforms()
-    {
-        $data = $this->nomenclatureService->getAccessPlatforms();
-        return view('settings.nomenclature', [
-            'category' => 'access_platforms',
-            'title' => 'Categorii platforme',
-            'description' => 'Gestioneaza tipurile de platforme de acces',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display expense categories settings
-     */
-    public function expenseCategories()
-    {
-        $data = $this->nomenclatureService->getExpenseCategories();
-        return view('settings.nomenclature', [
-            'category' => 'expense_categories',
-            'title' => 'Categorii cheltuieli',
-            'description' => 'Gestioneaza categoriile de cheltuieli',
-            'data' => $data,
-            'hasColors' => true,
-            'isHierarchical' => true,
-        ]);
-    }
-
-    /**
-     * Display payment methods settings
-     */
-    public function paymentMethods()
-    {
-        $data = $this->nomenclatureService->getPaymentMethods();
-        return view('settings.nomenclature', [
-            'category' => 'payment_methods',
-            'title' => 'Metode de plata',
-            'description' => 'Gestioneaza metodele de plata disponibile',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display billing cycles settings
-     */
-    public function billingCycles()
-    {
-        $data = $this->nomenclatureService->getBillingCycles();
-        return view('settings.nomenclature', [
-            'category' => 'billing_cycles',
-            'title' => 'Cicluri de facturare',
-            'description' => 'Gestioneaza ciclurile de facturare pentru abonamente',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display domain registrars settings
-     */
-    public function domainRegistrars()
-    {
-        $data = $this->nomenclatureService->getDomainRegistrars();
-        return view('settings.nomenclature', [
-            'category' => 'domain_registrars',
-            'title' => 'Registratori de domenii',
-            'description' => 'Gestioneaza registratorii de domenii',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display currencies settings
-     */
-    public function currencies()
-    {
-        $data = $this->nomenclatureService->getCurrencies();
-        return view('settings.nomenclature', [
-            'category' => 'currencies',
-            'title' => 'Valute',
-            'description' => 'Gestioneaza valutele disponibile in aplicatie',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
-
-    /**
-     * Display dashboard quick actions settings
-     */
-    public function quickActions()
-    {
-        $data = $this->nomenclatureService->getQuickActions();
-        return view('settings.nomenclature', [
-            'category' => 'dashboard_quick_actions',
-            'title' => 'Quick Actions Dashboard',
-            'description' => 'Gestioneaza butoanele de actiune rapida de pe dashboard',
-            'data' => $data,
-            'hasColors' => true,
-        ]);
-    }
+    // Nomenclature route handlers - delegate to generic handler
+    public function clientStatuses() { return $this->showNomenclature('client_statuses'); }
+    public function domainStatuses() { return $this->showNomenclature('domain_statuses'); }
+    public function subscriptionStatuses() { return $this->showNomenclature('subscription_statuses'); }
+    public function accessPlatforms() { return $this->showNomenclature('access_platforms'); }
+    public function expenseCategories() { return $this->showNomenclature('expense_categories'); }
+    public function paymentMethods() { return $this->showNomenclature('payment_methods'); }
+    public function billingCycles() { return $this->showNomenclature('billing_cycles'); }
+    public function domainRegistrars() { return $this->showNomenclature('domain_registrars'); }
+    public function currencies() { return $this->showNomenclature('currencies'); }
+    public function quickActions() { return $this->showNomenclature('dashboard_quick_actions'); }
 
     /**
      * Update application settings
@@ -339,6 +293,7 @@ class SettingsController extends Controller
         $settings['trade_registry'] = $request->trade_registry;
         $settings['vat_id'] = $request->vat_id;
         $settings['share_capital'] = $request->share_capital;
+        $settings['representative'] = $request->representative;
         $settings['city'] = $request->city;
         $settings['county'] = $request->county;
         $settings['country'] = $request->country;
@@ -353,6 +308,14 @@ class SettingsController extends Controller
             ->values()
             ->toArray();
         $settings['bank_accounts'] = $bankAccounts;
+
+        // Document prefixes
+        if ($request->has('offer_prefix')) {
+            $settings['offer_prefix'] = $request->offer_prefix ?: 'OFR';
+        }
+        if ($request->has('contract_prefix')) {
+            $settings['contract_prefix'] = $request->contract_prefix ?: 'CTR';
+        }
 
         $organization->settings = $settings;
 
@@ -370,6 +333,82 @@ class SettingsController extends Controller
             'title' => 'Invoice Settings',
             'description' => 'Configure invoice numbering, tax rates, payment terms, and invoice templates.'
         ]);
+    }
+
+    /**
+     * Update Offer Defaults Settings (API for offer builder sidebar)
+     */
+    public function updateOfferDefaults(Request $request)
+    {
+        $organization = auth()->user()->organization;
+        $settings = $organization->settings ?? [];
+
+        // Process specifications - filter out empty ones (only if provided)
+        $specifications = $settings['offer_defaults']['specifications'] ?? [];
+        if ($request->has('specifications')) {
+            $specifications = collect($request->specifications ?? [])
+                ->filter(fn($spec) => !empty($spec['content']) || !empty(array_filter($spec['items'] ?? [])))
+                ->map(function ($spec) {
+                    return [
+                        'title' => $spec['title'] ?? '',
+                        'type' => $spec['type'] ?? 'list',
+                        'content' => $spec['content'] ?? '',
+                        'items' => array_values(array_filter($spec['items'] ?? [])),
+                    ];
+                })
+                ->values()
+                ->toArray();
+        }
+
+        // Process default services - filter out empty ones (only if provided)
+        $defaultServices = $settings['offer_defaults']['default_services'] ?? [];
+        if ($request->has('default_services')) {
+            $defaultServices = collect($request->default_services ?? [])
+                ->filter(fn($svc) => !empty($svc['title']))
+                ->map(function ($svc) {
+                    return [
+                        'title' => $svc['title'] ?? '',
+                        'description' => $svc['description'] ?? '',
+                        'unit_price' => (float) ($svc['unit_price'] ?? 0),
+                        'unit' => $svc['unit'] ?? 'proiect',
+                        'service_id' => $svc['service_id'] ?? null,
+                        'selected' => (bool) ($svc['selected'] ?? true),
+                        'type' => $svc['type'] ?? 'card', // 'custom' for checkbox list, 'card' for extra service cards
+                    ];
+                })
+                ->values()
+                ->toArray();
+        }
+
+        $settings['offer_defaults'] = [
+            'header_intro_title' => $request->header_intro_title ?? $settings['offer_defaults']['header_intro_title'] ?? '',
+            'header_intro_text' => $request->header_intro_text ?? $settings['offer_defaults']['header_intro_text'] ?? '',
+            'acceptance_paragraph' => $request->acceptance_paragraph ?? $settings['offer_defaults']['acceptance_paragraph'] ?? '',
+            'accept_button_text' => $request->accept_button_text ?: __('Accept Offer'),
+            'decline_button_text' => $request->decline_button_text ?: __('Decline'),
+            'brands_heading' => $request->brands_heading ?? $settings['offer_defaults']['brands_heading'] ?? '',
+            'brands_image' => $request->brands_image ?? $settings['offer_defaults']['brands_image'] ?? '',
+            'specifications' => $specifications,
+            'default_services' => $defaultServices,
+            'validity_days' => (int) ($request->validity_days ?? 30),
+            'currency' => $request->currency ?? 'RON',
+            'show_vat' => $request->boolean('show_vat'),
+            'vat_percent' => (int) ($request->vat_percent ?? 19),
+        ];
+
+        $organization->settings = $settings;
+        $organization->save();
+
+        // Return JSON for AJAX requests
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Offer defaults saved successfully.'),
+            ]);
+        }
+
+        return redirect()->route('settings.offer-defaults')
+            ->with('success', __('Offer defaults saved successfully.'));
     }
 
     /**

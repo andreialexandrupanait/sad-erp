@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Financial;
 
 use App\Http\Controllers\Controller;
 use App\Services\Financial\FileUploadService;
+use App\Services\Financial\TransactionImportService;
 use App\Services\Financial\ZipExportService;
 use Illuminate\Http\Request;
 use App\Models\FinancialFile;
@@ -14,16 +15,11 @@ use Illuminate\Support\Str;
 
 class FileController extends Controller
 {
-    protected FileUploadService $fileUploadService;
-    protected ZipExportService $zipExportService;
-
     public function __construct(
-        FileUploadService $fileUploadService,
-        ZipExportService $zipExportService
-    ) {
-        $this->fileUploadService = $fileUploadService;
-        $this->zipExportService = $zipExportService;
-    }
+        protected FileUploadService $fileUploadService,
+        protected ZipExportService $zipExportService,
+        protected TransactionImportService $transactionImportService
+    ) {}
     /**
      * Redirect to current year view (default entry point)
      */
@@ -546,5 +542,60 @@ class FileController extends Controller
         return response()->json([
             'files' => $files,
         ]);
+    }
+
+    /**
+     * Show import transactions form for bank statement PDF
+     */
+    public function importTransactions(FinancialFile $file)
+    {
+        $result = $this->transactionImportService->parseAndPrepareTransactions($file);
+
+        if (!$result['success']) {
+            return redirect()->back()->with('error', $result['error']);
+        }
+
+        return view('financial.files.import-transactions', [
+            'file' => $file,
+            'metadata' => $result['metadata'],
+            'transactions' => $result['transactions'],
+            'categories' => $result['categories'],
+        ]);
+    }
+
+    /**
+     * Process import of selected transactions
+     */
+    public function processImportTransactions(Request $request, FinancialFile $file)
+    {
+        $validated = $request->validate([
+            'transactions' => 'required|array|min:1',
+            'transactions.*.selected' => 'sometimes|boolean',
+            'transactions.*.date' => 'required|date',
+            'transactions.*.description' => 'required|string|max:500',
+            'transactions.*.amount' => 'required|numeric|min:0.01',
+            'transactions.*.type' => 'required|in:debit,credit',
+            'transactions.*.category_id' => 'nullable|integer',
+        ]);
+
+        $currency = $request->input('currency', 'RON');
+
+        $result = $this->transactionImportService->importTransactions(
+            $file,
+            $validated['transactions'],
+            $currency
+        );
+
+        if (!$result['success']) {
+            return redirect()->back()->with('error', $result['error']);
+        }
+
+        return redirect()
+            ->route('financial.files.category', [
+                'year' => $file->an,
+                'month' => $file->luna,
+                'category' => 'extrase'
+            ])
+            ->with('success', $result['message']);
     }
 }

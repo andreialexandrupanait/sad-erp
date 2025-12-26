@@ -245,8 +245,8 @@ class SmartbillController extends Controller
         $organization = Organization::find($organizationId);
         $smartbillSettings = $organization->settings['smartbill'] ?? null;
 
-        // Use the RevenueImportService
-        $importService = new RevenueImportService();
+        // Use the RevenueImportService (resolved from container with dependencies)
+        $importService = app(RevenueImportService::class);
 
         // Find header row to get total count
         [$headerRowIndex, $header] = $importService->findHeaderRow($csvData);
@@ -305,7 +305,8 @@ class SmartbillController extends Controller
                     $stats['duplicates'],
                     $stats['skipped']
                 ),
-                'errors_list' => $stats['errors']
+                'errors_list' => $stats['errors'],
+                'duplicates_found' => $stats['duplicates_found'] ?? []
             ]);
 
         } catch (\Exception $e) {

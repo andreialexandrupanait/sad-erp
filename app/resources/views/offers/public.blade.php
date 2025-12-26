@@ -6,26 +6,74 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $offer->offer_number }} - {{ $offer->title }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        [x-cloak] { display: none !important; }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen">
+    @php
+        $organization = $offer->organization;
+        $client = $offer->client;
+        $blocks = $offer->blocks ?? [];
+        $items = $offer->items;
+        $headerData = $offer->header_data ?? [];
+
+        // Separate custom services (main list) and card services (extras)
+        $customItems = $items->filter(fn($item) => $item->type === 'custom' || $item->type === null);
+        $cardItems = $items->filter(fn($item) => $item->type === 'card');
+
+        // Get initially deselected items (from admin's selection)
+        $initiallyDeselectedIds = $customItems->filter(fn($item) => $item->is_selected === false)->pluck('id')->toArray();
+
+        // Calculate FULL subtotal (all custom items) - we'll subtract deselected in JS
+        $fullSubtotal = $customItems->sum('total_price');
+        // Calculate initial subtotal (only selected custom items)
+        $subtotal = $customItems->filter(fn($item) => $item->is_selected !== false)->sum('total_price');
+        $discountAmount = $subtotal * ($offer->discount_percent ?? 0) / 100;
+
+        // Get VAT settings from summary block
+        $summaryBlock = collect($blocks)->firstWhere('type', 'summary');
+        $showVAT = $summaryBlock['data']['showVAT'] ?? false;
+        $vatPercent = $summaryBlock['data']['vatPercent'] ?? 19;
+        $vatAmount = $showVAT ? ($subtotal - $discountAmount) * ($vatPercent / 100) : 0;
+        $grandTotal = $subtotal - $discountAmount + $vatAmount;
+
+        // Get services block for card heading
+        $servicesBlock = collect($blocks)->firstWhere('type', 'services');
+        $cardsHeading = $servicesBlock['data']['cardsHeading'] ?? __('Servicii extra disponibile');
+
+        // Bank accounts (stored in organization settings)
+        $bankAccounts = collect($organization->settings['bank_accounts'] ?? []);
+    @endphp
+
     <div class="max-w-4xl mx-auto py-8 px-4" x-data="publicOffer()">
-        {{-- Header --}}
-        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-            <div class="flex items-start justify-between">
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">{{ $offer->title }}</h1>
-                    <p class="text-slate-500 mt-1">{{ __('Offer') }} #{{ $offer->offer_number }}</p>
-                </div>
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                    @switch($offer->status)
-                        @case('sent') @case('viewed') bg-blue-100 text-blue-700 @break
-                        @case('accepted') bg-green-100 text-green-700 @break
-                        @case('rejected') bg-red-100 text-red-700 @break
-                        @case('expired') bg-yellow-100 text-yellow-700 @break
-                        @default bg-slate-100 text-slate-700
-                    @endswitch">
-                    {{ $offer->status_label }}
-                </span>
+        {{-- Real-time Update Notification --}}
+        <div x-show="showUpdateNotification"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform -translate-y-4"
+             x-transition:enter-end="opacity-100 transform translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-600 text-white rounded-lg shadow-lg px-6 py-4 flex items-center gap-4 max-w-lg">
+            <div class="flex-shrink-0">
+                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">{{ __('Offer Updated') }}</p>
+                <p class="text-sm text-blue-100">{{ __('The offer has been modified. Click to refresh.') }}</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button @click="applyUpdate()" class="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors">
+                    {{ __('Refresh') }}
+                </button>
+                <button @click="dismissUpdate()" class="text-blue-200 hover:text-white p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -41,196 +89,882 @@
             </div>
         @endif
 
-        {{-- Offer Content --}}
-        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
-            {{-- Client Info --}}
-            <div class="border-b pb-4 mb-6">
-                <p class="text-sm text-slate-500">{{ __('Prepared for') }}</p>
-                <p class="font-medium text-slate-900">{{ $offer->client->name }}</p>
-                @if($offer->client->company_name)
-                    <p class="text-slate-600">{{ $offer->client->company_name }}</p>
+        {{-- Document Container --}}
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden">
+
+            {{-- ===== HEADER BLOCK (Shared Component) ===== --}}
+            @include('components.offer-simple.blocks.header', [
+                'mode' => 'public',
+                'organization' => $organization,
+                'bankAccounts' => $bankAccounts,
+                'offer' => $offer,
+                'headerData' => $headerData,
+                'client' => $client,
+            ])
+
+            {{-- ===== DYNAMIC BLOCKS ===== --}}
+            @foreach($blocks as $block)
+                @if($block['visible'] ?? true)
+                    @switch($block['type'])
+                        @case('services')
+                            {{-- ===== SERVICES BLOCK ===== --}}
+                            <div class="px-6 py-6 border-b border-slate-200">
+                                {{-- Main Block Heading --}}
+                                <div class="mb-6">
+                                    <h2 class="text-xl font-bold text-slate-800">
+                                        {{ $block['data']['heading'] ?? __('Oferta include următoarele servicii:') }}
+                                        <div class="h-1 w-16 bg-green-500 mt-2 rounded"></div>
+                                    </h2>
+                                </div>
+
+                                {{-- SECTION 1: Main Services List (custom type) - Interactive --}}
+                                @if($customItems->count() > 0)
+                                    <div class="space-y-3">
+                                        @foreach($customItems as $item)
+                                            <div class="rounded-xl border shadow-md cursor-pointer transition-all duration-200"
+                                                 :class="deselectedServices.includes({{ $item->id }}) ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-green-200'"
+                                                 @click="toggleService({{ $item->id }}, {{ $item->total_price }})">
+                                                <div class="flex items-start gap-4 p-5">
+                                                    {{-- Interactive Checkbox --}}
+                                                    <div class="pt-0.5">
+                                                        <div class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all"
+                                                             :class="deselectedServices.includes({{ $item->id }}) ? 'border-slate-300 bg-white' : 'border-green-500 bg-green-500'">
+                                                            <svg x-show="!deselectedServices.includes({{ $item->id }})" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Service Info --}}
+                                                    <div class="flex-1 min-w-0">
+                                                        <h4 class="font-semibold text-lg transition-all"
+                                                            :class="deselectedServices.includes({{ $item->id }}) ? 'text-slate-400 line-through' : 'text-slate-900'">
+                                                            {{ $item->title }}
+                                                        </h4>
+                                                        @if($item->description)
+                                                            <p class="text-sm mt-2 leading-relaxed whitespace-pre-line transition-all"
+                                                               :class="deselectedServices.includes({{ $item->id }}) ? 'text-slate-300' : 'text-slate-500'">
+                                                                {{ $item->description }}
+                                                            </p>
+                                                        @endif
+
+                                                        {{-- Price display --}}
+                                                        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-slate-100">
+                                                            <span class="text-sm text-slate-400">{{ __('Cost') }}:</span>
+                                                            <span class="text-sm font-semibold"
+                                                                  :class="deselectedServices.includes({{ $item->id }}) ? 'text-slate-400' : 'text-slate-700'">
+                                                                {{ number_format($item->unit_price, 2) }} {{ $offer->currency }}
+                                                            </span>
+                                                            @if($item->unit !== 'buc' && $item->unit !== 'proiect')
+                                                                <span class="text-sm text-slate-400">/ {{ $item->unit }}</span>
+                                                            @endif
+                                                        </div>
+
+                                                        {{-- Quantity --}}
+                                                        @if($item->quantity > 1 || ($item->unit !== 'proiect' && $item->unit !== 'buc'))
+                                                            <div class="flex items-center gap-4 mt-2">
+                                                                <span class="text-sm font-medium text-slate-600">{{ __('Quantity') }}:</span>
+                                                                <span class="text-sm text-slate-700">{{ number_format($item->quantity, $item->quantity == floor($item->quantity) ? 0 : 2) }} {{ $item->unit }}</span>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+
+                                                    {{-- Total Column --}}
+                                                    <div class="w-32 text-right pt-1">
+                                                        <span class="text-lg font-bold transition-all"
+                                                              :class="deselectedServices.includes({{ $item->id }}) ? 'text-slate-400 line-through' : 'text-green-600'">
+                                                            {{ number_format($item->total_price, 2) }} {{ $offer->currency }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-center py-8 text-slate-500">
+                                        <p>{{ __('No services included in this offer.') }}</p>
+                                    </div>
+                                @endif
+
+                                {{-- SECTION 2: Extra Services Cards (card type) - Interactive --}}
+                                @if($cardItems->count() > 0)
+                                    <div class="mt-8">
+                                        {{-- Section Title --}}
+                                        <div class="mb-4">
+                                            <h3 class="text-lg font-semibold text-slate-700">
+                                                {{ $block['data']['cardsHeading'] ?? __('Servicii extra disponibile') }}
+                                            </h3>
+                                        </div>
+
+                                        {{-- Service Cards Grid --}}
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            @foreach($cardItems as $index => $item)
+                                                <div class="rounded-xl p-5 transition-all border flex flex-col bg-slate-900 border-slate-700"
+                                                     :class="selectedCards.includes({{ $item->id }}) ? 'border-green-500 bg-slate-800 shadow-lg' : 'hover:border-slate-600 hover:shadow-lg'"
+                                                     data-card-id="{{ $item->id }}"
+                                                     data-card-price="{{ $item->total_price }}">
+
+                                                    {{-- Top Content Area --}}
+                                                    <div class="flex-1">
+                                                        {{-- Card Header with Icon --}}
+                                                        <div class="flex items-start gap-4 mb-4">
+                                                            <div class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                                                                 :class="selectedCards.includes({{ $item->id }}) ? 'bg-green-500' : 'bg-slate-700'">
+                                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                </svg>
+                                                            </div>
+                                                            <div class="flex-1 min-w-0">
+                                                                <h4 class="font-semibold text-white text-base">{{ $item->title }}</h4>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Description --}}
+                                                        @if($item->description)
+                                                            <p class="text-sm text-slate-400 mb-3 whitespace-pre-line">{{ $item->description }}</p>
+                                                        @endif
+                                                    </div>
+
+                                                    {{-- Bottom Area --}}
+                                                    <div class="mt-auto">
+                                                        {{-- Price Display --}}
+                                                        <div class="flex items-baseline justify-between mb-3 pt-2 border-t"
+                                                             :class="selectedCards.includes({{ $item->id }}) ? 'border-green-500/30' : 'border-slate-700'">
+                                                            <span class="text-xs text-slate-500">{{ __('Price') }}</span>
+                                                            <div class="flex items-baseline gap-1">
+                                                                <span class="text-xl font-bold"
+                                                                      :class="selectedCards.includes({{ $item->id }}) ? 'text-green-400' : 'text-white'">{{ number_format($item->unit_price, 0) }}</span>
+                                                                <span class="text-xs text-slate-500">{{ $offer->currency }}</span>
+                                                            </div>
+                                                        </div>
+
+                                                        {{-- Add/Remove Button --}}
+                                                        <button type="button"
+                                                                @click="toggleCard({{ $item->id }}, {{ $item->total_price }})"
+                                                                class="w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
+                                                                :class="selectedCards.includes({{ $item->id }})
+                                                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                                                    : 'bg-green-500 text-white hover:bg-green-600'">
+                                                            <svg x-show="!selectedCards.includes({{ $item->id }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                                            </svg>
+                                                            <svg x-show="selectedCards.includes({{ $item->id }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                            </svg>
+                                                            <span x-text="selectedCards.includes({{ $item->id }}) ? '{{ __('Remove') }}' : '{{ __('Add to offer') }}'"></span>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                            @break
+
+                        @case('specifications')
+                            {{-- ===== SPECIFICATIONS BLOCK ===== --}}
+                            <div class="px-6 py-6 border-b border-slate-200">
+                                <div class="mb-6">
+                                    <h2 class="text-xl font-bold text-slate-800">
+                                        {{ $block['data']['heading'] ?? __('Precizări') }}
+                                        <div class="h-1 w-16 bg-green-500 mt-2 rounded"></div>
+                                    </h2>
+                                </div>
+
+                                @if(!empty($block['data']['sections']))
+                                    <div class="space-y-6">
+                                        @foreach($block['data']['sections'] as $section)
+                                            <div class="bg-slate-50 rounded-lg p-4">
+                                                @if(!empty($section['title']))
+                                                    <h3 class="text-lg font-semibold text-slate-800 mb-3">{{ $section['title'] }}</h3>
+                                                @endif
+
+                                                @if(($section['type'] ?? 'paragraph') === 'paragraph')
+                                                    @php
+                                                        // Convert URLs to clickable links
+                                                        $content = e($section['content'] ?? '');
+                                                        $content = preg_replace(
+                                                            '/(https?:\/\/[^\s<]+)/i',
+                                                            '<a href="$1" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 hover:underline">$1</a>',
+                                                            $content
+                                                        );
+                                                    @endphp
+                                                    <p class="text-sm text-slate-600 whitespace-pre-line">{!! $content !!}</p>
+                                                @else
+                                                    <ul class="space-y-2">
+                                                        @foreach($section['items'] ?? [] as $sectionItem)
+                                                            @if(!empty($sectionItem))
+                                                                <li class="flex items-start gap-2 text-sm text-slate-600">
+                                                                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                                                    </svg>
+                                                                    <span>{{ $sectionItem }}</span>
+                                                                </li>
+                                                            @endif
+                                                        @endforeach
+                                                    </ul>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                            </div>
+                            @break
+
+                        @case('summary')
+                            {{-- ===== SUMMARY BLOCK ===== --}}
+                            @php
+                                $optionalServicesBlock = collect($blocks)->firstWhere('type', 'optional_services');
+                                $optionalServices = $optionalServicesBlock['data']['services'] ?? [];
+                            @endphp
+                            <div class="px-6 py-6 border-b border-slate-200">
+                                <div class="mb-6">
+                                    <h2 class="text-xl font-bold text-slate-800">
+                                        {{ $block['data']['heading'] ?? __('Sumar servicii selectate') }}
+                                        <div class="h-1 w-16 bg-green-500 mt-2 rounded"></div>
+                                    </h2>
+                                </div>
+
+                                @if($customItems->count() > 0 || $cardItems->count() > 0)
+                                    {{-- Services Table with Totals --}}
+                                    <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                                        {{-- Table Header --}}
+                                        <div class="grid grid-cols-12 gap-2 px-4 py-3 bg-slate-50 border-b border-slate-200 text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                            <div class="col-span-5">{{ __('Serviciu') }}</div>
+                                            <div class="col-span-2 text-center">{{ __('Cant.') }}</div>
+                                            <div class="col-span-2 text-right">{{ __('Preț') }}</div>
+                                            <div class="col-span-1 text-center">{{ __('Disc.') }}</div>
+                                            <div class="col-span-2 text-right">{{ __('Total') }}</div>
+                                        </div>
+
+                                        {{-- Services Rows --}}
+                                        <div class="divide-y divide-slate-100">
+                                            {{-- Main Services (custom type) --}}
+                                            @foreach($customItems as $item)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center hover:bg-slate-50 transition-all"
+                                                     x-show="!deselectedServices.includes({{ $item->id }})"
+                                                     x-transition>
+                                                    <div class="col-span-5">
+                                                        <span class="font-medium text-slate-800">{{ $item->title }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-center">
+                                                        <span class="text-sm text-slate-600">{{ number_format($item->quantity, $item->quantity == floor($item->quantity) ? 0 : 2) }} {{ $item->unit }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="text-sm text-slate-600">{{ number_format($item->unit_price, 2) }} {{ $offer->currency }}</span>
+                                                    </div>
+                                                    <div class="col-span-1 text-center">
+                                                        @if($item->discount_percent > 0)
+                                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                                                -{{ number_format($item->discount_percent, 0) }}%
+                                                            </span>
+                                                        @else
+                                                            <span class="text-sm text-slate-300">—</span>
+                                                        @endif
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-semibold text-slate-800">{{ number_format($item->total_price, 2) }} {{ $offer->currency }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+
+                                            {{-- Card Services (Extra) --}}
+                                            @foreach($cardItems as $item)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center bg-green-50 hover:bg-green-100 transition-all"
+                                                     x-show="selectedCards.includes({{ $item->id }})"
+                                                     x-transition>
+                                                    <div class="col-span-5">
+                                                        <span class="font-medium text-slate-800">{{ $item->title }}</span>
+                                                        <span class="text-xs text-green-600 font-medium ml-2">({{ __('Extra') }})</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-center">
+                                                        <span class="text-sm text-slate-600">{{ number_format($item->quantity, $item->quantity == floor($item->quantity) ? 0 : 2) }} {{ $item->unit }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="text-sm text-slate-600">{{ number_format($item->unit_price, 2) }} {{ $offer->currency }}</span>
+                                                    </div>
+                                                    <div class="col-span-1 text-center">
+                                                        <span class="text-sm text-slate-300">—</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-semibold text-green-700">{{ number_format($item->total_price, 2) }} {{ $offer->currency }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+
+                                            {{-- Optional Services --}}
+                                            @foreach($optionalServices as $optService)
+                                                @php
+                                                    $optKey = $optService['_key'] ?? uniqid();
+                                                    $optTitle = $optService['title'] ?? '';
+                                                    $optQuantity = $optService['quantity'] ?? 1;
+                                                    $optUnit = $optService['unit'] ?? 'ora';
+                                                    $optUnitPrice = $optService['unit_price'] ?? 0;
+                                                    $optCurrency = $optService['currency'] ?? $offer->currency;
+                                                    $optTotal = $optQuantity * $optUnitPrice;
+                                                @endphp
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center bg-green-50 hover:bg-green-100 transition-all"
+                                                     x-show="selectedOptionalServices.includes('{{ $optKey }}')"
+                                                     x-transition>
+                                                    <div class="col-span-5">
+                                                        <span class="font-medium text-slate-800">{{ $optTitle }}</span>
+                                                        <span class="text-xs text-green-600 font-medium ml-2">({{ __('Optional') }})</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-center">
+                                                        <span class="text-sm text-slate-600">{{ number_format($optQuantity, $optQuantity == floor($optQuantity) ? 0 : 2) }} {{ $optUnit }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="text-sm text-slate-600">{{ number_format($optUnitPrice, 2) }} {{ $optCurrency }}</span>
+                                                    </div>
+                                                    <div class="col-span-1 text-center">
+                                                        <span class="text-sm text-slate-300">—</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-semibold text-green-700">{{ number_format($optTotal, 2) }} {{ $optCurrency }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+
+                                        {{-- Totals Section (inside table) --}}
+                                        <div class="border-t-2 border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100">
+                                            @if($block['data']['showSubtotal'] ?? true)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-3 items-center">
+                                                    <div class="col-span-10 text-right">
+                                                        <span class="text-sm font-medium text-slate-600">{{ __('Subtotal') }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-semibold text-slate-800" x-text="formatCurrency(currentSubtotal)"></span>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if(($block['data']['showDiscount'] ?? true) && $offer->discount_percent > 0)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-2 items-center border-t border-dashed border-slate-200">
+                                                    <div class="col-span-10 text-right">
+                                                        <span class="text-sm text-slate-600">
+                                                            {{ __('Discount') }}
+                                                            <span class="text-xs text-green-600 ml-1">(-{{ number_format($offer->discount_percent, 0) }}%)</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-medium text-green-600">-<span x-text="formatCurrency(currentDiscount)"></span></span>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if($showVAT)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-2 items-center border-t border-dashed border-slate-200">
+                                                    <div class="col-span-10 text-right">
+                                                        <span class="text-sm text-slate-600">
+                                                            {{ __('TVA') }}
+                                                            <span class="text-xs text-slate-400 ml-1">({{ $vatPercent }}%)</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="font-medium text-slate-700">+<span x-text="formatCurrency(currentVAT)"></span></span>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if($block['data']['showGrandTotal'] ?? true)
+                                                <div class="grid grid-cols-12 gap-2 px-4 py-4 items-center border-t-2 border-slate-300 bg-slate-100">
+                                                    <div class="col-span-10 text-right">
+                                                        <span class="text-base font-bold text-slate-800">{{ __('Total de plată') }}</span>
+                                                    </div>
+                                                    <div class="col-span-2 text-right">
+                                                        <span class="text-xl font-bold text-green-600" x-text="formatCurrency(currentGrandTotal)"></span>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                            @break
+
+                        @case('brands')
+                            {{-- ===== BRANDS BLOCK ===== --}}
+                            @if(!empty($block['data']['image']) || !empty($block['data']['heading']))
+                                <div class="px-6 py-6 border-b border-slate-200">
+                                    @if(!empty($block['data']['heading']))
+                                        <div class="mb-4 text-center">
+                                            <h3 class="text-lg font-semibold text-slate-700">{{ $block['data']['heading'] }}</h3>
+                                        </div>
+                                    @endif
+                                    @if(!empty($block['data']['image']))
+                                        <div class="flex justify-center">
+                                            <img src="{{ $block['data']['image'] }}" alt="Brands" class="max-w-full h-auto rounded-lg">
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                            @break
+
+                        @case('acceptance')
+                            {{-- ===== ACCEPTANCE BLOCK ===== --}}
+                            <div class="px-6 py-6">
+                                @if(!empty($block['data']['paragraph']))
+                                    <div class="mb-6 text-sm text-slate-600 leading-relaxed">
+                                        {{ $block['data']['paragraph'] }}
+                                    </div>
+                                @endif
+
+                                {{-- Action Buttons --}}
+                                @if($offer->canBeAccepted())
+                                    <div class="flex flex-col sm:flex-row gap-4" role="group" aria-label="{{ __('Offer response actions') }}">
+                                        <button type="button" @click="showRejectModal = true"
+                                                aria-label="{{ __('Decline this offer') }}"
+                                                class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-slate-300 rounded-lg text-base font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                            </svg>
+                                            {{ $block['data']['rejectButtonText'] ?? __('Decline') }}
+                                        </button>
+
+                                        <form action="{{ route('offers.public.accept', $offer->public_token) }}" method="POST" class="flex-1">
+                                            @csrf
+                                            <button type="submit"
+                                                    aria-label="{{ __('Accept this offer') }}"
+                                                    class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                {{ $block['data']['acceptButtonText'] ?? __('Accept Offer') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                @elseif($offer->isAccepted())
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                                        <svg class="w-12 h-12 text-green-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-green-800">{{ __('Offer Accepted') }}</h3>
+                                        <p class="text-green-700 mt-1">{{ __('Thank you! This offer was accepted on') }} {{ $offer->accepted_at->format('d.m.Y') }}.</p>
+                                    </div>
+                                @elseif($offer->isRejected())
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                                        <svg class="w-12 h-12 text-red-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-red-800">{{ __('Offer Declined') }}</h3>
+                                        <p class="text-red-700 mt-1">{{ __('This offer was declined on') }} {{ $offer->rejected_at->format('d.m.Y') }}.</p>
+                                    </div>
+                                @elseif($offer->isExpired())
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                                        <svg class="w-12 h-12 text-yellow-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <h3 class="text-lg font-semibold text-yellow-800">{{ __('Offer Expired') }}</h3>
+                                        <p class="text-yellow-700 mt-1">{{ __('This offer has expired. Please contact us for a new offer.') }}</p>
+                                    </div>
+                                @endif
+                            </div>
+                            @break
+
+                        @case('text')
+                            {{-- ===== TEXT BLOCK ===== --}}
+                            <div class="px-6 py-6 border-b border-slate-200">
+                                @if(!empty($block['data']['heading']))
+                                    <h2 class="text-xl font-bold text-slate-800 mb-4">
+                                        {{ $block['data']['heading'] }}
+                                        <div class="h-1 w-16 bg-green-500 mt-2 rounded"></div>
+                                    </h2>
+                                @endif
+                                @if(!empty($block['data']['content']))
+                                    <div class="prose prose-sm max-w-none text-slate-600">
+                                        {!! \Illuminate\Support\Str::of($block['data']['content'])->stripTags('<p><br><strong><em><ul><ol><li><a><h1><h2><h3><h4><h5><h6><blockquote><pre><code>') !!}
+                                    </div>
+                                @endif
+                            </div>
+                            @break
+
+                        @case('optional_services')
+                            {{-- ===== OPTIONAL SERVICES BLOCK ===== --}}
+                            @if(!empty($block['data']['services']) && count($block['data']['services']) > 0)
+                                <div class="px-6 py-6 border-b border-slate-200">
+                                    <div class="mb-6">
+                                        <h2 class="text-xl font-bold text-slate-800">
+                                            {{ __('Optional Services') }}
+                                            <div class="h-1 w-16 bg-green-500 mt-2 rounded"></div>
+                                        </h2>
+                                        <p class="text-sm text-slate-600 mt-3">{{ __('Select additional services to add to your offer:') }}</p>
+                                    </div>
+
+                                    {{-- Optional Services Cards Grid --}}
+                                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        @foreach($block['data']['services'] as $optService)
+                                            @php
+                                                $optKey = $optService['_key'] ?? uniqid();
+                                                $optTitle = $optService['title'] ?? '';
+                                                $optDescription = $optService['description'] ?? '';
+                                                $optQuantity = $optService['quantity'] ?? 1;
+                                                $optUnit = $optService['unit'] ?? 'ora';
+                                                $optUnitPrice = $optService['unit_price'] ?? 0;
+                                                $optCurrency = $optService['currency'] ?? $offer->currency;
+                                                $optTotal = $optQuantity * $optUnitPrice;
+                                            @endphp
+
+                                            <div class="rounded-xl p-5 transition-all border flex flex-col"
+                                                 :class="selectedOptionalServices.includes('{{ $optKey }}') ? 'border-green-500 bg-green-50 shadow-lg' : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-md'"
+                                                 data-optional-key="{{ $optKey }}"
+                                                 data-optional-price="{{ $optTotal }}">
+
+                                                {{-- Top Content Area --}}
+                                                <div class="flex-1">
+                                                    {{-- Card Header with Checkbox --}}
+                                                    <div class="flex items-start gap-3 mb-3">
+                                                        <div class="pt-0.5">
+                                                            <input type="checkbox"
+                                                                   id="service-{{ $optKey }}"
+                                                                   :checked="selectedOptionalServices.includes('{{ $optKey }}')"
+                                                                   @change="toggleOptionalService('{{ $optKey }}', {{ $optTotal }}, '{{ addslashes($optTitle) }}', '{{ addslashes($optDescription) }}', {{ $optQuantity }}, '{{ $optUnit }}', {{ $optUnitPrice }}, '{{ $optCurrency }}')"
+                                                                   aria-describedby="service-desc-{{ $optKey }}"
+                                                                   class="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer">
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <label for="service-{{ $optKey }}" class="font-semibold text-slate-900 text-base leading-tight cursor-pointer">{{ $optTitle }}</label>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Description --}}
+                                                    @if($optDescription)
+                                                        <p id="service-desc-{{ $optKey }}" class="text-sm text-slate-600 mb-3 leading-relaxed">{{ $optDescription }}</p>
+                                                    @endif
+                                                </div>
+
+                                                {{-- Bottom Area: Price and Quantity --}}
+                                                <div class="mt-auto pt-3 border-t border-slate-200">
+                                                    <div class="flex items-center justify-between mb-2">
+                                                        <span class="text-xs text-slate-500">{{ __('Quantity') }}</span>
+                                                        <span class="text-sm font-medium text-slate-700">{{ number_format($optQuantity, $optQuantity == floor($optQuantity) ? 0 : 2) }} {{ $optUnit }}</span>
+                                                    </div>
+                                                    <div class="flex items-baseline justify-between">
+                                                        <span class="text-xs text-slate-500">{{ __('Total') }}</span>
+                                                        <span class="text-lg font-bold text-green-600">{{ number_format($optTotal, 2) }} {{ $optCurrency }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                            @break
+                    @endswitch
                 @endif
-            </div>
+            @endforeach
 
-            {{-- Validity --}}
-            <div class="flex items-center gap-2 mb-6 {{ $offer->valid_until < now() ? 'text-red-600' : 'text-slate-600' }}">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                </svg>
-                <span>
-                    {{ __('Valid until') }}: <strong>{{ $offer->valid_until->format('d.m.Y') }}</strong>
-                    @if($offer->valid_until < now())
-                        <span class="text-red-600">({{ __('Expired') }})</span>
+            {{-- Fallback if no blocks with acceptance --}}
+            @if(empty($blocks) || !collect($blocks)->contains('type', 'acceptance'))
+                {{-- Actions --}}
+                <div class="px-6 py-6">
+                    @if($offer->canBeAccepted())
+                        <h3 class="font-semibold text-slate-900 mb-4">{{ __('Your Response') }}</h3>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <button type="button" @click="showRejectModal = true"
+                                    class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-slate-300 rounded-lg text-base font-medium text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-colors">
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                                {{ __('Decline Offer') }}
+                            </button>
+
+                            <form action="{{ route('offers.public.accept', $offer->public_token) }}" method="POST" class="flex-1">
+                                @csrf
+                                <button type="submit"
+                                        class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                    {{ __('Accept Offer') }}
+                                </button>
+                            </form>
+                        </div>
+                    @elseif($offer->isAccepted())
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
+                            <svg class="w-12 h-12 text-green-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-green-800">{{ __('Offer Accepted') }}</h3>
+                            <p class="text-green-700 mt-1">{{ __('Thank you! This offer was accepted on') }} {{ $offer->accepted_at->format('d.m.Y') }}.</p>
+                        </div>
+                    @elseif($offer->isRejected())
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                            <svg class="w-12 h-12 text-red-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-red-800">{{ __('Offer Declined') }}</h3>
+                            <p class="text-red-700 mt-1">{{ __('This offer was declined on') }} {{ $offer->rejected_at->format('d.m.Y') }}.</p>
+                        </div>
+                    @elseif($offer->isExpired())
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                            <svg class="w-12 h-12 text-yellow-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <h3 class="text-lg font-semibold text-yellow-800">{{ __('Offer Expired') }}</h3>
+                            <p class="text-yellow-700 mt-1">{{ __('This offer has expired. Please contact us for a new offer.') }}</p>
+                        </div>
                     @endif
-                </span>
-            </div>
-
-            {{-- Introduction --}}
-            @if($offer->introduction)
-                <div class="prose prose-sm max-w-none mb-6">
-                    {!! $offer->introduction !!}
-                </div>
-            @endif
-
-            {{-- Items --}}
-            <div class="border rounded-lg overflow-hidden mb-6">
-                <table class="w-full text-sm">
-                    <thead class="bg-slate-100">
-                        <tr>
-                            <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Description') }}</th>
-                            <th class="px-6 py-4 text-center font-medium text-slate-600">{{ __('Qty') }}</th>
-                            <th class="px-6 py-4 text-right font-medium text-slate-600">{{ __('Price') }}</th>
-                            <th class="px-6 py-4 text-right font-medium text-slate-600">{{ __('Total') }}</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y">
-                        @foreach($offer->items as $item)
-                            <tr>
-                                <td class="px-6 py-4">
-                                    <div class="font-medium text-slate-900">{{ $item->title }}</div>
-                                    @if($item->description)
-                                        <div class="text-sm text-slate-500 mt-1">{{ $item->description }}</div>
-                                    @endif
-                                    @if($item->is_recurring)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700 mt-1">
-                                            {{ $item->billing_cycle_label }}
-                                        </span>
-                                    @endif
-                                </td>
-                                <td class="px-6 py-4 text-center">{{ number_format($item->quantity, 2) }}</td>
-                                <td class="px-6 py-4 text-right">{{ number_format($item->unit_price, 2) }} {{ $offer->currency }}</td>
-                                <td class="px-6 py-4 text-right font-medium">{{ number_format($item->total_price, 2) }} {{ $offer->currency }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="bg-slate-50">
-                        <tr>
-                            <td colspan="3" class="px-4 py-2 text-right font-medium text-slate-600">{{ __('Subtotal') }}</td>
-                            <td class="px-4 py-2 text-right font-medium">{{ number_format($offer->subtotal, 2) }} {{ $offer->currency }}</td>
-                        </tr>
-                        @if($offer->discount_amount > 0)
-                            <tr>
-                                <td colspan="3" class="px-4 py-2 text-right font-medium text-slate-600">
-                                    {{ __('Discount') }}
-                                    @if($offer->discount_percent)
-                                        ({{ number_format($offer->discount_percent, 1) }}%)
-                                    @endif
-                                </td>
-                                <td class="px-4 py-2 text-right font-medium text-red-600">-{{ number_format($offer->discount_amount, 2) }} {{ $offer->currency }}</td>
-                            </tr>
-                        @endif
-                        <tr class="text-lg">
-                            <td colspan="3" class="px-4 py-3 text-right font-bold text-slate-900">{{ __('Total') }}</td>
-                            <td class="px-6 py-4 text-right font-bold text-slate-900">{{ number_format($offer->total, 2) }} {{ $offer->currency }}</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-
-            {{-- Terms --}}
-            @if($offer->terms)
-                <div class="prose prose-sm max-w-none pt-6 border-t">
-                    <h3>{{ __('Terms & Conditions') }}</h3>
-                    {!! $offer->terms !!}
                 </div>
             @endif
         </div>
 
-        {{-- Actions --}}
-        @if($offer->canBeAccepted())
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="font-semibold text-slate-900 mb-4">{{ __('Your Response') }}</h3>
-
-                <div class="flex flex-col sm:flex-row gap-4">
-                    {{-- Accept --}}
-                    <form action="{{ route('offers.public.accept', $offer->public_token) }}" method="POST" class="flex-1">
-                        @csrf
-                        <button type="submit"
-                                class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                            </svg>
-                            {{ __('Accept Offer') }}
-                        </button>
-                    </form>
-
-                    {{-- Reject --}}
-                    <button type="button" @click="showRejectModal = true"
-                            class="flex-1 inline-flex items-center justify-center px-6 py-3 border border-red-300 rounded-md text-base font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                        {{ __('Decline Offer') }}
-                    </button>
-                </div>
-            </div>
-
-            {{-- Reject Modal --}}
-            <div x-show="showRejectModal" x-cloak
-                 class="fixed inset-0 z-50 overflow-y-auto"
-                 @keydown.escape.window="showRejectModal = false">
-                <div class="flex items-center justify-center min-h-screen px-4">
-                    <div class="fixed inset-0 bg-black/50" @click="showRejectModal = false"></div>
-                    <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Decline Offer') }}</h3>
-                        <form action="{{ route('offers.public.reject', $offer->public_token) }}" method="POST">
-                            @csrf
-                            <div class="mb-4">
-                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Reason (optional)') }}</label>
-                                <textarea name="reason" rows="3"
-                                          class="w-full border-slate-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
-                                          placeholder="{{ __('Please let us know why you are declining...') }}"></textarea>
-                            </div>
-                            <div class="flex gap-3">
-                                <button type="button" @click="showRejectModal = false"
-                                        class="flex-1 px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">
-                                    {{ __('Cancel') }}
-                                </button>
-                                <button type="submit"
-                                        class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
-                                    {{ __('Decline') }}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        @elseif($offer->isAccepted())
-            <div class="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
-                <svg class="w-12 h-12 text-green-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="text-lg font-semibold text-green-800">{{ __('Offer Accepted') }}</h3>
-                <p class="text-green-700 mt-1">{{ __('Thank you! This offer was accepted on') }} {{ $offer->accepted_at->format('d.m.Y') }}.</p>
-            </div>
-        @elseif($offer->isRejected())
-            <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                <svg class="w-12 h-12 text-red-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="text-lg font-semibold text-red-800">{{ __('Offer Declined') }}</h3>
-                <p class="text-red-700 mt-1">{{ __('This offer was declined on') }} {{ $offer->rejected_at->format('d.m.Y') }}.</p>
-            </div>
-        @elseif($offer->isExpired())
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-                <svg class="w-12 h-12 text-yellow-600 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <h3 class="text-lg font-semibold text-yellow-800">{{ __('Offer Expired') }}</h3>
-                <p class="text-yellow-700 mt-1">{{ __('This offer has expired. Please contact us for a new offer.') }}</p>
-            </div>
-        @endif
-
         {{-- Footer --}}
         <div class="text-center text-sm text-slate-500 mt-8">
-            <p>{{ __('Questions? Contact us at') }} <a href="mailto:contact@example.com" class="text-blue-600 hover:underline">contact@example.com</a></p>
+            @if($organization?->email)
+                <p>{{ __('Questions? Contact us at') }} <a href="mailto:{{ $organization->email }}" class="text-blue-600 hover:underline">{{ $organization->email }}</a></p>
+            @endif
+            <p class="mt-2">&copy; {{ date('Y') }} {{ $organization?->name ?? config('app.name') }}</p>
+        </div>
+
+        {{-- Reject Modal --}}
+        <div x-show="showRejectModal" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto"
+             @keydown.escape.window="showRejectModal = false">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black/50" @click="showRejectModal = false"></div>
+                <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Decline Offer') }}</h3>
+                    <form action="{{ route('offers.public.reject', $offer->public_token) }}" method="POST">
+                        @csrf
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Reason (optional)') }}</label>
+                            <textarea name="reason" rows="3"
+                                      class="w-full border-slate-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500"
+                                      placeholder="{{ __('Please let us know why you are declining...') }}"></textarea>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="button" @click="showRejectModal = false"
+                                    class="flex-1 px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">
+                                {{ __('Cancel') }}
+                            </button>
+                            <button type="submit"
+                                    class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                                {{ __('Decline') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
     function publicOffer() {
         return {
-            showRejectModal: false
+            showRejectModal: false,
+            selectedCards: [],
+            selectedOptionalServices: [],
+            optionalServicesPrices: {},
+            // Initialize with items that admin has deselected
+            deselectedServices: {!! json_encode($initiallyDeselectedIds) !!},
+            deselectedServicesPrices: {},
+
+            // Base values (ALL custom services - we subtract deselected dynamically)
+            baseSubtotal: {{ $fullSubtotal }},
+            discountPercent: {{ $offer->discount_percent ?? 0 }},
+            vatPercent: {{ $vatPercent }},
+            showVAT: {{ $showVAT ? 'true' : 'false' }},
+            currency: '{{ $offer->currency }}',
+
+            // Service prices map (for deselection)
+            servicePrices: {
+                @foreach($customItems as $item)
+                {{ $item->id }}: {{ $item->total_price }},
+                @endforeach
+            },
+
+            // Card prices map
+            cardPrices: {
+                @foreach($cardItems as $item)
+                {{ $item->id }}: {{ $item->total_price }},
+                @endforeach
+            },
+
+            // Computed totals
+            get deselectedServicesTotal() {
+                return this.deselectedServices.reduce((sum, id) => sum + (this.servicePrices[id] || 0), 0);
+            },
+
+            get selectedCardsTotal() {
+                return this.selectedCards.reduce((sum, id) => sum + (this.cardPrices[id] || 0), 0);
+            },
+
+            get selectedOptionalServicesTotal() {
+                return this.selectedOptionalServices.reduce((sum, key) => sum + (this.optionalServicesPrices[key] || 0), 0);
+            },
+
+            get currentSubtotal() {
+                // Base minus deselected, plus extras selected
+                return this.baseSubtotal - this.deselectedServicesTotal + this.selectedCardsTotal + this.selectedOptionalServicesTotal;
+            },
+
+            get currentDiscount() {
+                return this.currentSubtotal * (this.discountPercent / 100);
+            },
+
+            get currentVAT() {
+                if (!this.showVAT) return 0;
+                return (this.currentSubtotal - this.currentDiscount) * (this.vatPercent / 100);
+            },
+
+            get currentGrandTotal() {
+                return this.currentSubtotal - this.currentDiscount + this.currentVAT;
+            },
+
+            // Toggle main service selection (deselect/reselect)
+            toggleService(serviceId, price) {
+                const index = this.deselectedServices.indexOf(serviceId);
+                if (index > -1) {
+                    // Re-select (remove from deselected)
+                    this.deselectedServices.splice(index, 1);
+                } else {
+                    // Deselect (add to deselected)
+                    this.deselectedServices.push(serviceId);
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Toggle card selection
+            toggleCard(cardId, price) {
+                const index = this.selectedCards.indexOf(cardId);
+                if (index > -1) {
+                    this.selectedCards.splice(index, 1);
+                } else {
+                    this.selectedCards.push(cardId);
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Toggle optional service selection
+            toggleOptionalService(key, price, title, description, quantity, unit, unitPrice, currency) {
+                const index = this.selectedOptionalServices.indexOf(key);
+                if (index > -1) {
+                    // Remove from selection
+                    this.selectedOptionalServices.splice(index, 1);
+                    delete this.optionalServicesPrices[key];
+                } else {
+                    // Add to selection
+                    this.selectedOptionalServices.push(key);
+                    this.optionalServicesPrices[key] = price;
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Debounce timer for syncing
+            syncTimer: null,
+            isSyncing: false,
+
+            // Sync customer selections to backend (debounced)
+            syncSelectionsToBackend() {
+                // Debounce - wait 500ms after last change before syncing
+                if (this.syncTimer) {
+                    clearTimeout(this.syncTimer);
+                }
+                this.syncTimer = setTimeout(() => {
+                    this.doSyncSelections();
+                }, 500);
+            },
+
+            async doSyncSelections() {
+                if (this.isSyncing) return;
+                this.isSyncing = true;
+
+                try {
+                    const response = await fetch('{{ route('offers.public.selections', $offer->public_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            deselected_services: this.deselectedServices,
+                            selected_cards: this.selectedCards,
+                            selected_optional_services: this.selectedOptionalServices
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        // Update our local timestamp to avoid triggering notification for our own change
+                        this.lastUpdatedAt = data.updated_at;
+                    }
+                } catch (error) {
+                    // Silently ignore sync errors - non-critical
+                } finally {
+                    this.isSyncing = false;
+                }
+            },
+
+            // Format currency - use browser locale for international support
+            formatCurrency(value) {
+                const locale = document.documentElement.lang || navigator.language || 'en';
+                return new Intl.NumberFormat(locale, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value) + ' ' + this.currency;
+            },
+
+            // Real-time sync
+            lastUpdatedAt: {{ $offer->updated_at->timestamp }},
+            syncInterval: null,
+            showUpdateNotification: false,
+            pendingUpdate: null,
+
+            init() {
+                // Start polling for updates every 3 seconds
+                this.startSync();
+
+                // Clean up interval on page unload to prevent memory leaks
+                window.addEventListener('beforeunload', () => this.stopSync());
+            },
+
+            startSync() {
+                this.syncInterval = setInterval(() => {
+                    this.checkForUpdates();
+                }, 3000); // Check every 3 seconds
+            },
+
+            stopSync() {
+                if (this.syncInterval) {
+                    clearInterval(this.syncInterval);
+                    this.syncInterval = null;
+                }
+            },
+
+            async checkForUpdates() {
+                try {
+                    const response = await fetch('{{ route('offers.public.state', $offer->public_token) }}');
+                    const data = await response.json();
+
+                    if (data.success && data.updated_at > this.lastUpdatedAt) {
+                        // Offer has been updated - show notification and store pending data
+                        this.pendingUpdate = data;
+                        this.showUpdateNotification = true;
+                    }
+                } catch (error) {
+                    // Silently ignore sync errors - non-critical
+                }
+            },
+
+            applyUpdate() {
+                // Force reload from server (not from cache)
+                window.location.href = window.location.href.split('?')[0] + '?_=' + Date.now();
+            },
+
+            dismissUpdate() {
+                // User dismissed, but update the timestamp so we don't keep showing notification
+                if (this.pendingUpdate) {
+                    this.lastUpdatedAt = this.pendingUpdate.updated_at;
+                }
+                this.showUpdateNotification = false;
+                this.pendingUpdate = null;
+            }
         };
     }
     </script>

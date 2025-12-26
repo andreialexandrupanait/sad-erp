@@ -165,12 +165,12 @@
                                     onclick="document.getElementById('month-input').value = '{{ $monthNum }}'; document.getElementById('monthForm').submit();"
                                     class="w-full relative flex flex-col items-center justify-center p-3 rounded-lg border-2 transition-all
                                         {{ $isSelected ? 'border-green-500 bg-green-50 text-green-700 font-semibold' : ($hasTransactions ? 'border-slate-200 bg-slate-50 hover:border-green-300 hover:bg-green-50' : 'border-slate-100 bg-white text-slate-400') }}"
-                                    title="{{ $hasTransactions ? $transactionCount . ' ' . __('transactions') . ' | ' . number_format($monthTotal, 0) . ' Lei' : __('No items') }}"
+                                    title="{{ $hasTransactions ? $transactionCount . ' ' . __('transactions') . ' | ' . number_format($monthTotal, 2) . ' Lei' : __('No items') }}"
                                 >
                                     <span class="text-xs font-medium">{{ $monthName }}</span>
                                     @if($hasTransactions)
                                         <span class="mt-1 text-[10px] font-semibold {{ $isSelected ? 'text-green-600' : 'text-slate-600' }}">
-                                            {{ $transactionCount }} | {{ number_format($monthTotal, 0) }}
+                                            {{ $transactionCount }} | {{ number_format($monthTotal, 2) }}
                                         </span>
                                     @endif
                                 </button>

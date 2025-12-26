@@ -31,8 +31,10 @@ class Service extends Model implements Sortable
         'ora' => 'oră',
         'zi' => 'zi',
         'luna' => 'lună',
+        'an' => 'an',
         'buc' => 'bucată',
         'proiect' => 'proiect',
+        'serviciu' => 'serviciu',
     ];
 
     protected $casts = [

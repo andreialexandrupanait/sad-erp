@@ -1,42 +1,82 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Contracts') }}</x-slot>
 
+    <x-slot name="headerActions">
+        <x-ui.button variant="default" onclick="window.location.href='{{ route('contracts.create') }}'">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            {{ __('New Contract') }}
+        </x-ui.button>
+    </x-slot>
+
     <div class="p-6 space-y-6"
          x-data="contractsPage({ stats: @js($stats) })"
-         x-init="init()">
+         x-init="init()"
+         @keydown.escape.window="clearSelection()">
 
         {{-- Statistics Cards --}}
-        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-green-600" x-text="stats.active"></div>
-                    <div class="text-sm text-slate-500">{{ __('Active') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-blue-600" x-text="stats.completed"></div>
-                    <div class="text-sm text-slate-500">{{ __('Completed') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-red-600" x-text="stats.terminated"></div>
-                    <div class="text-sm text-slate-500">{{ __('Terminated') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-yellow-600" x-text="stats.expiring_soon"></div>
-                    <div class="text-sm text-slate-500">{{ __('Expiring Soon') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
-            <x-ui.card>
-                <x-ui.card-content class="p-4">
-                    <div class="text-2xl font-bold text-slate-900" x-text="formatCurrency(stats.total_active_value)"></div>
-                    <div class="text-sm text-slate-500">{{ __('Active Value') }}</div>
-                </x-ui.card-content>
-            </x-ui.card>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <x-widgets.metrics.stat-card
+                :title="__('Active')"
+                :value="$stats['active'] ?? 0"
+                color="green"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Completed')"
+                :value="$stats['completed'] ?? 0"
+                color="blue"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Terminated')"
+                :value="$stats['terminated'] ?? 0"
+                color="red"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Expiring Soon')"
+                :value="$stats['expiring_soon'] ?? 0"
+                :subtitle="__('next 30 days')"
+                color="orange"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
+
+            <x-widgets.metrics.stat-card
+                :title="__('Active Value')"
+                :value="number_format($stats['total_active_value'] ?? 0, 2, ',', '.') . ' RON'"
+                color="indigo"
+            >
+                <x-slot name="icon">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </x-slot>
+            </x-widgets.metrics.stat-card>
         </div>
 
         {{-- Messages --}}
@@ -93,6 +133,77 @@
             </button>
         </div>
 
+        {{-- Bulk Actions Toolbar --}}
+        <div x-show="selectedIds.length > 0"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-4xl w-full mx-auto px-4"
+             x-cloak>
+            <div class="bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 px-6 py-4">
+                <div class="flex items-center justify-between gap-4 flex-wrap">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-sm font-bold">
+                            <span x-text="selectedIds.length"></span>
+                        </div>
+                        <span class="text-sm font-medium">
+                            <span x-text="selectedIds.length"></span>
+                            <span x-text="selectedIds.length === 1 ? '{{ __('contract') }}' : '{{ __('contracts') }}'"></span>
+                            {{ __('selected') }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                        {{-- Export to CSV --}}
+                        <x-ui.button
+                            variant="outline"
+                            class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700"
+                            @click="bulkExport()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            {{ __('Export CSV') }}
+                        </x-ui.button>
+
+                        {{-- Delete Selected --}}
+                        <x-ui.button
+                            variant="destructive"
+                            @click="bulkDelete()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            {{ __('Delete') }}
+                        </x-ui.button>
+
+                        {{-- Clear Selection --}}
+                        <button
+                            @click="clearSelection()"
+                            class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            {{ __('Clear') }}
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Loading overlay --}}
+                <div x-show="bulkLoading"
+                     class="absolute inset-0 bg-slate-900/80 rounded-xl flex items-center justify-center">
+                    <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
         {{-- Loading --}}
         <div x-show="loading" class="flex justify-center py-8">
             <x-ui.spinner size="lg" color="blue" />
@@ -105,6 +216,12 @@
                     <table class="w-full text-sm">
                         <thead class="bg-slate-100 border-b border-slate-200">
                             <tr>
+                                <th class="px-6 py-4 text-left font-medium text-slate-600 w-12">
+                                    <input type="checkbox"
+                                           x-model="selectAll"
+                                           @change="toggleSelectAll()"
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                </th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Contract') }}</th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Client') }}</th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Status') }}</th>
@@ -115,7 +232,13 @@
                         </thead>
                         <tbody class="divide-y divide-slate-200">
                             <template x-for="contract in contracts" :key="contract.id">
-                                <tr class="hover:bg-slate-50">
+                                <tr class="hover:bg-slate-50" :class="{ 'bg-blue-50': selectedIds.includes(contract.id) }">
+                                    <td class="px-6 py-4">
+                                        <input type="checkbox"
+                                               :checked="selectedIds.includes(contract.id)"
+                                               @change="toggleItem(contract.id)"
+                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    </td>
                                     <td class="px-6 py-4">
                                         <a :href="'/contracts/' + contract.id" class="font-medium text-slate-900 hover:text-blue-600">
                                             <span x-text="contract.contract_number"></span>
@@ -146,14 +269,45 @@
                                         <span x-show="!contract.end_date" class="text-slate-400">{{ __('Indefinite') }}</span>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <a :href="'/contracts/' + contract.id"
-                                           class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded inline-flex"
-                                           title="{{ __('View') }}">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                            </svg>
-                                        </a>
+                                        <div class="flex items-center justify-end gap-1">
+                                            {{-- View --}}
+                                            <a :href="'/contracts/' + contract.id"
+                                               class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded inline-flex"
+                                               title="{{ __('View') }}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                            </a>
+                                            {{-- Edit Content (Builder) --}}
+                                            <a :href="'/contracts/' + contract.id + '/builder'"
+                                               class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded inline-flex"
+                                               title="{{ __('Edit Content') }}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                            </a>
+                                            {{-- Download PDF (if available) --}}
+                                            <template x-if="contract.has_pdf">
+                                                <a :href="'/contracts/' + contract.id + '/download'"
+                                                   class="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded inline-flex"
+                                                   title="{{ __('Download PDF') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                </a>
+                                            </template>
+                                            {{-- Delete (only for non-active contracts) --}}
+                                            <template x-if="contract.status !== 'active'">
+                                                <button @click="deleteContract(contract.id, contract.contract_number)"
+                                                        class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded inline-flex"
+                                                        title="{{ __('Delete') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                </button>
+                                            </template>
+                                        </div>
                                     </td>
                                 </tr>
                             </template>
@@ -190,6 +344,9 @@
         </template>
     </div>
 
+    {{-- Toast Notifications --}}
+    <x-toast />
+
     @push('scripts')
     <script>
     function contractsPage(config) {
@@ -203,6 +360,11 @@
                 page: 1
             },
             pagination: {},
+
+            // Bulk selection
+            selectedIds: [],
+            selectAll: false,
+            bulkLoading: false,
 
             init() {
                 this.fetchContracts();
@@ -257,6 +419,153 @@
                     style: 'currency',
                     currency: currency
                 }).format(amount || 0);
+            },
+
+            async deleteContract(contractId, contractNumber) {
+                if (!confirm(`{{ __('Are you sure you want to delete contract') }} ${contractNumber}? {{ __('This action cannot be undone.') }}`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/contracts/${contractId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success || response.ok) {
+                        // Refresh the list
+                        await this.fetchContracts();
+                    } else {
+                        throw new Error(result.message || '{{ __('Failed to delete contract') }}');
+                    }
+                } catch (error) {
+                    console.error('Error deleting contract:', error);
+                    alert(error.message || '{{ __('Failed to delete contract. Please try again.') }}');
+                }
+            },
+
+            // Bulk selection methods
+            toggleItem(id) {
+                const index = this.selectedIds.indexOf(id);
+                if (index > -1) {
+                    this.selectedIds.splice(index, 1);
+                } else {
+                    this.selectedIds.push(id);
+                }
+                this.updateSelectAll();
+            },
+
+            toggleSelectAll() {
+                if (this.selectAll) {
+                    // Select all visible contracts
+                    this.selectedIds = this.contracts.map(c => c.id);
+                } else {
+                    this.selectedIds = [];
+                }
+            },
+
+            updateSelectAll() {
+                this.selectAll = this.contracts.length > 0 &&
+                                 this.selectedIds.length === this.contracts.length;
+            },
+
+            clearSelection() {
+                this.selectedIds = [];
+                this.selectAll = false;
+            },
+
+            async bulkDelete() {
+                if (this.selectedIds.length === 0) return;
+
+                // Check for active contracts
+                const activeContracts = this.contracts.filter(c =>
+                    this.selectedIds.includes(c.id) && c.status === 'active'
+                );
+
+                if (activeContracts.length > 0) {
+                    alert('{{ __('Active contracts cannot be deleted. Please deselect active contracts first.') }}');
+                    return;
+                }
+
+                if (!confirm(`{{ __('Are you sure you want to delete') }} ${this.selectedIds.length} {{ __('contracts? This action cannot be undone.') }}`)) {
+                    return;
+                }
+
+                this.bulkLoading = true;
+
+                try {
+                    const response = await fetch('/contracts/bulk-delete', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ ids: this.selectedIds })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        this.clearSelection();
+                        await this.fetchContracts();
+                        this.$dispatch('toast', { message: result.message, type: 'success' });
+                    } else {
+                        throw new Error(result.message || '{{ __('Failed to delete contracts') }}');
+                    }
+                } catch (error) {
+                    console.error('Error deleting contracts:', error);
+                    alert(error.message || '{{ __('Failed to delete contracts. Please try again.') }}');
+                } finally {
+                    this.bulkLoading = false;
+                }
+            },
+
+            async bulkExport() {
+                if (this.selectedIds.length === 0) return;
+
+                this.bulkLoading = true;
+
+                try {
+                    const response = await fetch('/contracts/bulk-export', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'text/csv'
+                        },
+                        body: JSON.stringify({ ids: this.selectedIds })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.message || '{{ __('Failed to export contracts') }}');
+                    }
+
+                    // Download the CSV
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `contracts-export-${new Date().toISOString().slice(0, 10)}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    this.$dispatch('toast', { message: '{{ __('Contracts exported successfully!') }}', type: 'success' });
+                } catch (error) {
+                    console.error('Error exporting contracts:', error);
+                    alert(error.message || '{{ __('Failed to export contracts. Please try again.') }}');
+                } finally {
+                    this.bulkLoading = false;
+                }
             }
         };
     }

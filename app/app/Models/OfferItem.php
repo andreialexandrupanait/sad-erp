@@ -12,11 +12,14 @@ class OfferItem extends Model
     protected $fillable = [
         'offer_id',
         'service_id',
+        'type',
+        'is_selected',
         'title',
         'description',
         'quantity',
         'unit',
         'unit_price',
+        'discount_percent',
         'currency',
         'total_price',
         'original_currency',
@@ -31,10 +34,12 @@ class OfferItem extends Model
     protected $casts = [
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'discount_percent' => 'decimal:2',
         'total_price' => 'decimal:2',
         'original_unit_price' => 'decimal:2',
         'exchange_rate' => 'decimal:6',
         'is_recurring' => 'boolean',
+        'is_selected' => 'boolean',
         'custom_cycle_days' => 'integer',
         'sort_order' => 'integer',
     ];
@@ -46,9 +51,11 @@ class OfferItem extends Model
     {
         parent::boot();
 
-        // Auto-calculate total_price
+        // Auto-calculate total_price with discount
         static::saving(function ($item) {
-            $item->total_price = $item->quantity * $item->unit_price;
+            $subtotal = $item->quantity * $item->unit_price;
+            $discount = $subtotal * (($item->discount_percent ?? 0) / 100);
+            $item->total_price = $subtotal - $discount;
         });
 
         // Recalculate offer totals after save

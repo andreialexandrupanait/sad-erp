@@ -611,6 +611,10 @@
         <!-- Trix WYSIWYG Editor -->
         <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
         <script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+
+        <!-- Quill.js Rich Text Editor (for Contract Builder) -->
+        <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
+        <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
         <style>
             /* Trix Customizations */
             trix-toolbar .trix-button-group--file-tools { display: none; }
@@ -644,7 +648,193 @@
             trix-toolbar .trix-button.trix-active {
                 background: #e2e8f0;
             }
+
+            /* Quill Editor Customizations */
+            .ql-editor {
+                min-height: 400px;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+            .ql-container {
+                font-family: 'Inter', sans-serif;
+            }
+            .ql-toolbar.ql-snow {
+                border: 1px solid #e2e8f0;
+                border-radius: 0.5rem 0.5rem 0 0;
+                background: #f8fafc;
+            }
+            .ql-container.ql-snow {
+                border: 1px solid #e2e8f0;
+                border-top: none;
+                border-radius: 0 0 0.5rem 0.5rem;
+            }
+            .ql-editor:focus {
+                outline: none;
+            }
+            .ql-snow .ql-picker.ql-header {
+                width: 110px;
+            }
+            /* Variable placeholder styling */
+            .ql-editor .variable-placeholder {
+                background-color: #dbeafe;
+                border: 1px solid #3b82f6;
+                border-radius: 4px;
+                padding: 2px 6px;
+                font-family: monospace;
+                font-size: 12px;
+                color: #1e40af;
+                white-space: nowrap;
+            }
+            .ql-editor .services-block {
+                background-color: #fef3c7;
+                border: 2px dashed #f59e0b;
+                border-radius: 8px;
+                padding: 16px;
+                margin: 16px 0;
+                text-align: center;
+                color: #92400e;
+                font-weight: 500;
+            }
+            /* Custom variable button */
+            .ql-variable {
+                width: auto !important;
+                padding: 0 8px !important;
+            }
+            .ql-variable::before {
+                content: '{{}}';
+                font-family: monospace;
+                font-size: 12px;
+            }
+
+            /* Shared typography for Editor and Preview (no duplication) */
+            /* Using !important to override Quill's default CDN styles */
+            .ql-editor,
+            .contract-content {
+                font-size: 14px !important;
+                line-height: 1.5 !important;
+                color: #1e293b;
+            }
+            .ql-editor h1,
+            .contract-content h1 {
+                font-size: 1.875rem !important;
+                font-weight: 700 !important;
+                line-height: 1.3 !important;
+                margin-top: 1.5rem !important;
+                margin-bottom: 0.25rem !important;
+                color: #1e293b;
+            }
+            .ql-editor h2,
+            .contract-content h2 {
+                font-size: 1.5rem !important;
+                font-weight: 600 !important;
+                line-height: 1.35 !important;
+                margin-top: 1.25rem !important;
+                margin-bottom: 0.2rem !important;
+                color: #1e293b;
+            }
+            .ql-editor h3,
+            .contract-content h3 {
+                font-size: 1.25rem !important;
+                font-weight: 600 !important;
+                line-height: 1.4 !important;
+                margin-top: 1rem !important;
+                margin-bottom: 0.15rem !important;
+                color: #334155;
+            }
+            .ql-editor p,
+            .contract-content p {
+                margin-bottom: 0.5rem !important;
+                line-height: 1.5 !important;
+            }
+            .ql-editor ul,
+            .ql-editor ol,
+            .contract-content ul,
+            .contract-content ol {
+                margin-bottom: 0.75rem !important;
+                padding-left: 1.5rem !important;
+            }
+            .ql-editor li,
+            .contract-content li {
+                margin-bottom: 0.1rem !important;
+                line-height: 1.4 !important;
+            }
+            .ql-editor li:last-child,
+            .contract-content li:last-child {
+                margin-bottom: 0.5rem !important;
+            }
+            .ql-editor blockquote,
+            .contract-content blockquote {
+                border-left: 4px solid #3b82f6 !important;
+                padding-left: 1rem !important;
+                margin: 0.75rem 0 !important;
+                color: #475569;
+                font-style: italic;
+            }
+            .ql-editor hr,
+            .contract-content hr {
+                margin: 1rem 0 !important;
+                border-color: #e2e8f0;
+            }
+            /* First element should not have top margin */
+            .ql-editor > *:first-child,
+            .contract-content > *:first-child {
+                margin-top: 0 !important;
+            }
+            /* Preserve empty paragraphs for spacing */
+            .ql-editor p:empty::before,
+            .contract-content p:empty::before {
+                content: '\00a0';
+            }
+            /* Quill alignment classes */
+            .ql-editor .ql-align-center,
+            .contract-content .ql-align-center {
+                text-align: center;
+            }
+            .ql-editor .ql-align-right,
+            .contract-content .ql-align-right {
+                text-align: right;
+            }
+            .ql-editor .ql-align-justify,
+            .contract-content .ql-align-justify {
+                text-align: justify;
+            }
+            /* Quill indent classes */
+            .ql-editor .ql-indent-1,
+            .contract-content .ql-indent-1 {
+                padding-left: 3em;
+            }
+            .ql-editor .ql-indent-2,
+            .contract-content .ql-indent-2 {
+                padding-left: 6em;
+            }
+            .ql-editor .ql-indent-3,
+            .contract-content .ql-indent-3 {
+                padding-left: 9em;
+            }
+            /* Quill size classes */
+            .ql-editor .ql-size-small,
+            .contract-content .ql-size-small {
+                font-size: 0.75em;
+            }
+            .ql-editor .ql-size-large,
+            .contract-content .ql-size-large {
+                font-size: 1.5em;
+            }
+            .ql-editor .ql-size-huge,
+            .contract-content .ql-size-huge {
+                font-size: 2.5em;
+            }
+            /* Sticky toolbar for contract builder */
+            .ql-toolbar.ql-snow {
+                position: sticky;
+                top: 0;
+                z-index: 10;
+                background: white;
+                border-top-left-radius: 0.5rem;
+                border-top-right-radius: 0.5rem;
+            }
         </style>
+        @stack('styles')
     </head>
     <body class="font-sans antialiased bg-slate-50" x-data="{
         sidebarOpen: true,

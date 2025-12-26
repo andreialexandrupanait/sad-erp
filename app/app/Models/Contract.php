@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Contract\ContractVariableRegistry;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -13,12 +14,16 @@ class Contract extends Model
 
     protected $fillable = [
         'organization_id',
+        'parent_contract_id',
         'client_id',
         'offer_id',
         'template_id',
+        'contract_template_id',
         'contract_number',
         'title',
         'content',
+        'blocks',
+        'editor_settings',
         'status',
         'start_date',
         'end_date',
@@ -26,6 +31,16 @@ class Contract extends Model
         'total_value',
         'currency',
         'pdf_path',
+        // Temp client fields for contracts without a linked client
+        'temp_client_name',
+        'temp_client_email',
+        'temp_client_company',
+        'is_finalized',
+        'finalized_at',
+        // Editing lock fields
+        'locked_by',
+        'locked_at',
+        'current_version',
     ];
 
     protected $casts = [
@@ -33,6 +48,12 @@ class Contract extends Model
         'end_date' => 'date',
         'auto_renew' => 'boolean',
         'total_value' => 'decimal:2',
+        'blocks' => 'array',
+        'editor_settings' => 'array',
+        'is_finalized' => 'boolean',
+        'finalized_at' => 'datetime',
+        'locked_at' => 'datetime',
+        'current_version' => 'integer',
     ];
 
     /**
@@ -61,7 +82,10 @@ class Contract extends Model
     }
 
     /**
-     * Generate unique contract number
+     * Generate unique contract number with database locking to prevent race conditions.
+     *
+     * Uses SELECT ... FOR UPDATE to lock the row during number generation,
+     * ensuring no two concurrent requests can generate the same number.
      */
     public static function generateContractNumber($organizationId = null)
     {
@@ -75,9 +99,12 @@ class Contract extends Model
             $prefix = 'CTR-' . $org->code;
         }
 
+        // Use database lock to prevent race condition
+        // lockForUpdate() acquires an exclusive lock until the transaction commits
         $lastContract = static::withoutGlobalScopes()
             ->where('organization_id', $organizationId)
             ->whereYear('created_at', $year)
+            ->lockForUpdate()
             ->orderByRaw('CAST(SUBSTRING_INDEX(contract_number, "-", -1) AS UNSIGNED) DESC')
             ->first();
 
@@ -87,7 +114,23 @@ class Contract extends Model
             $nextNumber = 1;
         }
 
-        return sprintf('%s-%d-%03d', $prefix, $year, $nextNumber);
+        return sprintf('%s-%d-%02d', $prefix, $year, $nextNumber);
+    }
+
+    /**
+     * Parent contract relationship for renewals.
+     */
+    public function parentContract()
+    {
+        return $this->belongsTo(Contract::class, 'parent_contract_id');
+    }
+
+    /**
+     * Child contracts (renewals) relationship.
+     */
+    public function renewals()
+    {
+        return $this->hasMany(Contract::class, 'parent_contract_id');
     }
 
     /**
@@ -108,9 +151,20 @@ class Contract extends Model
         return $this->belongsTo(Offer::class);
     }
 
+    /**
+     * Legacy template relationship.
+     *
+     * @deprecated Use contractTemplate() instead. DocumentTemplate is being phased out
+     *             in favor of ContractTemplate which provides better variable support.
+     */
     public function template()
     {
         return $this->belongsTo(DocumentTemplate::class, 'template_id');
+    }
+
+    public function contractTemplate()
+    {
+        return $this->belongsTo(ContractTemplate::class);
     }
 
     public function annexes()
@@ -121,6 +175,154 @@ class Contract extends Model
     public function additionalOffers()
     {
         return $this->hasMany(Offer::class);
+    }
+
+    public function items()
+    {
+        return $this->hasMany(ContractItem::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Activity log relationship.
+     */
+    public function activities()
+    {
+        return $this->hasMany(ContractActivity::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Content versions relationship.
+     */
+    public function versions()
+    {
+        return $this->hasMany(ContractVersion::class)->orderBy('version_number', 'desc');
+    }
+
+    /**
+     * User who has the editing lock.
+     */
+    public function lockedByUser()
+    {
+        return $this->belongsTo(User::class, 'locked_by');
+    }
+
+    /**
+     * Check if contract is currently locked for editing.
+     */
+    public function isLocked(): bool
+    {
+        if (!$this->locked_by || !$this->locked_at) {
+            return false;
+        }
+
+        // Lock expires after 15 minutes of inactivity
+        return $this->locked_at->diffInMinutes(now()) < 15;
+    }
+
+    /**
+     * Check if current user can edit this contract.
+     */
+    public function canEdit(?int $userId = null): bool
+    {
+        $userId = $userId ?? auth()->id();
+
+        // If finalized, no one can edit
+        if ($this->is_finalized) {
+            return false;
+        }
+
+        // If not locked, anyone can edit
+        if (!$this->isLocked()) {
+            return true;
+        }
+
+        // Only the user who locked it can edit
+        return $this->locked_by === $userId;
+    }
+
+    /**
+     * Acquire editing lock for a user.
+     *
+     * @param int|null $userId The user ID to acquire lock for
+     * @return bool True if lock acquired, false if already locked by another user
+     */
+    public function acquireLock(?int $userId = null): bool
+    {
+        $userId = $userId ?? auth()->id();
+
+        // If already locked by another user, can't acquire
+        if ($this->isLocked() && $this->locked_by !== $userId) {
+            return false;
+        }
+
+        $this->update([
+            'locked_by' => $userId,
+            'locked_at' => now(),
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Release editing lock.
+     *
+     * @param int|null $userId Only release if locked by this user (null = force release)
+     * @return bool True if released
+     */
+    public function releaseLock(?int $userId = null): bool
+    {
+        // If user specified, only release if they hold the lock
+        if ($userId !== null && $this->locked_by !== $userId) {
+            return false;
+        }
+
+        $this->update([
+            'locked_by' => null,
+            'locked_at' => null,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * Refresh the lock (extend expiration).
+     *
+     * @param int|null $userId Only refresh if locked by this user
+     * @return bool True if refreshed
+     */
+    public function refreshLock(?int $userId = null): bool
+    {
+        $userId = $userId ?? auth()->id();
+
+        if ($this->locked_by !== $userId) {
+            return false;
+        }
+
+        $this->update(['locked_at' => now()]);
+
+        return true;
+    }
+
+    /**
+     * Get lock status information.
+     */
+    public function getLockStatus(): array
+    {
+        if (!$this->isLocked()) {
+            return [
+                'locked' => false,
+                'can_edit' => !$this->is_finalized,
+            ];
+        }
+
+        return [
+            'locked' => true,
+            'locked_by' => $this->locked_by,
+            'locked_by_name' => $this->lockedByUser?->name ?? __('Unknown'),
+            'locked_at' => $this->locked_at->toISOString(),
+            'expires_at' => $this->locked_at->addMinutes(15)->toISOString(),
+            'can_edit' => $this->locked_by === auth()->id(),
+        ];
     }
 
     /**
@@ -156,11 +358,38 @@ class Contract extends Model
     }
 
     /**
+     * Valid status values.
+     */
+    public const STATUSES = ['draft', 'active', 'completed', 'terminated', 'expired'];
+
+    /**
+     * Allowed status transitions.
+     * Key = current status, Value = array of allowed target statuses.
+     */
+    public const STATUS_TRANSITIONS = [
+        'draft' => ['active', 'terminated'],
+        'active' => ['completed', 'terminated', 'expired'],
+        'completed' => [], // Terminal state
+        'terminated' => [], // Terminal state
+        'expired' => ['active'], // Can be renewed/reactivated
+    ];
+
+    /**
      * Status helpers
      */
     public function isActive()
     {
         return $this->status === 'active';
+    }
+
+    public function isDraft()
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isTerminal()
+    {
+        return in_array($this->status, ['completed', 'terminated']);
     }
 
     public function isExpired()
@@ -172,6 +401,79 @@ class Contract extends Model
     public function isIndefinite()
     {
         return is_null($this->end_date);
+    }
+
+    /**
+     * Check if a status transition is allowed.
+     */
+    public function canTransitionTo(string $newStatus): bool
+    {
+        if (!in_array($newStatus, self::STATUSES)) {
+            return false;
+        }
+
+        $allowedTransitions = self::STATUS_TRANSITIONS[$this->status] ?? [];
+        return in_array($newStatus, $allowedTransitions);
+    }
+
+    /**
+     * Get allowed transitions from current status.
+     */
+    public function getAllowedTransitions(): array
+    {
+        return self::STATUS_TRANSITIONS[$this->status] ?? [];
+    }
+
+    /**
+     * Transition to a new status with validation.
+     *
+     * @throws \InvalidArgumentException If transition is not allowed
+     */
+    public function transitionTo(string $newStatus): self
+    {
+        if (!$this->canTransitionTo($newStatus)) {
+            throw new \InvalidArgumentException(
+                __('Cannot transition contract from :from to :to', [
+                    'from' => $this->status,
+                    'to' => $newStatus,
+                ])
+            );
+        }
+
+        $this->status = $newStatus;
+        $this->save();
+
+        return $this;
+    }
+
+    /**
+     * Activate a draft contract.
+     *
+     * @throws \InvalidArgumentException If transition is not allowed
+     */
+    public function activate(): self
+    {
+        return $this->transitionTo('active');
+    }
+
+    /**
+     * Complete an active contract.
+     *
+     * @throws \InvalidArgumentException If transition is not allowed
+     */
+    public function complete(): self
+    {
+        return $this->transitionTo('completed');
+    }
+
+    /**
+     * Mark contract as expired.
+     *
+     * @throws \InvalidArgumentException If transition is not allowed
+     */
+    public function markExpired(): self
+    {
+        return $this->transitionTo('expired');
     }
 
     /**
@@ -271,14 +573,13 @@ class Contract extends Model
     }
 
     /**
-     * Terminate the contract
+     * Terminate the contract.
+     *
+     * @throws \InvalidArgumentException If transition is not allowed
      */
-    public function terminate()
+    public function terminate(): self
     {
-        $this->status = 'terminated';
-        $this->save();
-
-        return $this;
+        return $this->transitionTo('terminated');
     }
 
     /**
@@ -309,5 +610,131 @@ class Contract extends Model
             'total_active_value' => (float) ($values->total_active_value ?? 0),
             'expiring_soon' => $expiringSoon,
         ];
+    }
+
+    /**
+     * Get content with variables replaced by actual values.
+     * Uses ContractVariableRegistry for consistent {{variable}} format.
+     */
+    public function getRenderedContentAttribute()
+    {
+        $content = $this->content ?? '';
+
+        if (empty($content)) {
+            return '';
+        }
+
+        // Load relationships if not already loaded
+        if (!$this->relationLoaded('client')) {
+            $this->load(['client', 'offer.items', 'items', 'organization']);
+        }
+
+        // Use centralized registry for variable replacement
+        return ContractVariableRegistry::render($content, $this);
+    }
+
+    /**
+     * Get content rendered for PDF export.
+     * Strips blue variable styling since dompdf doesn't support complex CSS selectors.
+     */
+    public function getPdfContentAttribute(): string
+    {
+        $content = $this->rendered_content;
+
+        if (empty($content)) {
+            return '';
+        }
+
+        // Remove blue variable styling (dompdf doesn't support [style*=""] selectors)
+        // Strategy: Process each style attribute and clean up blue colors
+
+        // Pattern to match style attributes
+        $content = preg_replace_callback(
+            '/style="([^"]*)"/i',
+            function ($matches) {
+                $style = $matches[1];
+
+                // First, remove light blue backgrounds completely (must be done before color replacement)
+                $style = preg_replace(
+                    '/background-color:\s*(?:rgb\(219,\s*234,\s*254\)|#dbeafe);?\s*/i',
+                    '',
+                    $style
+                );
+
+                // Replace blue text color with black (only match "color:" not "background-color:")
+                // Use word boundary to ensure we match "color:" but not "background-color:"
+                $style = preg_replace(
+                    '/(?<![a-z-])color:\s*(?:rgb\(30,\s*64,\s*175\)|#1e40af)/i',
+                    'color: #000000',
+                    $style
+                );
+
+                // Replace light blue used as text color (wrong usage) with black
+                $style = preg_replace(
+                    '/(?<![a-z-])color:\s*rgb\(219,\s*234,\s*254\)/i',
+                    'color: #000000',
+                    $style
+                );
+
+                // Clean up any double semicolons or trailing semicolons
+                $style = preg_replace('/;\s*;/', ';', $style);
+                $style = trim($style, '; ');
+
+                return 'style="' . $style . '"';
+            },
+            $content
+        );
+
+        return $content;
+    }
+
+    /**
+     * Get variable values for this contract.
+     * Delegates to ContractVariableRegistry for consistency.
+     */
+    public function getVariableValues(): array
+    {
+        return ContractVariableRegistry::resolve($this);
+    }
+
+    /**
+     * Validate contract content before PDF generation.
+     */
+    public function validateForPdf(): array
+    {
+        return ContractVariableRegistry::validateContent($this->content ?? '', $this);
+    }
+
+    /**
+     * Get warnings (non-blocking issues) for this contract.
+     */
+    public function getWarnings(): array
+    {
+        return ContractVariableRegistry::getWarnings($this);
+    }
+
+    /**
+     * Check if contract number can be edited.
+     * Contract number is locked after finalization or PDF generation.
+     */
+    public function canEditContractNumber(): bool
+    {
+        return !$this->is_finalized && empty($this->pdf_path);
+    }
+
+    /**
+     * Check if contract number is unique within organization.
+     */
+    public static function isContractNumberUnique(string $number, int $orgId, ?int $excludeId = null): bool
+    {
+        $query = static::withoutGlobalScopes()
+            ->where('organization_id', $orgId)
+            ->where('contract_number', $number);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return !$query->exists();
     }
 }

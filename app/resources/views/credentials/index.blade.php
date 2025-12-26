@@ -11,6 +11,7 @@
     </x-slot>
 
     <div class="p-6 space-y-6" x-data="{
+        ...credentialsSearch(),
         ...bulkSelection({
             idAttribute: 'data-credential-id',
             rowSelector: '[data-selectable]'
@@ -29,59 +30,45 @@
         <!-- Search and Filter Form -->
         <x-ui.card>
             <x-ui.card-content>
-                <form method="GET" action="{{ route('credentials.index') }}">
-                    <div class="flex flex-col sm:flex-row gap-3">
+                <form method="GET" action="{{ route('credentials.index') }}" x-ref="filterForm">
+                    <div class="flex flex-col lg:flex-row gap-4">
                         <!-- Search -->
                         <div class="flex-1">
-                            <div class="relative">
-                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                    <svg class="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                    </svg>
-                                </div>
-                                <x-ui.input
-                                    type="text"
-                                    name="search"
-                                    value="{{ request('search') }}"
-                                    placeholder="{{ __('Search credentials') }}"
-                                    class="pl-10"
-                                />
-                            </div>
+                            <x-ui.label for="search">{{ __('Search') }}</x-ui.label>
+                            <x-ui.input
+                                type="text"
+                                name="search"
+                                id="search"
+                                x-model="search"
+                                @input.debounce.400ms="performSearch"
+                                value="{{ request('search') }}"
+                                placeholder="{{ __('Search credentials, sites...') }}"
+                            />
                         </div>
 
                         <!-- Client Filter -->
-                        <div class="w-full sm:w-52">
+                        <div class="w-full lg:w-64">
+                            <x-ui.label for="client_id">{{ __('Client') }}</x-ui.label>
                             <x-ui.searchable-select
                                 name="client_id"
                                 :options="$clients"
                                 :selected="request('client_id')"
                                 :placeholder="__('All Clients')"
                                 :emptyLabel="__('All Clients')"
+                                onchange="this.form.submit()"
                             />
                         </div>
 
-                        <!-- Platform Filter -->
-                        <div class="w-full sm:w-48">
-                            <x-ui.select name="platform">
-                                <option value="">{{ __('All Platforms') }}</option>
-                                @foreach ($platforms as $platform)
-                                    <option value="{{ $platform->value }}" {{ request('platform') == $platform->value ? 'selected' : '' }}>
-                                        {{ $platform->label }}
-                                    </option>
-                                @endforeach
-                            </x-ui.select>
-                        </div>
-
                         <!-- Buttons -->
-                        <div class="flex gap-2">
+                        <div class="flex items-end gap-2">
                             <x-ui.button type="submit" variant="default">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
                                 {{ __('Search') }}
                             </x-ui.button>
-                            @if(request()->has('search') || request()->has('client_id') || request()->has('platform'))
-                                <x-ui.button variant="outline" onclick="window.location.href='{{ route('credentials.index') }}'">
+                            @if(request()->has('search') || request()->has('client_id'))
+                                <x-ui.button type="button" variant="outline" @click="clearFilters">
                                     {{ __('Clear') }}
                                 </x-ui.button>
                             @endif
@@ -92,28 +79,23 @@
         </x-ui.card>
 
         <!-- Bulk Actions Toolbar -->
-        <x-bulk-toolbar>
-            <x-ui.button
-                variant="outline"
+        <x-bulk-toolbar resource="credentials">
+            <x-ui.button variant="outline" class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700"
                 @click="performBulkAction('export', '{{ route('credentials.bulk-export') }}', {
-                    confirmTitle: '{{ __('Export Credentials') }}',
-                    confirmMessage: '{{ __('Export selected credentials to CSV? (Passwords will not be included)') }}',
-                    successMessage: '{{ __('Credentials exported successfully!') }}'
-                })"
-            >
+                    title: '{{ __('Export Credentials') }}',
+                    message: '{{ __('Export selected credentials to CSV?') }}'
+                })">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                 </svg>
-                {{ __('Export to CSV') }}
+                {{ __('Export CSV') }}
             </x-ui.button>
-            <x-ui.button
-                variant="destructive"
+
+            <x-ui.button variant="destructive"
                 @click="performBulkAction('delete', '{{ route('credentials.bulk-update') }}', {
-                    confirmTitle: '{{ __('Delete Credentials') }}',
-                    confirmMessage: '{{ __('Are you sure you want to delete the selected credentials? This action cannot be undone.') }}',
-                    successMessage: '{{ __('Credentials deleted successfully!') }}'
-                })"
-            >
+                    title: '{{ __('Delete Credentials') }}',
+                    message: '{{ __('Are you sure you want to delete the selected credentials? This cannot be undone.') }}'
+                })">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                 </svg>
@@ -121,180 +103,81 @@
             </x-ui.button>
         </x-bulk-toolbar>
 
-        <!-- Credentials Table -->
-        <x-ui.card>
-            @if($credentials->isEmpty())
-                <div class="px-6 py-16 text-center">
-                    <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No credentials') }}</h3>
-                    <p class="mt-1 text-sm text-slate-500">{{ __('Get started by creating your first credential') }}</p>
-                    <div class="mt-6">
-                        <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.create') }}'">
-                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                            </svg>
-                            {{ __('Add Credential') }}
-                        </x-ui.button>
-                    </div>
-                </div>
-            @else
-                <div class="overflow-x-auto">
-                    <table class="w-full caption-bottom text-sm">
-                        <thead class="bg-slate-100">
-                            <tr class="border-b border-slate-200">
-                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
-                                    <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
-                                </th>
-                                <x-ui.sortable-header column="client_id" label="{{ __('Client') }}" />
-                                <x-ui.sortable-header column="platform" label="{{ __('Platform') }}" />
-                                <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
-                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Password') }}</th>
-                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('URL') }}</th>
-                                <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Last Accessed') }}</th>
-                                <th class="px-6 py-4 text-right align-middle font-medium text-slate-500">{{ __('Actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody class="[&_tr:last-child]:border-0">
-                            @foreach ($credentials as $credential)
-                                <x-ui.table-row data-selectable data-credential-id="{{ $credential->id }}">
-                                    <x-ui.table-cell>
-                                        <x-bulk-checkbox
-                                            
-                                            @change="toggleItem({{ $credential->id }})"
-                                            x-bind:checked="selectedIds.includes({{ $credential->id }})"
-                                        />
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        <div class="font-medium text-slate-900">
-                                            {{ $credential->client->display_name }}
-                                        </div>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        <x-ui.badge variant="secondary">
-                                            {{ $credential->platform }}
-                                        </x-ui.badge>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        @if($credential->username)
-                                            <div class="flex items-center gap-2"
-                                                 x-data="{
-                                                     copied: false,
-                                                     async copyUsername() {
-                                                         try {
-                                                             await navigator.clipboard.writeText('{{ addslashes($credential->username) }}');
-                                                             this.copied = true;
-                                                             setTimeout(() => this.copied = false, 2000);
-                                                         } catch (err) {
-                                                             console.error('Failed to copy:', err);
-                                                         }
-                                                     }
-                                                 }">
-                                                <span class="text-sm text-slate-700">
-                                                    {{ $credential->username }}
-                                                </span>
-                                                <button @click="copyUsername()"
-                                                        type="button"
-                                                        class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                                                        :title="copied ? '{{ __('Copied!') }}' : '{{ __('Copy username') }}'">
-                                                    <svg x-show="!copied"
-                                                         class="h-3.5 w-3.5"
-                                                         fill="none"
-                                                         stroke="currentColor"
-                                                         viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                                    </svg>
-                                                    <svg x-show="copied"
-                                                         x-cloak
-                                                         class="h-3.5 w-3.5 text-green-600"
-                                                         fill="none"
-                                                         stroke="currentColor"
-                                                         viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        @else
-                                            <div class="text-sm text-slate-700">-</div>
-                                        @endif
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        <div class="flex items-center gap-2"
-                                             x-data="{
-                                                 copied: false,
-                                                 async copyPassword() {
-                                                     try {
-                                                         await navigator.clipboard.writeText('{{ addslashes($credential->password) }}');
-                                                         this.copied = true;
-                                                         setTimeout(() => this.copied = false, 2000);
-                                                     } catch (err) {
-                                                         console.error('Failed to copy:', err);
-                                                     }
-                                                 }
-                                             }">
-                                            <span class="text-sm font-mono text-slate-500">
-                                                {{ $credential->masked_password }}
-                                            </span>
-                                            <button @click="copyPassword()"
-                                                    type="button"
-                                                    class="inline-flex items-center justify-center h-7 w-7 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                                                    :title="copied ? '{{ __('Copied!') }}' : '{{ __('Copy password') }}'">
-                                                <svg x-show="!copied"
-                                                     class="h-4 w-4"
-                                                     fill="none"
-                                                     stroke="currentColor"
-                                                     viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                                </svg>
-                                                <svg x-show="copied"
-                                                     x-cloak
-                                                     class="h-4 w-4 text-green-600"
-                                                     fill="none"
-                                                     stroke="currentColor"
-                                                     viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        @if ($credential->url)
-                                            <a href="{{ $credential->url }}" target="_blank" class="text-sm text-slate-600 hover:text-slate-900 underline truncate block max-w-xs">
-                                                {{ $credential->url }}
-                                            </a>
-                                        @else
-                                            <span class="text-sm text-slate-500">-</span>
-                                        @endif
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell>
-                                        <div class="text-sm text-slate-700">
-                                            {{ $credential->last_accessed_at ? $credential->last_accessed_at->diffForHumans() : __('Never') }}
-                                        </div>
-                                    </x-ui.table-cell>
-                                    <x-ui.table-cell class="text-right">
-                                        <x-table-actions
-                                            :viewUrl="route('credentials.show', $credential)"
-                                            :editUrl="route('credentials.edit', $credential)"
-                                            :deleteAction="route('credentials.destroy', $credential)"
-                                            :deleteConfirm="__('Are you sure you want to delete this credential?')"
-                                        />
-                                    </x-ui.table-cell>
-                                </x-ui.table-row>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                @if($credentials->hasPages())
-                    <div class="bg-slate-100 px-6 py-4 border-t border-slate-200">
-                        {{ $credentials->links() }}
-                    </div>
-                @endif
-            @endif
-        </x-ui.card>
+        <!-- Credentials Cards -->
+        <div id="credentials-container">
+            @include('credentials.partials.credentials-list')
+        </div>
     </div>
 
     <!-- Toast Notifications -->
     <x-toast />
+
+    <script>
+    async function fetchPassword(credentialId) {
+        try {
+            const response = await fetch(`/credentials/${credentialId}/password`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to fetch password');
+            }
+
+            const data = await response.json();
+            return data.password || '••••••••';
+        } catch (error) {
+            console.error('Error fetching password:', error);
+            return '••••••••';
+        }
+    }
+
+    function copyToClipboard(text, element) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('{{ __("Copied to clipboard") }}');
+        });
+    }
+
+    function showToast(message, type = 'success') {
+        window.dispatchEvent(new CustomEvent('toast', {
+            detail: { message, type }
+        }));
+    }
+
+    function credentialsSearch() {
+        return {
+            search: '{{ request('search', '') }}',
+            clientId: '{{ request('client_id', '') }}',
+            loading: false,
+            searchTimeout: null,
+
+            init() {
+                // Nothing needed
+            },
+
+            performSearch() {
+                // Debounce and navigate
+                clearTimeout(this.searchTimeout);
+                this.searchTimeout = setTimeout(() => {
+                    this.navigateWithFilters();
+                }, 300);
+            },
+
+            navigateWithFilters() {
+                this.loading = true;
+                const url = new URL(window.location.origin + '{{ route('credentials.index') }}');
+                if (this.search) url.searchParams.set('search', this.search);
+                if (this.clientId) url.searchParams.set('client_id', this.clientId);
+                window.location.href = url.toString();
+            },
+
+            clearFilters() {
+                this.search = '';
+                this.clientId = '';
+                window.location.href = '{{ route('credentials.index') }}';
+            }
+        };
+    }
+    </script>
 </x-app-layout>

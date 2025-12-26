@@ -85,6 +85,22 @@ class ModulesSeeder extends Seeder
                 'route_prefix' => 'settings',
                 'sort_order' => 9,
             ],
+            [
+                'slug' => 'offers',
+                'name' => 'Offers',
+                'description' => 'Sales offers management',
+                'icon' => 'file-text',
+                'route_prefix' => 'offers',
+                'sort_order' => 10,
+            ],
+            [
+                'slug' => 'contracts',
+                'name' => 'Contracts',
+                'description' => 'Contract management',
+                'icon' => 'file-signature',
+                'route_prefix' => 'contracts',
+                'sort_order' => 11,
+            ],
         ];
 
         foreach ($modules as $module) {

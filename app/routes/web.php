@@ -21,6 +21,7 @@ use App\Http\Controllers\Financial\RevenueImportController;
 use App\Http\Controllers\Financial\ExpenseImportController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\ContractController;
+use App\Http\Controllers\ContractTemplateController;
 use App\Http\Controllers\DocumentTemplateController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,12 +29,26 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Public Offer Routes (no auth required)
+// Public Offer Routes (no auth required) - Rate limited for security
 Route::prefix('offers/view')->name('offers.public')->group(function () {
-    Route::get('{token}', [OfferController::class, 'publicView'])->name('');
-    Route::post('{token}/accept', [OfferController::class, 'publicAccept'])->name('.accept');
-    Route::post('{token}/reject', [OfferController::class, 'publicReject'])->name('.reject');
-    Route::post('{token}/request-code', [OfferController::class, 'requestVerificationCode'])->name('.request-code');
+    Route::get('{token}', [OfferController::class, 'publicView'])
+        ->middleware('throttle:60,1')  // 60 views per minute per IP
+        ->name('');
+    Route::get('{token}/state', [OfferController::class, 'publicState'])
+        ->middleware('throttle:120,1')  // 120 state checks per minute (polling every 3s)
+        ->name('.state');
+    Route::post('{token}/selections', [OfferController::class, 'publicUpdateSelections'])
+        ->middleware('throttle:30,1')  // 30 selection updates per minute
+        ->name('.selections');
+    Route::post('{token}/accept', [OfferController::class, 'publicAccept'])
+        ->middleware('throttle:15,1')  // 15 accept attempts per minute (increased for better UX)
+        ->name('.accept');
+    Route::post('{token}/reject', [OfferController::class, 'publicReject'])
+        ->middleware('throttle:10,1')  // 10 reject attempts per minute
+        ->name('.reject');
+    Route::post('{token}/request-code', [OfferController::class, 'requestVerificationCode'])
+        ->middleware('throttle:5,1')  // 5 verification code requests per minute
+        ->name('.request-code');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
@@ -91,6 +106,9 @@ Route::middleware('auth')->group(function () {
     // Credentials Module
     Route::middleware('module:credentials')->group(function () {
         Route::resource('credentials', CredentialController::class);
+        Route::get('credentials/site/{siteName}', [CredentialController::class, 'siteCredentials'])
+            ->name('credentials.site')
+            ->where('siteName', '.*');  // Allow slashes in site name
         Route::post('credentials/bulk-update', [CredentialController::class, 'bulkUpdate'])
             ->middleware('throttle:10,1')  // 10 bulk updates per minute
             ->name('credentials.bulk-update');
@@ -100,6 +118,9 @@ Route::middleware('auth')->group(function () {
         Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])->middleware('require.password.confirmation')
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
             ->name('credentials.reveal-password');
+        Route::get('credentials/{credential}/password', [CredentialController::class, 'getPassword'])
+            ->middleware('throttle:60,1')  // 60 requests per minute for list view password loading
+            ->name('credentials.get-password');
     });
 
     // Internal Accounts Module (Conturi)
@@ -161,6 +182,9 @@ Route::middleware('auth')->group(function () {
         Route::put('settings/business-info', [SettingsController::class, 'updateBusinessInfo'])->name('settings.business-info.update');
         Route::get('settings/invoice-settings', [SettingsController::class, 'invoiceSettings'])->name('settings.invoice-settings');
 
+        // Settings - Offer Defaults (API only - UI is in offer builder sidebar)
+        Route::put('settings/offer-defaults', [SettingsController::class, 'updateOfferDefaults'])->name('settings.offer-defaults.update');
+
         // Settings - Integrations Hub
         Route::get('settings/integrations', [SettingsController::class, 'integrations'])->name('settings.integrations');
 
@@ -210,6 +234,14 @@ Route::middleware('auth')->group(function () {
             Route::post('/disconnect', [\App\Http\Controllers\Settings\ClickUpController::class, 'disconnect'])->name('disconnect');
         });
 
+        // Anthropic (Claude AI) Integration Settings
+        Route::prefix('settings/anthropic')->name('settings.anthropic.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\AnthropicController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Settings\AnthropicController::class, 'update'])->name('update');
+            Route::post('/test', [\App\Http\Controllers\Settings\AnthropicController::class, 'test'])->name('test');
+            Route::post('/disconnect', [\App\Http\Controllers\Settings\AnthropicController::class, 'disconnect'])->name('disconnect');
+        });
+
         // Smartbill Integration Settings
         Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Settings\SmartbillController::class, 'index'])->name('index');
@@ -217,10 +249,10 @@ Route::middleware('auth')->group(function () {
             Route::post('/test-connection', [\App\Http\Controllers\Settings\SmartbillController::class, 'testConnection'])->name('test-connection');
             Route::get('/import', [\App\Http\Controllers\Settings\SmartbillController::class, 'showImportForm'])->name('import');
             Route::post('/import/process', [\App\Http\Controllers\Settings\SmartbillController::class, 'processImport'])
-                ->middleware('throttle:5,1')  // 5 import initiations per minute
+                ->middleware('throttle:20,1')  // 20 import initiations per minute (allows retries)
                 ->name('import.process');
             Route::post('/import/{importId}/start', [\App\Http\Controllers\Settings\SmartbillController::class, 'startImport'])
-                ->middleware('throttle:3,1')  // 3 import starts per minute
+                ->middleware('throttle:30,1')  // 30 import starts per minute (allows retries)
                 ->name('import.start');
             Route::get('/import/{importId}/progress', [\App\Http\Controllers\Settings\SmartbillController::class, 'getProgress'])->name('import.progress');
         });
@@ -272,27 +304,72 @@ Route::middleware('auth')->group(function () {
 
     // Offers Module
     Route::middleware('module:offers')->group(function () {
-        Route::resource('offers', OfferController::class);
+        // Offer Routes - Simple Builder is now the default
+        Route::get('offers', [OfferController::class, 'index'])->name('offers.index');
+        Route::get('offers/create', [OfferController::class, 'simpleCreate'])->name('offers.create');
+        Route::post('offers', [OfferController::class, 'simpleStore'])->name('offers.store');
+        Route::get('offers/{offer}', [OfferController::class, 'show'])->name('offers.show');
+        Route::get('offers/{offer}/edit', [OfferController::class, 'simpleEdit'])->name('offers.edit');
+        Route::put('offers/{offer}', [OfferController::class, 'simpleUpdate'])->name('offers.update');
+        Route::delete('offers/{offer}', [OfferController::class, 'destroy'])->name('offers.destroy');
+
+        // Additional Offer Actions
+        Route::post('offers/bulk-action', [OfferController::class, 'bulkAction'])->name('offers.bulk-action');
+        Route::post('offers/bulk-delete', [OfferController::class, 'bulkDelete'])->name('offers.bulk-delete');
         Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
+        Route::post('offers/{offer}/resend', [OfferController::class, 'resend'])->name('offers.resend');
+        Route::get('offers/{offer}/pdf', [OfferController::class, 'downloadPdf'])->name('offers.pdf');
         Route::post('offers/{offer}/duplicate', [OfferController::class, 'duplicate'])->name('offers.duplicate');
+        Route::post('offers/{offer}/approve', [OfferController::class, 'approve'])->name('offers.approve');
         Route::post('offers/{offer}/convert-to-contract', [OfferController::class, 'convertToContract'])->name('offers.convert-to-contract');
+        Route::post('offers/save-as-template', [OfferController::class, 'saveAsTemplate'])->name('offers.save-as-template');
+        Route::post('offers/upload-image', [OfferController::class, 'uploadImage'])->name('offers.upload-image');
     });
 
     // Contracts Module
     Route::middleware('module:contracts')->group(function () {
         Route::get('contracts', [ContractController::class, 'index'])->name('contracts.index');
+        Route::post('contracts/bulk-delete', [ContractController::class, 'bulkDelete'])->name('contracts.bulk-delete');
+        Route::post('contracts/bulk-export', [ContractController::class, 'bulkExport'])->name('contracts.bulk-export');
+        Route::get('contracts/create', [ContractController::class, 'create'])->name('contracts.create');
+        Route::post('contracts', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
+        Route::get('contracts/{contract}/builder', [ContractController::class, 'builder'])->name('contracts.builder');
+        Route::put('contracts/{contract}/content', [ContractController::class, 'updateContent'])->name('contracts.update-content');
+        Route::get('contracts/{contract}/content-hash', [ContractController::class, 'getContentHash'])->name('contracts.content-hash');
+        Route::get('contracts/{contract}/validate', [ContractController::class, 'validateForPdf'])->name('contracts.validate');
+        Route::put('contracts/{contract}/number', [ContractController::class, 'updateNumber'])->name('contracts.update-number');
+        Route::post('contracts/{contract}/finalize', [ContractController::class, 'finalize'])->name('contracts.finalize');
+        Route::post('contracts/{contract}/finalize-and-download', [ContractController::class, 'finalizeAndDownload'])->name('contracts.finalize-and-download');
+        Route::post('contracts/{contract}/apply-template', [ContractController::class, 'applyTemplate'])->name('contracts.apply-template');
+        Route::post('contracts/{contract}/generate-pdf', [ContractController::class, 'generatePdf'])->name('contracts.generate-pdf');
         Route::get('contracts/{contract}/add-annex', [ContractController::class, 'addAnnexForm'])->name('contracts.add-annex');
         Route::post('contracts/{contract}/add-annex', [ContractController::class, 'addAnnex'])->name('contracts.add-annex.store');
         Route::post('contracts/{contract}/terminate', [ContractController::class, 'terminate'])->name('contracts.terminate');
+        Route::post('contracts/{contract}/toggle-auto-renew', [ContractController::class, 'toggleAutoRenew'])->name('contracts.toggle-auto-renew');
+        Route::delete('contracts/{contract}', [ContractController::class, 'destroy'])->name('contracts.destroy');
+        Route::get('contracts/{contract}/preview', [ContractController::class, 'previewPdf'])->name('contracts.preview');
         Route::get('contracts/{contract}/download', [ContractController::class, 'downloadPdf'])->name('contracts.download');
         Route::get('contracts/{contract}/annexes/{annex}/download', [ContractController::class, 'downloadAnnexPdf'])->name('contracts.annex.download');
         Route::get('api/clients/{client}/contracts', [ContractController::class, 'forClient'])->name('api.clients.contracts');
+
+        // Contract Audit Trail & Versioning (Phase 4)
+        Route::get('contracts/{contract}/activities', [ContractController::class, 'activities'])->name('contracts.activities');
+        Route::get('contracts/{contract}/versions', [ContractController::class, 'versions'])->name('contracts.versions');
+        Route::get('contracts/{contract}/versions/{versionNumber}', [ContractController::class, 'getVersion'])->name('contracts.versions.show');
+        Route::post('contracts/{contract}/versions/{versionNumber}/restore', [ContractController::class, 'restoreVersion'])->name('contracts.versions.restore');
+
+        // Contract Locking (Phase 4)
+        Route::get('contracts/{contract}/lock-status', [ContractController::class, 'lockStatus'])->name('contracts.lock-status');
+        Route::post('contracts/{contract}/lock', [ContractController::class, 'acquireLock'])->name('contracts.lock');
+        Route::post('contracts/{contract}/unlock', [ContractController::class, 'releaseLock'])->name('contracts.unlock');
+        Route::post('contracts/{contract}/refresh-lock', [ContractController::class, 'refreshLock'])->name('contracts.refresh-lock');
     });
 
     // Document Templates (Settings)
     Route::middleware('module:settings')->prefix('settings')->name('settings.')->group(function () {
         Route::resource('document-templates', DocumentTemplateController::class);
+        Route::post('document-templates/bulk-delete', [DocumentTemplateController::class, 'bulkDelete'])->name('document-templates.bulk-delete');
         Route::post('document-templates/{documentTemplate}/duplicate', [DocumentTemplateController::class, 'duplicate'])->name('document-templates.duplicate');
         Route::post('document-templates/{documentTemplate}/set-default', [DocumentTemplateController::class, 'setDefault'])->name('document-templates.set-default');
         Route::post('document-templates/{documentTemplate}/toggle-active', [DocumentTemplateController::class, 'toggleActive'])->name('document-templates.toggle-active');
@@ -300,6 +377,12 @@ Route::middleware('auth')->group(function () {
         Route::get('document-templates/{documentTemplate}/builder', [DocumentTemplateController::class, 'builder'])->name('document-templates.builder');
         Route::put('document-templates/{documentTemplate}/builder', [DocumentTemplateController::class, 'updateBuilder'])->name('document-templates.builder.update');
         Route::get('api/template-variables', [DocumentTemplateController::class, 'variables'])->name('api.template-variables');
+
+        // Contract Templates
+        Route::resource('contract-templates', ContractTemplateController::class);
+        Route::post('contract-templates/{contractTemplate}/duplicate', [ContractTemplateController::class, 'duplicate'])->name('contract-templates.duplicate');
+        Route::post('contract-templates/{contractTemplate}/set-default', [ContractTemplateController::class, 'setDefault'])->name('contract-templates.set-default');
+        Route::post('contract-templates/{contractTemplate}/toggle-active', [ContractTemplateController::class, 'toggleActive'])->name('contract-templates.toggle-active');
     });
 
     // Financial Module
@@ -367,6 +450,8 @@ Route::middleware('auth')->group(function () {
         Route::get('files/download/{file}', [FinancialFileController::class, 'download'])->name('files.download');
         Route::patch('files/{file}/rename', [FinancialFileController::class, 'rename'])->name('files.rename');
         Route::delete('files/delete/{file}', [FinancialFileController::class, 'destroy'])->name('files.destroy');
+        Route::get('files/{file}/import-transactions', [FinancialFileController::class, 'importTransactions'])->name('files.import-transactions');
+        Route::post('files/{file}/import-transactions', [FinancialFileController::class, 'processImportTransactions'])->name('files.process-import-transactions');
     });
 });
 

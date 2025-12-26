@@ -139,6 +139,20 @@
                     </div>
                 </div>
 
+                <!-- Duplicates Warning Display -->
+                <div id="duplicatesDisplay" class="hidden mt-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            {{ __('Facturi duplicate (deja existente)') }}
+                        </h4>
+                        <p class="text-sm text-blue-700 mb-2">{{ __('Aceste facturi există deja în sistem și au fost omise:') }}</p>
+                        <ul id="duplicatesList" class="list-disc list-inside text-sm text-blue-700 space-y-1"></ul>
+                    </div>
+                </div>
+
                 <!-- Error Display -->
                 <div id="errorDisplay" class="hidden mt-6">
                     <div class="bg-red-50 border border-red-200 rounded-lg p-4">
@@ -347,6 +361,19 @@ function showCompletion(progress) {
     document.getElementById('completionMessage').classList.remove('hidden');
     document.getElementById('completionText').textContent = progress.message;
 
+    // Show duplicates as info (not errors)
+    if (progress.duplicates_found && progress.duplicates_found.length > 0) {
+        const duplicatesList = document.getElementById('duplicatesList');
+        duplicatesList.innerHTML = '';
+        progress.duplicates_found.forEach(dup => {
+            const li = document.createElement('li');
+            li.textContent = `${dup.invoice} - ${dup.date} - ${dup.amount} RON`;
+            duplicatesList.appendChild(li);
+        });
+        document.getElementById('duplicatesDisplay').classList.remove('hidden');
+    }
+
+    // Show actual errors (validation errors only)
     if (progress.errors_list && progress.errors_list.length > 0) {
         const errorList = document.getElementById('errorList');
         errorList.innerHTML = '';

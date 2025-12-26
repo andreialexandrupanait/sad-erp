@@ -15,6 +15,8 @@
             <x-credential-form
                 :clients="$clients"
                 :platforms="$platforms"
+                :credentialTypes="$credentialTypes"
+                :sites="$sites"
                 :action="route('credentials.store')"
                 method="POST"
             />

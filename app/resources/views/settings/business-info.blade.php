@@ -127,6 +127,13 @@
                             </div>
 
                             <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Reprezentant legal') }}</label>
+                                <input type="text" name="representative" value="{{ old('representative', $organization->settings['representative'] ?? '') }}"
+                                       class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                       placeholder="{{ __('Nume și prenume reprezentant') }}">
+                            </div>
+
+                            <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Adresa') }} <span class="text-red-500">*</span></label>
                                 <textarea name="address" rows="2" required
                                        class="w-full border border-slate-300 rounded-lg px-3 py-2 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
@@ -222,6 +229,36 @@
                                           placeholder="{{ __('Informații suplimentare care apar pe documente...') }}">{{ old('additional_info', $organization->settings['additional_info'] ?? '') }}</textarea>
                             </div>
                         </div>
+                        </div>
+                    </div>
+
+                    <!-- Setări documente Section -->
+                    <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                        <div class="px-6 py-4 bg-slate-100 border-b border-slate-200 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-semibold text-gray-900">{{ __('Setări documente') }}</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Prefix oferte') }}</label>
+                                    <input type="text" name="offer_prefix" value="{{ old('offer_prefix', $organization->settings['offer_prefix'] ?? 'OFR') }}"
+                                           class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                           placeholder="OFR SAD">
+                                    <p class="text-xs text-slate-500 mt-1">{{ __('Prefixul pentru numerele de oferte (ex: OFR SAD-2025-001)') }}</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Prefix contracte') }}</label>
+                                    <input type="text" name="contract_prefix" value="{{ old('contract_prefix', $organization->settings['contract_prefix'] ?? 'CTR') }}"
+                                           class="w-full h-10 border border-slate-300 rounded-lg px-3 focus:border-slate-500 focus:ring-1 focus:ring-slate-500"
+                                           placeholder="CTR SAD">
+                                    <p class="text-xs text-slate-500 mt-1">{{ __('Prefixul pentru numerele de contracte') }}</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

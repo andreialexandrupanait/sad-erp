@@ -153,6 +153,37 @@
 
                                 <!-- Actions -->
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm space-x-1">
+                                    @if($file->entity)
+                                        @if($file->entity instanceof \App\Models\FinancialRevenue)
+                                            <a href="{{ route('financial.revenues.show', $file->entity) }}"
+                                               class="inline-flex items-center justify-center w-8 h-8 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                               title="Vezi tranzacția">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                                </svg>
+                                            </a>
+                                        @elseif($file->entity instanceof \App\Models\FinancialExpense)
+                                            <a href="{{ route('financial.expenses.show', $file->entity) }}"
+                                               class="inline-flex items-center justify-center w-8 h-8 text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                               title="Vezi tranzacția">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                                </svg>
+                                            </a>
+                                        @endif
+                                    @endif
+
+                                    @if($file->tip === 'extrase' && in_array($file->file_type, ['application/pdf', 'application/x-pdf']))
+                                        {{-- Import transactions from bank statement PDF --}}
+                                        <a href="{{ route('financial.files.import-transactions', $file) }}"
+                                           class="inline-flex items-center justify-center w-8 h-8 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                                           title="Importa tranzactii din extras">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                            </svg>
+                                        </a>
+                                    @endif
+
                                     <a href="{{ route('financial.files.show', $file) }}" target="_blank"
                                        class="inline-flex items-center justify-center w-8 h-8 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                        title="Vizualizare">

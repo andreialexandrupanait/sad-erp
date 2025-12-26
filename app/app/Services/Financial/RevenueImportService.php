@@ -529,7 +529,11 @@ class RevenueImportService
             // Validate row
             [$isValid, $validationErrors] = $this->validateRow($data);
             if (!$isValid) {
-                $this->stats['errors'][] = "Row {$rowNumber}: " . implode(', ', $validationErrors);
+                // Only log as error if there are actual validation messages
+                // Empty errors means it's a summary row that should be silently skipped
+                if (!empty($validationErrors)) {
+                    $this->stats['errors'][] = "Row {$rowNumber}: " . implode(', ', $validationErrors);
+                }
                 $this->stats['skipped']++;
                 continue;
             }
@@ -550,6 +554,11 @@ class RevenueImportService
                     $newClientId = $this->findOrCreateClient($data, $dryRun);
                     if ($existingRevenue->client_id !== $newClientId && $newClientId && !$dryRun) {
                         $existingRevenue->update(['client_id' => $newClientId]);
+                    }
+
+                    // Download PDF for existing revenue if it doesn't have one yet
+                    if ($isSmartbill && $downloadPdfs && $smartbillSettings && !$dryRun) {
+                        $this->downloadPdfIfMissing($existingRevenue, $data, $smartbillSettings);
                     }
 
                     $this->stats['skipped']++;
@@ -599,6 +608,11 @@ class RevenueImportService
         }
 
         if (empty($smartbillSettings['username']) || empty($smartbillSettings['token']) || empty($smartbillSettings['cif'])) {
+            Log::warning('PDF download skipped - missing credentials', [
+                'has_username' => !empty($smartbillSettings['username']),
+                'has_token' => !empty($smartbillSettings['token']),
+                'has_cif' => !empty($smartbillSettings['cif']),
+            ]);
             return;
         }
 
@@ -642,6 +656,27 @@ class RevenueImportService
         } catch (\Exception $e) {
             Log::warning("Failed to download PDF for invoice {$series}-{$number}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Download PDF for an existing revenue if it doesn't already have one.
+     */
+    protected function downloadPdfIfMissing(
+        FinancialRevenue $revenue,
+        array $data,
+        array $smartbillSettings
+    ): void {
+        // Check if this revenue already has a PDF file attached
+        $hasFile = FinancialFile::where('entity_type', FinancialRevenue::class)
+            ->where('entity_id', $revenue->id)
+            ->exists();
+
+        if ($hasFile) {
+            return; // Already has a file, skip
+        }
+
+        // Download the PDF
+        $this->downloadPdf($revenue, $data, $smartbillSettings);
     }
 
     /**

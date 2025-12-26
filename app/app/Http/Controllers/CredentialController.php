@@ -26,45 +26,112 @@ class CredentialController extends Controller
 
     /**
      * Display a listing of the resource.
+     * Single unified view: credentials grouped by site/client with adjacent platforms
      */
     public function index(Request $request)
     {
-        $query = Credential::with('client');
+        $credentialsBySite = $this->getFilteredCredentials($request);
 
-        // Search
-        if ($request->has('search') && $request->search != '') {
-            $query->search($request->search);
+        // Return only the partial for AJAX requests
+        if ($request->ajax() || $request->has('ajax')) {
+            return view('credentials.partials.credentials-list', compact('credentialsBySite'));
         }
 
-        // Filter by platform
-        if ($request->has('platform') && $request->platform != '') {
-            $query->platform($request->platform);
+        // Get clients for filters (only for full page load)
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
+
+        return view('credentials.index', compact('credentialsBySite', 'clients'));
+    }
+
+    /**
+     * Get filtered and grouped credentials
+     */
+    protected function getFilteredCredentials(Request $request)
+    {
+        $query = Credential::with(['client', 'client.status']);
+
+        // Apply search filter
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('site_name', 'like', "%{$search}%")
+                  ->orWhere('platform', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('url', 'like', "%{$search}%")
+                  ->orWhereHas('client', function ($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
         }
 
-        // Filter by client
-        if ($request->has('client_id') && $request->client_id != '') {
-            $query->client($request->client_id);
+        // Apply client filter
+        if ($request->filled('client_id')) {
+            $query->where('client_id', $request->client_id);
         }
 
-        // Sort
-        $sortBy = $request->get('sort', 'created_at');
-        $sortDir = $request->get('dir', 'desc');
+        // Group credentials by site_name or client name
+        return $query
+            ->orderByRaw('COALESCE(NULLIF(site_name, ""), (SELECT name FROM clients WHERE clients.id = access_credentials.client_id)) ASC')
+            ->orderBy('credential_type')
+            ->orderBy('platform')
+            ->get()
+            ->groupBy(function ($credential) {
+                // Use site_name if set, otherwise use client name
+                if ($credential->site_name && $credential->site_name !== '') {
+                    return $credential->site_name;
+                }
+                return $credential->client?->name ?? __('No Client');
+            });
+    }
 
-        // Validate sort column
-        $allowedSortColumns = ['client_id', 'platform', 'username', 'created_at', 'updated_at'];
-        if (!in_array($sortBy, $allowedSortColumns)) {
-            $sortBy = 'created_at';
+    /**
+     * Get credentials for a specific site (AJAX endpoint for slide-over panel)
+     */
+    public function siteCredentials(Request $request, string $siteName)
+    {
+        $siteName = urldecode($siteName);
+
+        $siteInfo = Credential::getSiteInfo($siteName);
+
+        if (!$siteInfo) {
+            return response()->json(['error' => 'Site not found'], 404);
         }
 
-        $query->orderBy($sortBy, $sortDir);
+        $credentialsByType = Credential::getCredentialsForSite($siteName);
 
-        $credentials = $query->paginate(15)->withQueryString();
+        // Transform credentials for JSON response
+        $credentials = [];
+        foreach ($credentialsByType as $type => $typeCredentials) {
+            $credentials[$type] = $typeCredentials->map(function ($credential) {
+                return [
+                    'id' => $credential->id,
+                    'platform' => $credential->platform,
+                    'credential_type' => $credential->credential_type,
+                    'type_label' => $credential->type_label,
+                    'type_badge_color' => $credential->type_badge_color,
+                    'username' => $credential->username,
+                    'url' => $credential->url,
+                    'website' => $credential->website,
+                    'quick_login_url' => $credential->quick_login_url,
+                    'notes' => $credential->notes,
+                    'last_accessed_at' => $credential->last_accessed_at?->format('Y-m-d H:i'),
+                    'access_count' => $credential->access_count,
+                ];
+            })->values();
+        }
 
-        // Get clients and platforms for filters
-        $clients = Client::orderBy('name')->get();
-        $platforms = $this->nomenclatureService->getAccessPlatforms();
-
-        return view('credentials.index', compact('credentials', 'clients', 'platforms'));
+        return response()->json([
+            'site_name' => $siteInfo->site_name,
+            'client' => $siteInfo->client ? [
+                'id' => $siteInfo->client->id,
+                'name' => $siteInfo->client->name,
+                'company' => $siteInfo->client->company,
+                'display_name' => $siteInfo->client->display_name ?? $siteInfo->client->name,
+            ] : null,
+            'website' => $siteInfo->website,
+            'credentials' => $credentials,
+            'types' => Credential::CREDENTIAL_TYPES,
+        ]);
     }
 
     /**
@@ -72,10 +139,12 @@ class CredentialController extends Controller
      */
     public function create()
     {
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $platforms = $this->nomenclatureService->getAccessPlatforms();
+        $credentialTypes = Credential::CREDENTIAL_TYPES;
+        $sites = Credential::getUniqueSites();
 
-        return view('credentials.create', compact('clients', 'platforms'));
+        return view('credentials.create', compact('clients', 'platforms', 'credentialTypes', 'sites'));
     }
 
     /**
@@ -83,7 +152,12 @@ class CredentialController extends Controller
      */
     public function store(StoreCredentialRequest $request)
     {
-        $credential = Credential::create($request->validated());
+        $data = $request->validated();
+        // Default credential_type if not provided
+        if (empty($data['credential_type'])) {
+            $data['credential_type'] = 'admin-panel';
+        }
+        $credential = Credential::create($data);
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
@@ -113,10 +187,12 @@ class CredentialController extends Controller
      */
     public function edit(Credential $credential)
     {
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $platforms = $this->nomenclatureService->getAccessPlatforms();
+        $credentialTypes = Credential::CREDENTIAL_TYPES;
+        $sites = Credential::getUniqueSites();
 
-        return view('credentials.edit', compact('credential', 'clients', 'platforms'));
+        return view('credentials.edit', compact('credential', 'clients', 'platforms', 'credentialTypes', 'sites'));
     }
 
     /**
@@ -158,7 +234,7 @@ class CredentialController extends Controller
     }
 
     /**
-     * Reveal password (returns JSON for AJAX)
+     * Reveal password (returns JSON for AJAX) - requires password confirmation
      */
     public function revealPassword(Credential $credential)
     {
@@ -178,6 +254,19 @@ class CredentialController extends Controller
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
         ]);
+
+        return response()->json([
+            'password' => $credential->password,
+        ]);
+    }
+
+    /**
+     * Get password for display in list view (no password confirmation required)
+     */
+    public function getPassword(Credential $credential)
+    {
+        // Authorize access to this credential
+        Gate::authorize('view', $credential);
 
         return response()->json([
             'password' => $credential->password,
@@ -205,14 +294,16 @@ class CredentialController extends Controller
 
         $callback = function() use ($credentials) {
             $file = fopen("php://output", "w");
-            fputcsv($file, ["Service Name", "URL", "Username", "Client", "Notes"]);
+            fputcsv($file, ["Client", "Site", "Type", "Platform", "URL", "Username", "Notes"]);
 
             foreach ($credentials as $credential) {
                 fputcsv($file, [
-                    $credential->service_name,
-                    $credential->url,
-                    $credential->username,
                     $credential->client?->name ?? "N/A",
+                    $credential->site_name ?? "",
+                    $credential->type_label,
+                    $credential->platform,
+                    $credential->url ?? "",
+                    $credential->username ?? "",
                     $credential->notes ?? "",
                 ]);
             }

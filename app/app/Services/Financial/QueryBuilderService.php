@@ -101,6 +101,7 @@ class QueryBuilderService
 
     /**
      * Get months with transactions, including counts and totals
+     * Note: Total only sums RON amounts to avoid mixing currencies
      *
      * @param Builder $query Base query with year and optional filters
      * @return \Illuminate\Support\Collection
@@ -108,7 +109,11 @@ class QueryBuilderService
     public function getMonthsWithTransactions(Builder $query): \Illuminate\Support\Collection
     {
         return $query
-            ->select('month', DB::raw('COUNT(*) as count'), DB::raw('SUM(amount) as total'))
+            ->select(
+                'month',
+                DB::raw('COUNT(*) as count'),
+                DB::raw("SUM(CASE WHEN currency = 'RON' THEN amount ELSE 0 END) as total")
+            )
             ->groupBy('month')
             ->get()
             ->mapWithKeys(fn($item) => [$item->month => [

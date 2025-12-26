@@ -43,4 +43,10 @@ return [
         'base_url' => env('CLICKUP_BASE_URL', 'https://api.clickup.com/api/v2'),
     ],
 
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY'),
+        'model' => env('ANTHROPIC_MODEL', 'claude-sonnet-4-20250514'),
+        'max_tokens' => env('ANTHROPIC_MAX_TOKENS', 12288),
+    ],
+
 ];
