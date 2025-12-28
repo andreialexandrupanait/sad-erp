@@ -242,8 +242,7 @@
                     <thead class="bg-slate-100">
                         <tr class="border-b border-slate-200">
                             <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
-                                <input type="checkbox" x-model="selectAll" @change="toggleAll()"
-                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                <x-bulk-checkbox x-model="selectAll" @change="toggleAll()" />
                             </th>
                             <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
                             <x-ui.sortable-header column="document_name" label="{{ __('Factura') }}" />
@@ -260,7 +259,7 @@
                                     <input type="checkbox"
                                            :checked="selectedIds.includes({{ $revenue->id }})"
                                            @change="toggleItem({{ $revenue->id }})"
-                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                 </x-ui.table-cell>
                                 <x-ui.table-cell>
                                     <div class="text-sm text-slate-900">{{ $revenue->occurred_at->format('d M Y') }}</div>

@@ -119,7 +119,8 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
             ->name('credentials.reveal-password');
         Route::get('credentials/{credential}/password', [CredentialController::class, 'getPassword'])
-            ->middleware('throttle:60,1')  // 60 requests per minute for list view password loading
+            ->middleware('require.password.confirmation')
+            ->middleware('throttle:30,1')  // 30 requests per minute for password loading
             ->name('credentials.get-password');
     });
 
@@ -316,6 +317,9 @@ Route::middleware('auth')->group(function () {
         // Additional Offer Actions
         Route::post('offers/bulk-action', [OfferController::class, 'bulkAction'])->name('offers.bulk-action');
         Route::post('offers/bulk-delete', [OfferController::class, 'bulkDelete'])->name('offers.bulk-delete');
+        Route::post('offers/bulk-export', [OfferController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')
+            ->name('offers.bulk-export');
         Route::post('offers/{offer}/send', [OfferController::class, 'send'])->name('offers.send');
         Route::post('offers/{offer}/resend', [OfferController::class, 'resend'])->name('offers.resend');
         Route::get('offers/{offer}/pdf', [OfferController::class, 'downloadPdf'])->name('offers.pdf');
@@ -330,7 +334,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('module:contracts')->group(function () {
         Route::get('contracts', [ContractController::class, 'index'])->name('contracts.index');
         Route::post('contracts/bulk-delete', [ContractController::class, 'bulkDelete'])->name('contracts.bulk-delete');
-        Route::post('contracts/bulk-export', [ContractController::class, 'bulkExport'])->name('contracts.bulk-export');
+        Route::post('contracts/bulk-export', [ContractController::class, 'bulkExport'])
+            ->middleware('throttle:10,1')
+            ->name('contracts.bulk-export');
         Route::get('contracts/create', [ContractController::class, 'create'])->name('contracts.create');
         Route::post('contracts', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');

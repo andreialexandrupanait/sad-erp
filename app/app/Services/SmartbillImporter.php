@@ -7,6 +7,8 @@ use App\Models\FinancialRevenue;
 use App\Models\FinancialFile;
 use App\Models\Organization;
 use App\Services\Financial\Import\ClientMatcher;
+use App\Services\Financial\RevenueAggregator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
@@ -35,8 +37,8 @@ class SmartbillImporter
         $this->userId = $userId;
         $this->clientMatcher = $clientMatcher ?? app(ClientMatcher::class);
 
-        // Get Smartbill credentials from organization settings
-        $smartbillSettings = $this->organization->settings['smartbill'] ?? [];
+        // Get Smartbill credentials from organization settings (using encrypted getter)
+        $smartbillSettings = $this->organization->getSmartbillSettings();
         $username = $smartbillSettings['username'] ?? null;
         $token = $smartbillSettings['token'] ?? null;
         $cif = $smartbillSettings['cif'] ?? null;
@@ -82,22 +84,31 @@ class SmartbillImporter
                 $invoices = $response['list'];
                 $this->stats['total'] += count($invoices);
 
-                foreach ($invoices as $invoice) {
-                    try {
-                        $this->processInvoice($invoice, $downloadPdfs, $preview);
-                    } catch (Exception $e) {
-                        $this->stats['errors']++;
-                        Log::error('Error processing invoice', [
-                            'invoice' => $invoice,
-                            'error' => $e->getMessage(),
-                        ]);
+                // Process in smaller chunks to prevent memory exhaustion
+                $chunks = array_chunk($invoices, 25);
+                foreach ($chunks as $chunk) {
+                    foreach ($chunk as $invoice) {
+                        try {
+                            $this->processInvoice($invoice, $downloadPdfs, $preview);
+                        } catch (Exception $e) {
+                            $this->stats['errors']++;
+                            Log::error('Error processing invoice', [
+                                'invoice' => $invoice,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
+                    // Free memory between chunks
+                    gc_collect_cycles();
                 }
 
                 // Check if there are more pages
                 $hasMore = count($invoices) === $perPage;
                 $page++;
             }
+
+            // Clear dashboard caches after successful import
+            $this->clearFinancialCaches();
 
             return [
                 'success' => true,
@@ -114,6 +125,35 @@ class SmartbillImporter
                 'error' => $e->getMessage(),
                 'stats' => $this->stats,
             ];
+        }
+    }
+
+    /**
+     * Clear financial caches after import to ensure fresh data.
+     */
+    protected function clearFinancialCaches(): void
+    {
+        try {
+            // Clear revenue aggregator cache
+            $revenueAggregator = app(RevenueAggregator::class);
+            $revenueAggregator->clearCache();
+
+            // Clear dashboard-related caches
+            $orgId = $this->organization->id;
+            $currentYear = now()->year;
+
+            // Clear specific cache keys that might be affected
+            Cache::forget("financial_dashboard_{$orgId}_{$currentYear}");
+            Cache::forget("dashboard_metrics_{$orgId}");
+
+            Log::info('Cleared financial caches after Smartbill import', [
+                'organization_id' => $orgId,
+            ]);
+        } catch (Exception $e) {
+            // Cache clearing should not fail the import
+            Log::warning('Failed to clear financial caches after import', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

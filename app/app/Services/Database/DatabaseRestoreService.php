@@ -181,6 +181,8 @@ class DatabaseRestoreService
     {
         $imported = [];
         $errors = [];
+        $success = false;
+        $errorMessage = null;
 
         try {
             DB::beginTransaction();
@@ -211,10 +213,8 @@ class DatabaseRestoreService
                 }
             }
 
-            // Re-enable foreign key checks
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
-
             DB::commit();
+            $success = true;
 
             Log::info('Database restore completed', [
                 'imported_tables' => count($imported),
@@ -223,30 +223,40 @@ class DatabaseRestoreService
                 'user_id' => auth()->id(),
             ]);
 
-            return [
-                'success' => true,
-                'imported' => $imported,
-                'errors' => $errors,
-            ];
-
         } catch (\Exception $e) {
-            // Re-enable foreign key checks even on error
-            DB::statement('SET FOREIGN_KEY_CHECKS=1');
             DB::rollBack();
+            $errorMessage = $e->getMessage();
 
             Log::error('Database restore failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'user_id' => auth()->id(),
             ]);
+        } finally {
+            // Always re-enable foreign key checks, regardless of success or failure
+            try {
+                DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            } catch (\Exception $e) {
+                Log::error('Failed to re-enable foreign key checks', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
+        if ($success) {
             return [
-                'success' => false,
-                'error' => $e->getMessage(),
+                'success' => true,
                 'imported' => $imported,
                 'errors' => $errors,
             ];
         }
+
+        return [
+            'success' => false,
+            'error' => $errorMessage,
+            'imported' => $imported,
+            'errors' => $errors,
+        ];
     }
 
     /**

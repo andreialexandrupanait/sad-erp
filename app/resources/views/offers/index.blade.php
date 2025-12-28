@@ -212,10 +212,7 @@
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
                                 <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
-                                    <input type="checkbox"
-                                           x-model="selectAll"
-                                           @change="toggleAll()"
-                                           class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleAll()" />
                                 </th>
                                 <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Offer') }}</th>
                                 <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Client') }}</th>
@@ -232,7 +229,7 @@
                                         <input type="checkbox"
                                                :checked="isSelected(offer.id)"
                                                @change="toggleItem(offer.id)"
-                                               class="rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                     </td>
                                     <td class="px-6 py-4">
                                         <a :href="'/offers/' + offer.id" class="font-medium text-slate-900 hover:text-blue-600">
@@ -427,8 +424,54 @@
             async bulkExport() {
                 if (this.selectedIds.length === 0) return;
 
-                // For now, just show a message - you can implement export endpoint later
-                alert('{{ __('Export functionality coming soon!') }}');
+                this.isLoading = true;
+
+                try {
+                    const response = await fetch('/offers/bulk-export', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        },
+                        body: JSON.stringify({ ids: this.selectedIds })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json().catch(() => ({ message: '{{ __('Export failed') }}' }));
+                        throw new Error(error.message || '{{ __('Export failed') }}');
+                    }
+
+                    // Download the file
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+
+                    // Get filename from Content-Disposition header or use default
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let filename = 'offers_export.csv';
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="?(.+)"?/i);
+                        if (match) filename = match[1];
+                    }
+
+                    a.download = filename;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    this.$dispatch('notify', {
+                        type: 'success',
+                        message: '{{ __('Offers exported successfully!') }}'
+                    });
+                    this.clearSelection();
+                } catch (error) {
+                    console.error('Error exporting offers:', error);
+                    alert(error.message || '{{ __('Failed to export offers. Please try again.') }}');
+                } finally {
+                    this.isLoading = false;
+                }
             },
 
             async bulkDelete() {

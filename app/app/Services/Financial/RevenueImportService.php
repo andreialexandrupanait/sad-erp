@@ -87,14 +87,29 @@ class RevenueImportService
      */
     public function parseFile(string $filePath, string $extension): array
     {
-        if (in_array(strtolower($extension), ['xls', 'xlsx'])) {
-            $spreadsheet = IOFactory::load($filePath);
-            $worksheet = $spreadsheet->getActiveSheet();
-            return $worksheet->toArray();
+        if (!file_exists($filePath)) {
+            throw new \RuntimeException("Import file not found: {$filePath}");
         }
 
-        $csvContent = file_get_contents($filePath);
-        return array_map('str_getcsv', explode("\n", $csvContent));
+        if (!is_readable($filePath)) {
+            throw new \RuntimeException("Import file is not readable: {$filePath}");
+        }
+
+        try {
+            if (in_array(strtolower($extension), ['xls', 'xlsx'])) {
+                $spreadsheet = IOFactory::load($filePath);
+                $worksheet = $spreadsheet->getActiveSheet();
+                return $worksheet->toArray();
+            }
+
+            $csvContent = file_get_contents($filePath);
+            if ($csvContent === false) {
+                throw new \RuntimeException("Failed to read file contents: {$filePath}");
+            }
+            return array_map('str_getcsv', explode("\n", $csvContent));
+        } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+            throw new \RuntimeException("Failed to parse Excel file: {$e->getMessage()}");
+        }
     }
 
     /**
@@ -506,87 +521,99 @@ class RevenueImportService
         // Pre-load clients for fast lookup
         $this->loadClientsIndex();
 
-        foreach ($dataRows as $index => $row) {
-            $rowNumber = $headerRowIndex + $index + 2;
+        // Process in chunks to prevent memory exhaustion on large imports
+        $chunkSize = 50;
+        $totalRows = count($dataRows);
+        $chunks = array_chunk($dataRows, $chunkSize, true);
+        $processedCount = 0;
 
-            // Skip empty rows
-            if (empty(array_filter($row))) {
-                continue;
-            }
+        foreach ($chunks as $chunkIndex => $chunk) {
+            foreach ($chunk as $index => $row) {
+                $rowNumber = $headerRowIndex + $index + 2;
+                $processedCount++;
 
-            // Skip malformed rows
-            if (count($row) !== count($header)) {
-                continue;
-            }
-
-            $data = array_combine($header, $row);
-
-            // Map Smartbill columns
-            if ($isSmartbill) {
-                $data = $this->mapSmartbillColumns($data);
-            }
-
-            // Validate row
-            [$isValid, $validationErrors] = $this->validateRow($data);
-            if (!$isValid) {
-                // Only log as error if there are actual validation messages
-                // Empty errors means it's a summary row that should be silently skipped
-                if (!empty($validationErrors)) {
-                    $this->stats['errors'][] = "Row {$rowNumber}: " . implode(', ', $validationErrors);
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
                 }
-                $this->stats['skipped']++;
-                continue;
-            }
 
-            try {
-                // Check for duplicates
-                $existingRevenue = $this->findDuplicate($data, $isSmartbill);
+                // Skip malformed rows
+                if (count($row) !== count($header)) {
+                    continue;
+                }
 
-                if ($existingRevenue) {
-                    $this->stats['duplicates']++;
-                    $this->stats['duplicates_found'][] = [
-                        'invoice' => ($data['serie'] ?? $data['document_name']) . '-' . ($data['numar'] ?? ''),
-                        'date' => $data['occurred_at'],
-                        'amount' => $data['amount'],
-                    ];
+                $data = array_combine($header, $row);
 
-                    // Update client link if needed
-                    $newClientId = $this->findOrCreateClient($data, $dryRun);
-                    if ($existingRevenue->client_id !== $newClientId && $newClientId && !$dryRun) {
-                        $existingRevenue->update(['client_id' => $newClientId]);
+                // Map Smartbill columns
+                if ($isSmartbill) {
+                    $data = $this->mapSmartbillColumns($data);
+                }
+
+                // Validate row
+                [$isValid, $validationErrors] = $this->validateRow($data);
+                if (!$isValid) {
+                    // Only log as error if there are actual validation messages
+                    // Empty errors means it's a summary row that should be silently skipped
+                    if (!empty($validationErrors)) {
+                        $this->stats['errors'][] = "Row {$rowNumber}: " . implode(', ', $validationErrors);
                     }
-
-                    // Download PDF for existing revenue if it doesn't have one yet
-                    if ($isSmartbill && $downloadPdfs && $smartbillSettings && !$dryRun) {
-                        $this->downloadPdfIfMissing($existingRevenue, $data, $smartbillSettings);
-                    }
-
                     $this->stats['skipped']++;
                     continue;
                 }
 
-                // Create revenue
-                $revenue = $this->processRow($data, $isSmartbill, $dryRun);
-                $this->stats['imported']++;
+                try {
+                    // Check for duplicates
+                    $existingRevenue = $this->findDuplicate($data, $isSmartbill);
 
-                // Download PDF if requested
-                if ($revenue && $isSmartbill && $downloadPdfs && $smartbillSettings) {
-                    $this->downloadPdf($revenue, $data, $smartbillSettings);
-                }
+                    if ($existingRevenue) {
+                        $this->stats['duplicates']++;
+                        $this->stats['duplicates_found'][] = [
+                            'invoice' => ($data['serie'] ?? $data['document_name']) . '-' . ($data['numar'] ?? ''),
+                            'date' => $data['occurred_at'],
+                            'amount' => $data['amount'],
+                        ];
 
-                // Report progress
-                if ($this->progressCallback) {
-                    ($this->progressCallback)($index + 1, count($dataRows), $this->stats);
-                }
-            } catch (\Exception $e) {
-                $this->stats['errors'][] = "Row {$rowNumber}: " . $e->getMessage();
-                $this->stats['skipped']++;
-                
-                // Report progress even on error
-                if ($this->progressCallback) {
-                    ($this->progressCallback)($index + 1, count($dataRows), $this->stats);
+                        // Update client link if needed
+                        $newClientId = $this->findOrCreateClient($data, $dryRun);
+                        if ($existingRevenue->client_id !== $newClientId && $newClientId && !$dryRun) {
+                            $existingRevenue->update(['client_id' => $newClientId]);
+                        }
+
+                        // Download PDF for existing revenue if it doesn't have one yet
+                        if ($isSmartbill && $downloadPdfs && $smartbillSettings && !$dryRun) {
+                            $this->downloadPdfIfMissing($existingRevenue, $data, $smartbillSettings);
+                        }
+
+                        $this->stats['skipped']++;
+                        continue;
+                    }
+
+                    // Create revenue
+                    $revenue = $this->processRow($data, $isSmartbill, $dryRun);
+                    $this->stats['imported']++;
+
+                    // Download PDF if requested
+                    if ($revenue && $isSmartbill && $downloadPdfs && $smartbillSettings) {
+                        $this->downloadPdf($revenue, $data, $smartbillSettings);
+                    }
+
+                    // Report progress
+                    if ($this->progressCallback) {
+                        ($this->progressCallback)($processedCount, $totalRows, $this->stats);
+                    }
+                } catch (\Exception $e) {
+                    $this->stats['errors'][] = "Row {$rowNumber}: " . $e->getMessage();
+                    $this->stats['skipped']++;
+
+                    // Report progress even on error
+                    if ($this->progressCallback) {
+                        ($this->progressCallback)($processedCount, $totalRows, $this->stats);
+                    }
                 }
             }
+
+            // Free memory between chunks to prevent exhaustion on large imports
+            gc_collect_cycles();
         }
 
         return $this->stats;

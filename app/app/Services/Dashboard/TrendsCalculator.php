@@ -120,15 +120,15 @@ class TrendsCalculator
         $topClientsRevenue = $topClients->sum('total_revenue');
         $yearlyRevenue = FinancialRevenue::where('year', now()->year)->where('currency', 'RON')->sum('amount');
 
-        // Expense categories
+        // Expense categories - use SQL ordering
         $categoryBreakdown = FinancialExpense::where('year', now()->year)
             ->whereNotNull('category_option_id')
             ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
             ->groupBy('category_option_id')
+            ->orderByDesc('total')
+            ->limit(8)
             ->with('category')
-            ->get()
-            ->sortByDesc('total')
-            ->take(8);
+            ->get();
 
         return [
             'revenueGrowth' => $previousMonthRevenue > 0
@@ -165,11 +165,17 @@ class TrendsCalculator
         $startDate = now()->subMonths($months - 1)->startOfMonth();
         $model = $type === 'revenue' ? FinancialRevenue::class : FinancialExpense::class;
 
-        $monthlyData = $model::where(function ($query) use ($startDate, $months) {
-            for ($i = 0; $i < $months; $i++) {
-                $date = $startDate->copy()->addMonths($i);
-                $query->orWhere(function ($q) use ($date) {
-                    $q->where('year', $date->year)->where('month', $date->month);
+        // Build array of year-month combinations for efficient whereIn query
+        $yearMonthConditions = [];
+        for ($i = 0; $i < $months; $i++) {
+            $date = $startDate->copy()->addMonths($i);
+            $yearMonthConditions[] = ['year' => $date->year, 'month' => $date->month];
+        }
+
+        $monthlyData = $model::where(function ($query) use ($yearMonthConditions) {
+            foreach ($yearMonthConditions as $condition) {
+                $query->orWhere(function ($q) use ($condition) {
+                    $q->where('year', $condition['year'])->where('month', $condition['month']);
                 });
             }
         })

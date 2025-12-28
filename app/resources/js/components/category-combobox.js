@@ -359,11 +359,20 @@ export default function categoryCombobox(config = {}) {
                     }));
 
                 } else {
-                    alert(data.message || 'Failed to create category');
+                    window.dispatchEvent(new CustomEvent('toast', {
+                        detail: {
+                            message: data.message || 'Failed to create category',
+                            type: 'error'
+                        }
+                    }));
                 }
             } catch (error) {
-                console.error('Error creating category:', error);
-                alert('Failed to create category. Please try again.');
+                window.dispatchEvent(new CustomEvent('toast', {
+                    detail: {
+                        message: 'Failed to create category. Please try again.',
+                        type: 'error'
+                    }
+                }));
             } finally {
                 this.saving = false;
             }

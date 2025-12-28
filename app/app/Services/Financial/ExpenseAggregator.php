@@ -82,10 +82,10 @@ class ExpenseAggregator
                 ->whereNotNull('category_option_id')
                 ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
                 ->groupBy('category_option_id')
+                ->orderByDesc('total')
+                ->limit($limit)
                 ->with('category')
                 ->get()
-                ->sortByDesc('total')
-                ->take($limit)
         );
     }
 

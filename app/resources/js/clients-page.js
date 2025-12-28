@@ -104,7 +104,7 @@ function clientsPage(initialData = {}) {
                     this.ui.perPage = prefs.perPage || 25;
                     this.ui.collapsedGroups = prefs.collapsedGroups || {};
                 } catch (e) {
-                    console.error('Failed to parse UI preferences:', e);
+                    // Failed to parse UI preferences, using defaults
                 }
             }
         },
@@ -181,7 +181,6 @@ function clientsPage(initialData = {}) {
                 this.clearSelection();
 
             } catch (error) {
-                console.error('Failed to load clients:', error);
                 this.showToast('Failed to load clients', 'error');
             } finally {
                 this.loading = false;
@@ -387,7 +386,6 @@ function clientsPage(initialData = {}) {
                     throw new Error(data.message || 'Failed to update status');
                 }
             } catch (error) {
-                console.error('Error updating status:', error);
                 this.showToast('Error updating status', 'error');
             } finally {
                 this.savingStatus[client.id] = false;
@@ -462,7 +460,6 @@ function clientsPage(initialData = {}) {
                     throw new Error(result.message || 'Action failed');
                 }
             } catch (error) {
-                console.error('Bulk action failed:', error);
                 this.showToast('An error occurred. Please try again.', 'error');
             } finally {
                 this.loading = false;
@@ -515,7 +512,6 @@ function clientsPage(initialData = {}) {
                     throw new Error('Export failed');
                 }
             } catch (error) {
-                console.error('Export failed:', error);
                 this.showToast('Export failed. Please try again.', 'error');
             }
         },
@@ -556,7 +552,6 @@ function clientsPage(initialData = {}) {
                     throw new Error(result.message || 'Delete failed');
                 }
             } catch (error) {
-                console.error('Bulk delete failed:', error);
                 this.showToast('An error occurred. Please try again.', 'error');
             } finally {
                 this.loading = false;

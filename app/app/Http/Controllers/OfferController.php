@@ -220,6 +220,19 @@ class OfferController extends Controller
     }
 
     /**
+     * Bulk export offers to CSV.
+     */
+    public function bulkExport(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:offers,id',
+        ]);
+
+        return $this->bulkActionService->export($validated['ids'], null, 'csv');
+    }
+
+    /**
      * Send offer to client.
      */
     public function send(Offer $offer): JsonResponse|RedirectResponse

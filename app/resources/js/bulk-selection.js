@@ -56,7 +56,15 @@ function bulkSelection(options = {}) {
             const items = document.querySelectorAll(this.rowSelector);
             this.selectAll = items.length > 0 && this.selectedIds.length === items.length;
         },
-        
+
+        toggleAll() {
+            if (this.selectAll) {
+                this.selectAllVisible();
+            } else {
+                this.clearSelection();
+            }
+        },
+
         async performBulkAction(action, endpoint, options = {}) {
             if (this.selectedIds.length === 0) return;
 
@@ -99,7 +107,6 @@ function bulkSelection(options = {}) {
                     this.showToast(result.message || "Action failed", "error");
                 }
             } catch (error) {
-                console.error("Bulk action failed:", error);
                 this.showToast("An error occurred. Please try again.", "error");
             } finally {
                 this.isLoading = false;
@@ -149,7 +156,6 @@ function bulkSelection(options = {}) {
                     this.showToast(result.message || "Export failed", "error");
                 }
             } catch (error) {
-                console.error("Export failed:", error);
                 this.showToast("An error occurred during export. Please try again.", "error");
             } finally {
                 this.isLoading = false;

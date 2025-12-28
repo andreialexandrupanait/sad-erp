@@ -66,11 +66,7 @@
                     <thead class="bg-slate-50/50 border-b border-slate-100">
                         <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                             <th class="pl-4 py-2">
-                                <input type="checkbox"
-                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                       @change="selectAll = $event.target.checked; if(selectAll) { selectAllVisible(); } else { clearSelection(); }"
-                                       :checked="selectAll"
-                                />
+                                <x-bulk-checkbox x-model="selectAll" @change="toggleAll()" />
                             </th>
                             <th class="px-6 py-2">{{ __('Platform') }}</th>
                             <th class="px-6 py-2">{{ __('Username') }}</th>
@@ -86,10 +82,9 @@
                                 {{-- Checkbox --}}
                                 <td class="pl-4 py-3 align-middle">
                                     <input type="checkbox"
-                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                                           @change="toggleItem({{ $credential->id }})"
                                            :checked="selectedIds.includes({{ $credential->id }})"
-                                    />
+                                           @change="toggleItem({{ $credential->id }})"
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                 </td>
                                 {{-- Platform --}}
                                 <td class="px-6 py-3 align-middle">

@@ -55,8 +55,10 @@
                                                 <form method="POST" action="{{ route('profile.services.update', $userService) }}" class="flex items-center gap-2">
                                                     @csrf
                                                     @method('PUT')
-                                                    <input type="number" name="hourly_rate" value="{{ $userService->hourly_rate }}" step="0.01" min="0" class="w-24 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <select name="currency" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    <label for="hourly_rate_{{ $service->id }}" class="sr-only">{{ __("Hourly rate for") }} {{ $service->name }}</label>
+                                                    <input type="number" id="hourly_rate_{{ $service->id }}" name="hourly_rate" value="{{ $userService->hourly_rate }}" step="0.01" min="0" class="w-24 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    <label for="currency_{{ $service->id }}" class="sr-only">{{ __("Currency for") }} {{ $service->name }}</label>
+                                                    <select id="currency_{{ $service->id }}" name="currency" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                                         <option value="RON" {{ $userService->currency === 'RON' ? 'selected' : '' }}>RON</option>
                                                         <option value="EUR" {{ $userService->currency === 'EUR' ? 'selected' : '' }}>EUR</option>
                                                         <option value="USD" {{ $userService->currency === 'USD' ? 'selected' : '' }}>USD</option>
@@ -78,8 +80,10 @@
                                                 <form method="POST" action="{{ route('profile.services.store') }}" class="flex items-center gap-2">
                                                     @csrf
                                                     <input type="hidden" name="service_id" value="{{ $service->id }}">
-                                                    <input type="number" name="hourly_rate" placeholder="{{ $service->default_rate ?? '0.00' }}" step="0.01" min="0" required class="w-24 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                                    <select name="currency" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    <label for="new_hourly_rate_{{ $service->id }}" class="sr-only">{{ __("Hourly rate for") }} {{ $service->name }}</label>
+                                                    <input type="number" id="new_hourly_rate_{{ $service->id }}" name="hourly_rate" placeholder="{{ $service->default_rate ?? '0.00' }}" step="0.01" min="0" required class="w-24 text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                    <label for="new_currency_{{ $service->id }}" class="sr-only">{{ __("Currency for") }} {{ $service->name }}</label>
+                                                    <select id="new_currency_{{ $service->id }}" name="currency" class="text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                                         <option value="RON">RON</option>
                                                         <option value="EUR">EUR</option>
                                                         <option value="USD">USD</option>

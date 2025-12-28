@@ -66,7 +66,7 @@ class DomainController extends Controller
         $domains = $query->paginate(15)->withQueryString();
 
         // Get data for filters
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $registrars = setting_options('domain_registrars'); // Use dynamic settings
 
         // Statistics
@@ -88,7 +88,7 @@ class DomainController extends Controller
      */
     public function create()
     {
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $registrars = $this->nomenclatureService->getDomainRegistrars();
         $statuses = $this->nomenclatureService->getDomainStatuses();
 
@@ -130,7 +130,7 @@ class DomainController extends Controller
      */
     public function edit(Domain $domain)
     {
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $registrars = $this->nomenclatureService->getDomainRegistrars();
         $statuses = $this->nomenclatureService->getDomainStatuses();
 

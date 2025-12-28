@@ -151,7 +151,7 @@ class ContractController extends Controller
     {
         $this->authorize('create', Contract::class);
 
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $templates = ContractTemplate::where('is_active', true)->orderBy('name')->get();
 
         return view('contracts.create', compact('clients', 'templates'));

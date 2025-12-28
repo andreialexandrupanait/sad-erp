@@ -217,10 +217,7 @@
                         <thead class="bg-slate-100 border-b border-slate-200">
                             <tr>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600 w-12">
-                                    <input type="checkbox"
-                                           x-model="selectAll"
-                                           @change="toggleSelectAll()"
-                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleSelectAll()" />
                                 </th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Contract') }}</th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Client') }}</th>
@@ -237,7 +234,7 @@
                                         <input type="checkbox"
                                                :checked="selectedIds.includes(contract.id)"
                                                @change="toggleItem(contract.id)"
-                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                     </td>
                                     <td class="px-6 py-4">
                                         <a :href="'/contracts/' + contract.id" class="font-medium text-slate-900 hover:text-blue-600">

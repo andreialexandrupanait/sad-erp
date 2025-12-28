@@ -115,10 +115,10 @@ class RevenueAggregator
                 ->whereNotNull('client_id')
                 ->select('client_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
                 ->groupBy('client_id')
+                ->orderByDesc('total')
+                ->limit($limit)
                 ->with('client')
                 ->get()
-                ->sortByDesc('total')
-                ->take($limit)
         );
     }
 

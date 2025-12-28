@@ -19,12 +19,18 @@ class SmartbillController extends Controller
     public function index()
     {
         $organization = auth()->user()->organization;
-        $smartbillSettings = $organization->settings['smartbill'] ?? [];
+        $smartbillSettings = $organization->getSmartbillSettings();
 
         // Check if credentials are configured
         $hasCredentials = !empty($smartbillSettings['username']) &&
                           !empty($smartbillSettings['token']) &&
                           !empty($smartbillSettings['cif']);
+
+        // Mask the token for display (show only last 4 chars)
+        if (!empty($smartbillSettings['token'])) {
+            $smartbillSettings['token_masked'] = '••••••••' . substr($smartbillSettings['token'], -4);
+            unset($smartbillSettings['token']); // Don't expose full token to view
+        }
 
         return view('settings.smartbill.index', compact('hasCredentials', 'smartbillSettings'));
     }
@@ -41,9 +47,7 @@ class SmartbillController extends Controller
         ]);
 
         $organization = auth()->user()->organization;
-        $settings = $organization->settings;
-        $settings['smartbill'] = $validated;
-        $organization->settings = $settings;
+        $organization->setSmartbillSettings($validated);
         $organization->save();
 
         return redirect()->route('settings.smartbill.index')
@@ -57,7 +61,7 @@ class SmartbillController extends Controller
     {
         try {
             $organization = auth()->user()->organization;
-            $smartbillSettings = $organization->settings['smartbill'] ?? [];
+            $smartbillSettings = $organization->getSmartbillSettings();
 
             if (empty($smartbillSettings['username']) || empty($smartbillSettings['token']) || empty($smartbillSettings['cif'])) {
                 return response()->json([
@@ -89,7 +93,7 @@ class SmartbillController extends Controller
     public function showImportForm()
     {
         $organization = auth()->user()->organization;
-        $smartbillSettings = $organization->settings['smartbill'] ?? [];
+        $smartbillSettings = $organization->getSmartbillSettings();
 
         $hasCredentials = !empty($smartbillSettings['username']) &&
                           !empty($smartbillSettings['token']) &&
@@ -243,7 +247,7 @@ class SmartbillController extends Controller
 
         // Get smartbill settings for PDF downloads
         $organization = Organization::find($organizationId);
-        $smartbillSettings = $organization->settings['smartbill'] ?? null;
+        $smartbillSettings = $organization->getSmartbillSettings() ?: null;
 
         // Use the RevenueImportService (resolved from container with dependencies)
         $importService = app(RevenueImportService::class);

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Str;
 
 class Organization extends Model
@@ -27,6 +28,47 @@ class Organization extends Model
     protected $casts = [
         'settings' => 'array',
     ];
+
+    /**
+     * Keys within settings that should be encrypted.
+     */
+    protected static array $sensitiveSettingsKeys = [
+        'smartbill.token',
+        'smartbill.username',
+    ];
+
+    /**
+     * Get Smartbill settings with decrypted sensitive values.
+     */
+    public function getSmartbillSettings(): array
+    {
+        $settings = $this->settings['smartbill'] ?? [];
+
+        if (!empty($settings['token'])) {
+            try {
+                $settings['token'] = Crypt::decryptString($settings['token']);
+            } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
+                // Legacy unencrypted value, use as-is
+            }
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Set Smartbill settings with encrypted sensitive values.
+     */
+    public function setSmartbillSettings(array $smartbillSettings): void
+    {
+        // Encrypt the token before storing
+        if (!empty($smartbillSettings['token'])) {
+            $smartbillSettings['token'] = Crypt::encryptString($smartbillSettings['token']);
+        }
+
+        $settings = $this->settings ?? [];
+        $settings['smartbill'] = $smartbillSettings;
+        $this->settings = $settings;
+    }
 
     /**
      * Boot function to auto-generate slug

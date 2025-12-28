@@ -95,7 +95,7 @@ class RevenueController extends Controller
         // Count total records
         $recordCount = $this->queryBuilder->countFiltered(FinancialRevenue::class, $filters);
 
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $currencies = $this->nomenclatureService->getCurrencies();
 
         // Available years
@@ -130,7 +130,7 @@ class RevenueController extends Controller
 
     public function create()
     {
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.revenues.create', compact('clients', 'currencies'));
     }
@@ -168,7 +168,7 @@ class RevenueController extends Controller
     public function edit(FinancialRevenue $revenue)
     {
         $revenue->load('files');
-        $clients = Client::orderBy('name')->get();
+        $clients = Client::select('id', 'name')->orderBy('name')->get();
         $currencies = $this->nomenclatureService->getCurrencies();
         return view('financial.revenues.edit', compact('revenue', 'clients', 'currencies'));
     }
