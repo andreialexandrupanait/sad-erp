@@ -11,3 +11,9 @@
 .DS_Store
 .env.backup
 docker-compose.override.yml/backups/
+/backups/
+/backups/**
+*.sql
+*.sql.gz
+logs/
+storage/logs/
