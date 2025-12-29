@@ -1,11 +1,15 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __("Add User") }}</x-slot>
+    <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="p-6">
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+    <div class="flex min-h-screen bg-slate-50">
+        @include('settings.partials.sidebar')
+
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+            <div class="bg-white rounded-[10px] border border-slate-200">
                 <div class="p-6">
                     <div class="mb-6">
-                        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Add New User") }}
                         </h2>
                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -59,14 +63,14 @@
                                     <label class="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'invite' }">
                                         <input type="radio" name="password_option" value="invite" x-model="passwordOption" class="mt-1 text-blue-600 focus:ring-blue-500" checked>
                                         <div>
-                                            <span class="block text-sm font-medium text-gray-900 dark:text-gray-100">{{ __("Send invitation email") }}</span>
+                                            <span class="block text-sm font-medium text-slate-900">{{ __("Send invitation email") }}</span>
                                             <span class="block text-sm text-gray-500 dark:text-gray-400">{{ __("User will receive an email to set their own password.") }}</span>
                                         </div>
                                     </label>
                                     <label class="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'manual' }">
                                         <input type="radio" name="password_option" value="manual" x-model="passwordOption" class="mt-1 text-blue-600 focus:ring-blue-500">
                                         <div>
-                                            <span class="block text-sm font-medium text-gray-900 dark:text-gray-100">{{ __("Set password manually") }}</span>
+                                            <span class="block text-sm font-medium text-slate-900">{{ __("Set password manually") }}</span>
                                             <span class="block text-sm text-gray-500 dark:text-gray-400">{{ __("Create a password and share it with the user yourself.") }}</span>
                                         </div>
                                     </label>
@@ -102,5 +106,7 @@
                     </form>
                 </div>
             </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>

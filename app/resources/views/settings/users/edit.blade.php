@@ -1,11 +1,15 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __("Edit User") }}</x-slot>
+    <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="p-6">
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+    <div class="flex min-h-screen bg-slate-50">
+        @include('settings.partials.sidebar')
+
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
+            <div class="bg-white rounded-[10px] border border-slate-200">
                 <div class="p-6">
                     <div class="mb-6">
-                        <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Edit User") }}
                         </h2>
                         <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -118,5 +122,7 @@
                     </form>
                 </div>
             </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>

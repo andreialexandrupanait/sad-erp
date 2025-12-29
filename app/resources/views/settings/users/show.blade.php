@@ -1,9 +1,13 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __("User Permissions") }} - {{ $user->name }}</x-slot>
+    <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="p-6">
+    <div class="flex min-h-screen bg-slate-50">
+        @include('settings.partials.sidebar')
+
+        <div class="flex-1 overflow-y-auto">
+            <div class="p-6">
             <!-- User Info Card -->
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg mb-6">
+            <div class="bg-white rounded-[10px] border border-slate-200 mb-6">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex items-center gap-4">
@@ -15,8 +19,8 @@
                                 </div>
                             </div>
                             <div>
-                                <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ $user->name }}</h2>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">{{ $user->email }}</p>
+                                <h2 class="text-xl font-bold text-slate-900">{{ $user->name }}</h2>
+                                <p class="text-sm text-slate-500 dark:text-gray-400">{{ $user->email }}</p>
                                 <div class="flex items-center gap-2 mt-2">
                                     @php
                                         $roleBadges = [
@@ -50,7 +54,7 @@
                                 </svg>
                                 {{ __("Edit User") }}
                             </a>
-                            <a href="{{ route('settings.users.index') }}" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                            <a href="{{ route('settings.users.index') }}" class="text-slate-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                 {{ __("Back to List") }}
                             </a>
                         </div>
@@ -65,11 +69,11 @@
             @endif
 
             <!-- Permission Matrix -->
-            <div class="bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="bg-white rounded-[10px] border border-slate-200">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
-                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
+                            <h3 class="text-lg font-medium text-slate-900">
                                 {{ __("Module Permissions") }}
                             </h3>
                             <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
@@ -79,7 +83,7 @@
                         @if(!$user->isSuperAdmin() && !$user->isOrgAdmin())
                             <form method="POST" action="{{ route('settings.users.permissions.reset', $user) }}" onsubmit="return confirm('{{ __("This will remove all custom permissions. Continue?") }}')">
                                 @csrf
-                                <button type="submit" class="text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                                <button type="submit" class="text-sm text-slate-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
                                     {{ __("Reset to Role Defaults") }}
                                 </button>
                             </form>
@@ -109,13 +113,13 @@
                                 <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                                     <thead class="bg-slate-100 dark:bg-gray-900">
                                         <tr>
-                                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Module") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("View") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Create") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Update") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Delete") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Export") }}</th>
-                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Source") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-left text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Module") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("View") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Create") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Update") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Delete") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Export") }}</th>
+                                            <th scope="col" class="px-6 py-4 text-center text-xs font-medium text-slate-500 dark:text-gray-400 uppercase tracking-wider">{{ __("Source") }}</th>
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -127,9 +131,9 @@
                                                             <span class="text-gray-400">{!! $data['module']->icon !!}</span>
                                                         @endif
                                                         <div>
-                                                            <div class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $data['module']->name }}</div>
+                                                            <div class="text-sm font-medium text-slate-900">{{ $data['module']->name }}</div>
                                                             @if($data['module']->description)
-                                                                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $data['module']->description }}</div>
+                                                                <div class="text-xs text-slate-500 dark:text-gray-400">{{ $data['module']->description }}</div>
                                                             @endif
                                                         </div>
                                                     </div>
@@ -157,7 +161,7 @@
                             </div>
 
                             <div class="mt-6 flex items-center justify-between">
-                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                <div class="text-sm text-slate-500 dark:text-gray-400">
                                     <span class="inline-flex items-center gap-1">
                                         <span class="w-3 h-3 bg-blue-100 dark:bg-blue-900/30 rounded"></span>
                                         {{ __("Highlighted rows have custom permissions") }}
@@ -178,32 +182,34 @@
             </div>
 
             <!-- User Activity Info -->
-            <div class="mt-6 bg-white dark:bg-gray-800 shadow sm:rounded-lg">
+            <div class="mt-6 bg-white rounded-[10px] border border-slate-200">
                 <div class="p-6">
-                    <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">{{ __("Account Information") }}</h3>
+                    <h3 class="text-lg font-medium text-slate-900 mb-4">{{ __("Account Information") }}</h3>
                     <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __("Created") }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $user->created_at->format('M j, Y') }}</dd>
+                            <dt class="text-sm font-medium text-slate-500 dark:text-gray-400">{{ __("Created") }}</dt>
+                            <dd class="mt-1 text-sm text-slate-900">{{ $user->created_at->format('M j, Y') }}</dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __("Last Login") }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                            <dt class="text-sm font-medium text-slate-500 dark:text-gray-400">{{ __("Last Login") }}</dt>
+                            <dd class="mt-1 text-sm text-slate-900">
                                 {{ $user->last_login_at ? $user->last_login_at->diffForHumans() : __("Never") }}
                             </dd>
                         </div>
                         <div>
-                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ __("2FA Enabled") }}</dt>
-                            <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                            <dt class="text-sm font-medium text-slate-500 dark:text-gray-400">{{ __("2FA Enabled") }}</dt>
+                            <dd class="mt-1 text-sm text-slate-900">
                                 @if($user->hasTwoFactorEnabled())
                                     <span class="text-green-600 dark:text-green-400">{{ __("Yes") }}</span>
                                 @else
-                                    <span class="text-gray-500">{{ __("No") }}</span>
+                                    <span class="text-slate-500">{{ __("No") }}</span>
                                 @endif
                             </dd>
                         </div>
                     </dl>
                 </div>
             </div>
+            </div>
+        </div>
     </div>
 </x-app-layout>

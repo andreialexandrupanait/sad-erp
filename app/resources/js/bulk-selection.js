@@ -2,6 +2,7 @@ function bulkSelection(options = {}) {
     return {
         selectedIds: [],
         selectAll: false,
+        groupSelections: {},
         isLoading: false,
         idAttribute: options.idAttribute || "data-id",
         rowSelector: options.rowSelector || "[data-selectable]",
@@ -63,6 +64,24 @@ function bulkSelection(options = {}) {
             } else {
                 this.clearSelection();
             }
+        },
+
+        toggleGroup(groupName) {
+            const groupRows = Array.from(document.querySelectorAll(`[data-group="${groupName}"]`));
+            const groupIds = groupRows.map(row => parseInt(row.getAttribute(this.idAttribute)));
+
+            if (this.groupSelections[groupName]) {
+                // Select all in group
+                groupIds.forEach(id => {
+                    if (!this.selectedIds.includes(id)) {
+                        this.selectedIds.push(id);
+                    }
+                });
+            } else {
+                // Deselect all in group
+                this.selectedIds = this.selectedIds.filter(id => !groupIds.includes(id));
+            }
+            this.updateSelectAllState();
         },
 
         async performBulkAction(action, endpoint, options = {}) {

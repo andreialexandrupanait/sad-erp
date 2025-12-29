@@ -44,6 +44,7 @@
             return {
                 selectedIds: [],
                 selectAll: false,
+                groupSelections: {},
                 isLoading: false,
                 idAttribute: options.idAttribute || 'data-id',
                 rowSelector: options.rowSelector || '[data-selectable]',
@@ -92,6 +93,27 @@
                     } else {
                         this.selectedIds = [];
                     }
+                },
+
+                toggleGroup(groupName) {
+                    const groupRows = Array.from(document.querySelectorAll(`[data-group="${groupName}"]`));
+                    const groupIds = groupRows.map(row => {
+                        const id = row.dataset[this.idAttribute.replace('data-', '').replace(/-([a-z])/g, (g) => g[1].toUpperCase())];
+                        return parseInt(id);
+                    });
+
+                    if (this.groupSelections[groupName]) {
+                        // Select all in group
+                        groupIds.forEach(id => {
+                            if (!this.selectedIds.includes(id)) {
+                                this.selectedIds.push(id);
+                            }
+                        });
+                    } else {
+                        // Deselect all in group
+                        this.selectedIds = this.selectedIds.filter(id => !groupIds.includes(id));
+                    }
+                    this.updateSelectAllState();
                 },
 
                 updateSelectAllState() {

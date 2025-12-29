@@ -6,13 +6,19 @@
                 $borderColor = $firstCredential->client?->status?->color_class ?? '#64748b';
             @endphp
 
-            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+            <div class="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden border-l-4"
+                 style="border-left-color: {{ $borderColor }};">
                 {{-- Site Group Header --}}
-                <div class="px-6 py-3 bg-slate-100 border-l-4"
-                     style="border-left-color: {{ $borderColor }};">
+                <div class="px-6 py-3 bg-slate-100">
                     <div class="flex items-center justify-between">
-                        {{-- LEFT: Site name + count --}}
+                        {{-- LEFT: Checkbox + Site name --}}
                         <div class="flex items-center gap-3">
+                            {{-- Group select checkbox --}}
+                            <input type="checkbox"
+                                   x-model="groupSelections['{{ $siteName }}']"
+                                   @change="toggleGroup('{{ $siteName }}')"
+                                   class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer">
+
                             {{-- Site name with external link --}}
                             @if($firstCredential->url)
                                 <a href="{{ $firstCredential->url }}" target="_blank"
@@ -25,9 +31,6 @@
                             @else
                                 <span class="text-base font-semibold text-slate-800">{{ $siteName }}</span>
                             @endif
-
-                            {{-- Credential count --}}
-                            <span class="text-xs text-slate-500 bg-slate-200 px-2 py-0.5 rounded-full">{{ count($siteCredentials) }}</span>
                         </div>
 
                         {{-- RIGHT: Client badge + Add button --}}
@@ -41,13 +44,13 @@
                                 </a>
                             @endif
 
-                            {{-- Add button --}}
+                            {{-- Add credential button --}}
                             <a href="{{ route('credentials.create', ['site_name' => $siteName, 'client_id' => $firstCredential->client_id]) }}"
                                class="text-sm text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1.5 font-medium">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
-                                {{ __('Add') }}
+                                {{ __('Adaugă') }}
                             </a>
                         </div>
                     </div>
@@ -56,31 +59,19 @@
                 {{-- Credentials Table --}}
                 <table class="w-full text-sm table-fixed">
                     <colgroup>
-                        <col class="w-[40px]">
+                        <col class="w-12">
                         <col class="w-[16%]">
                         <col class="w-[20%]">
                         <col class="w-[18%]">
-                        <col class="w-[24%]">
-                        <col class="w-[12%]">
+                        <col class="w-[22%]">
+                        <col class="w-[14%]">
                     </colgroup>
-                    <thead class="bg-slate-50/50 border-b border-slate-100">
-                        <tr class="text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                            <th class="pl-4 py-2">
-                                <x-bulk-checkbox x-model="selectAll" @change="toggleAll()" />
-                            </th>
-                            <th class="px-6 py-2">{{ __('Platform') }}</th>
-                            <th class="px-6 py-2">{{ __('Username') }}</th>
-                            <th class="px-6 py-2">{{ __('Password') }}</th>
-                            <th class="px-6 py-2">{{ __('URL') }}</th>
-                            <th class="px-6 py-2 text-right">{{ __('Actions') }}</th>
-                        </tr>
-                    </thead>
                     <tbody class="divide-y divide-slate-100">
                         @foreach($siteCredentials as $credential)
-                            <tr class="hover:bg-blue-50/40 transition-colors" data-selectable data-credential-id="{{ $credential->id }}"
+                            <tr class="hover:bg-blue-50/40 transition-colors" data-selectable data-credential-id="{{ $credential->id }}" data-group="{{ $siteName }}"
                                 :class="{ 'bg-blue-50': selectedIds.includes({{ $credential->id }}) }">
                                 {{-- Checkbox --}}
-                                <td class="pl-4 py-3 align-middle">
+                                <td class="px-6 py-4 align-middle">
                                     <input type="checkbox"
                                            :checked="selectedIds.includes({{ $credential->id }})"
                                            @change="toggleItem({{ $credential->id }})"
@@ -152,6 +143,18 @@
                                 {{-- Actions --}}
                                 <td class="px-6 py-3 align-middle text-right">
                                     <div class="flex items-center justify-end gap-3">
+                                        {{-- Quick Access button --}}
+                                        @if($credential->url)
+                                            <button type="button"
+                                                    onclick="quickLogin('{{ addslashes($credential->username) }}', '{{ addslashes($credential->url) }}')"
+                                                    class="inline-flex items-center text-green-600 hover:text-green-800 transition-colors"
+                                                    title="{{ __('Quick Login') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                                </svg>
+                                            </button>
+                                        @endif
+
                                         {{-- Edit button --}}
                                         <a href="{{ route('credentials.edit', $credential) }}"
                                            class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors"
@@ -210,3 +213,30 @@
         </div>
     </x-ui.card>
 @endif
+
+@push('scripts')
+<script>
+function quickLogin(username, url) {
+    if (username) {
+        navigator.clipboard.writeText(username).then(() => {
+            // Create a temporary toast notification
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            toast.textContent = 'Username copied! Opening login page...';
+            document.body.appendChild(toast);
+
+            // Remove toast after 2 seconds
+            setTimeout(() => {
+                toast.remove();
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy username:', err);
+        });
+    }
+
+    setTimeout(() => {
+        window.open(url, '_blank');
+    }, 300);
+}
+</script>
+@endpush

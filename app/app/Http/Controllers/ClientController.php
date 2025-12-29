@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesBulkActions;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Response;
 use App\Http\Requests\Client\StoreClientRequest;
 use App\Http\Requests\Client\UpdateClientRequest;
@@ -284,6 +285,9 @@ class ClientController extends Controller
     {
         $client->update($request->validated());
 
+        // Clear credentials cache for this client when status changes
+        Cache::forget("credentials_client_{$client->id}");
+
         if ($request->expectsJson()) {
             return response()->json([
                 'success' => true,
@@ -309,6 +313,9 @@ class ClientController extends Controller
         // Update the status
         $client->status_id = $validated['status_id'] ?? null;
         $client->save();
+
+        // Clear credentials cache for this client when status changes
+        Cache::forget("credentials_client_{$client->id}");
 
         return response()->json([
             'success' => true,

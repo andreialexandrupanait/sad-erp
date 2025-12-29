@@ -2,7 +2,7 @@
     <x-slot name="pageTitle">{{ __('Istoric Financiar') }}</x-slot>
 
     <x-slot name="headerActions">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 no-print">
             <x-ui.button variant="outline" onclick="window.location.href='{{ route('financial.history.export') }}'">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -575,9 +575,61 @@
     @push('styles')
     <style>
         @media print {
-            .no-print { display: none !important; }
-            body { background: white !important; }
-            .bg-gradient-to-br { background: #f0fdf4 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            /* Hide UI elements */
+            header, nav, .no-print,
+            button, .sidebar,
+            .pagination, .filters,
+            [onclick*="print"],
+            [onclick*="export"] {
+                display: none !important;
+            }
+
+            /* Show only content */
+            body {
+                background: white !important;
+                margin: 0;
+                padding: 20px;
+            }
+
+            /* Optimize for print */
+            .container {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Preserve chart quality */
+            canvas {
+                max-width: 100% !important;
+                page-break-inside: avoid;
+            }
+
+            /* Tables */
+            table {
+                page-break-inside: avoid;
+                width: 100%;
+            }
+
+            /* KPI Cards */
+            .grid {
+                display: block !important;
+            }
+
+            /* Page breaks */
+            h2, h3 {
+                page-break-after: avoid;
+            }
+
+            /* Print colors */
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            /* Keep gradient backgrounds readable */
+            .bg-gradient-to-br {
+                background: #f0fdf4 !important;
+            }
         }
     </style>
     @endpush

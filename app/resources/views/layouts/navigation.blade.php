@@ -26,6 +26,12 @@
                     <x-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
                         {{ __('Financial') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('offers.index')" :active="request()->routeIs('offers.*')">
+                        {{ __('Offers') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('contracts.index')" :active="request()->routeIs('contracts.*')">
+                        {{ __('Contracts') }}
+                    </x-nav-link>
                     <x-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')">
                         {{ __('Subscriptions') }}
                     </x-nav-link>
@@ -101,6 +107,12 @@
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('financial.dashboard')" :active="request()->routeIs('financial.*')">
                 {{ __('Financial') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('offers.index')" :active="request()->routeIs('offers.*')">
+                {{ __('Offers') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('contracts.index')" :active="request()->routeIs('contracts.*')">
+                {{ __('Contracts') }}
             </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('subscriptions.index')" :active="request()->routeIs('subscriptions.*')">
                 {{ __('Subscriptions') }}
