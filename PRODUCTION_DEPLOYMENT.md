@@ -121,36 +121,24 @@ docker exec erp_app php artisan test
 ### 3. Create Pre-Deployment Backup
 
 ```bash
+# Create backup directory if needed
+mkdir -p backups/database
+
 # Backup current database
-./backup_database.sh pre_deployment_$(date +%Y%m%d_%H%M%S)
+docker exec erp_db mysqldump -u root -p laravel_erp | gzip > backups/database/pre_deployment_$(date +%Y%m%d_%H%M%S).sql.gz
 
 # Verify backup created
 ls -lh backups/database/ | tail -5
 ```
 
-### 4. Run Security Audit
-
-```bash
-# Run security audit in development
-./security-audit.sh
-
-# Expected warnings in development (OK):
-# - APP_ENV not production (will set in production)
-# - APP_DEBUG enabled (will disable in production)
-# - SESSION_SECURE_COOKIE not set (will enable in production)
-#
-# All other checks should PASS
-```
-
-### 5. Verify Critical Files
+### 4. Verify Critical Files
 
 ```bash
 # Check all critical files exist
-test -f .env.production.example && echo "✓ .env.production.example"
+test -f app/.env && echo "✓ app/.env"
 test -f docker/php/php.production.ini && echo "✓ php.production.ini"
 test -f docker/mysql/my.cnf && echo "✓ my.cnf"
-test -f backup_database.sh && echo "✓ backup_database.sh"
-test -f security-audit.sh && echo "✓ security-audit.sh"
+test -f docker-compose.yml && echo "✓ docker-compose.yml"
 ```
 
 ---
@@ -223,13 +211,9 @@ sudo chown -R $USER:$USER .
 
 ### Step 2: Environment Configuration (10 minutes)
 
-#### 2.1 Copy Production Environment
+#### 2.1 Configure Environment
 ```bash
-cp .env.production.example .env
-```
-
-#### 2.2 Edit Configuration
-```bash
+cd /var/www/erp/app
 nano .env
 ```
 
@@ -506,25 +490,25 @@ docker exec erp_app php -i | grep "opcache.enable"
 
 #### 7.1 Test Backup
 ```bash
-./backup_database.sh production_test_backup
+# Create test backup
+docker exec erp_db mysqldump -u root -p laravel_erp | gzip > backups/database/production_test_backup.sql.gz
+
+# Verify backup
+ls -lh backups/database/production_test_backup.sql.gz
 ```
 
-#### 7.2 Set Up Automated Backups
+#### 7.2 Set Up Automated Backups (Optional)
 ```bash
-./cron-backup-schedule.sh
-```
+# Add to crontab for daily backups at 2:00 AM
+crontab -e
 
-#### 7.3 Verify Cron Job
-```bash
-crontab -l | grep backup
+# Add this line:
+0 2 * * * docker exec erp_db mysqldump -u root -pYOUR_ROOT_PASSWORD laravel_erp | gzip > /var/www/erp/backups/database/backup_$(date +\%Y\%m\%d).sql.gz
 ```
-
-**Expected**: `0 2 * * * cd /var/www/erp && ./backup_database.sh >> backups/backup.log 2>&1`
 
 **Verification**:
 - [ ] Test backup created successfully
-- [ ] Automated backup scheduled (daily 2:00 AM)
-- [ ] Cron job visible in crontab
+- [ ] Automated backup scheduled (optional, if needed)
 
 ---
 
@@ -598,21 +582,30 @@ docker compose logs --tail=100 erp_app | grep -i error
 
 ---
 
-### Step 10: Security Audit (5 minutes)
+### Step 10: Manual Security Verification (5 minutes)
 
 ```bash
-./security-audit.sh
+# Verify production settings
+docker exec erp_app php -r "echo 'APP_ENV: ' . env('APP_ENV') . PHP_EOL;"
+docker exec erp_app php -r "echo 'APP_DEBUG: ' . env('APP_DEBUG') . PHP_EOL;"
+docker exec erp_app php -r "echo 'APP_KEY set: ' . (env('APP_KEY') ? 'Yes' : 'No') . PHP_EOL;"
+
+# Verify containers are running
+docker compose ps
+
+# Check for errors in logs
+docker compose logs --tail=50 erp_app | grep -i error
 ```
 
 **Expected Results**:
 - ✅ APP_ENV=production
 - ✅ APP_DEBUG=false
-- ✅ Strong database passwords
-- ✅ SESSION_SECURE_COOKIE=true
-- ✅ All security checks PASS
+- ✅ APP_KEY is set
+- ✅ All containers running
+- ✅ No critical errors in logs
 
 **Verification**:
-- [ ] Security audit passes
+- [ ] Production configuration verified
 - [ ] No critical issues found
 
 ---
@@ -1286,15 +1279,9 @@ After deployment, monitor these metrics:
 
 ## 📚 Additional Resources
 
-### Scripts
-
-- **backup_database.sh**: Database backup script (tested)
-- **cron-backup-schedule.sh**: Automated backup scheduling
-- **security-audit.sh**: Security audit scanner (30+ checks)
-
 ### Configuration Files
 
-- **.env.production.example**: Production environment template
+- **app/.env**: Laravel environment configuration (configure manually for production)
 - **docker/php/php.production.ini**: PHP production config
 - **docker/mysql/my.cnf**: MySQL production config
 
