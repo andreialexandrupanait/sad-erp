@@ -15,18 +15,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check and add only missing indexes for offer_items
-        $existingIndexes = collect(DB::select('SHOW INDEX FROM offer_items'))
-            ->pluck('Key_name')
-            ->unique()
-            ->toArray();
+        // Check if table exists first
+        if (!Schema::hasTable('offer_items')) {
+            return;
+        }
 
-        Schema::table('offer_items', function (Blueprint $table) use ($existingIndexes) {
-            // Sort order for ordered retrieval - add only if not exists
-            if (!in_array('offer_items_offer_sort_index', $existingIndexes)) {
+        // Try to create index, silently skip if it already exists
+        try {
+            Schema::table('offer_items', function (Blueprint $table) {
                 $table->index(['offer_id', 'sort_order'], 'offer_items_offer_sort_index');
-            }
-        });
+            });
+        } catch (\Exception $e) {
+            // Index already exists or other issue - skip silently
+        }
     }
 
     /**

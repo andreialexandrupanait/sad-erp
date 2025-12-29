@@ -185,7 +185,13 @@
       "Bash(/home/andrei/.nvm/versions/node/v22.16.0/bin/npm run build)",
       "Bash(source ~/.nvm/nvm.sh)",
       "Bash(nvm use node)",
-      "Bash(docker volume:*)"
+      "Bash(docker volume:*)",
+      "Bash(cp:*)",
+      "Bash(time curl:*)",
+      "Bash(while read migration)",
+      "Bash(do docker exec erp_db mysql -u root -pyour_secure_root_password_here laravel_erp -e \"INSERT IGNORE INTO migrations \\(migration, batch\\) VALUES \\(''$migration'', 999\\);\")",
+      "Bash(cd:*)",
+      "Bash(./security-audit.sh:*)"
     ],
     "deny": [],
     "ask": []

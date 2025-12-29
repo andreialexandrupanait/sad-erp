@@ -123,4 +123,20 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Content Security Policy Enforcement
+    |--------------------------------------------------------------------------
+    |
+    | Determines whether CSP violations should be enforced (true) or just
+    | reported (false). During migration to nonce-based CSP, keep this false
+    | to use Content-Security-Policy-Report-Only header instead.
+    |
+    | Set to false: CSP violations logged but not enforced (safe migration)
+    | Set to true: CSP violations enforced (may break inline scripts)
+    |
+    */
+
+    'csp_enforce' => env('CSP_ENFORCE', false),
+
 ];

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Contract\ContractVariableRegistry;
+use App\Services\HtmlSanitizerService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -71,6 +72,37 @@ class Contract extends Model
             // Generate contract number if not provided
             if (empty($contract->contract_number)) {
                 $contract->contract_number = static::generateContractNumber($contract->organization_id);
+            }
+        });
+
+        // Sanitize HTML content before saving to prevent XSS attacks
+        static::saving(function ($contract) {
+            $sanitizer = app(HtmlSanitizerService::class);
+
+            // Sanitize content field that contains HTML
+            if ($contract->isDirty('content')) {
+                $contract->content = $sanitizer->sanitize($contract->content);
+            }
+
+            if ($contract->isDirty('title')) {
+                $contract->title = $sanitizer->sanitize($contract->title);
+            }
+
+            // Sanitize blocks content if it contains HTML
+            if ($contract->isDirty('blocks') && is_array($contract->blocks)) {
+                $blocks = $contract->blocks;
+                foreach ($blocks as &$block) {
+                    if (isset($block['data']['content'])) {
+                        $block['data']['content'] = $sanitizer->sanitize($block['data']['content']);
+                    }
+                    if (isset($block['data']['title'])) {
+                        $block['data']['title'] = $sanitizer->sanitize($block['data']['title']);
+                    }
+                    if (isset($block['data']['text'])) {
+                        $block['data']['text'] = $sanitizer->sanitize($block['data']['text']);
+                    }
+                }
+                $contract->blocks = $blocks;
             }
         });
 
@@ -341,11 +373,13 @@ class Contract extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('contract_number', 'like', "%{$search}%")
-              ->orWhere('title', 'like', "%{$search}%")
+            // FULLTEXT search on indexed columns (title, content)
+            $q->whereRaw('MATCH(title, content) AGAINST(? IN BOOLEAN MODE)', [$search])
+              // LIKE search for contract_number (exact match important)
+              ->orWhere('contract_number', 'like', "%{$search}%")
+              // Search in related client using FULLTEXT if available
               ->orWhereHas('client', function ($q) use ($search) {
-                  $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('company_name', 'like', "%{$search}%");
+                  $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search]);
               });
         });
     }

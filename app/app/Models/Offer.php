@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Offer\OfferBlockRegistry;
+use App\Services\HtmlSanitizerService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -119,6 +120,45 @@ class Offer extends Model
             // Generate public token for sharing
             if (empty($offer->public_token)) {
                 $offer->public_token = Str::random(64);
+            }
+        });
+
+        // Sanitize HTML content before saving to prevent XSS attacks
+        static::saving(function ($offer) {
+            $sanitizer = app(HtmlSanitizerService::class);
+
+            // Sanitize text fields that may contain HTML
+            if ($offer->isDirty('introduction')) {
+                $offer->introduction = $sanitizer->sanitize($offer->introduction);
+            }
+
+            if ($offer->isDirty('terms')) {
+                $offer->terms = $sanitizer->sanitize($offer->terms);
+            }
+
+            if ($offer->isDirty('notes')) {
+                $offer->notes = $sanitizer->sanitize($offer->notes);
+            }
+
+            if ($offer->isDirty('rejection_reason')) {
+                $offer->rejection_reason = $sanitizer->sanitize($offer->rejection_reason);
+            }
+
+            // Sanitize blocks content if it contains HTML
+            if ($offer->isDirty('blocks') && is_array($offer->blocks)) {
+                $blocks = $offer->blocks;
+                foreach ($blocks as &$block) {
+                    if (isset($block['data']['content'])) {
+                        $block['data']['content'] = $sanitizer->sanitize($block['data']['content']);
+                    }
+                    if (isset($block['data']['title'])) {
+                        $block['data']['title'] = $sanitizer->sanitize($block['data']['title']);
+                    }
+                    if (isset($block['data']['description'])) {
+                        $block['data']['description'] = $sanitizer->sanitize($block['data']['description']);
+                    }
+                }
+                $offer->blocks = $blocks;
             }
         });
 
@@ -272,11 +312,13 @@ class Offer extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('offer_number', 'like', "%{$search}%")
-              ->orWhere('title', 'like', "%{$search}%")
+            // FULLTEXT search on indexed columns (title, introduction, notes)
+            $q->whereRaw('MATCH(title, introduction, notes) AGAINST(? IN BOOLEAN MODE)', [$search])
+              // LIKE search for offer_number (exact match important)
+              ->orWhere('offer_number', 'like', "%{$search}%")
+              // Search in related client using FULLTEXT if available
               ->orWhereHas('client', function ($q) use ($search) {
-                  $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('company_name', 'like', "%{$search}%");
+                  $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search]);
               });
         });
     }

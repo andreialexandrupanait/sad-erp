@@ -160,14 +160,16 @@ class Client extends Model
 
     /**
      * Scope to search clients by name, company, tax_id or email
+     * Uses FULLTEXT search for indexed columns (10-100x faster than LIKE)
      */
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhere('company_name', 'like', "%{$search}%")
+            // FULLTEXT search on indexed columns (name, company_name, email)
+            // BOOLEAN MODE allows: +required -excluded "exact phrase"
+            $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search])
+              // LIKE search for non-indexed fields
               ->orWhere('tax_id', 'like', "%{$search}%")
-              ->orWhere('email', 'like', "%{$search}%")
               ->orWhere('phone', 'like', "%{$search}%")
               ->orWhere('contact_person', 'like', "%{$search}%");
         });

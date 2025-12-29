@@ -54,10 +54,10 @@ class CredentialController extends Controller
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('site_name', 'like', "%{$search}%")
-                  ->orWhere('platform', 'like', "%{$search}%")
-                  ->orWhere('username', 'like', "%{$search}%")
-                  ->orWhere('url', 'like', "%{$search}%")
+                $q->where('access_credentials.site_name', 'like', "%{$search}%")
+                  ->orWhere('access_credentials.platform', 'like', "%{$search}%")
+                  ->orWhere('access_credentials.username', 'like', "%{$search}%")
+                  ->orWhere('access_credentials.url', 'like', "%{$search}%")
                   ->orWhereHas('client', function ($q) use ($search) {
                       $q->where('name', 'like', "%{$search}%");
                   });
@@ -66,14 +66,20 @@ class CredentialController extends Controller
 
         // Apply client filter
         if ($request->filled('client_id')) {
-            $query->where('client_id', $request->client_id);
+            $query->where('access_credentials.client_id', $request->client_id);
         }
+
+        // Use proper join instead of subquery for secure sorting
+        // Join with clients table to get client name for sorting
+        $query->leftJoin('clients', 'access_credentials.client_id', '=', 'clients.id')
+            ->select('access_credentials.*')
+            ->selectRaw('COALESCE(NULLIF(access_credentials.site_name, ""), clients.name) as display_name');
 
         // Group credentials by site_name or client name
         return $query
-            ->orderByRaw('COALESCE(NULLIF(site_name, ""), (SELECT name FROM clients WHERE clients.id = access_credentials.client_id)) ASC')
-            ->orderBy('credential_type')
-            ->orderBy('platform')
+            ->orderBy('display_name', 'ASC')
+            ->orderBy('access_credentials.credential_type')
+            ->orderBy('access_credentials.platform')
             ->get()
             ->groupBy(function ($credential) {
                 // Use site_name if set, otherwise use client name
