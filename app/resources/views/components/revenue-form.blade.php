@@ -82,12 +82,13 @@
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="client_id">{{ __('Client') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.searchable-select
+                        <x-ui.client-select
                             name="client_id"
-                            :options="$clients"
+                            :clients="$clients"
                             :selected="old('client_id', $revenue->client_id ?? '')"
                             :placeholder="__('Selectează client (opțional)')"
                             :emptyLabel="__('Fără client')"
+                            :clientStatuses="$clientStatuses ?? []"
                         />
                     </div>
                 </div>

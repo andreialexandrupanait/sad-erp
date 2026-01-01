@@ -54,20 +54,21 @@
 
                         {{-- Client Selection --}}
                         <div>
-                            <label for="client_id" class="block text-sm font-medium text-slate-700 mb-1">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">
                                 {{ __('Client') }}
                             </label>
-                            <select id="client_id"
+                            <div @client-selected.window="clientId = $event.detail.id">
+                                <x-ui.client-select
                                     name="client_id"
-                                    x-model="clientId"
-                                    class="w-full border-slate-200 rounded-md focus:ring-slate-950 focus:border-slate-950 text-sm">
-                                <option value="">{{ __('Select client or enter manually below') }}</option>
-                                @foreach($clients as $client)
-                                    <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>
-                                        {{ $client->display_name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                                    :clients="$clients"
+                                    :selected="old('client_id')"
+                                    :placeholder="__('Select client or enter manually below')"
+                                    :searchPlaceholder="__('Search clients...')"
+                                    :allowEmpty="true"
+                                    :emptyLabel="__('-- Enter manually --')"
+                                    :clientStatuses="$clientStatuses ?? []"
+                                />
+                            </div>
                         </div>
 
                         {{-- Manual Client Info (shown when no client selected) --}}

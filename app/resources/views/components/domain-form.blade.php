@@ -33,12 +33,13 @@
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="client_id">{{ __('Client (Optional)') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.searchable-select
+                        <x-ui.client-select
                             name="client_id"
-                            :options="$clients"
+                            :clients="$clients"
                             :selected="old('client_id', $domain->client_id ?? '')"
                             :placeholder="__('No Client')"
                             :emptyLabel="__('No Client')"
+                            :clientStatuses="$clientStatuses ?? []"
                         />
                     </div>
                     @error('client_id')

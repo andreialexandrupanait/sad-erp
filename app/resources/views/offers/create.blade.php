@@ -17,13 +17,14 @@
                             <div class="field-wrapper">
                                 <x-ui.label for="client_id" :required="true">{{ __('Client') }}</x-ui.label>
                                 <div class="mt-2">
-                                    <x-ui.searchable-select
+                                    <x-ui.client-select
                                         name="client_id"
-                                        :options="$clients"
+                                        :clients="$clients"
                                         :selected="$selectedClient?->id"
                                         :placeholder="__('Select Client')"
                                         :searchPlaceholder="__('Search clients...')"
                                         :allowEmpty="false"
+                                        :clientStatuses="$clientStatuses ?? []"
                                     />
                                 </div>
                                 @error('client_id')
