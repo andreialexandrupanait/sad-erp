@@ -42,9 +42,15 @@ class ClientController extends Controller
         // Parse initial filters from URL for server-side rendering fallback
         $initialFilters = $this->parseUrlFilters($request);
 
+        // Get initial clients data for immediate render (no loading state)
+        $initialData = $this->getInitialClientsData($request, $statuses);
+
         return view('clients.index', [
             'statuses' => $statuses,
             'initialFilters' => $initialFilters,
+            'initialClients' => $initialData['clients'],
+            'initialPagination' => $initialData['pagination'],
+            'initialStatusCounts' => $initialData['status_counts'],
         ]);
     }
 
@@ -195,6 +201,82 @@ class ClientController extends Controller
             'q' => $request->get('q', ''),
             'sort' => $request->get('sort', 'name:asc'),
             'page' => (int) $request->get('page', 1),
+        ];
+    }
+
+    /**
+     * Get initial clients data for server-side rendering (no loading flash).
+     */
+    private function getInitialClientsData(Request $request, $statuses): array
+    {
+        $query = Client::with(['status'])
+            ->withCount(['revenues as invoices_count']);
+
+        // Multi-status filter (comma-separated slugs)
+        if ($request->filled('status')) {
+            $statusSlugs = array_filter(explode(',', $request->status));
+            if (!empty($statusSlugs)) {
+                $statusIds = $statuses->filter(function ($status) use ($statusSlugs) {
+                    return in_array($status->slug, $statusSlugs);
+                })->pluck('id')->toArray();
+
+                if (!empty($statusIds)) {
+                    $query->whereIn('status_id', $statusIds);
+                }
+            }
+        }
+
+        // Search functionality
+        if ($request->filled('q')) {
+            $query->search($request->q);
+        }
+
+        // Sort
+        $sort = $request->get('sort', 'name:asc');
+        [$column, $direction] = $this->parseSort($sort);
+        $query->orderBy($column, $direction);
+
+        // Pagination
+        $perPage = 25;
+        $clients = $query->paginate($perPage);
+
+        // Get status counts
+        $statusCounts = $this->getStatusCounts($request);
+
+        return [
+            'clients' => $clients->map(function ($client) {
+                return [
+                    'id' => $client->id,
+                    'name' => $client->name,
+                    'slug' => $client->slug ?? null,
+                    'email' => $client->email,
+                    'phone' => $client->phone,
+                    'contact_person' => $client->contact_person,
+                    'company_name' => $client->company_name,
+                    'tax_id' => $client->tax_id,
+                    'total_incomes' => $client->total_incomes,
+                    'invoices_count' => $client->invoices_count,
+                    'status_id' => $client->status_id,
+                    'status' => $client->status ? [
+                        'id' => $client->status->id,
+                        'name' => $client->status->name,
+                        'slug' => $client->status->slug,
+                        'color_background' => $client->status->color_background,
+                        'color_text' => $client->status->color_text,
+                    ] : null,
+                    'created_at' => $client->created_at?->toISOString(),
+                    'updated_at' => $client->updated_at?->toISOString(),
+                ];
+            })->toArray(),
+            'pagination' => [
+                'total' => $clients->total(),
+                'per_page' => $clients->perPage(),
+                'current_page' => $clients->currentPage(),
+                'last_page' => $clients->lastPage(),
+                'from' => $clients->firstItem(),
+                'to' => $clients->lastItem(),
+            ],
+            'status_counts' => $statusCounts,
         ];
     }
 

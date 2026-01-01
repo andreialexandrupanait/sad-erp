@@ -1085,12 +1085,12 @@
                     page: initialData.filters?.page || 1
                 },
                 ui: { viewMode: 'table', grouped: false, perPage: 25, collapsedGroups: {} },
-                clients: [],
+                clients: initialData.initialClients || [],
                 statuses: initialData.statuses || [],
-                statusCounts: { total: 0, by_status: {} },
-                pagination: { total: 0, per_page: 25, current_page: 1, last_page: 1, from: 0, to: 0 },
-                loading: true,
-                initialLoad: true,
+                statusCounts: initialData.initialStatusCounts || { total: 0, by_status: {} },
+                pagination: initialData.initialPagination || { total: 0, per_page: 25, current_page: 1, last_page: 1, from: 0, to: 0 },
+                loading: false,
+                initialLoad: false,
                 selectedIds: [],
                 selectAll: false,
                 savingStatus: {},
@@ -1115,7 +1115,10 @@
                 init() {
                     this.loadUiPreferences();
                     this.parseUrlFilters();
-                    this.loadClients();
+                    // Skip initial load if we already have server-rendered data
+                    if (this.clients.length === 0) {
+                        this.loadClients();
+                    }
                     window.addEventListener('popstate', () => { this.parseUrlFilters(); this.loadClients(); });
                 },
 

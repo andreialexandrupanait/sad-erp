@@ -105,22 +105,36 @@ Route::middleware('auth')->group(function () {
 
     // Credentials Module
     Route::middleware('module:credentials')->group(function () {
-        Route::resource('credentials', CredentialController::class);
+        // Export and email routes MUST be defined BEFORE the resource to avoid being caught by credentials/{credential}
+        Route::get('credentials/export-site/{siteName}', [CredentialController::class, 'exportSite'])
+            ->middleware('throttle:60,1')
+            ->name('credentials.site.export')
+            ->where('siteName', '.*');
+        Route::post('credentials/email-site/{siteName}', [CredentialController::class, 'emailSite'])
+            ->middleware('throttle:5,1')
+            ->name('credentials.site.email')
+            ->where('siteName', '.*');
         Route::get('credentials/site/{siteName}', [CredentialController::class, 'siteCredentials'])
             ->name('credentials.site')
-            ->where('siteName', '.*');  // Allow slashes in site name
+            ->where('siteName', '.*');
         Route::post('credentials/bulk-update', [CredentialController::class, 'bulkUpdate'])
-            ->middleware('throttle:10,1')  // 10 bulk updates per minute
+            ->middleware('throttle:10,1')
             ->name('credentials.bulk-update');
         Route::post('credentials/bulk-export', [CredentialController::class, 'bulkExport'])
-            ->middleware('throttle:10,1')  // 10 bulk exports per minute
+            ->middleware('throttle:10,1')
             ->name('credentials.bulk-export');
-        Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])->middleware('require.password.confirmation')
-            ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
+
+        // Resource routes - these have catch-all patterns so must come after explicit routes
+        Route::resource('credentials', CredentialController::class);
+
+        // Credential-specific routes (use model binding, so they're safe after resource)
+        Route::post('credentials/{credential}/reveal-password', [CredentialController::class, 'revealPassword'])
+            ->middleware('require.password.confirmation')
+            ->middleware('throttle:3,1')
             ->name('credentials.reveal-password');
         Route::get('credentials/{credential}/password', [CredentialController::class, 'getPassword'])
             ->middleware('require.password.confirmation')
-            ->middleware('throttle:30,1')  // 30 requests per minute for password loading
+            ->middleware('throttle:30,1')
             ->name('credentials.get-password');
     });
 

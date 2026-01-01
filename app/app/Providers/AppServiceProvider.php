@@ -42,6 +42,7 @@ use App\Policies\ServicePolicy;
 use App\Policies\InternalAccountPolicy;
 use App\Policies\SubscriptionPolicy;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -59,6 +60,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Force HTTPS in production (behind reverse proxy)
+        if (config('app.env') === 'production' || str_starts_with(config('app.url'), 'https')) {
+            URL::forceScheme('https');
+        }
         // Register FinancialRevenue observer for client total_incomes sync and cache invalidation
         FinancialRevenue::observe(FinancialRevenueObserver::class);
 

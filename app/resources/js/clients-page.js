@@ -40,8 +40,8 @@ function clientsPage(initialData = {}) {
         },
 
         // === Loading & Selection State ===
-        loading: true,
-        initialLoad: true,
+        loading: false,
+        initialLoad: false,
         selectedIds: [],
         selectAll: false,
         savingStatus: {},

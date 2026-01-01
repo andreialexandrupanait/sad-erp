@@ -5,9 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Concerns\HandlesBulkActions;
 use App\Http\Requests\Credential\StoreCredentialRequest;
 use App\Http\Requests\Credential\UpdateCredentialRequest;
+use App\Mail\CredentialsMail;
+use App\Models\ApplicationSetting;
 use App\Services\NomenclatureService;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use App\Models\Credential;
 use App\Models\Client;
 use Illuminate\Http\Request;
@@ -318,5 +322,179 @@ class CredentialController extends Controller
         };
 
         return Response::stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export credentials for a specific site as CSV.
+     */
+    public function exportSite(string $siteName)
+    {
+        $siteName = urldecode($siteName);
+
+        $credentials = Credential::with('client')
+            ->where(function ($query) use ($siteName) {
+                $query->where('site_name', $siteName)
+                    ->orWhereHas('client', function ($q) use ($siteName) {
+                        $q->where('name', $siteName);
+                    });
+            })
+            ->orderBy('credential_type')
+            ->orderBy('platform')
+            ->get();
+
+        if ($credentials->isEmpty()) {
+            abort(404, __('No credentials found for this site.'));
+        }
+
+        // Sanitize filename
+        $safeSiteName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $siteName);
+        $filename = "credentials_{$safeSiteName}_" . date("Y-m-d_His") . ".csv";
+
+        $headers = [
+            "Content-Type" => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($credentials) {
+            $file = fopen("php://output", "w");
+            // UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($file, ["Platform", "Username", "Password", "URL", "Notes"]);
+
+            foreach ($credentials as $credential) {
+                fputcsv($file, [
+                    $credential->platform,
+                    $credential->username ?? "",
+                    $credential->password ?? "",
+                    $credential->url ?? "",
+                    $credential->notes ?? "",
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        // Log the export action
+        Log::info('Site credentials exported', [
+            'site_name' => $siteName,
+            'credentials_count' => $credentials->count(),
+            'user_id' => auth()->id(),
+            'ip_address' => request()->ip(),
+        ]);
+
+        return Response::stream($callback, 200, $headers);
+    }
+
+    /**
+     * Send credentials for a specific site via email.
+     */
+    public function emailSite(Request $request, string $siteName)
+    {
+        $siteName = urldecode($siteName);
+
+        $validated = $request->validate([
+            'email' => 'required|email',
+            'subject' => 'nullable|string|max:255',
+            'message' => 'nullable|string|max:2000',
+        ]);
+
+        $credentials = Credential::with('client')
+            ->where(function ($query) use ($siteName) {
+                $query->where('site_name', $siteName)
+                    ->orWhereHas('client', function ($q) use ($siteName) {
+                        $q->where('name', $siteName);
+                    });
+            })
+            ->orderBy('credential_type')
+            ->orderBy('platform')
+            ->get();
+
+        if ($credentials->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => __('No credentials found for this site.'),
+            ], 404);
+        }
+
+        try {
+            // Configure SMTP from database settings if enabled
+            $this->configureSmtpFromDatabase();
+
+            $subject = $validated['subject'] ?? __('Access Credentials for :site', ['site' => $siteName]);
+
+            Mail::to($validated['email'])->send(new CredentialsMail(
+                siteName: $siteName,
+                credentials: $credentials,
+                customMessage: $validated['message'] ?? null,
+                subject: $subject
+            ));
+
+            // Log the email action
+            Log::info('Site credentials sent via email', [
+                'site_name' => $siteName,
+                'recipient' => $validated['email'],
+                'credentials_count' => $credentials->count(),
+                'user_id' => auth()->id(),
+                'ip_address' => request()->ip(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => __('Credentials sent successfully to :email', ['email' => $validated['email']]),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to send credentials email', [
+                'site_name' => $siteName,
+                'recipient' => $validated['email'],
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => __('Failed to send email. Please try again.'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Configure SMTP from database settings if enabled.
+     */
+    protected function configureSmtpFromDatabase(): void
+    {
+        $smtpEnabled = ApplicationSetting::get('smtp_enabled', false);
+
+        if ($smtpEnabled) {
+            $smtpHost = ApplicationSetting::get('smtp_host');
+            $smtpPort = ApplicationSetting::get('smtp_port', 587);
+            $smtpUsername = ApplicationSetting::get('smtp_username');
+            $smtpPassword = ApplicationSetting::get('smtp_password');
+            $smtpEncryption = ApplicationSetting::get('smtp_encryption', 'tls');
+            $fromEmail = ApplicationSetting::get('smtp_from_email');
+            $fromName = ApplicationSetting::get('smtp_from_name', config('app.name'));
+
+            // Decrypt password if encrypted
+            if ($smtpPassword) {
+                try {
+                    $smtpPassword = decrypt($smtpPassword);
+                } catch (\Exception $e) {
+                    // Password might not be encrypted
+                }
+            }
+
+            // Configure SMTP on the fly
+            config([
+                'mail.default' => 'smtp',
+                'mail.mailers.smtp.host' => $smtpHost,
+                'mail.mailers.smtp.port' => (int) $smtpPort,
+                'mail.mailers.smtp.username' => $smtpUsername,
+                'mail.mailers.smtp.password' => $smtpPassword,
+                'mail.mailers.smtp.encryption' => $smtpEncryption === 'none' ? null : $smtpEncryption,
+                'mail.from.address' => $fromEmail ?: $smtpUsername,
+                'mail.from.name' => $fromName,
+            ]);
+
+            Log::info('SMTP configured from database settings for credentials email', ['host' => $smtpHost]);
+        }
     }
 }

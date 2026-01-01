@@ -112,7 +112,239 @@
     <!-- Toast Notifications -->
     <x-toast />
 
+    <!-- Email Credentials Modal -->
+    <div x-data="emailCredentialsModal()"
+         x-show="isOpen"
+         x-cloak
+         @open-email-modal.window="open($event.detail.siteName, $event.detail.clientEmail, $event.detail.clientName)"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         aria-labelledby="modal-title"
+         role="dialog"
+         aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Backdrop -->
+            <div x-show="isOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                 @click="close()"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <!-- Modal Panel -->
+            <div x-show="isOpen"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+
+                <div class="absolute top-0 right-0 pt-4 pr-4">
+                    <button type="button" @click="close()" class="rounded-md text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                        <span class="sr-only">{{ __('Close') }}</span>
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="sm:flex sm:items-start mb-6">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 sm:mx-0">
+                        <svg class="h-5 w-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
+                        <h3 class="text-lg font-semibold text-slate-900" id="modal-title">
+                            {{ __('Send Credentials via Email') }}
+                        </h3>
+                        <p class="mt-1 text-sm text-slate-500" x-text="'{{ __('Send credentials for') }} ' + siteName"></p>
+                    </div>
+                </div>
+
+                <form @submit.prevent="sendEmail()" class="space-y-4">
+                    <!-- Email Address -->
+                    <div class="space-y-2">
+                        <x-ui.label>{{ __('Email address') }}</x-ui.label>
+
+                        <!-- When client has email - show both options -->
+                        <template x-if="clientEmail">
+                            <div class="space-y-2">
+                                <label class="flex items-center p-3 border rounded-md cursor-pointer transition-colors"
+                                       :class="emailType === 'client' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:border-slate-300'">
+                                    <input type="radio" name="email_type" value="client"
+                                           x-model="emailType"
+                                           class="h-4 w-4 text-slate-900 border-slate-300 focus:ring-slate-500">
+                                    <div class="ml-3">
+                                        <span class="block text-sm font-medium text-slate-900" x-text="clientEmail"></span>
+                                        <span class="block text-xs text-slate-500" x-text="clientName ? clientName + ' - {{ __('Client') }}' : '{{ __('Client email') }}'"></span>
+                                    </div>
+                                </label>
+
+                                <label class="flex items-center p-3 border rounded-md cursor-pointer transition-colors"
+                                       :class="emailType === 'custom' ? 'border-slate-900 bg-slate-50' : 'border-slate-200 hover:border-slate-300'">
+                                    <input type="radio" name="email_type" value="custom"
+                                           x-model="emailType"
+                                           class="h-4 w-4 text-slate-900 border-slate-300 focus:ring-slate-500">
+                                    <span class="ml-3 text-sm text-slate-700">{{ __('Other email address') }}</span>
+                                </label>
+
+                                <input x-show="emailType === 'custom'"
+                                       x-transition
+                                       type="email"
+                                       x-model="customEmail"
+                                       class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                                       placeholder="{{ __('Enter email address') }}"
+                                       :required="emailType === 'custom'">
+                            </div>
+                        </template>
+
+                        <!-- When no client email - show just input field -->
+                        <template x-if="!clientEmail">
+                            <input type="email"
+                                   x-model="customEmail"
+                                   class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                                   placeholder="{{ __('Enter email address') }}"
+                                   required>
+                        </template>
+                    </div>
+
+                    <!-- Subject -->
+                    <div class="space-y-2">
+                        <x-ui.label for="email_subject">{{ __('Subject') }}</x-ui.label>
+                        <input type="text"
+                               id="email_subject"
+                               x-model="subject"
+                               class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
+                    </div>
+
+                    <!-- Message -->
+                    <div class="space-y-2">
+                        <x-ui.label for="email_message">
+                            {{ __('Message') }}
+                            <span class="font-normal text-slate-400">({{ __('optional') }})</span>
+                        </x-ui.label>
+                        <textarea id="email_message"
+                                  x-model="message"
+                                  rows="3"
+                                  class="flex min-h-[80px] w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 resize-y"
+                                  placeholder="{{ __('Add a personal message...') }}"></textarea>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div x-show="error" x-transition class="rounded-md bg-red-50 border border-red-200 p-3">
+                        <div class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-red-500 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                            </svg>
+                            <p class="text-sm text-red-700" x-text="error"></p>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                        <button type="button"
+                                @click="close()"
+                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
+                            {{ __('Cancel') }}
+                        </button>
+                        <button type="submit"
+                                :disabled="sending"
+                                class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium h-10 px-4 py-2 bg-slate-900 text-slate-50 hover:bg-slate-900/90 shadow transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50">
+                            <svg x-show="sending" class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span x-text="sending ? '{{ __('Sending...') }}' : '{{ __('Send Email') }}'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <script>
+    // Email Modal
+    function emailCredentialsModal() {
+        return {
+            isOpen: false,
+            siteName: '',
+            clientEmail: '',
+            clientName: '',
+            emailType: 'client',
+            customEmail: '',
+            subject: '',
+            message: '',
+            sending: false,
+            error: '',
+
+            open(siteName, clientEmail, clientName) {
+                this.siteName = siteName;
+                this.clientEmail = clientEmail || '';
+                this.clientName = clientName || '';
+                this.emailType = clientEmail ? 'client' : 'custom';
+                this.customEmail = '';
+                this.subject = '{{ __('Access Credentials for') }} ' + siteName;
+                this.message = '';
+                this.error = '';
+                this.sending = false;
+                this.isOpen = true;
+            },
+
+            close() {
+                this.isOpen = false;
+            },
+
+            async sendEmail() {
+                const email = this.emailType === 'client' ? this.clientEmail : this.customEmail;
+
+                if (!email) {
+                    this.error = '{{ __('Please enter an email address.') }}';
+                    return;
+                }
+
+                this.sending = true;
+                this.error = '';
+
+                try {
+                    const response = await fetch(`/credentials/email-site/${encodeURIComponent(this.siteName)}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            email: email,
+                            subject: this.subject,
+                            message: this.message
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        this.close();
+                        showToast(data.message, 'success');
+                    } else {
+                        this.error = data.message || '{{ __('Failed to send email.') }}';
+                    }
+                } catch (err) {
+                    console.error('Error sending email:', err);
+                    this.error = '{{ __('An error occurred. Please try again.') }}';
+                } finally {
+                    this.sending = false;
+                }
+            }
+        };
+    }
+
     async function fetchPassword(credentialId) {
         try {
             const response = await fetch(`/credentials/${credentialId}/password`, {

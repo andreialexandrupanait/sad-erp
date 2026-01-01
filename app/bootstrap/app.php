@@ -17,11 +17,11 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         // Trust all proxies for HTTPS detection (behind nginx-proxy)
+        // Use HEADER_X_FORWARDED_ALL but exclude port to avoid :8080 appearing in URLs
         $middleware->trustProxies(
-            at: ['172.16.0.0/12', '192.168.0.0/16', '10.0.0.0/8'],
+            at: '*',
             headers: Request::HEADER_X_FORWARDED_FOR |
                      Request::HEADER_X_FORWARDED_HOST |
-                     Request::HEADER_X_FORWARDED_PORT |
                      Request::HEADER_X_FORWARDED_PROTO
         );
 
