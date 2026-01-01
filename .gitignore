@@ -1,19 +1,37 @@
+# Dependencies
 /vendor
 /node_modules
+
+# Environment
+/.env
+/.env.*
+!/.env.example
+
+# Laravel
 /storage/*.key
 /storage/logs
 /bootstrap/cache
-/.env
-/mysql
-/logs
-*.sql
-.idea
-.DS_Store
-.env.backup
-docker-compose.override.yml/backups/
+
+# Docker
+docker-compose.override.yml
+
+# Backups (NEVER commit)
 /backups/
-/backups/**
 *.sql
 *.sql.gz
-logs/
-storage/logs/
+*.tar.gz
+*.bak
+
+# Logs
+/logs
+/mysql
+
+# IDE/Editor
+.idea
+.DS_Store
+.vscode
+*.swp
+*~
+
+# Claude Code (local settings)
+.claude/

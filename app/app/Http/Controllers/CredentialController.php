@@ -254,15 +254,18 @@ class CredentialController extends Controller
         // Track access in database
         $credential->trackAccess();
 
-        // Log the access for audit purposes
-        \Illuminate\Support\Facades\Log::info('Password revealed for credential', [
+        // Log the access for audit purposes (security audit trail)
+        Log::channel('audit')->info('Password revealed for credential (confirmed)', [
+            'action' => 'password_reveal_confirmed',
             'credential_id' => $credential->id,
+            'site_name' => $credential->site_name,
             'platform' => $credential->platform,
             'client_id' => $credential->client_id,
             'user_id' => auth()->id(),
             'user_email' => auth()->user()->email,
             'ip_address' => request()->ip(),
             'user_agent' => request()->userAgent(),
+            'timestamp' => now()->toIso8601String(),
         ]);
 
         return response()->json([
@@ -277,6 +280,23 @@ class CredentialController extends Controller
     {
         // Authorize access to this credential
         Gate::authorize('view', $credential);
+
+        // Track access in database
+        $credential->trackAccess();
+
+        // Log the access for audit purposes (security audit trail)
+        Log::channel('audit')->info('Password accessed for credential', [
+            'action' => 'password_access',
+            'credential_id' => $credential->id,
+            'site_name' => $credential->site_name,
+            'platform' => $credential->platform,
+            'client_id' => $credential->client_id,
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()->email,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
+            'timestamp' => now()->toIso8601String(),
+        ]);
 
         return response()->json([
             'password' => $credential->password,

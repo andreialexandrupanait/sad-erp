@@ -31,6 +31,7 @@ class RevenueController extends Controller
     ) {
         $this->queryBuilder = $queryBuilder;
         $this->nomenclatureService = $nomenclatureService;
+        $this->authorizeResource(FinancialRevenue::class, 'revenue');
     }
     public function index(Request $request)
     {

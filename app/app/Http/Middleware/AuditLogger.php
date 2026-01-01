@@ -38,9 +38,9 @@ class AuditLogger
      */
     protected function shouldLog(Request $request, Response $response): bool
     {
+        // Log all state-changing requests (both success and failure) for security auditing
         return in_array($request->method(), $this->logMethods)
-            && Auth::check()
-            && $response->isSuccessful();
+            && Auth::check();
     }
 
     /**
@@ -49,16 +49,37 @@ class AuditLogger
     protected function logRequest(Request $request, Response $response): void
     {
         $user = Auth::user();
+        $statusCode = $response->getStatusCode();
+        $isSuccess = $response->isSuccessful();
 
-        Log::channel('audit')->info('User action', [
+        // Determine log level based on response status
+        $logLevel = $isSuccess ? 'info' : ($statusCode >= 500 ? 'error' : 'warning');
+
+        $logData = [
             'user_id' => $user->id,
+            'user_email' => $user->email,
             'organization_id' => $user->organization_id,
             'method' => $request->method(),
             'path' => $request->path(),
             'route' => $request->route()?->getName(),
             'ip' => $request->ip(),
             'user_agent' => $request->userAgent(),
-            'status' => $response->getStatusCode(),
-        ]);
+            'status' => $statusCode,
+            'success' => $isSuccess,
+        ];
+
+        // Add failure context for non-successful requests
+        if (!$isSuccess) {
+            $logData['failure_type'] = match(true) {
+                $statusCode === 401 => 'unauthorized',
+                $statusCode === 403 => 'forbidden',
+                $statusCode === 404 => 'not_found',
+                $statusCode === 422 => 'validation_failed',
+                $statusCode >= 500 => 'server_error',
+                default => 'client_error',
+            };
+        }
+
+        Log::channel('audit')->$logLevel('User action', $logData);
     }
 }

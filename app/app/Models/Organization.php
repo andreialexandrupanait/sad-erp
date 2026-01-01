@@ -117,6 +117,62 @@ class Organization extends Model
     }
 
     /**
+     * Get all subscriptions belonging to this organization
+     */
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    /**
+     * Get all services belonging to this organization
+     */
+    public function services()
+    {
+        return $this->hasMany(Service::class);
+    }
+
+    /**
+     * Get all domains belonging to this organization
+     */
+    public function domains()
+    {
+        return $this->hasMany(Domain::class);
+    }
+
+    /**
+     * Get all offers belonging to this organization
+     */
+    public function offers()
+    {
+        return $this->hasMany(Offer::class);
+    }
+
+    /**
+     * Get all contracts belonging to this organization
+     */
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    /**
+     * Get all credentials belonging to this organization
+     */
+    public function credentials()
+    {
+        return $this->hasMany(Credential::class);
+    }
+
+    /**
+     * Get all internal accounts belonging to this organization
+     */
+    public function internalAccounts()
+    {
+        return $this->hasMany(InternalAccount::class);
+    }
+
+    /**
      * Scope to get only active organizations
      */
     public function scopeActive($query)

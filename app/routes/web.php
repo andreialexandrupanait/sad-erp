@@ -225,7 +225,7 @@ Route::middleware('auth')->group(function () {
             ->name('settings.backup.import');
         Route::get('settings/backup/download/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'download'])->where('filename', '[a-zA-Z0-9_\-\.]+')->name('settings.backup.download');
         Route::post('settings/backup/restore/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'restore'])
-            ->middleware('throttle:1,10')  // 1 restore per 10 minutes (extremely dangerous operation)
+            ->middleware('throttle:1,60')  // 1 restore per hour (extremely dangerous operation)
             ->where('filename', '[a-zA-Z0-9_\-\.]+')
             ->name('settings.backup.restore');
         Route::delete('settings/backup/{filename}', [\App\Http\Controllers\Settings\BackupController::class, 'destroy'])->where('filename', '[a-zA-Z0-9_\-\.]+')->name('settings.backup.destroy');

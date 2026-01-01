@@ -30,6 +30,7 @@ class ExpenseController extends Controller
     ) {
         $this->queryBuilder = $queryBuilder;
         $this->nomenclatureService = $nomenclatureService;
+        $this->authorizeResource(FinancialExpense::class, 'expense');
     }
 
     public function index(Request $request)

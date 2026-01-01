@@ -6,9 +6,12 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StoreOfferRequest extends FormRequest
 {
+    /**
+     * Determine if the user is authorized to make this request.
+     */
     public function authorize(): bool
     {
-        return true;
+        return auth()->check() && auth()->user()->organization_id !== null;
     }
 
     public function rules(): array
@@ -81,5 +84,54 @@ class StoreOfferRequest extends FormRequest
             'items.*.quantity.required' => __('Each item must have a quantity.'),
             'items.*.unit_price.required' => __('Each item must have a price.'),
         ];
+    }
+
+    /**
+     * Get the validated data with sanitization applied.
+     */
+    public function validated($key = null, $default = null): array
+    {
+        $validated = parent::validated($key, $default);
+
+        // Sanitize text inputs to prevent XSS
+        if (!empty($validated['title'])) {
+            $validated['title'] = sanitize_input($validated['title']);
+        }
+
+        if (!empty($validated['notes'])) {
+            $validated['notes'] = sanitize_input($validated['notes']);
+        }
+
+        // Sanitize temp client fields
+        if (!empty($validated['temp_client_name'])) {
+            $validated['temp_client_name'] = sanitize_input($validated['temp_client_name']);
+        }
+        if (!empty($validated['temp_client_company'])) {
+            $validated['temp_client_company'] = sanitize_input($validated['temp_client_company']);
+        }
+
+        // Sanitize new client fields
+        if (!empty($validated['new_client'])) {
+            if (!empty($validated['new_client']['company_name'])) {
+                $validated['new_client']['company_name'] = sanitize_input($validated['new_client']['company_name']);
+            }
+            if (!empty($validated['new_client']['contact_person'])) {
+                $validated['new_client']['contact_person'] = sanitize_input($validated['new_client']['contact_person']);
+            }
+        }
+
+        // Sanitize item titles and descriptions
+        if (!empty($validated['items']) && is_array($validated['items'])) {
+            foreach ($validated['items'] as $key => $item) {
+                if (!empty($item['title'])) {
+                    $validated['items'][$key]['title'] = sanitize_input($item['title']);
+                }
+                if (!empty($item['description'])) {
+                    $validated['items'][$key]['description'] = sanitize_input($item['description']);
+                }
+            }
+        }
+
+        return $validated;
     }
 }

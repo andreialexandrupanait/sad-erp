@@ -9,6 +9,12 @@ class OfferItem extends Model
 {
     use HasFactory;
 
+    /**
+     * Flag to defer total calculation during bulk operations.
+     * Set to true before bulk save, then call Offer::calculateTotals() once at the end.
+     */
+    public static bool $deferTotalCalculation = false;
+
     protected $fillable = [
         'offer_id',
         'service_id',
@@ -58,15 +64,41 @@ class OfferItem extends Model
             $item->total_price = $subtotal - $discount;
         });
 
-        // Recalculate offer totals after save
+        // Recalculate offer totals after save (unless deferred for bulk operations)
         static::saved(function ($item) {
-            $item->offer->calculateTotals();
+            if (!static::$deferTotalCalculation && $item->offer) {
+                $item->offer->calculateTotals();
+            }
         });
 
-        // Recalculate offer totals after delete
+        // Recalculate offer totals after delete (unless deferred for bulk operations)
         static::deleted(function ($item) {
-            $item->offer->calculateTotals();
+            if (!static::$deferTotalCalculation && $item->offer) {
+                $item->offer->calculateTotals();
+            }
         });
+    }
+
+    /**
+     * Perform a bulk operation with deferred total calculation.
+     * Usage: OfferItem::withDeferredCalculation(function() { ... bulk operations ... }, $offer);
+     */
+    public static function withDeferredCalculation(callable $callback, ?Offer $offer = null): mixed
+    {
+        static::$deferTotalCalculation = true;
+
+        try {
+            $result = $callback();
+        } finally {
+            static::$deferTotalCalculation = false;
+
+            // Calculate totals once at the end if offer provided
+            if ($offer) {
+                $offer->calculateTotals();
+            }
+        }
+
+        return $result;
     }
 
     /**
