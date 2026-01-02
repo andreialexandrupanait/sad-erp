@@ -7,6 +7,27 @@ use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
+    /**
+     * Check if an index exists (database-agnostic).
+     */
+    private function indexExists(string $table, string $indexName): bool
+    {
+        $connection = Schema::getConnection();
+        $driver = $connection->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $indexes = $connection->select(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND name = ?",
+                [$table, $indexName]
+            );
+            return count($indexes) > 0;
+        }
+
+        // MySQL/MariaDB
+        $indexes = $connection->select("SHOW INDEX FROM {$table} WHERE Key_name = ?", [$indexName]);
+        return count($indexes) > 0;
+    }
+
     public function up(): void
     {
         Schema::table('access_credentials', function (Blueprint $table) {
@@ -26,10 +47,13 @@ return new class extends Migration
 
         // Drop project_name column and its index
         Schema::table('access_credentials', function (Blueprint $table) {
-            // Check if index exists before dropping
-            $indexExists = collect(DB::select("SHOW INDEX FROM access_credentials WHERE Key_name = 'access_credentials_project_name_index'"))->isNotEmpty();
-            if ($indexExists) {
-                $table->dropIndex(['project_name']);
+            // Check if index exists before dropping (database-agnostic)
+            if ($this->indexExists('access_credentials', 'access_credentials_project_name_index')) {
+                try {
+                    $table->dropIndex(['project_name']);
+                } catch (\Exception $e) {
+                    // Index might not exist, ignore
+                }
             }
             $table->dropColumn('project_name');
         });

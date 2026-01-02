@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Client;
 use App\Models\Contract;
+use App\Models\Offer;
 use App\Models\Organization;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -21,8 +22,10 @@ class ContractFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'client_id' => Client::factory(),
+            'offer_id' => Offer::factory(),
             'contract_number' => fn() => sprintf('CTR-%d-%02d', $year, fake()->unique()->numberBetween(1, 999)),
             'title' => fake()->sentence(4),
+            'content' => fake()->paragraphs(3, true),
             'status' => 'draft',
             'total_value' => fake()->randomFloat(2, 100, 10000),
             'currency' => fake()->randomElement(['EUR', 'RON', 'USD']),

@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -34,42 +35,48 @@ return new class extends Migration
         ];
 
         foreach ($tables as $table) {
-            // Check if table exists
-            $tableExists = DB::select("
-                SELECT COUNT(*) as count
-                FROM information_schema.tables
-                WHERE table_schema = DATABASE()
-                AND table_name = ?
-            ", [$table]);
-
-            if ($tableExists[0]->count == 0) {
-                continue; // Skip if table doesn't exist
+            // Use Schema facade for database-agnostic checking
+            if (!Schema::hasTable($table)) {
+                continue;
             }
 
-            // Check if index exists before creating it
-            $indexExists = DB::select("
-                SELECT COUNT(*) as count
-                FROM information_schema.statistics
-                WHERE table_schema = DATABASE()
-                AND table_name = ?
-                AND column_name = 'deleted_at'
-            ", [$table]);
+            if (!Schema::hasColumn($table, 'deleted_at')) {
+                continue;
+            }
 
-            if ($indexExists[0]->count == 0) {
-                // Check if column exists
-                $columnExists = DB::select("
-                    SELECT COUNT(*) as count
-                    FROM information_schema.columns
-                    WHERE table_schema = DATABASE()
-                    AND table_name = ?
-                    AND column_name = 'deleted_at'
-                ", [$table]);
-
-                if ($columnExists[0]->count > 0) {
-                    DB::statement("ALTER TABLE `{$table}` ADD INDEX `idx_{$table}_deleted_at` (`deleted_at`)");
+            // Safely add index (ignore if already exists)
+            $indexName = "idx_{$table}_deleted_at";
+            if (!$this->indexExists($table, $indexName)) {
+                try {
+                    Schema::table($table, function (Blueprint $t) use ($indexName) {
+                        $t->index('deleted_at', $indexName);
+                    });
+                } catch (\Exception $e) {
+                    // Index might already exist, ignore
                 }
             }
         }
+    }
+
+    /**
+     * Check if an index exists (database-agnostic).
+     */
+    private function indexExists(string $table, string $indexName): bool
+    {
+        $connection = Schema::getConnection();
+        $driver = $connection->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $indexes = $connection->select(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = ? AND name = ?",
+                [$table, $indexName]
+            );
+            return count($indexes) > 0;
+        }
+
+        // MySQL/MariaDB
+        $indexes = $connection->select("SHOW INDEX FROM {$table} WHERE Key_name = ?", [$indexName]);
+        return count($indexes) > 0;
     }
 
     /**
@@ -98,7 +105,20 @@ return new class extends Migration
         ];
 
         foreach ($tables as $table) {
-            DB::statement("ALTER TABLE `{$table}` DROP INDEX IF EXISTS `idx_{$table}_deleted_at`");
+            if (!Schema::hasTable($table)) {
+                continue;
+            }
+
+            $indexName = "idx_{$table}_deleted_at";
+            if ($this->indexExists($table, $indexName)) {
+                try {
+                    Schema::table($table, function (Blueprint $t) use ($indexName) {
+                        $t->dropIndex($indexName);
+                    });
+                } catch (\Exception $e) {
+                    // Index might not exist, ignore
+                }
+            }
         }
     }
 };

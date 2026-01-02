@@ -19,38 +19,20 @@ class OfferItemFactory extends Factory
         $quantity = fake()->numberBetween(1, 10);
         $unitPrice = fake()->randomFloat(2, 50, 500);
         $discountPercent = fake()->randomElement([0, 5, 10, 15]);
-        $discountAmount = ($quantity * $unitPrice) * ($discountPercent / 100);
-        $totalPrice = ($quantity * $unitPrice) - $discountAmount;
+        $totalPrice = ($quantity * $unitPrice) * (1 - $discountPercent / 100);
 
         return [
             'offer_id' => Offer::factory(),
             'service_id' => null,
-            'name' => fake()->sentence(3),
             'title' => fake()->sentence(3),
             'description' => fake()->paragraph(),
             'quantity' => $quantity,
-            'unit' => fake()->randomElement(['unit', 'hour', 'month', 'project']),
+            'unit' => fake()->randomElement(['buc', 'ora', 'luna', 'proiect']),
             'unit_price' => $unitPrice,
             'discount_percent' => $discountPercent,
-            'discount_amount' => $discountAmount,
             'total_price' => $totalPrice,
-            'is_selected' => true,
             'sort_order' => fake()->numberBetween(0, 10),
         ];
-    }
-
-    public function selected(): static
-    {
-        return $this->state(fn(array $attributes) => [
-            'is_selected' => true,
-        ]);
-    }
-
-    public function notSelected(): static
-    {
-        return $this->state(fn(array $attributes) => [
-            'is_selected' => false,
-        ]);
     }
 
     public function withService(Service $service = null): static

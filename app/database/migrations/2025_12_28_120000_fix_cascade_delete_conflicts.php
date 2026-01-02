@@ -22,9 +22,17 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $driver = Schema::getConnection()->getDriverName();
+
         // Fix: access_credentials.client_id
         // Credentials should survive when a client is deleted
         if (Schema::hasTable('access_credentials')) {
+            // SQLite doesn't support modifying columns or foreign key constraints
+            // the same way MySQL does. Skip this migration on SQLite.
+            if ($driver === 'sqlite') {
+                return;
+            }
+
             Schema::table('access_credentials', function (Blueprint $table) {
                 // Drop existing foreign key
                 try {
@@ -33,7 +41,7 @@ return new class extends Migration
                     // Foreign key might not exist
                 }
 
-                // Make client_id nullable if it isn't already
+                // Make client_id nullable if it isn't already (MySQL-specific)
                 DB::statement('ALTER TABLE access_credentials MODIFY client_id BIGINT UNSIGNED NULL');
 
                 // Re-add foreign key with SET NULL
@@ -72,6 +80,13 @@ return new class extends Migration
      */
     public function down(): void
     {
+        $driver = Schema::getConnection()->getDriverName();
+
+        // Skip on SQLite (migration was skipped on up() too)
+        if ($driver === 'sqlite') {
+            return;
+        }
+
         if (Schema::hasTable('access_credentials')) {
             Schema::table('access_credentials', function (Blueprint $table) {
                 // Drop SET NULL foreign key
