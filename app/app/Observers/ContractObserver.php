@@ -93,6 +93,30 @@ class ContractObserver
     }
 
     /**
+     * Handle the Contract "deleting" event.
+     * Performs cleanup before the contract is deleted.
+     */
+    public function deleting(Contract $contract): void
+    {
+        // Delete associated PDF file if exists
+        if ($contract->pdf_path) {
+            $fullPath = storage_path('app/' . $contract->pdf_path);
+            if (file_exists($fullPath)) {
+                @unlink($fullPath);
+            }
+        }
+
+        // Unlink any associated offers (set contract_id to null)
+        if ($contract->offer_id) {
+            \App\Models\Offer::where('id', $contract->offer_id)
+                ->where('contract_id', $contract->id)
+                ->update(['contract_id' => null]);
+        }
+
+        // Note: Annexes are deleted via database CASCADE constraint
+    }
+
+    /**
      * Handle the Contract "deleted" event.
      */
     public function deleted(Contract $contract): void

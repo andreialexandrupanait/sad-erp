@@ -1312,7 +1312,16 @@
                     if (!container) { container = document.createElement('div'); container.id = 'toast-container'; container.className = 'fixed top-4 right-4 z-50 space-y-2'; document.body.appendChild(container); }
                     const toast = document.createElement('div');
                     toast.className = `px-4 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'}`;
-                    toast.innerHTML = `<div class="flex items-center gap-2">${type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'}<span>${message}</span></div>`;
+                    // Use DOM methods instead of innerHTML to prevent XSS
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'flex items-center gap-2';
+                    const icon = document.createElement('span');
+                    icon.innerHTML = type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
+                    const text = document.createElement('span');
+                    text.textContent = message;
+                    wrapper.appendChild(icon);
+                    wrapper.appendChild(text);
+                    toast.appendChild(wrapper);
                     container.appendChild(toast);
                     setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
                 },

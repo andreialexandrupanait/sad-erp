@@ -337,17 +337,21 @@ class Credential extends Model
     /**
      * Generate bookmarklet JavaScript for auto-login
      * This creates a bookmark that when clicked, fills login forms
+     *
+     * Security: Uses json_encode() for proper JavaScript escaping to prevent injection attacks
      */
     public function generateBookmarklet(): string
     {
-        $username = addslashes($this->username ?? '');
-        $password = addslashes($this->password ?? '');
+        // Use JSON encoding for proper JavaScript escaping - prevents XSS/injection
+        $username = json_encode($this->username ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
+        $password = json_encode($this->password ?? '', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP);
 
         // JavaScript bookmarklet that fills common login form fields
+        // Note: json_encode already includes quotes, so we use the values directly
         $js = <<<JS
 (function(){
-    var u='{$username}';
-    var p='{$password}';
+    var u={$username};
+    var p={$password};
     var uf=document.querySelector('input[type="email"],input[type="text"][name*="user"],input[type="text"][name*="login"],input[type="text"][name*="email"],input[name="username"],input[name="user"],input[name="email"],input[name="log"],#username,#email,#user,#login-email,#login-username');
     var pf=document.querySelector('input[type="password"]');
     if(uf){uf.value=u;uf.dispatchEvent(new Event('input',{bubbles:true}));}
@@ -356,8 +360,8 @@ class Credential extends Model
 })();
 JS;
 
-        // Minify and encode
+        // Minify and encode for URL
         $minified = preg_replace('/\s+/', ' ', trim($js));
-        return 'javascript:' . $minified;
+        return 'javascript:' . rawurlencode($minified);
     }
 }

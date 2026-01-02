@@ -22,6 +22,10 @@ class SecureFileUpload implements Rule
 {
     /**
      * Allowed MIME types mapped to their valid extensions
+     *
+     * Security: Archive formats (zip, rar) are excluded as they can contain
+     * malicious executables. If you need to accept archives, implement
+     * content scanning before enabling them.
      */
     protected array $allowedMimes = [
         'application/pdf' => ['pdf'],
@@ -36,8 +40,9 @@ class SecureFileUpload implements Rule
         'application/vnd.openxmlformats-officedocument.presentationml.presentation' => ['pptx'],
         'text/plain' => ['txt'],
         'text/csv' => ['csv'],
-        'application/zip' => ['zip'],
-        'application/x-rar-compressed' => ['rar'],
+        // Archive formats disabled for security:
+        // 'application/zip' => ['zip'],
+        // 'application/x-rar-compressed' => ['rar'],
     ];
 
     /**
@@ -59,9 +64,9 @@ class SecureFileUpload implements Rule
         // MS Office (old format)
         'd0cf11e0' => ['doc', 'xls', 'ppt'],
         // MS Office (new format - ZIP based)
-        '504b0304' => ['docx', 'xlsx', 'pptx', 'zip'],
-        // RAR files
-        '52617221' => ['rar'],
+        '504b0304' => ['docx', 'xlsx', 'pptx'],
+        // Archive signatures disabled for security:
+        // '52617221' => ['rar'],
         // Text files (variable, so we skip magic byte check)
         // CSV files (variable, so we skip magic byte check)
     ];

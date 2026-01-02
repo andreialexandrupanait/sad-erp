@@ -119,4 +119,71 @@ trait SafeJsonResponse
             'message' => $message ?? __('You are not authorized to perform this action.'),
         ], 403);
     }
+
+    /**
+     * Return success response as JSON or redirect based on request type.
+     *
+     * Use this when an action can be triggered via AJAX or form submission.
+     *
+     * @param string $message Success message
+     * @param array $data Additional data for JSON response
+     * @param string|null $redirectTo Route or URL to redirect to (null = back)
+     * @return JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    protected function respondSuccess(string $message, array $data = [], ?string $redirectTo = null)
+    {
+        if (request()->expectsJson()) {
+            return $this->safeJsonSuccess($message, $data);
+        }
+
+        $redirect = $redirectTo ? redirect($redirectTo) : back();
+        return $redirect->with('success', $message);
+    }
+
+    /**
+     * Return error response as JSON or redirect based on request type.
+     *
+     * Use this when an action can be triggered via AJAX or form submission.
+     *
+     * @param string $message Error message
+     * @param int $statusCode HTTP status code for JSON response
+     * @param string|null $redirectTo Route or URL to redirect to (null = back)
+     * @return JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    protected function respondError(string $message, int $statusCode = 400, ?string $redirectTo = null)
+    {
+        if (request()->expectsJson()) {
+            return $this->safeJsonValidationError($message, [], $statusCode);
+        }
+
+        $redirect = $redirectTo ? redirect($redirectTo) : back();
+        return $redirect->with('error', $message)->withInput();
+    }
+
+    /**
+     * Handle exception and return appropriate response type.
+     *
+     * Logs the exception and returns either JSON or redirect with error.
+     *
+     * @param \Exception $e The caught exception
+     * @param string $context Description of what operation failed
+     * @param string|null $redirectTo Route or URL to redirect to (null = back)
+     * @return JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    protected function respondException(\Exception $e, string $context = 'Operation', ?string $redirectTo = null)
+    {
+        Log::error("{$context} failed", [
+            'exception' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'user_id' => auth()->id(),
+        ]);
+
+        if (request()->expectsJson()) {
+            return $this->safeJsonError($e, $context);
+        }
+
+        $redirect = $redirectTo ? redirect($redirectTo) : back();
+        return $redirect->with('error', __('An error occurred. Please try again.'))->withInput();
+    }
 }

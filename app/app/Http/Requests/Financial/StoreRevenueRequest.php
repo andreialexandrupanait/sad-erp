@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Financial;
 
 use App\Models\SettingOption;
+use App\Rules\SecureFileUpload;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class StoreRevenueRequest extends FormRequest
             'client_id' => 'nullable|exists:clients,id',
             'note' => 'nullable|string',
             'files' => 'nullable|array',
-            'files.*' => 'file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
+            'files.*' => ['file', new SecureFileUpload()],
         ];
     }
 }

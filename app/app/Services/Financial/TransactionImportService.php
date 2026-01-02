@@ -176,7 +176,7 @@ class TransactionImportService
     /**
      * Get expense categories with hierarchy for the dropdown.
      */
-    public function getExpenseCategories()
+    public function getExpenseCategories(): \Illuminate\Database\Eloquent\Collection
     {
         return SettingOption::where('category', 'expense_categories')
             ->where(function ($q) {

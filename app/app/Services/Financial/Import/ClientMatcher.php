@@ -88,8 +88,7 @@ class ClientMatcher
             ]);
 
             // Update index
-            $this->clientsByCif[$cif] = $client;
-            $this->clientsByName[strtolower($client->name)] = $client;
+            $this->addToIndex($client);
             $this->stats['clients_created']++;
 
             Log::info('Auto-created client', ['id' => $client->id, 'name' => $client->name]);
@@ -98,5 +97,22 @@ class ClientMatcher
             Log::warning('Failed to create client', ['name' => $name, 'error' => $e->getMessage()]);
             return null;
         }
+    }
+
+    /**
+     * Add a client to the in-memory index for fast lookup.
+     * Use this after creating clients externally to keep the index up to date.
+     */
+    public function addToIndex(Client $client): void
+    {
+        if (!empty($client->tax_id)) {
+            $cif = $client->tax_id;
+            $this->clientsByCif[$cif] = $client;
+            $cleanCif = preg_replace('/^RO/i', '', $cif);
+            $cleanCif = preg_replace('/\s+/', '', $cleanCif);
+            $this->clientsByCif[$cleanCif] = $client;
+            $this->clientsByCif['RO' . $cleanCif] = $client;
+        }
+        $this->clientsByName[strtolower($client->name)] = $client;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\HandlesBulkActions;
+use App\Http\Controllers\Traits\CachedDropdowns;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Gate;
 use App\Models\Domain;
@@ -14,7 +15,7 @@ use Illuminate\Http\Request;
 
 class DomainController extends Controller
 {
-    use HandlesBulkActions;
+    use HandlesBulkActions, CachedDropdowns;
 
     protected NomenclatureService $nomenclatureService;
 
@@ -65,8 +66,8 @@ class DomainController extends Controller
 
         $domains = $query->paginate(15)->withQueryString();
 
-        // Get data for filters
-        $clients = Client::select('id', 'name')->orderBy('name')->get();
+        // Get data for filters (cached)
+        $clients = $this->getCachedClientDropdown();
         $registrars = setting_options('domain_registrars'); // Use dynamic settings
 
         // Statistics
@@ -88,7 +89,7 @@ class DomainController extends Controller
      */
     public function create()
     {
-        $clients = Client::select('id', 'name')->orderBy('name')->get();
+        $clients = $this->getCachedClientDropdown();
         $registrars = $this->nomenclatureService->getDomainRegistrars();
         $statuses = $this->nomenclatureService->getDomainStatuses();
 
@@ -130,7 +131,7 @@ class DomainController extends Controller
      */
     public function edit(Domain $domain)
     {
-        $clients = Client::select('id', 'name')->orderBy('name')->get();
+        $clients = $this->getCachedClientDropdown();
         $registrars = $this->nomenclatureService->getDomainRegistrars();
         $statuses = $this->nomenclatureService->getDomainStatuses();
 

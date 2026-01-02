@@ -93,19 +93,22 @@ class TransactionImportService
                 $transactions = $response['transactions']['booked'] ?? [];
                 $pendingTransactions = $response['transactions']['pending'] ?? [];
 
-                // Process booked transactions
-                foreach ($transactions as $txData) {
-                    $result = $this->importTransaction($credential, $txData, 'booked');
-                    $stats[$result]++;
-                    $stats['fetched']++;
-                }
+                // Process booked transactions in a single transaction for efficiency
+                DB::transaction(function () use ($credential, $transactions, $pendingTransactions, &$stats) {
+                    // Process booked transactions
+                    foreach ($transactions as $txData) {
+                        $result = $this->importTransaction($credential, $txData, 'booked');
+                        $stats[$result]++;
+                        $stats['fetched']++;
+                    }
 
-                // Optionally process pending transactions (mark them as pending status)
-                foreach ($pendingTransactions as $txData) {
-                    $result = $this->importTransaction($credential, $txData, 'pending');
-                    $stats[$result]++;
-                    $stats['fetched']++;
-                }
+                    // Optionally process pending transactions (mark them as pending status)
+                    foreach ($pendingTransactions as $txData) {
+                        $result = $this->importTransaction($credential, $txData, 'pending');
+                        $stats[$result]++;
+                        $stats['fetched']++;
+                    }
+                });
 
                 // Check for pagination
                 $continuationKey = $response['transactions']['_links']['next'] ?? null;

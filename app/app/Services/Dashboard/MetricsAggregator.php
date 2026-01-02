@@ -18,7 +18,13 @@ use Illuminate\Support\Facades\Cache;
  */
 class MetricsAggregator
 {
-    private const CACHE_TTL = 300; // 5 minutes
+    /**
+     * Get cache TTL from config.
+     */
+    private function getCacheTtl(): int
+    {
+        return config('erp.cache.dashboard_metrics_ttl', 300);
+    }
 
     /**
      * Get cache key with organization prefix
@@ -36,37 +42,41 @@ class MetricsAggregator
     {
         $cacheKey = $this->cacheKey('dashboard.metrics');
 
-        $cachedStats = Cache::remember($cacheKey, self::CACHE_TTL, function () {
+        return Cache::remember($cacheKey, $this->getCacheTtl(), function () {
+            $clientCount = Client::count();
+            $domainStats = Domain::selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN expiry_date < NOW() THEN 1 ELSE 0 END) as expired
+            ")->first();
+            $subscriptionCounts = Subscription::selectRaw("
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
+                SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
+                SUM(CASE WHEN status = 'active' AND billing_cycle = 'monthly' THEN price ELSE 0 END) as monthly_cost
+            ")->first();
+            $credentialCount = Credential::count();
+
+            // Include expiring domains in cache with eager loading
+            $expiringDomains = Domain::with(['client', 'subscriptions'])
+                ->whereBetween('expiry_date', [now(), now()->addDays(30)])
+                ->orderBy('expiry_date')
+                ->get();
+
             return [
-                'clientCount' => Client::count(),
-                'domainStats' => Domain::selectRaw("
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN expiry_date < NOW() THEN 1 ELSE 0 END) as expired
-                ")->first(),
-                'subscriptionCounts' => Subscription::selectRaw("
-                    COUNT(*) as total,
-                    SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
-                    SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired,
-                    SUM(CASE WHEN status = 'active' AND billing_cycle = 'monthly' THEN price ELSE 0 END) as monthly_cost
-                ")->first(),
-                'credentialCount' => Credential::count(),
+                'totalClients' => $clientCount,
+                'activeClients' => $clientCount,
+                'totalDomains' => $domainStats->total,
+                'activeDomains' => $domainStats->active,
+                'expiredDomains' => $domainStats->expired,
+                'totalSubscriptions' => $subscriptionCounts->total,
+                'activeSubscriptions' => $subscriptionCounts->active,
+                'expiredSubscriptions' => $subscriptionCounts->expired,
+                'monthlySubscriptionCost' => $subscriptionCounts->monthly_cost,
+                'totalCredentials' => $credentialCount,
+                'expiringDomains' => $expiringDomains,
             ];
         });
-
-        return [
-            'totalClients' => $cachedStats['clientCount'],
-            'activeClients' => $cachedStats['clientCount'],
-            'totalDomains' => $cachedStats['domainStats']->total,
-            'activeDomains' => $cachedStats['domainStats']->active,
-            'expiredDomains' => $cachedStats['domainStats']->expired,
-            'totalSubscriptions' => $cachedStats['subscriptionCounts']->total,
-            'activeSubscriptions' => $cachedStats['subscriptionCounts']->active,
-            'expiredSubscriptions' => $cachedStats['subscriptionCounts']->expired,
-            'monthlySubscriptionCost' => $cachedStats['subscriptionCounts']->monthly_cost,
-            'totalCredentials' => $cachedStats['credentialCount'],
-            'expiringDomains' => Domain::whereBetween('expiry_date', [now(), now()->addDays(30)])->get(),
-        ];
     }
 
     /**
@@ -119,19 +129,24 @@ class MetricsAggregator
     }
 
     /**
-     * Get recent activity data
+     * Get recent activity data with caching and eager loading
      */
     public function getRecentActivity(): array
     {
-        return [
-            'recentClients' => Client::with('status')->latest()->take(5)->get(),
-            'recentDomains' => Domain::with('client')->latest()->take(5)->get(),
-            'recentSubscriptions' => Subscription::latest()->take(5)->get(),
-            'overdueSubscriptions' => Subscription::where('status', 'active')
-                ->where('next_renewal_date', '<', now())
-                ->get(),
-            'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(200)->get(),
-        ];
+        $cacheKey = $this->cacheKey('dashboard.activity');
+
+        return Cache::remember($cacheKey, $this->getCacheTtl(), function () {
+            return [
+                'recentClients' => Client::with('status')->latest()->take(5)->get(),
+                'recentDomains' => Domain::with(['client', 'subscriptions.service'])->latest()->take(5)->get(),
+                'recentSubscriptions' => Subscription::with(['domain', 'service'])->latest()->take(5)->get(),
+                'overdueSubscriptions' => Subscription::with(['domain', 'service'])
+                    ->where('status', 'active')
+                    ->where('next_renewal_date', '<', now())
+                    ->get(),
+                'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(200)->get(),
+            ];
+        });
     }
 
     /**
@@ -140,6 +155,7 @@ class MetricsAggregator
     public function clearCache(): void
     {
         Cache::forget($this->cacheKey('dashboard.metrics'));
+        Cache::forget($this->cacheKey('dashboard.activity'));
 
         // Clear financial overview caches for current and previous months
         $currentYear = now()->year;

@@ -29,18 +29,6 @@ class RevenueImportService
     protected ClientMatcher $clientMatcher;
 
     /**
-     * Pre-loaded clients indexed by CIF for fast lookup.
-     * @deprecated Use ClientMatcher instead
-     */
-    protected array $clientsByCif = [];
-
-    /**
-     * Pre-loaded clients indexed by name for fallback lookup.
-     * @deprecated Use ClientMatcher instead
-     */
-    protected Collection $clientsByName;
-
-    /**
      * Import statistics.
      */
     protected array $stats = [
@@ -330,13 +318,8 @@ class RevenueImportService
 
             $client = Client::create($clientData);
 
-            // Add to index for subsequent rows
-            $this->clientsByCif[$cif] = $client;
-            $cleanCif = preg_replace('/^RO/i', '', $cif);
-            $cleanCif = preg_replace('/\s+/', '', $cleanCif);
-            $this->clientsByCif[$cleanCif] = $client;
-            $this->clientsByCif['RO' . $cleanCif] = $client;
-            $this->clientsByName[strtolower($formattedName)] = $client;
+            // Add to ClientMatcher index for subsequent rows
+            $this->clientMatcher->addToIndex($client);
 
             $this->stats['clients_created']++;
 

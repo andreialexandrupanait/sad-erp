@@ -99,12 +99,34 @@ function clientsPage(initialData = {}) {
             if (stored) {
                 try {
                     const prefs = JSON.parse(stored);
-                    this.ui.viewMode = prefs.viewMode || 'table';
-                    this.ui.grouped = prefs.grouped || false;
-                    this.ui.perPage = prefs.perPage || 25;
-                    this.ui.collapsedGroups = prefs.collapsedGroups || {};
+
+                    // Security: Validate schema to prevent localStorage poisoning
+                    const validViewModes = ['table', 'grid', 'list'];
+                    const validPerPage = [10, 25, 50, 100];
+
+                    // Only apply viewMode if it's a valid option
+                    if (validViewModes.includes(prefs.viewMode)) {
+                        this.ui.viewMode = prefs.viewMode;
+                    }
+
+                    // Only apply perPage if it's a valid option
+                    if (validPerPage.includes(prefs.perPage)) {
+                        this.ui.perPage = prefs.perPage;
+                    }
+
+                    // Boolean validation for grouped
+                    if (typeof prefs.grouped === 'boolean') {
+                        this.ui.grouped = prefs.grouped;
+                    }
+
+                    // Object validation for collapsedGroups
+                    if (prefs.collapsedGroups && typeof prefs.collapsedGroups === 'object' && !Array.isArray(prefs.collapsedGroups)) {
+                        this.ui.collapsedGroups = prefs.collapsedGroups;
+                    }
                 } catch (e) {
-                    // Failed to parse UI preferences, using defaults
+                    // Failed to parse UI preferences, clear corrupted data and use defaults
+                    console.warn('Invalid UI preferences in localStorage, resetting to defaults');
+                    localStorage.removeItem('clients_ui_prefs');
                 }
             }
         },
@@ -589,17 +611,26 @@ function clientsPage(initialData = {}) {
                            type === 'error' ? 'bg-red-600' : 'bg-blue-600';
 
             toast.className = `px-4 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 ${bgColor}`;
-            toast.innerHTML = `
-                <div class="flex items-center gap-2">
-                    ${type === 'success'
-                        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
-                        : type === 'error'
-                        ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
-                        : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
-                    }
-                    <span>${message}</span>
-                </div>
-            `;
+
+            // Build toast content safely to prevent XSS
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-center gap-2';
+
+            // Icon (hardcoded HTML - safe)
+            const iconWrapper = document.createElement('span');
+            iconWrapper.innerHTML = type === 'success'
+                ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+                : type === 'error'
+                ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+                : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+
+            // Message text (use textContent to prevent XSS)
+            const messageSpan = document.createElement('span');
+            messageSpan.textContent = message;
+
+            wrapper.appendChild(iconWrapper);
+            wrapper.appendChild(messageSpan);
+            toast.appendChild(wrapper);
 
             container.appendChild(toast);
 

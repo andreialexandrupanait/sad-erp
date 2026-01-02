@@ -34,6 +34,11 @@ class DatabaseBackupService
     ];
 
     /**
+     * Chunk size for database exports to prevent memory exhaustion
+     */
+    protected int $chunkSize = 1000;
+
+    /**
      * Create a database backup
      *
      * @param array|null $tables Tables to backup (null = use defaults)
@@ -44,37 +49,88 @@ class DatabaseBackupService
         $tables = $tables ?? $this->defaultBackupTables;
         $timestamp = Carbon::now()->format('Y-m-d_His');
         $filename = "backup_{$timestamp}.json";
+        $path = 'backups/' . $filename;
 
-        $data = [
-            'meta' => [
-                'created_at' => Carbon::now()->toIso8601String(),
-                'version' => '1.0',
-                'tables' => $tables,
-            ],
-            'data' => [],
+        $meta = [
+            'created_at' => Carbon::now()->toIso8601String(),
+            'version' => '1.1',
+            'tables' => $tables,
         ];
 
-        // Export each table
-        foreach ($tables as $table) {
-            if (Schema::hasTable($table)) {
-                $data['data'][$table] = DB::table($table)->get()->toArray();
-            }
-        }
-
-        // Store backup
-        $path = 'backups/' . $filename;
-        Storage::disk('local')->put(
-            $path,
-            json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)
-        );
+        // Stream JSON to file to prevent memory exhaustion
+        $this->streamBackupToFile($path, $meta, $tables);
 
         return [
             'success' => true,
             'filename' => $filename,
             'path' => $path,
             'size' => Storage::disk('local')->size($path),
-            'tables_count' => count($data['data']),
+            'tables_count' => count($tables),
         ];
+    }
+
+    /**
+     * Stream backup data to file using chunking to prevent memory exhaustion
+     */
+    protected function streamBackupToFile(string $path, array $meta, array $tables): void
+    {
+        $fullPath = Storage::disk('local')->path($path);
+
+        // Ensure directory exists
+        $dir = dirname($fullPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        $handle = fopen($fullPath, 'w');
+        if ($handle === false) {
+            throw new \RuntimeException("Cannot open file for writing: {$path}");
+        }
+
+        try {
+            // Write JSON structure start
+            fwrite($handle, "{\n");
+            fwrite($handle, '  "meta": ' . json_encode($meta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+            fwrite($handle, ",\n  \"data\": {\n");
+
+            $tableIndex = 0;
+            $tableCount = count($tables);
+
+            foreach ($tables as $table) {
+                if (!Schema::hasTable($table)) {
+                    continue;
+                }
+
+                // Write table name
+                fwrite($handle, '    "' . $table . '": [');
+
+                // Export table data in chunks
+                $rowIndex = 0;
+                DB::table($table)->orderBy(DB::raw('1'))->chunk($this->chunkSize, function ($rows) use ($handle, &$rowIndex) {
+                    foreach ($rows as $row) {
+                        if ($rowIndex > 0) {
+                            fwrite($handle, ',');
+                        }
+                        fwrite($handle, "\n      " . json_encode((array) $row, JSON_UNESCAPED_UNICODE));
+                        $rowIndex++;
+                    }
+                });
+
+                fwrite($handle, "\n    ]");
+
+                // Add comma if not last table
+                $tableIndex++;
+                if ($tableIndex < $tableCount) {
+                    fwrite($handle, ',');
+                }
+                fwrite($handle, "\n");
+            }
+
+            // Close JSON structure
+            fwrite($handle, "  }\n}");
+        } finally {
+            fclose($handle);
+        }
     }
 
     /**

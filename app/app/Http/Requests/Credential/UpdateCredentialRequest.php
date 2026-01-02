@@ -29,7 +29,8 @@ class UpdateCredentialRequest extends FormRequest
             'site_name' => 'required|string|max:255',
             'platform' => ['required', Rule::in($validPlatforms)],
             'username' => 'required|string|max:255',
-            'password' => 'nullable|string|max:500', // Optional on update
+            // Security: Limit to printable ASCII only (optional on update)
+            'password' => ['nullable', 'string', 'min:1', 'max:255', 'regex:/^[\x20-\x7E]*$/'],
             'url' => 'nullable|url|max:255',
             'client_id' => 'nullable|exists:clients,id',
             'credential_type' => ['nullable', Rule::in($validTypes)],

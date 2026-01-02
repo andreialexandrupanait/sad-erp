@@ -30,12 +30,13 @@ Route::get('/', function () {
 });
 
 // Public Offer Routes (no auth required) - Rate limited for security
+// Legacy token-based routes (kept for backward compatibility with existing shared links)
 Route::prefix('offers/view')->name('offers.public')->group(function () {
     Route::get('{token}', [OfferController::class, 'publicView'])
         ->middleware('throttle:60,1')  // 60 views per minute per IP
         ->name('');
     Route::get('{token}/state', [OfferController::class, 'publicState'])
-        ->middleware('throttle:120,1')  // 120 state checks per minute (polling every 3s)
+        ->middleware('throttle:30,1')  // 30 state checks per minute (reduced from 120 to prevent scraping)
         ->name('.state');
     Route::post('{token}/selections', [OfferController::class, 'publicUpdateSelections'])
         ->middleware('throttle:30,1')  // 30 selection updates per minute
@@ -49,6 +50,26 @@ Route::prefix('offers/view')->name('offers.public')->group(function () {
     Route::post('{token}/request-code', [OfferController::class, 'requestVerificationCode'])
         ->middleware('throttle:5,1')  // 5 verification code requests per minute
         ->name('.request-code');
+});
+
+// Signed URL routes for offers (more secure - URLs expire and can't be guessed)
+// These routes use Laravel's signed URL verification
+Route::prefix('offers/s')->name('offers.public.signed')->middleware('signed')->group(function () {
+    Route::get('{offer}', [OfferController::class, 'publicViewSigned'])
+        ->middleware('throttle:60,1')
+        ->name('');
+    Route::get('{offer}/state', [OfferController::class, 'publicStateSigned'])
+        ->middleware('throttle:30,1')
+        ->name('.state');
+    Route::post('{offer}/selections', [OfferController::class, 'publicUpdateSelectionsSigned'])
+        ->middleware('throttle:30,1')
+        ->name('.selections');
+    Route::post('{offer}/accept', [OfferController::class, 'publicAcceptSigned'])
+        ->middleware('throttle:15,1')
+        ->name('.accept');
+    Route::post('{offer}/reject', [OfferController::class, 'publicRejectSigned'])
+        ->middleware('throttle:10,1')
+        ->name('.reject');
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])

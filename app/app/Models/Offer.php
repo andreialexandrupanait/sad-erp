@@ -160,6 +160,24 @@ class Offer extends Model
                 }
                 $offer->blocks = $blocks;
             }
+
+            // Sanitize temp client fields (plain text, no HTML allowed)
+            $tempClientFields = [
+                'temp_client_name',
+                'temp_client_email',
+                'temp_client_phone',
+                'temp_client_company',
+                'temp_client_address',
+                'temp_client_tax_id',
+                'temp_client_registration_number',
+            ];
+
+            foreach ($tempClientFields as $field) {
+                if ($offer->isDirty($field) && !empty($offer->$field)) {
+                    // Strip all HTML tags and encode special characters
+                    $offer->$field = htmlspecialchars(strip_tags($offer->$field), ENT_QUOTES, 'UTF-8');
+                }
+            }
         });
 
         static::addGlobalScope('organization', function (Builder $builder) {
@@ -172,40 +190,41 @@ class Offer extends Model
     /**
      * Generate unique offer number
      * Format: PREFIX + sequential number (e.g., "OFRSAD0001")
+     *
+     * Security: Uses lockForUpdate() to prevent race condition where concurrent
+     * requests could generate duplicate offer numbers.
      */
     public static function generateOfferNumber($organizationId = null)
     {
-        $organizationId = $organizationId ?? (auth()->check() ? auth()->user()->organization_id : 1);
-        $prefix = 'OFRSAD';
+        return \DB::transaction(function () use ($organizationId) {
+            $organizationId = $organizationId ?? (auth()->check() ? auth()->user()->organization_id : 1);
+            $prefix = 'OFRSAD';
 
-        // Get prefix from organization settings
-        $org = Organization::find($organizationId);
-        if ($org && isset($org->settings['offer_prefix']) && !empty($org->settings['offer_prefix'])) {
-            $prefix = $org->settings['offer_prefix'];
-        }
-
-        // Get all offers with this prefix and find the max number
-        // This handles various formats like "PREFIX0001", "PREFIX-2025-001", etc.
-        $offers = static::withoutGlobalScopes()
-            ->where('organization_id', $organizationId)
-            ->where('offer_number', 'LIKE', $prefix . '%')
-            ->pluck('offer_number');
-
-        $maxNumber = 0;
-        foreach ($offers as $offerNumber) {
-            // Extract all numbers from the offer number after the prefix
-            if (preg_match_all('/(\d+)/', $offerNumber, $matches)) {
-                // Take the last number found (e.g., "003" from "PREFIX-2025-003" or "0004" from "PREFIX0004")
-                $lastNum = intval(end($matches[1]));
-                if ($lastNum > $maxNumber) {
-                    $maxNumber = $lastNum;
-                }
+            // Get prefix from organization settings
+            $org = Organization::find($organizationId);
+            if ($org && isset($org->settings['offer_prefix']) && !empty($org->settings['offer_prefix'])) {
+                $prefix = $org->settings['offer_prefix'];
             }
-        }
 
-        $nextNumber = $maxNumber + 1;
+            // Use lockForUpdate() to acquire exclusive lock - prevents race conditions
+            // This ensures only one process can generate a number at a time
+            $lastOffer = static::withoutGlobalScopes()
+                ->where('organization_id', $organizationId)
+                ->where('offer_number', 'LIKE', $prefix . '%')
+                ->lockForUpdate()
+                ->orderByRaw("CAST(REGEXP_REPLACE(offer_number, '[^0-9]', '') AS UNSIGNED) DESC")
+                ->first();
 
-        return sprintf('%s%04d', $prefix, $nextNumber);
+            $maxNumber = 0;
+            if ($lastOffer && preg_match_all('/(\d+)/', $lastOffer->offer_number, $matches)) {
+                // Take the last number found (e.g., "003" from "PREFIX-2025-003")
+                $maxNumber = intval(end($matches[1]));
+            }
+
+            $nextNumber = $maxNumber + 1;
+
+            return sprintf('%s%04d', $prefix, $nextNumber);
+        });
     }
 
     /**
@@ -542,11 +561,49 @@ class Offer extends Model
     public function reject($reason = null) { return $this->markAsRejected($reason); }
 
     /**
-     * Get public URL
+     * Get public URL (legacy token-based).
+     *
+     * @deprecated Use getSignedPublicUrl() for better security.
      */
     public function getPublicUrlAttribute()
     {
         return route('offers.public', $this->public_token);
+    }
+
+    /**
+     * Generate a signed public URL with expiration.
+     *
+     * Security: Signed URLs are more secure than token-based URLs because:
+     * - They expire after a configurable time
+     * - They can't be guessed or enumerated
+     * - They include a cryptographic signature
+     *
+     * @param int $expirationMinutes Minutes until the URL expires (default: 7 days)
+     * @return string The signed URL
+     */
+    public function getSignedPublicUrl(int $expirationMinutes = 10080): string
+    {
+        return \URL::temporarySignedRoute(
+            'offers.public.signed',
+            now()->addMinutes($expirationMinutes),
+            ['offer' => $this->id]
+        );
+    }
+
+    /**
+     * Get the appropriate public URL based on configuration.
+     *
+     * Uses signed URLs if enabled in config, otherwise falls back to token-based.
+     *
+     * @return string
+     */
+    public function getSecurePublicUrl(): string
+    {
+        if (config('offers.use_signed_urls', true)) {
+            return $this->getSignedPublicUrl();
+        }
+
+        return $this->public_url;
     }
 
     /**

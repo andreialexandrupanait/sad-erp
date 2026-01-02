@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Traits\SafeJson;
 use App\Http\Requests\Offer\BulkActionRequest;
 use App\Http\Requests\Offer\StoreOfferRequest;
 use App\Http\Requests\Offer\UpdateOfferRequest;
@@ -21,6 +22,7 @@ use Illuminate\Support\Facades\Storage;
 
 class OfferController extends Controller
 {
+    use SafeJson;
     public function __construct(
         protected OfferService $offerService,
         protected OfferPublicService $offerPublicService,
@@ -521,7 +523,7 @@ class OfferController extends Controller
         ]);
 
         // Create template content (blocks + services)
-        $content = json_encode([
+        $content = $this->safeJsonEncode([
             'blocks' => $validated['blocks'],
             'services' => $validated['services'] ?? [],
         ]);
@@ -547,9 +549,19 @@ class OfferController extends Controller
     // ========================================================================
     // SIMPLE BUILDER METHODS
     // ========================================================================
+    //
+    // The "simple*" methods provide a streamlined offer creation workflow:
+    // - simpleCreate/simpleStore: Create new offer via simplified builder UI
+    // - simpleEdit/simpleUpdate: Edit existing offer via simplified builder UI
+    //
+    // These are separate from the standard CRUD methods (create/store/edit/update)
+    // which use the full-featured offer builder with all customization options.
+    // ========================================================================
 
     /**
      * Show the simple builder for creating a new offer.
+     *
+     * @see create() for the full-featured offer builder
      */
     public function simpleCreate(Request $request): View
     {
@@ -591,6 +603,8 @@ class OfferController extends Controller
 
     /**
      * Show the simple builder for editing an existing offer.
+     *
+     * @see edit() for the full-featured offer builder
      */
     public function simpleEdit(Offer $offer): View|RedirectResponse
     {
@@ -604,12 +618,7 @@ class OfferController extends Controller
         $blockRenderer = new SimpleBlockRenderer();
 
         // Get blocks from offer, or use defaults
-        $blocks = $offer->blocks;
-        if (empty($blocks)) {
-            $blocks = $blockRenderer->getDefaultBlocks();
-        } elseif (is_string($blocks)) {
-            $blocks = json_decode($blocks, true) ?? $blockRenderer->getDefaultBlocks();
-        }
+        $blocks = $this->ensureArray($offer->blocks, $blockRenderer->getDefaultBlocks());
 
         $organization = auth()->user()->organization;
         $offerDefaults = $organization->settings['offer_defaults'] ?? [];
@@ -695,6 +704,8 @@ class OfferController extends Controller
 
     /**
      * Store a new offer from the simple builder.
+     *
+     * @see store() for creating offers via the full-featured builder
      */
     public function simpleStore(Request $request): JsonResponse|RedirectResponse
     {
@@ -791,6 +802,8 @@ class OfferController extends Controller
 
     /**
      * Update an offer from the simple builder.
+     *
+     * @see update() for updating offers via the full-featured builder
      */
     public function simpleUpdate(Request $request, Offer $offer): JsonResponse|RedirectResponse
     {
@@ -904,7 +917,7 @@ class OfferController extends Controller
 
         // Get VAT from summary block if exists
         $vatPercent = 19; // Default VAT
-        $blocks = is_string($offer->blocks) ? json_decode($offer->blocks, true) : ($offer->blocks ?? []);
+        $blocks = $this->ensureArray($offer->blocks);
         foreach ($blocks as $block) {
             if (($block['type'] ?? '') === 'summary') {
                 $vatPercent = $block['data']['vatPercent'] ?? 19;
@@ -943,5 +956,128 @@ class OfferController extends Controller
             'url' => Storage::url($path),
             'path' => $path,
         ]);
+    }
+
+    // =========================================================================
+    // SIGNED URL METHODS
+    // These methods use Laravel's signed URL verification for enhanced security.
+    // The 'signed' middleware verifies the URL signature before these are called.
+    // =========================================================================
+
+    /**
+     * Public view for client using signed URL.
+     *
+     * Security: The 'signed' middleware ensures the URL hasn't been tampered with
+     * and hasn't expired. No token lookup needed - we use the offer ID directly.
+     */
+    public function publicViewSigned(Offer $offer): View
+    {
+        // Record the view using the token (for compatibility with existing service)
+        $this->offerPublicService->recordView($offer, request()->ip(), request()->userAgent());
+
+        // Load relationships without global scopes
+        $offer->load(['items']);
+        $offer->setRelation('client', $offer->client_id ? \App\Models\Client::withoutGlobalScopes()->find($offer->client_id) : null);
+        $offer->setRelation('organization', \App\Models\Organization::find($offer->organization_id));
+
+        return view('offers.public', compact('offer'));
+    }
+
+    /**
+     * Public API endpoint to get current offer state (signed URL version).
+     */
+    public function publicStateSigned(Offer $offer): JsonResponse
+    {
+        try {
+            // Use token to maintain compatibility with existing service
+            return response()->json($this->offerPublicService->getPublicState($offer->public_token));
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 404);
+        }
+    }
+
+    /**
+     * Public API endpoint to update customer's service selections (signed URL version).
+     */
+    public function publicUpdateSelectionsSigned(Request $request, Offer $offer): JsonResponse
+    {
+        $validated = $request->validate([
+            'deselected_services' => 'array',
+            'deselected_services.*' => 'integer',
+            'selected_cards' => 'array',
+            'selected_cards.*' => 'integer',
+            'selected_optional_services' => 'array',
+            'selected_optional_services.*' => 'string',
+        ]);
+
+        try {
+            $result = $this->offerPublicService->updateSelections($offer->public_token, $validated);
+            return response()->json($result);
+        } catch (\RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 403);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Public accept action (signed URL version).
+     */
+    public function publicAcceptSigned(Request $request, Offer $offer): JsonResponse|RedirectResponse
+    {
+        try {
+            $this->offerPublicService->acceptPublic(
+                $offer->public_token,
+                $request->verification_code,
+                $request->ip()
+            );
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer accepted successfully. Thank you!'),
+                ]);
+            }
+
+            return back()->with('success', __('Offer accepted successfully. Thank you!'));
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 422);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Public reject action (signed URL version).
+     */
+    public function publicRejectSigned(Request $request, Offer $offer): JsonResponse|RedirectResponse
+    {
+        try {
+            $this->offerPublicService->rejectPublic($offer->public_token, $request->reason);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Offer rejected.'),
+                ]);
+            }
+
+            return back()->with('success', __('Offer rejected.'));
+        } catch (\Exception $e) {
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $e->getMessage()], 403);
+            }
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

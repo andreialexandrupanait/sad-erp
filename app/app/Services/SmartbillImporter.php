@@ -31,6 +31,11 @@ class SmartbillImporter
         'pdfs_downloaded' => 0,
     ];
 
+    /**
+     * Track client IDs that need their totals updated after bulk import.
+     */
+    protected array $affectedClientIds = [];
+
     public function __construct(Organization $organization, $userId, ?ClientMatcher $clientMatcher = null)
     {
         $this->organization = $organization;
@@ -56,7 +61,7 @@ class SmartbillImporter
     /**
      * Import invoices for a date range
      */
-    public function importInvoices($fromDate, $toDate, $downloadPdfs = true, $preview = false)
+    public function importInvoices(string $fromDate, string $toDate, bool $downloadPdfs = true, bool $preview = false): array
     {
         $this->stats = [
             'total' => 0,
@@ -67,6 +72,7 @@ class SmartbillImporter
             'clients_created' => 0,
             'pdfs_downloaded' => 0,
         ];
+        $this->affectedClientIds = [];
 
         try {
             $page = 1;
@@ -85,19 +91,26 @@ class SmartbillImporter
                 $this->stats['total'] += count($invoices);
 
                 // Process in smaller chunks to prevent memory exhaustion
+                // Wrap in transaction and disable events to prevent redundant cache clearing
                 $chunks = array_chunk($invoices, 25);
                 foreach ($chunks as $chunk) {
-                    foreach ($chunk as $invoice) {
-                        try {
-                            $this->processInvoice($invoice, $downloadPdfs, $preview);
-                        } catch (Exception $e) {
-                            $this->stats['errors']++;
-                            Log::error('Error processing invoice', [
-                                'invoice' => $invoice,
-                                'error' => $e->getMessage(),
-                            ]);
-                        }
-                    }
+                    DB::transaction(function () use ($chunk, $downloadPdfs, $preview) {
+                        // Disable observer events during bulk import
+                        // Observers clear cache on each save, which is inefficient for bulk operations
+                        FinancialRevenue::withoutEvents(function () use ($chunk, $downloadPdfs, $preview) {
+                            foreach ($chunk as $invoice) {
+                                try {
+                                    $this->processInvoice($invoice, $downloadPdfs, $preview);
+                                } catch (Exception $e) {
+                                    $this->stats['errors']++;
+                                    Log::error('Error processing invoice', [
+                                        'invoice' => $invoice,
+                                        'error' => $e->getMessage(),
+                                    ]);
+                                }
+                            }
+                        });
+                    });
                     // Free memory between chunks
                     gc_collect_cycles();
                 }
@@ -106,6 +119,9 @@ class SmartbillImporter
                 $hasMore = count($invoices) === $perPage;
                 $page++;
             }
+
+            // Update client totals for all affected clients (batch update since observers are disabled)
+            $this->updateAffectedClientTotals();
 
             // Clear dashboard caches after successful import
             $this->clearFinancialCaches();
@@ -152,6 +168,52 @@ class SmartbillImporter
         } catch (Exception $e) {
             // Cache clearing should not fail the import
             Log::warning('Failed to clear financial caches after import', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Update total_incomes for all clients affected by the bulk import.
+     *
+     * Since observers are disabled during bulk import, we batch-update
+     * client totals at the end instead of updating after each revenue.
+     */
+    protected function updateAffectedClientTotals(): void
+    {
+        $clientIds = array_keys($this->affectedClientIds);
+
+        if (empty($clientIds)) {
+            return;
+        }
+
+        try {
+            // Update each affected client's total in a single efficient query per client
+            foreach ($clientIds as $clientId) {
+                $client = Client::withoutGlobalScopes()->find($clientId);
+
+                if (!$client) {
+                    continue;
+                }
+
+                // Sum revenues for this client within the organization
+                $total = FinancialRevenue::withoutGlobalScopes()
+                    ->where('client_id', $clientId)
+                    ->where('organization_id', $this->organization->id)
+                    ->sum('amount');
+
+                $client->total_incomes = $total ?? 0;
+                $client->saveQuietly();
+            }
+
+            Log::info('Updated client totals after bulk import', [
+                'clients_updated' => count($clientIds),
+                'organization_id' => $this->organization->id,
+            ]);
+        } catch (Exception $e) {
+            // Client total update should not fail the entire import
+            Log::error('Failed to update client totals after import', [
+                'client_ids' => $clientIds,
                 'error' => $e->getMessage(),
             ]);
         }
@@ -231,6 +293,11 @@ class SmartbillImporter
                 // Create new revenue
                 $revenue = FinancialRevenue::withoutGlobalScope('user_scope')->create($revenueData);
                 $this->stats['created']++;
+            }
+
+            // Track affected client for batch total update
+            if ($revenue->client_id) {
+                $this->affectedClientIds[$revenue->client_id] = true;
             }
 
             // Download and attach PDF
@@ -375,7 +442,7 @@ class SmartbillImporter
     /**
      * Get import statistics
      */
-    public function getStats()
+    public function getStats(): array
     {
         return $this->stats;
     }

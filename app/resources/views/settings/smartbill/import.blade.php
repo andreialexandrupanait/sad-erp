@@ -391,7 +391,10 @@ function showError(message) {
     document.getElementById('completionMessage').classList.add('hidden');
     document.getElementById('errorDisplay').classList.remove('hidden');
     const errorList = document.getElementById('errorList');
-    errorList.innerHTML = `<li>${message}</li>`;
+    errorList.textContent = '';
+    const li = document.createElement('li');
+    li.textContent = message;  // Safe: textContent escapes HTML
+    errorList.appendChild(li);
 
     // Show back button
     const completionDiv = document.getElementById('completionMessage');

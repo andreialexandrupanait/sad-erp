@@ -303,20 +303,7 @@ class ContractController extends Controller
             return back()->with('error', $message);
         }
 
-        // Delete associated PDF file if exists
-        if ($contract->pdf_path && file_exists(storage_path('app/' . $contract->pdf_path))) {
-            unlink(storage_path('app/' . $contract->pdf_path));
-        }
-
-        // Unlink any associated offers
-        if ($contract->offer) {
-            $contract->offer->update(['contract_id' => null]);
-        }
-
-        // Delete annexes
-        $contract->annexes()->delete();
-
-        // Delete the contract
+        // Delete the contract (observer handles PDF cleanup, offer unlinking, and annexes CASCADE)
         $contract->delete();
 
         if (request()->expectsJson()) {

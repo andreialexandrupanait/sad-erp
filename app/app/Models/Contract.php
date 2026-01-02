@@ -41,6 +41,7 @@ class Contract extends Model
         // Editing lock fields
         'locked_by',
         'locked_at',
+        'lock_version',
         'current_version',
     ];
 
@@ -54,6 +55,7 @@ class Contract extends Model
         'is_finalized' => 'boolean',
         'finalized_at' => 'datetime',
         'locked_at' => 'datetime',
+        'lock_version' => 'integer',
         'current_version' => 'integer',
     ];
 
@@ -103,6 +105,20 @@ class Contract extends Model
                     }
                 }
                 $contract->blocks = $blocks;
+            }
+
+            // Sanitize temp client fields (plain text, no HTML allowed)
+            $tempClientFields = [
+                'temp_client_name',
+                'temp_client_email',
+                'temp_client_company',
+            ];
+
+            foreach ($tempClientFields as $field) {
+                if ($contract->isDirty($field) && !empty($contract->$field)) {
+                    // Strip all HTML tags and encode special characters
+                    $contract->$field = htmlspecialchars(strip_tags($contract->$field), ENT_QUOTES, 'UTF-8');
+                }
             }
         });
 
@@ -273,7 +289,10 @@ class Contract extends Model
     }
 
     /**
-     * Acquire editing lock for a user.
+     * Acquire editing lock for a user with database-level locking.
+     *
+     * Uses SELECT ... FOR UPDATE to prevent race conditions where multiple
+     * users could acquire the lock simultaneously.
      *
      * @param int|null $userId The user ID to acquire lock for
      * @return bool True if lock acquired, false if already locked by another user
@@ -282,17 +301,84 @@ class Contract extends Model
     {
         $userId = $userId ?? auth()->id();
 
-        // If already locked by another user, can't acquire
-        if ($this->isLocked() && $this->locked_by !== $userId) {
-            return false;
-        }
+        return \DB::transaction(function () use ($userId) {
+            // Lock the row to prevent race conditions
+            $contract = static::withoutGlobalScopes()
+                ->where('id', $this->id)
+                ->lockForUpdate()
+                ->first();
 
-        $this->update([
-            'locked_by' => $userId,
-            'locked_at' => now(),
-        ]);
+            if (!$contract) {
+                return false;
+            }
 
-        return true;
+            // Check if locked by another user (with fresh data)
+            if ($contract->isLocked() && $contract->locked_by !== $userId) {
+                return false;
+            }
+
+            // Acquire the lock
+            $contract->update([
+                'locked_by' => $userId,
+                'locked_at' => now(),
+            ]);
+
+            // Refresh this instance with the new lock data
+            $this->refresh();
+
+            return true;
+        });
+    }
+
+    /**
+     * Save contract with optimistic locking version check.
+     *
+     * Prevents concurrent edits by checking if the lock_version matches
+     * what was loaded. If another user saved in between, this will fail.
+     *
+     * @param array $data The data to update
+     * @return bool True if saved successfully
+     * @throws \App\Exceptions\ConcurrentModificationException If version mismatch detected
+     */
+    public function saveWithVersionCheck(array $data = []): bool
+    {
+        return \DB::transaction(function () use ($data) {
+            // Get the current state with a lock
+            $current = static::withoutGlobalScopes()
+                ->where('id', $this->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$current) {
+                throw new \RuntimeException('Contract not found');
+            }
+
+            // Check for concurrent modification
+            $expectedVersion = $this->lock_version ?? 1;
+            if ($current->lock_version !== $expectedVersion) {
+                \Log::warning('Concurrent modification detected on contract', [
+                    'contract_id' => $this->id,
+                    'expected_version' => $expectedVersion,
+                    'current_version' => $current->lock_version,
+                    'user_id' => auth()->id(),
+                ]);
+
+                throw new \App\Exceptions\ConcurrentModificationException(
+                    __('This contract was modified by another user. Please refresh and try again.')
+                );
+            }
+
+            // Increment version and save
+            $data['lock_version'] = ($current->lock_version ?? 1) + 1;
+
+            $current->fill($data);
+            $result = $current->save();
+
+            // Refresh this instance
+            $this->refresh();
+
+            return $result;
+        });
     }
 
     /**

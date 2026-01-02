@@ -66,6 +66,11 @@ class DatabaseRestoreService
     ];
 
     /**
+     * Batch size for insert/upsert operations to prevent memory exhaustion
+     */
+    protected int $batchSize = 500;
+
+    /**
      * Restore database from backup file
      *
      * @param string $filename Backup filename
@@ -260,7 +265,7 @@ class DatabaseRestoreService
     }
 
     /**
-     * Restore a single table
+     * Restore a single table using batch operations
      *
      * @param string $table
      * @param array $rows
@@ -289,17 +294,32 @@ class DatabaseRestoreService
             ];
         }
 
+        // Convert all rows to arrays
+        $rows = array_map(fn($row) => (array) $row, $rows);
+
+        if ($mode === 'merge') {
+            return $this->batchMerge($table, $rows);
+        }
+
+        // For replace mode, use batch insert
+        return $this->batchInsert($table, $rows);
+    }
+
+    /**
+     * Batch insert rows into a table
+     *
+     * @param string $table
+     * @param array $rows
+     * @return array
+     */
+    protected function batchInsert(string $table, array $rows): array
+    {
         $count = 0;
+        $chunks = array_chunk($rows, $this->batchSize);
 
-        foreach ($rows as $row) {
-            $rowData = (array) $row;
-
-            if ($mode === 'merge') {
-                $count += $this->mergeRow($table, $rowData);
-            } else {
-                DB::table($table)->insert($rowData);
-                $count++;
-            }
+        foreach ($chunks as $chunk) {
+            DB::table($table)->insert($chunk);
+            $count += count($chunk);
         }
 
         return [
@@ -309,27 +329,48 @@ class DatabaseRestoreService
     }
 
     /**
-     * Merge a single row (insert or update based on existence)
+     * Batch merge (upsert) rows into a table
      *
      * @param string $table
-     * @param array $rowData
-     * @return int Number of rows affected (0 or 1)
+     * @param array $rows
+     * @return array
      */
-    protected function mergeRow(string $table, array $rowData): int
+    protected function batchMerge(string $table, array $rows): array
     {
-        if (isset($rowData['id'])) {
-            $existing = DB::table($table)->where('id', $rowData['id'])->exists();
+        $count = 0;
+        $chunks = array_chunk($rows, $this->batchSize);
 
-            if ($existing) {
-                DB::table($table)->where('id', $rowData['id'])->update($rowData);
-            } else {
-                DB::table($table)->insert($rowData);
+        // Get column names from first row for the update clause
+        $updateColumns = !empty($rows) ? array_keys($rows[0]) : [];
+        // Remove 'id' from update columns (it's the unique key)
+        $updateColumns = array_filter($updateColumns, fn($col) => $col !== 'id');
+
+        foreach ($chunks as $chunk) {
+            // Separate rows with and without IDs
+            $withIds = array_filter($chunk, fn($row) => isset($row['id']));
+            $withoutIds = array_filter($chunk, fn($row) => !isset($row['id']));
+
+            // For rows with IDs, use upsert
+            if (!empty($withIds)) {
+                DB::table($table)->upsert(
+                    array_values($withIds),
+                    ['id'],  // Unique key
+                    $updateColumns
+                );
+                $count += count($withIds);
             }
-        } else {
-            DB::table($table)->insert($rowData);
+
+            // For rows without IDs, just insert
+            if (!empty($withoutIds)) {
+                DB::table($table)->insert(array_values($withoutIds));
+                $count += count($withoutIds);
+            }
         }
 
-        return 1;
+        return [
+            'success' => true,
+            'count' => $count,
+        ];
     }
 
     /**

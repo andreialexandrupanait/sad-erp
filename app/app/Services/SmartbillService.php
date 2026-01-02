@@ -118,7 +118,7 @@ class SmartbillService
     /**
      * List invoices for a given period
      */
-    public function listInvoices($fromDate, $toDate, $page = 1, $perPage = 50)
+    public function listInvoices(string $fromDate, string $toDate, int $page = 1, int $perPage = 50): never
     {
         throw new Exception(
             'Smartbill API does not support listing invoices. ' .
@@ -130,7 +130,7 @@ class SmartbillService
     /**
      * Import invoices from CSV data exported from Smartbill
      */
-    public function importFromCsvData($csvData)
+    public function importFromCsvData(array $csvData): array
     {
         $invoices = [];
 
@@ -162,7 +162,7 @@ class SmartbillService
     /**
      * Get invoice details
      */
-    public function getInvoice($seriesName, $number)
+    public function getInvoice(string $seriesName, string $number): ?array
     {
         $endpoint = sprintf('/invoice?cif=%s&seriesname=%s&number=%s',
             urlencode($this->cif),
@@ -176,7 +176,7 @@ class SmartbillService
     /**
      * Download invoice PDF
      */
-    public function downloadInvoicePdf($seriesName, $number)
+    public function downloadInvoicePdf(string $seriesName, string $number): ?string
     {
         $url = sprintf(
             '%s/invoice/pdf?cif=%s&seriesname=%s&number=%s',
@@ -245,7 +245,7 @@ class SmartbillService
     /**
      * Get payment status for an invoice
      */
-    public function getInvoicePaymentStatus($seriesName, $number)
+    public function getInvoicePaymentStatus(string $seriesName, string $number): ?array
     {
         $endpoint = sprintf('/invoice/paymentstatus?cif=%s&seriesname=%s&number=%s',
             urlencode($this->cif),
@@ -259,7 +259,7 @@ class SmartbillService
     /**
      * Test connection to Smartbill API
      */
-    public function testConnection()
+    public function testConnection(): array
     {
         try {
             // Use the /tax endpoint to test credentials

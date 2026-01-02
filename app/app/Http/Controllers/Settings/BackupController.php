@@ -152,21 +152,53 @@ class BackupController extends Controller
 
     /**
      * Import database from uploaded JSON file
+     *
+     * Security: Reduced file size limit and added JSON structure validation
+     * to prevent DoS attacks and malformed data imports.
      */
     public function import(Request $request)
     {
         $request->validate([
-            'backup_file' => 'required|file|mimes:json|max:51200', // 50MB max
+            'backup_file' => 'required|file|mimes:json|max:10240', // 10MB max (reduced from 50MB)
             'mode' => 'required|in:merge,replace',
         ]);
 
         $file = $request->file('backup_file');
         $mode = $request->input('mode');
 
+        // Security: Validate JSON structure before processing
+        $content = file_get_contents($file->getRealPath());
+        $data = json_decode($content, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            \Log::warning('Invalid JSON in backup import attempt', [
+                'user_id' => auth()->id(),
+                'error' => json_last_error_msg(),
+            ]);
+            return back()->with('error', __('Invalid JSON format: :error', ['error' => json_last_error_msg()]));
+        }
+
+        // Validate expected backup structure
+        $requiredKeys = ['version', 'created_at', 'tables'];
+        foreach ($requiredKeys as $key) {
+            if (!isset($data[$key])) {
+                \Log::warning('Backup import missing required key', [
+                    'user_id' => auth()->id(),
+                    'missing_key' => $key,
+                ]);
+                return back()->with('error', __('Invalid backup file: missing required field ":key"', ['key' => $key]));
+            }
+        }
+
+        // Validate tables is an array
+        if (!is_array($data['tables'])) {
+            return back()->with('error', __('Invalid backup file: tables must be an array.'));
+        }
+
         // Save uploaded file temporarily
         $tempFilename = 'temp_restore_' . time() . '.json';
         $tempPath = 'backups/' . $tempFilename;
-        Storage::disk('local')->put($tempPath, file_get_contents($file->getRealPath()));
+        Storage::disk('local')->put($tempPath, $content);
 
         // Perform restore
         $result = $this->restoreService->restoreFromBackup($tempFilename, $mode);

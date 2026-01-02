@@ -2,6 +2,7 @@
 
 namespace App\Services\Offer;
 
+use App\Contracts\OfferServiceInterface;
 use App\Jobs\GenerateDocumentPdfJob;
 use App\Models\Client;
 use App\Models\Contract;
@@ -33,8 +34,10 @@ use Illuminate\Support\Str;
  * - Sending offers to clients
  * - Converting offers to contracts
  * - Activity logging
+ *
+ * @implements OfferServiceInterface
  */
-class OfferService
+class OfferService implements OfferServiceInterface
 {
     public function __construct(
         protected ?NotificationService $notificationService = null,
@@ -63,14 +66,13 @@ class OfferService
 
             $offer = Offer::create($data);
 
-            // Create items
-            foreach ($items as $index => $itemData) {
-                $itemData['sort_order'] = $index;
-                $offer->items()->create($itemData);
-            }
-
-            // Recalculate totals
-            $offer->recalculateTotals();
+            // Create items with deferred calculation to avoid multiple recalculations
+            OfferItem::withDeferredCalculation(function () use ($offer, $items) {
+                foreach ($items as $index => $itemData) {
+                    $itemData['sort_order'] = $index;
+                    $offer->items()->create($itemData);
+                }
+            }, $offer);
 
             // Log activity
             $offer->logActivity('created', "Offer {$offer->offer_number} created");
@@ -85,25 +87,32 @@ class OfferService
     public function update(Offer $offer, array $data, array $items = [], ?string $versionReason = null): Offer
     {
         return DB::transaction(function () use ($offer, $data, $items, $versionReason) {
+            // Eager load items for version snapshot (avoids N+1 query in createSnapshot)
+            if (!$offer->relationLoaded('items')) {
+                $offer->load('items');
+            }
+
             // Create version snapshot before updating if offer is sent/viewed
             $version = $offer->createVersion($versionReason);
 
             $offer->update($data);
 
-            // Sync items if provided
+            // Sync items if provided with deferred calculation
             if (!empty($items)) {
-                // Delete existing items
-                $offer->items()->delete();
+                OfferItem::withDeferredCalculation(function () use ($offer, $items) {
+                    // Delete existing items
+                    $offer->items()->delete();
 
-                // Create new items
-                foreach ($items as $index => $itemData) {
-                    $itemData['sort_order'] = $index;
-                    $offer->items()->create($itemData);
-                }
+                    // Create new items
+                    foreach ($items as $index => $itemData) {
+                        $itemData['sort_order'] = $index;
+                        $offer->items()->create($itemData);
+                    }
+                }, $offer);
+            } else {
+                // No items changed, just recalculate totals for any discount changes
+                $offer->recalculateTotals();
             }
-
-            // Recalculate totals
-            $offer->recalculateTotals();
 
             // Log activity with version info
             $activityMessage = $version
@@ -140,12 +149,14 @@ class OfferService
             $newOffer->created_by = auth()->id();
             $newOffer->save();
 
-            // Duplicate items
-            foreach ($offer->items as $item) {
-                $newItem = $item->replicate(['offer_id']);
-                $newItem->offer_id = $newOffer->id;
-                $newItem->save();
-            }
+            // Duplicate items with deferred calculation
+            OfferItem::withDeferredCalculation(function () use ($offer, $newOffer) {
+                foreach ($offer->items as $item) {
+                    $newItem = $item->replicate(['offer_id']);
+                    $newItem->offer_id = $newOffer->id;
+                    $newItem->save();
+                }
+            }, $newOffer);
 
             // Log activity
             $newOffer->logActivity('created', "Offer duplicated from {$offer->offer_number}");

@@ -55,14 +55,17 @@ class SecurityHeaders
         );
 
         // Content Security Policy (Nonce-based)
-        // Note: Currently in REPORT-ONLY mode to avoid breaking existing functionality
-        // Gradually migrate inline scripts to use nonces, then switch to enforcing mode
+        // Security: CSP is now ENFORCED by default to protect against XSS attacks
+        // Note: 'unsafe-inline' is still present for styles (hard to migrate) but removed from scripts
+        // TODO: Migrate remaining inline scripts to use nonce attribute, then remove 'unsafe-inline' entirely
         $csp = [
             "default-src 'self'",
-            // script-src: Allow scripts from self, with nonce for inline scripts
-            // Temporarily keeping unsafe-inline/unsafe-eval for backward compatibility
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com",
+            // script-src: Allow scripts from self with nonce for inline scripts
+            // SECURITY: Removed 'unsafe-eval' (prevents eval() attacks)
+            // SECURITY: 'unsafe-inline' kept temporarily - migrate to nonces then remove
+            "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com",
             // style-src: Allow styles from self, with nonce for inline styles
+            // Note: 'unsafe-inline' required for many CSS frameworks and Tailwind
             "style-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net",
@@ -70,12 +73,13 @@ class SecurityHeaders
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",
+            "object-src 'none'",
             "upgrade-insecure-requests",
         ];
 
-        // Use Content-Security-Policy-Report-Only during migration phase
-        // Switch to Content-Security-Policy once inline scripts are migrated
-        $cspHeader = config('app.csp_enforce', false)
+        // SECURITY: CSP is now enforced by default (was report-only)
+        // Set CSP_ENFORCE=false in .env to temporarily disable during debugging
+        $cspHeader = config('app.csp_enforce', true)
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 
