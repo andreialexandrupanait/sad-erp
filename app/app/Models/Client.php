@@ -160,16 +160,27 @@ class Client extends Model
 
     /**
      * Scope to search clients by name, company, tax_id or email
-     * Uses FULLTEXT search for indexed columns (10-100x faster than LIKE)
+     * Uses FULLTEXT search for indexed columns on MySQL (10-100x faster than LIKE)
+     * Falls back to LIKE search for SQLite compatibility
      */
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            // FULLTEXT search on indexed columns (name, company_name, email)
-            // BOOLEAN MODE allows: +required -excluded "exact phrase"
-            $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search])
-              // LIKE search for non-indexed fields
-              ->orWhere('tax_id', 'like', "%{$search}%")
+            $driver = $q->getConnection()->getDriverName();
+
+            if ($driver === 'mysql') {
+                // FULLTEXT search on indexed columns (name, company_name, email)
+                // BOOLEAN MODE allows: +required -excluded "exact phrase"
+                $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search]);
+            } else {
+                // SQLite fallback: use LIKE for all searchable columns
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            }
+
+            // LIKE search for non-indexed fields (works on all databases)
+            $q->orWhere('tax_id', 'like', "%{$search}%")
               ->orWhere('phone', 'like', "%{$search}%")
               ->orWhere('contact_person', 'like', "%{$search}%");
         });

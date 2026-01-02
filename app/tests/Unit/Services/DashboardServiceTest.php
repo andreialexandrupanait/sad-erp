@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
 use App\Models\User;
+use App\Models\Organization;
 use App\Services\Dashboard\DashboardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -23,19 +24,24 @@ class DashboardServiceTest extends TestCase
 
     protected DashboardService $service;
     protected User $user;
+    protected Organization $organization;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->service = new DashboardService();
+        // Create organization first
+        $this->organization = Organization::factory()->create();
 
         // Create test user with organization
         $this->user = User::factory()->create([
-            'organization_id' => 1,
+            'organization_id' => $this->organization->id,
         ]);
 
         $this->actingAs($this->user);
+
+        // Use Laravel's service container to resolve the service with all dependencies
+        $this->service = app(DashboardService::class);
     }
 
     /** @test */
@@ -54,9 +60,12 @@ class DashboardServiceTest extends TestCase
     public function it_calculates_key_metrics_correctly(): void
     {
         // Create test data
-        Client::factory()->count(5)->create(['user_id' => $this->user->id]);
+        Client::factory()->count(5)->create([
+            'user_id' => $this->user->id,
+            'organization_id' => $this->organization->id,
+        ]);
 
-        $metrics = $this->service->getKeyMetrics($this->user->organization_id);
+        $metrics = $this->service->getKeyMetrics($this->organization->id);
 
         $this->assertEquals(5, $metrics['totalClients']);
         $this->assertArrayHasKey('totalDomains', $metrics);
@@ -84,7 +93,7 @@ class DashboardServiceTest extends TestCase
             'month' => now()->month,
         ]);
 
-        $overview = $this->service->getFinancialOverview($this->user->organization_id);
+        $overview = $this->service->getFinancialOverview($this->organization->id);
 
         $this->assertEquals(1000, $overview['currentMonthRevenue']);
         $this->assertEquals(400, $overview['currentMonthExpenses']);
@@ -113,7 +122,7 @@ class DashboardServiceTest extends TestCase
             'month' => now()->month,
         ]);
 
-        $overview = $this->service->getFinancialOverview($this->user->organization_id);
+        $overview = $this->service->getFinancialOverview($this->organization->id);
 
         $this->assertEquals(1000, $overview['currentMonthRevenue']);
     }
@@ -166,7 +175,7 @@ class DashboardServiceTest extends TestCase
     /** @test */
     public function it_handles_zero_revenue_without_division_error(): void
     {
-        $overview = $this->service->getFinancialOverview($this->user->organization_id);
+        $overview = $this->service->getFinancialOverview($this->organization->id);
 
         $this->assertEquals(0, $overview['currentMonthProfitMargin']);
         $this->assertEquals(0, $overview['yearlyProfitMargin']);
@@ -176,8 +185,14 @@ class DashboardServiceTest extends TestCase
     public function it_gets_top_clients_by_revenue(): void
     {
         // Create clients with revenue
-        $client1 = Client::factory()->create(['user_id' => $this->user->id]);
-        $client2 = Client::factory()->create(['user_id' => $this->user->id]);
+        $client1 = Client::factory()->create([
+            'user_id' => $this->user->id,
+            'organization_id' => $this->organization->id,
+        ]);
+        $client2 = Client::factory()->create([
+            'user_id' => $this->user->id,
+            'organization_id' => $this->organization->id,
+        ]);
 
         FinancialRevenue::factory()->create([
             'user_id' => $this->user->id,
@@ -206,10 +221,13 @@ class DashboardServiceTest extends TestCase
         $this->service->getKeyMetrics($this->user->organization_id);
 
         // Add more clients
-        Client::factory()->count(3)->create(['user_id' => $this->user->id]);
+        Client::factory()->count(3)->create([
+            'user_id' => $this->user->id,
+            'organization_id' => $this->organization->id,
+        ]);
 
         // Second call should return cached data (still showing 0 clients)
-        $metrics = $this->service->getKeyMetrics($this->user->organization_id);
+        $metrics = $this->service->getKeyMetrics($this->organization->id);
 
         // Note: This test verifies caching behavior - cached count may not reflect new data
         $this->assertIsInt($metrics['totalClients']);

@@ -55,12 +55,12 @@ class UserFactory extends Factory
     }
 
     /**
-     * Indicate that the user is a superadmin.
+     * Indicate that the user is a superadmin (uses admin role since superadmin not in enum).
      */
     public function superadmin(): static
     {
         return $this->state(fn(array $attributes) => [
-            'role' => 'superadmin',
+            'role' => 'admin',
         ]);
     }
 

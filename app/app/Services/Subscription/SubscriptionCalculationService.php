@@ -54,6 +54,7 @@ class SubscriptionCalculationService
             'old_renewal_date' => $oldDate,
             'new_renewal_date' => $newDate,
             'change_reason' => $reason ?? __('Manual update'),
+            'changed_at' => now(),
         ]);
 
         Log::info('Subscription renewal date updated', [
@@ -103,6 +104,7 @@ class SubscriptionCalculationService
                 'old_renewal_date' => $oldDate,
                 'new_renewal_date' => $currentDate,
                 'change_reason' => __('Auto-advance :count billing cycles', ['count' => $cyclesAdvanced]),
+                'changed_at' => now(),
             ]);
 
             Log::info('Advanced overdue subscription', [

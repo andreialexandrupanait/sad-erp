@@ -45,6 +45,7 @@ class BackupRestoreWorkflowTest extends TestCase
         // 1. Create test data
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
             'name' => 'Test Client Inc',
         ]);
 
@@ -118,6 +119,7 @@ class BackupRestoreWorkflowTest extends TestCase
         // Create complex data with relationships
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
         ]);
 
         $revenues = FinancialRevenue::factory()->count(3)->create([
@@ -163,11 +165,13 @@ class BackupRestoreWorkflowTest extends TestCase
         // Create initial data
         $client1 = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
             'name' => 'Original Client 1',
         ]);
 
         $client2 = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
             'name' => 'Original Client 2',
         ]);
 
@@ -208,6 +212,7 @@ class BackupRestoreWorkflowTest extends TestCase
     {
         $client1 = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
         ]);
 
         // Create backup
@@ -216,6 +221,7 @@ class BackupRestoreWorkflowTest extends TestCase
         // Create new client after backup
         $client2 = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
         ]);
 
         // Restore with merge mode
@@ -283,6 +289,7 @@ class BackupRestoreWorkflowTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
         ]);
 
         // Create backup
@@ -325,6 +332,7 @@ class BackupRestoreWorkflowTest extends TestCase
         // Create test data
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->admin->id,
         ]);
 
         // Create backup via HTTP

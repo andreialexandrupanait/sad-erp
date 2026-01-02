@@ -14,40 +14,52 @@ class ClientStatusesSeeder extends Seeder
     {
         $statuses = [
             [
+                'label' => 'Active',
+                'value' => 'active',
+                'color_class' => '#22c55e',
+                'sort_order' => 1,
+            ],
+            [
+                'label' => 'Inactive',
+                'value' => 'inactive',
+                'color_class' => '#94a3b8',
+                'sort_order' => 2,
+            ],
+            [
                 'label' => 'Mentenanta',
                 'value' => 'mentenanta',
                 'color_class' => '#06b6d4',
-                'sort_order' => 1,
+                'sort_order' => 3,
             ],
             [
                 'label' => 'In progress',
                 'value' => 'in-progress',
                 'color_class' => '#f59e0b',
-                'sort_order' => 2,
+                'sort_order' => 4,
             ],
             [
                 'label' => 'Supraveghere',
                 'value' => 'supraveghere',
                 'color_class' => '#a855f7',
-                'sort_order' => 3,
+                'sort_order' => 5,
             ],
             [
                 'label' => 'On hold',
                 'value' => 'on-hold',
                 'color_class' => '#94a3b8',
-                'sort_order' => 4,
+                'sort_order' => 6,
             ],
             [
                 'label' => 'Completed',
                 'value' => 'completed',
                 'color_class' => '#22c55e',
-                'sort_order' => 5,
+                'sort_order' => 7,
             ],
             [
                 'label' => 'Canceled',
                 'value' => 'canceled',
                 'color_class' => '#000000',
-                'sort_order' => 6,
+                'sort_order' => 8,
             ],
         ];
 

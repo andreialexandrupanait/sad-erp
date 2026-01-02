@@ -44,6 +44,7 @@ class FinancialTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $revenueData = [
@@ -199,7 +200,9 @@ class FinancialTest extends TestCase
         $response = $this->actingAs($this->user)
             ->get(route('financial.revenues.show', $otherRevenue));
 
-        $response->assertStatus(403);
+        // Global scope makes records from other organizations invisible (404)
+        // This is more secure than 403 as it doesn't reveal resource existence
+        $response->assertStatus(404);
     }
 
     /** @test */

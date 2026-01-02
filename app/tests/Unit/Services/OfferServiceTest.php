@@ -50,6 +50,7 @@ class OfferServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $offer = $this->service->create([
@@ -91,6 +92,7 @@ class OfferServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $original = Offer::factory()->create([
@@ -121,6 +123,7 @@ class OfferServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'email' => null,
         ]);
 
@@ -153,6 +156,7 @@ class OfferServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $offer = Offer::factory()->sent()->create([
@@ -272,6 +276,7 @@ class OfferServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $offer = Offer::factory()->sent()->create([

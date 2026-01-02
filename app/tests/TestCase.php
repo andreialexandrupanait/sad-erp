@@ -21,8 +21,14 @@ abstract class TestCase extends BaseTestCase
         $app['config']->set('database.default', 'sqlite');
         $app['config']->set('database.connections.sqlite', [
             'driver' => 'sqlite',
+            'url' => null,
             'database' => ':memory:',
             'prefix' => '',
+            'foreign_key_constraints' => false, // Disabled to allow migrations to run in any order
+            'busy_timeout' => null,
+            'journal_mode' => null,
+            'synchronous' => null,
+            'transaction_mode' => 'DEFERRED',
         ]);
 
         return $app;

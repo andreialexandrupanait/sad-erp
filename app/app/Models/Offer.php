@@ -335,13 +335,29 @@ class Offer extends Model
     public function scopeSearch($query, $search)
     {
         return $query->where(function ($q) use ($search) {
-            // FULLTEXT search on indexed columns (title, introduction, notes)
-            $q->whereRaw('MATCH(title, introduction, notes) AGAINST(? IN BOOLEAN MODE)', [$search])
-              // LIKE search for offer_number (exact match important)
-              ->orWhere('offer_number', 'like', "%{$search}%")
-              // Search in related client using FULLTEXT if available
-              ->orWhereHas('client', function ($q) use ($search) {
-                  $q->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search]);
+            $driver = $q->getConnection()->getDriverName();
+
+            if ($driver === 'mysql') {
+                // FULLTEXT search on indexed columns (title, introduction, notes)
+                $q->whereRaw('MATCH(title, introduction, notes) AGAINST(? IN BOOLEAN MODE)', [$search]);
+            } else {
+                // SQLite fallback: use LIKE for all searchable columns
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('introduction', 'like', "%{$search}%")
+                  ->orWhere('notes', 'like', "%{$search}%");
+            }
+
+            // LIKE search for offer_number (works on all databases)
+            $q->orWhere('offer_number', 'like', "%{$search}%")
+              // Search in related client
+              ->orWhereHas('client', function ($subQ) use ($search, $driver) {
+                  if ($driver === 'mysql') {
+                      $subQ->whereRaw('MATCH(name, company_name, email) AGAINST(? IN BOOLEAN MODE)', [$search]);
+                  } else {
+                      $subQ->where('name', 'like', "%{$search}%")
+                           ->orWhere('company_name', 'like', "%{$search}%")
+                           ->orWhere('email', 'like', "%{$search}%");
+                  }
               });
         });
     }

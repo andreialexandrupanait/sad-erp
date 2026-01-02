@@ -39,12 +39,14 @@ class ClientMatcherTest extends TestCase
         // Create test clients
         Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company SRL',
             'tax_id' => '12345678',
         ]);
 
         Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Another Company SRL',
             'tax_id' => 'RO87654321',
         ]);
@@ -60,6 +62,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company',
             'tax_id' => '12345678',
         ]);
@@ -77,6 +80,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company',
             'tax_id' => 'RO12345678',
         ]);
@@ -98,6 +102,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company',
             'tax_id' => '12345678',
         ]);
@@ -126,6 +131,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company SRL',
             'tax_id' => '12345678',
         ]);
@@ -143,6 +149,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company SRL',
             'tax_id' => '12345678',
         ]);
@@ -170,6 +177,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Existing Company',
             'tax_id' => '12345678',
         ]);
@@ -233,6 +241,7 @@ class ClientMatcherTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company',
             'tax_id' => null,
         ]);

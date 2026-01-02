@@ -140,6 +140,7 @@ class RevenueImportServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'tax_id' => 'RO12345678',
             'name' => 'Existing Company',
         ]);
@@ -235,6 +236,7 @@ class RevenueImportServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'tax_id' => 'RO11111111',
         ]);
         FinancialRevenue::factory()->create([

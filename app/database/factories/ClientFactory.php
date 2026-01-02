@@ -35,7 +35,7 @@ class ClientFactory extends Factory
             'user_id' => User::factory(),
             'created_by' => fn (array $attributes) => $attributes['user_id'],
             'name' => $name,
-            'slug' => Str::slug($name),
+            'slug' => null, // Let model boot method generate from actual name
             'company_name' => $name,
             'contact_person' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
@@ -70,8 +70,9 @@ class ClientFactory extends Factory
     public function active(): static
     {
         return $this->state(function (array $attributes) {
+            // Note: 'slug' is a computed accessor, search by 'value' instead
             $activeStatus = SettingOption::clientStatuses()
-                ->where('slug', 'active')
+                ->where('value', 'active')
                 ->first();
 
             return [
@@ -86,8 +87,9 @@ class ClientFactory extends Factory
     public function inactive(): static
     {
         return $this->state(function (array $attributes) {
+            // Note: 'slug' is a computed accessor, search by 'value' instead
             $inactiveStatus = SettingOption::clientStatuses()
-                ->where('slug', 'inactive')
+                ->where('value', 'inactive')
                 ->first();
 
             return [

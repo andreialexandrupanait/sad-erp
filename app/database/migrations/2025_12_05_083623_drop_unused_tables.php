@@ -22,11 +22,11 @@ return new class extends Migration
         Schema::dropIfExists('clickup_mappings');
         Schema::dropIfExists('clickup_syncs');
 
-        // Banking tables (feature on hold, removing scaffolding)
-        Schema::dropIfExists('bank_sync_logs');
-        Schema::dropIfExists('bank_statements');
-        Schema::dropIfExists('bank_transactions');
-        Schema::dropIfExists('banking_credentials');
+        // Banking tables - KEPT: Feature is being developed
+        // Schema::dropIfExists('bank_sync_logs');
+        // Schema::dropIfExists('bank_statements');
+        // Schema::dropIfExists('bank_transactions');
+        // Schema::dropIfExists('banking_credentials');
 
         // Orphaned feature tables (never implemented)
         Schema::dropIfExists('client_service_rates');
@@ -38,7 +38,8 @@ return new class extends Migration
         // Unused Laravel tables
         Schema::dropIfExists('failed_jobs');
         Schema::dropIfExists('job_batches');
-        Schema::dropIfExists('password_reset_tokens');
+        // password_reset_tokens - KEPT: Required for Laravel password reset functionality
+        // Schema::dropIfExists('password_reset_tokens');
     }
 
     /**

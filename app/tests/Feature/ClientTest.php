@@ -51,9 +51,8 @@ class ClientTest extends TestCase
     /** @test */
     public function user_can_create_client()
     {
-        $activeStatus = SettingOption::clientStatuses()
-            ->where('slug', 'active')
-            ->first();
+        // Use first available status (slug is computed, can't query by it)
+        $status = SettingOption::clientStatuses()->first();
 
         $clientData = [
             'name' => 'Test Company SRL',
@@ -61,7 +60,7 @@ class ClientTest extends TestCase
             'email' => 'contact@testcompany.ro',
             'phone' => '+40123456789',
             'tax_id' => 'RO12345678',
-            'status_id' => $activeStatus->id,
+            'status_id' => $status->id,
         ];
 
         $response = $this->actingAs($this->user)
@@ -91,6 +90,7 @@ class ClientTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Original Name',
         ]);
 
@@ -113,6 +113,7 @@ class ClientTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $response = $this->actingAs($this->user)
@@ -128,14 +129,18 @@ class ClientTest extends TestCase
     public function user_cannot_access_clients_from_other_organizations()
     {
         $otherOrganization = Organization::factory()->create();
+        $otherUser = User::factory()->create(['organization_id' => $otherOrganization->id]);
         $otherClient = Client::factory()->create([
             'organization_id' => $otherOrganization->id,
+            'user_id' => $otherUser->id,
         ]);
 
         $response = $this->actingAs($this->user)
             ->get(route('clients.show', $otherClient));
 
-        $response->assertStatus(403);
+        // Global scope makes clients from other organizations invisible (404)
+        // This is more secure than 403 as it doesn't reveal resource existence
+        $response->assertStatus(404);
     }
 
     /** @test */
@@ -143,6 +148,7 @@ class ClientTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $this->assertNotNull($client->name);
@@ -156,10 +162,12 @@ class ClientTest extends TestCase
     {
         $client = Client::factory()->active()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
+        // Note: 'slug' is a computed accessor, search by 'value' instead
         $activeStatus = SettingOption::clientStatuses()
-            ->where('slug', 'active')
+            ->where('value', 'active')
             ->first();
 
         $this->assertEquals($activeStatus->id, $client->status_id);
@@ -170,11 +178,13 @@ class ClientTest extends TestCase
     {
         Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Acme Corporation',
         ]);
 
         Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Other Company',
         ]);
 
@@ -189,6 +199,7 @@ class ClientTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Company Name',
         ]);
 

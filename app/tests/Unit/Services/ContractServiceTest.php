@@ -58,6 +58,7 @@ class ContractServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $offer = Offer::factory()->accepted()->create([
@@ -166,6 +167,7 @@ class ContractServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
 
         $template = ContractTemplate::factory()->create([
@@ -185,7 +187,6 @@ class ContractServiceTest extends TestCase
         // Add offer items
         OfferItem::factory()->count(2)->create([
             'offer_id' => $offer->id,
-            'is_selected' => true,
             'unit_price' => 1500,
             'quantity' => 1,
         ]);
@@ -298,6 +299,7 @@ class ContractServiceTest extends TestCase
     {
         $client = Client::factory()->create([
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
             'name' => 'Test Client',
             'company_name' => 'Test Company',
         ]);
