@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Client;
 use App\Models\Organization;
 use App\Models\SettingOption;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -31,6 +32,8 @@ class ClientFactory extends Factory
 
         return [
             'organization_id' => Organization::factory(),
+            'user_id' => User::factory(),
+            'created_by' => fn (array $attributes) => $attributes['user_id'],
             'name' => $name,
             'slug' => Str::slug($name),
             'company_name' => $name,

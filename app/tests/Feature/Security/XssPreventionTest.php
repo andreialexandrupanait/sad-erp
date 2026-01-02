@@ -32,13 +32,14 @@ class XssPreventionTest extends TestCase
         // Create user
         $this->user = User::factory()->create([
             'organization_id' => $this->organization->id,
-            'is_admin' => true,
+            'role' => 'admin',
         ]);
 
         // Create client
         $this->client = Client::create([
             'name' => 'Test Client',
             'organization_id' => $this->organization->id,
+            'user_id' => $this->user->id,
         ]);
     }
 

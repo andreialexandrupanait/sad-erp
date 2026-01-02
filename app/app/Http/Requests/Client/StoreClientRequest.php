@@ -54,8 +54,12 @@ class StoreClientRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Handle vat_payer from both form checkbox and JSON API requests
+        // Checkbox sends nothing when unchecked, JSON sends '0' or '1'
+        $vatPayer = $this->input('vat_payer');
+
         $this->merge([
-            'vat_payer' => $this->has('vat_payer'),
+            'vat_payer' => filter_var($vatPayer, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? false,
         ]);
     }
 
