@@ -48,6 +48,11 @@ class Client extends Model
 
         // Automatically set organization_id and created_by when creating
         static::creating(function ($client) {
+            // Normalize tax_id: convert empty or '-' to null for unique constraint
+            if (empty($client->tax_id) || $client->tax_id === '-') {
+                $client->tax_id = null;
+            }
+
             if (auth()->check()) {
                 if (empty($client->organization_id)) {
                     $client->organization_id = auth()->user()->organization_id;
@@ -75,6 +80,13 @@ class Client extends Model
                     $client->slug = $originalSlug . '-' . $counter;
                     $counter++;
                 }
+            }
+        });
+
+        // Normalize tax_id on update as well
+        static::updating(function ($client) {
+            if (empty($client->tax_id) || $client->tax_id === '-') {
+                $client->tax_id = null;
             }
         });
 
