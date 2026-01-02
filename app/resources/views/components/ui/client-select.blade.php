@@ -16,6 +16,11 @@
     $searchPlaceholder = $searchPlaceholder ?? __('Search clients...');
     $emptyLabel = $emptyLabel ?? __('-- No Client --');
 
+    // Ensure clientStatuses is available for the slide-over form
+    if (empty($clientStatuses) || (is_object($clientStatuses) && $clientStatuses->isEmpty())) {
+        $clientStatuses = \App\Models\SettingOption::clientStatuses()->get();
+    }
+
     // Convert clients to array format for JS
     $clientsArray = collect($clients)->map(function($client) {
         return [
