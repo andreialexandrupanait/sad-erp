@@ -44,11 +44,12 @@ class MetricsAggregator
 
         return Cache::remember($cacheKey, $this->getCacheTtl(), function () {
             $clientCount = Client::count();
+            $now = now()->toDateTimeString();
             $domainStats = Domain::selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'Active' THEN 1 ELSE 0 END) as active,
-                SUM(CASE WHEN expiry_date < NOW() THEN 1 ELSE 0 END) as expired
-            ")->first();
+                SUM(CASE WHEN expiry_date < ? THEN 1 ELSE 0 END) as expired
+            ", [$now])->first();
             $subscriptionCounts = Subscription::selectRaw("
                 COUNT(*) as total,
                 SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active,
@@ -89,7 +90,7 @@ class MetricsAggregator
 
         $cacheKey = $this->cacheKey("dashboard.financial.{$currentYear}.{$currentMonth}");
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($currentYear, $currentMonth) {
+        return Cache::remember($cacheKey, $this->getCacheTtl(), function () use ($currentYear, $currentMonth) {
             $currentMonthRevenue = FinancialRevenue::where('year', $currentYear)
                 ->where('month', $currentMonth)
                 ->where('currency', 'RON')

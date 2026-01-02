@@ -230,9 +230,10 @@ class ExpenseImportServiceTest extends TestCase
     /** @test */
     public function it_finds_category_by_exact_match(): void
     {
-        // Create a category
+        // Create a category (model uses 'label', not 'name')
         SettingOption::factory()->create([
-            'name' => 'Office Supplies',
+            'category' => 'expense_categories',
+            'label' => 'Office Supplies',
             'is_active' => true,
         ]);
 
@@ -241,15 +242,16 @@ class ExpenseImportServiceTest extends TestCase
         $category = $this->service->findCategoryByLabel('Office Supplies');
 
         $this->assertNotNull($category);
-        $this->assertEquals('Office Supplies', $category->name);
+        $this->assertEquals('Office Supplies', $category->label);
     }
 
     /** @test */
     public function it_finds_category_by_partial_match(): void
     {
-        // Create a category
+        // Create a category (model uses 'label', not 'name')
         SettingOption::factory()->create([
-            'name' => 'Office Equipment and Supplies',
+            'category' => 'expense_categories',
+            'label' => 'Office Equipment and Supplies',
             'is_active' => true,
         ]);
 
@@ -273,9 +275,10 @@ class ExpenseImportServiceTest extends TestCase
     /** @test */
     public function it_associates_category_with_expense(): void
     {
-        // Create a category
+        // Create a category (model uses 'label', not 'name')
         $settingOption = SettingOption::factory()->create([
-            'name' => 'Office Supplies',
+            'category' => 'expense_categories',
+            'label' => 'Office Supplies',
             'is_active' => true,
         ]);
 

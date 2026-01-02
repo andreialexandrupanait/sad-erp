@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -11,11 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Skip for SQLite - column was never added in SQLite migrations
-        if (DB::connection()->getDriverName() === 'sqlite') {
-            return;
+        // First drop the index that references this column (if it exists)
+        try {
+            Schema::table('internal_accounts', function (Blueprint $table) {
+                $table->dropIndex('internal_accounts_platform_index');
+            });
+        } catch (\Exception $e) {
+            // Index doesn't exist, continue
         }
 
+        // Now drop the column
         Schema::table('internal_accounts', function (Blueprint $table) {
             $table->dropColumn('platforma');
         });
@@ -28,6 +34,10 @@ return new class extends Migration
     {
         Schema::table('internal_accounts', function (Blueprint $table) {
             $table->string('platforma')->nullable();
+        });
+
+        Schema::table('internal_accounts', function (Blueprint $table) {
+            $table->index('platforma', 'internal_accounts_platform_index');
         });
     }
 };

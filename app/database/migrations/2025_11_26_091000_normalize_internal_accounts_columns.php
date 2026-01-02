@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -14,8 +16,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Skip for SQLite - columns already use English names in test environment
         if (DB::connection()->getDriverName() === 'sqlite') {
+            // SQLite doesn't support CHANGE COLUMN - use Laravel's rename
+            Schema::table('internal_accounts', function (Blueprint $table) {
+                $table->renameColumn('nume_cont_aplicatie', 'account_name');
+                $table->renameColumn('accesibil_echipei', 'team_accessible');
+            });
             return;
         }
 
@@ -28,8 +34,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Skip for SQLite - columns use English names in test environment
         if (DB::connection()->getDriverName() === 'sqlite') {
+            Schema::table('internal_accounts', function (Blueprint $table) {
+                $table->renameColumn('account_name', 'nume_cont_aplicatie');
+                $table->renameColumn('team_accessible', 'accesibil_echipei');
+            });
             return;
         }
 
