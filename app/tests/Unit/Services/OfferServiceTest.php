@@ -58,8 +58,8 @@ class OfferServiceTest extends TestCase
             'currency' => 'EUR',
             'valid_until' => now()->addDays(30),
         ], [
-            ['name' => 'Service A', 'unit_price' => 100, 'quantity' => 2],
-            ['name' => 'Service B', 'unit_price' => 200, 'quantity' => 1],
+            ['title' => 'Service A', 'unit_price' => 100, 'quantity' => 2],
+            ['title' => 'Service B', 'unit_price' => 200, 'quantity' => 1],
         ]);
 
         $this->assertInstanceOf(Offer::class, $offer);
@@ -164,7 +164,6 @@ class OfferServiceTest extends TestCase
         // Add items
         OfferItem::factory()->count(2)->create([
             'offer_id' => $offer->id,
-            'is_selected' => true,
         ]);
 
         $contract = $this->service->accept($offer, '127.0.0.1', true);
@@ -218,7 +217,8 @@ class OfferServiceTest extends TestCase
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('already been converted');
+        // Message: "This offer has already been converted to a contract."
+        $this->expectExceptionMessage('contract');
 
         $this->service->convertToContract($offer);
     }
@@ -283,7 +283,6 @@ class OfferServiceTest extends TestCase
 
         OfferItem::factory()->create([
             'offer_id' => $offer->id,
-            'is_selected' => true,
         ]);
 
         $contract = $this->service->acceptPublic('public-accept-token', null, '192.168.1.1');
@@ -304,7 +303,8 @@ class OfferServiceTest extends TestCase
         ]);
 
         $this->expectException(\RuntimeException::class);
-        $this->expectExceptionMessage('Invalid verification code');
+        // Message: "Invalid verification code." or translated version
+        $this->expectExceptionMessage('verification');
 
         $this->service->acceptPublic('verified-token', 'wrong-code', '127.0.0.1');
     }

@@ -75,7 +75,7 @@ class OfferService implements OfferServiceInterface
             }, $offer);
 
             // Log activity
-            $offer->logActivity('created', "Offer {$offer->offer_number} created");
+            $offer->logActivity('created', ['offer_number' => $offer->offer_number]);
 
             return $offer->fresh(['items', 'client']);
         });
@@ -146,7 +146,7 @@ class OfferService implements OfferServiceInterface
             $newOffer->offer_number = Offer::generateOfferNumber();
             $newOffer->public_token = Str::random(64);
             $newOffer->status = 'draft';
-            $newOffer->created_by = auth()->id();
+            $newOffer->created_by_user_id = auth()->id();
             $newOffer->save();
 
             // Duplicate items with deferred calculation
@@ -159,7 +159,7 @@ class OfferService implements OfferServiceInterface
             }, $newOffer);
 
             // Log activity
-            $newOffer->logActivity('created', "Offer duplicated from {$offer->offer_number}");
+            $newOffer->logActivity('created', ['duplicated_from' => $offer->offer_number]);
 
             return $newOffer->fresh(['items', 'client']);
         });

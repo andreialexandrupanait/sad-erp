@@ -149,18 +149,21 @@ class Contract extends Model
 
         // Use database lock to prevent race condition
         // lockForUpdate() acquires an exclusive lock until the transaction commits
-        $lastContract = static::withoutGlobalScopes()
+        // Get all contracts and find the max number in PHP (database-agnostic)
+        $contracts = static::withoutGlobalScopes()
             ->where('organization_id', $organizationId)
             ->whereYear('created_at', $year)
             ->lockForUpdate()
-            ->orderByRaw('CAST(SUBSTRING_INDEX(contract_number, "-", -1) AS UNSIGNED) DESC')
-            ->first();
+            ->pluck('contract_number');
 
-        if ($lastContract && preg_match('/-(\d+)$/', $lastContract->contract_number, $matches)) {
-            $nextNumber = intval($matches[1]) + 1;
-        } else {
-            $nextNumber = 1;
+        $maxNumber = 0;
+        foreach ($contracts as $contractNumber) {
+            if (preg_match('/-(\d+)$/', $contractNumber, $matches)) {
+                $number = intval($matches[1]);
+                $maxNumber = max($maxNumber, $number);
+            }
         }
+        $nextNumber = $maxNumber + 1;
 
         return sprintf('%s-%d-%02d', $prefix, $year, $nextNumber);
     }

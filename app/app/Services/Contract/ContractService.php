@@ -62,12 +62,11 @@ class ContractService
                 'template_id' => $offer->template_id,
                 'contract_number' => Contract::generateContractNumber(),
                 'title' => $offer->title,
-                'description' => $offer->description,
+                'content' => $offer->introduction ?? '<p>Contract generated from offer ' . $offer->offer_number . '</p>',
                 'total_value' => $offer->total,
                 'currency' => $offer->currency,
                 'status' => 'active',
                 'start_date' => now(),
-                'created_by' => auth()->id(),
             ]);
 
             // Link offer to contract
@@ -103,11 +102,10 @@ class ContractService
                 'annex_number' => $annexNumber,
                 'annex_code' => $contract->contract_number . '-A' . $annexNumber,
                 'title' => $offer->title,
-                'description' => $offer->description,
-                'value' => $offer->total,
+                'content' => $offer->introduction ?? '<p>Annex to contract ' . $contract->contract_number . '</p>',
+                'additional_value' => $offer->total,
                 'currency' => $offer->currency,
                 'effective_date' => now(),
-                'created_by' => auth()->id(),
             ]);
 
             // Update contract total value
@@ -236,8 +234,6 @@ class ContractService
 
         $contract->update([
             'status' => 'terminated',
-            'terminated_at' => now(),
-            'termination_reason' => $reason,
         ]);
 
         Log::info("Contract terminated", [
@@ -264,9 +260,6 @@ class ContractService
                 'start_date',
                 'end_date',
                 'pdf_path',
-                'signed_at',
-                'terminated_at',
-                'termination_reason',
             ]);
 
             $newContract->contract_number = Contract::generateContractNumber();
@@ -274,7 +267,6 @@ class ContractService
             $newContract->start_date = $data['start_date'] ?? ($contract->end_date ?? now());
             $newContract->end_date = $data['end_date'] ?? null;
             $newContract->parent_contract_id = $contract->id;
-            $newContract->created_by = auth()->id();
 
             if (isset($data['total_value'])) {
                 $newContract->total_value = $data['total_value'];
@@ -534,6 +526,7 @@ class ContractService
                 'contract_template_id' => $template?->id,
                 'contract_number' => Contract::generateContractNumber(),
                 'title' => $offer->title ?: __('Contract from Offer :number', ['number' => $offer->offer_number]),
+                'content' => $offer->introduction ?? '<p>Contract generated from offer ' . $offer->offer_number . '</p>',
                 'total_value' => $offer->total,
                 'currency' => $offer->currency,
                 'status' => 'draft', // Start as draft so user can edit
@@ -552,11 +545,10 @@ class ContractService
             // Link offer to contract
             $offer->update(['contract_id' => $contract->id]);
 
-            // Create ContractItems from SELECTED OfferItems only
-            $selectedOfferItems = $offer->items->filter(fn($item) => $item->is_selected === true);
-            if ($selectedOfferItems->isNotEmpty()) {
+            // Create ContractItems from OfferItems
+            if ($offer->items->isNotEmpty()) {
                 $sortOrder = 0;
-                foreach ($selectedOfferItems as $offerItem) {
+                foreach ($offer->items as $offerItem) {
                     ContractItem::create([
                         'contract_id' => $contract->id,
                         'offer_item_id' => $offerItem->id,

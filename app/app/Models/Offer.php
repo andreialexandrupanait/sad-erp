@@ -208,17 +208,21 @@ class Offer extends Model
 
             // Use lockForUpdate() to acquire exclusive lock - prevents race conditions
             // This ensures only one process can generate a number at a time
-            $lastOffer = static::withoutGlobalScopes()
+            // Get all offers with this prefix and find the max number in PHP
+            // (database-agnostic approach that works with both MySQL and SQLite)
+            $offers = static::withoutGlobalScopes()
                 ->where('organization_id', $organizationId)
                 ->where('offer_number', 'LIKE', $prefix . '%')
                 ->lockForUpdate()
-                ->orderByRaw("CAST(REGEXP_REPLACE(offer_number, '[^0-9]', '') AS UNSIGNED) DESC")
-                ->first();
+                ->pluck('offer_number');
 
             $maxNumber = 0;
-            if ($lastOffer && preg_match_all('/(\d+)/', $lastOffer->offer_number, $matches)) {
-                // Take the last number found (e.g., "003" from "PREFIX-2025-003")
-                $maxNumber = intval(end($matches[1]));
+            foreach ($offers as $offerNumber) {
+                if (preg_match_all('/(\d+)/', $offerNumber, $matches)) {
+                    // Take the last number found (e.g., "003" from "PREFIX-2025-003")
+                    $number = intval(end($matches[1]));
+                    $maxNumber = max($maxNumber, $number);
+                }
             }
 
             $nextNumber = $maxNumber + 1;

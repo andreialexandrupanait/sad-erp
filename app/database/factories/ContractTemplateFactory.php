@@ -18,8 +18,8 @@ class ContractTemplateFactory extends Factory
         return [
             'organization_id' => Organization::factory(),
             'name' => fake()->words(3, true) . ' Template',
-            'description' => fake()->sentence(),
-            'content' => '<h1>Contract Template</h1><p>{{client_name}}</p><p>{{contract_total}} {{currency}}</p>',
+            'category' => 'general',
+            'content' => '<p>Contract: {{contract_number}}</p><p>Client: {{client_name}}</p><p>Value: {{contract_total}} {{currency}}</p>',
             'is_default' => false,
             'is_active' => true,
         ];

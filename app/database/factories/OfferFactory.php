@@ -38,6 +38,7 @@ class OfferFactory extends Factory
             'discount_amount' => $discountAmount,
             'total' => $total,
             'currency' => fake()->randomElement(['EUR', 'RON', 'USD']),
+            'current_version' => 1,
         ];
     }
 
