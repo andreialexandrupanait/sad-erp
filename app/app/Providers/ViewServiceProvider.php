@@ -31,6 +31,8 @@ class ViewServiceProvider extends ServiceProvider
         View::composer([
             'clients.*',
             'credentials.*',
+            'offers.*',
+            'contracts.*',
             'dashboard',
             'dashboard.*',
             'components.client-status-badge',
