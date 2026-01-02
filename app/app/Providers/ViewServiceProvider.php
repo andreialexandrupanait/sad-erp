@@ -30,11 +30,14 @@ class ViewServiceProvider extends ServiceProvider
         // Share client statuses with client-related views
         View::composer([
             'clients.*',
+            'offers.*',
+            'contracts.*',
             'dashboard',
             'dashboard.*',
             'components.client-status-badge',
             'components.slide-panel-client-*',
             'components.client-form-fields',
+            'components.ui.client-select',
         ], SettingsComposer::class);
 
         // Share task workspace hierarchy with sidebar
