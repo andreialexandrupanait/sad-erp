@@ -178,6 +178,29 @@ class ClientNoteController extends Controller
     }
 
     /**
+     * Quick update of client assignment (AJAX).
+     */
+    public function updateClient(Request $request, ClientNote $clientNote): JsonResponse
+    {
+        $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+        ]);
+
+        $clientNote->update([
+            'client_id' => $validated['client_id'] ?: null,
+        ]);
+
+        $clientName = $clientNote->client?->name ?? __('No client');
+
+        return response()->json([
+            'success' => true,
+            'message' => __('Client updated successfully.'),
+            'client_name' => $clientName,
+            'client_id' => $clientNote->client_id,
+        ]);
+    }
+
+    /**
      * Get notes for a specific client (AJAX endpoint).
      */
     public function forClient(Client $client, Request $request): JsonResponse

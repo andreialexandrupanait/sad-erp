@@ -126,6 +126,7 @@ Route::middleware('auth')->group(function () {
 
         // Client Notes
         Route::resource('client-notes', ClientNoteController::class);
+        Route::patch('client-notes/{clientNote}/update-client', [ClientNoteController::class, 'updateClient'])->name('client-notes.update-client');
         Route::get('api/clients/{client}/notes', [ClientNoteController::class, 'forClient'])->name('api.clients.notes');
         Route::get('api/client-notes/tag-stats', [ClientNoteController::class, 'tagStats'])->name('api.client-notes.tag-stats');
     });
