@@ -35,7 +35,7 @@
                             id="content"
                             :value="old('content', $note->content)"
                             :placeholder="__('Write your message here...')"
-                            minHeight="250px"
+                            minHeight="300"
                         />
                         @error('content')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

@@ -63,13 +63,13 @@ class SecurityHeaders
             // script-src: Allow scripts from self with nonce for inline scripts
             // SECURITY: Removed 'unsafe-eval' (prevents eval() attacks)
             // SECURITY: 'unsafe-inline' kept temporarily - migrate to nonces then remove
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com",
+            "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com https://cdnjs.cloudflare.com",
             // style-src: Allow styles from self, with nonce for inline styles
             // Note: 'unsafe-inline' required for many CSS frameworks and Tailwind
-            "style-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com",
+            "style-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net",
-            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net",
+            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

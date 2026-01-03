@@ -104,10 +104,9 @@
                     <!-- Client Selection (Optional) - Full Width -->
                     <div>
                         <x-ui.label for="client_id">{{ __('Client') }} <span class="text-slate-400 font-normal">({{ __('optional') }})</span></x-ui.label>
-                        <x-ui.searchable-select
+                        <x-ui.client-select
                             name="client_id"
-                            id="note_client_id"
-                            :options="$clients"
+                            :clients="$clients"
                             :selected="old('client_id')"
                             :placeholder="__('Select client (optional)')"
                             :emptyLabel="__('No client')"
@@ -125,7 +124,7 @@
                             id="content"
                             :value="old('content', '')"
                             :placeholder="__('Write your note here...')"
-                            minHeight="70px"
+                            minHeight="250"
                             :clients="$clients"
                             clientFieldId="note_client_id"
                         />

@@ -10,12 +10,12 @@
                     <!-- Client Selection -->
                     <div>
                         <x-ui.label for="client_id" required>{{ __('Client') }}</x-ui.label>
-                        <x-ui.searchable-select
+                        <x-ui.client-select
                             name="client_id"
-                            id="client_id"
-                            :options="$clients"
+                            :clients="$clients"
                             :selected="old('client_id', $selectedClient?->id)"
                             :placeholder="__('Select a client...')"
+                            :allowEmpty="false"
                             required
                         />
                         @error('client_id')
@@ -26,14 +26,15 @@
                     <!-- Note Content -->
                     <div>
                         <x-ui.label for="content" required>{{ __('Note Content') }}</x-ui.label>
-                        <x-ui.textarea
-                            id="content"
+                        <x-ui.simple-editor
                             name="content"
-                            rows="12"
-                            required
-                            placeholder="{{ __('Write your message here...') }}"
-                            class="font-mono"
-                        >{{ old('content') }}</x-ui.textarea>
+                            id="content"
+                            :value="old('content', '')"
+                            :placeholder="__('Write your message here...')"
+                            minHeight="400"
+                            :clients="$clients"
+                            clientFieldId="client_id"
+                        />
                         @error('content')
                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                         @enderror

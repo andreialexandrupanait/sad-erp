@@ -637,6 +637,10 @@
         <!-- Quill.js Rich Text Editor (for Contract Builder) -->
         <link href="https://cdn.quilljs.com/1.3.7/quill.snow.css" rel="stylesheet">
         <script src="https://cdn.quilljs.com/1.3.7/quill.min.js"></script>
+
+        <!-- TinyMCE Rich Text Editor (for Notes) -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+
         <style>
             /* Trix Customizations */
             trix-toolbar .trix-button-group--file-tools { display: none; }

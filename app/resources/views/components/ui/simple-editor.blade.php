@@ -3,7 +3,7 @@
     'id' => null,
     'value' => '',
     'placeholder' => 'Start typing...',
-    'minHeight' => '80px',
+    'minHeight' => '400',
     'clients' => [],
     'clientFieldId' => null,
 ])
@@ -12,34 +12,27 @@
     $editorId = $id ?? 'editor-' . $name . '-' . uniqid();
     $uniqueId = uniqid('se_');
     $clientsJson = collect($clients)->map(fn($c) => ['id' => $c->id, 'name' => $c->name])->values()->toJson();
+    $heightNum = (int) preg_replace('/[^0-9]/', '', $minHeight);
+    if ($heightNum < 300) $heightNum = 400;
+    $locale = app()->getLocale();
+    $tinymceLang = $locale === 'ro' ? 'ro' : null;
 @endphp
 
-<div class="simple-editor-wrapper relative" id="wrapper-{{ $uniqueId }}">
-    <input type="hidden" name="{{ $name }}" id="hidden-{{ $uniqueId }}" value="{{ $value }}">
-
-    <div class="border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500">
-        <!-- Toolbar -->
-        <div id="toolbar-{{ $uniqueId }}" class="flex flex-wrap items-center gap-1 px-2 py-1.5 bg-slate-50 border-b border-slate-200">
-            <button type="button" class="ql-bold px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs font-medium" title="Bold">B</button>
-            <button type="button" class="ql-italic px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Italic"><em>I</em></button>
-            <button type="button" class="ql-underline px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Underline"><u>U</u></button>
-            <button type="button" class="ql-strike px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Strike"><s>S</s></button>
-            <span class="w-px h-4 bg-slate-300 mx-1"></span>
-            <button type="button" class="ql-list px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" value="bullet" title="Bullet List">• List</button>
-            <button type="button" class="ql-list px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" value="ordered" title="Numbered List">1. List</button>
-            <span class="w-px h-4 bg-slate-300 mx-1"></span>
-            <button type="button" class="ql-link px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Link">Link</button>
-            <button type="button" class="ql-blockquote px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Quote">Quote</button>
-            <span class="w-px h-4 bg-slate-300 mx-1"></span>
-            <button type="button" class="ql-clean px-2 py-1 rounded hover:bg-slate-200 text-slate-600 text-xs" title="Clear">Clear</button>
-        </div>
-
-        <!-- Editor -->
-        <div id="editor-{{ $uniqueId }}" style="min-height: {{ $minHeight }}; background: white;"></div>
-    </div>
+<div class="simple-editor-wrapper" id="wrapper-{{ $uniqueId }}">
+    <!-- Textarea that TinyMCE will enhance -->
+    <textarea
+        name="{{ $name }}"
+        id="{{ $editorId }}"
+        class="tinymce-editor"
+        placeholder="{{ $placeholder }}"
+    >{!! $value !!}</textarea>
 
     <!-- Client Detection Banner -->
-    <div id="client-banner-{{ $uniqueId }}" class="hidden mt-3 flex items-center justify-between gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg">
+    @if(count($clients) > 0)
+    <div
+        id="client-banner-{{ $uniqueId }}"
+        class="hidden mt-3 flex items-center justify-between gap-3 px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg"
+    >
         <div class="flex items-center gap-3">
             <div class="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,141 +47,183 @@
             </div>
         </div>
         <div class="flex items-center gap-2">
-            <button type="button" onclick="simpleEditors['{{ $uniqueId }}'].rejectClient()" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md">
+            <button type="button" id="reject-client-{{ $uniqueId }}" class="px-3 py-1.5 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-md">
                 {{ __('No') }}
             </button>
-            <button type="button" onclick="simpleEditors['{{ $uniqueId }}'].acceptClient()" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">
+            <button type="button" id="accept-client-{{ $uniqueId }}" class="px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md">
                 {{ __('Yes') }}
             </button>
         </div>
     </div>
+    @endif
 </div>
-
-<style>
-#wrapper-{{ $uniqueId }} .ql-toolbar.ql-snow { display: none !important; }
-#wrapper-{{ $uniqueId }} .ql-container.ql-snow { border: none !important; font-family: inherit; font-size: 0.875rem; }
-#wrapper-{{ $uniqueId }} .ql-editor { padding: 0.5rem 0.75rem; min-height: {{ $minHeight }}; }
-#wrapper-{{ $uniqueId }} .ql-editor.ql-blank::before { color: #94a3b8; font-style: normal; }
-#wrapper-{{ $uniqueId }} .ql-editor p { margin-bottom: 0.25em; }
-#wrapper-{{ $uniqueId }} button.ql-active { background-color: #e2e8f0 !important; }
-</style>
 
 <script>
 (function() {
-    window.simpleEditors = window.simpleEditors || {};
-
     var uniqueId = '{{ $uniqueId }}';
+    var editorId = '{{ $editorId }}';
+    var editorHeight = {{ $heightNum }};
+    var placeholder = '{{ $placeholder }}';
     var clients = {!! $clientsJson !!};
     var clientFieldId = '{{ $clientFieldId }}';
-    var initialValue = {!! json_encode($value) !!};
+    var tinymceLang = {!! json_encode($tinymceLang) !!};
+
+    var editor = null;
+    var detectedClient = null;
+    var dismissedClients = [];
+    var debounceTimer = null;
 
     function initEditor() {
-        if (typeof Quill === 'undefined') {
+        if (typeof tinymce === 'undefined') {
             setTimeout(initEditor, 100);
             return;
         }
 
-        var quill = new Quill('#editor-' + uniqueId, {
-            theme: 'snow',
-            modules: { toolbar: '#toolbar-' + uniqueId },
-            placeholder: '{{ $placeholder }}'
-        });
-
-        var hiddenInput = document.getElementById('hidden-' + uniqueId);
-        var banner = document.getElementById('client-banner-' + uniqueId);
-        var clientNameEl = document.getElementById('client-name-' + uniqueId);
-        var detectedClient = null;
-        var dismissedClients = [];
-        var debounceTimer = null;
-
-        // Set initial value
-        if (initialValue && initialValue.trim()) {
-            quill.clipboard.dangerouslyPasteHTML(0, initialValue);
+        // Remove existing instance if any
+        var existing = tinymce.get(editorId);
+        if (existing) {
+            existing.remove();
         }
 
-        quill.on('text-change', function() {
-            hiddenInput.value = quill.root.innerHTML;
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(detectClient, 500);
-        });
+        var config = {
+            selector: '#' + editorId,
+            height: editorHeight,
+            menubar: false,
+            plugins: 'lists link autolink table code hr wordcount',
+            toolbar: 'blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link table | removeformat',
+            toolbar_mode: 'sliding',
+            placeholder: placeholder,
+            content_style: 'body { font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; line-height: 1.6; padding: 12px; }',
+            branding: false,
+            promotion: false,
+            statusbar: true,
+            elementpath: false,
+            resize: true,
+            setup: function(ed) {
+                editor = ed;
 
-        function detectClient() {
-            // Check if client already selected
-            if (clientFieldId) {
-                var clientInput = document.querySelector('input[name="client_id"]');
-                if (clientInput) {
-                    var wrapper = clientInput.closest('[x-data]');
-                    if (wrapper && window.Alpine) {
-                        var data = Alpine.$data(wrapper);
-                        if (data && data.selectedValue) {
-                            banner.classList.add('hidden');
-                            return;
-                        }
+                ed.on('input change keyup', function() {
+                    // Client detection
+                    if (clients.length > 0) {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(detectClient, 500);
                     }
-                }
+                });
             }
+        };
 
-            var text = quill.getText().toLowerCase();
-            if (text.length < 3) {
-                banner.classList.add('hidden');
-                return;
-            }
-
-            var bestMatch = null;
-            var bestScore = 0;
-
-            for (var i = 0; i < clients.length; i++) {
-                var client = clients[i];
-                if (dismissedClients.indexOf(client.id) !== -1) continue;
-
-                var name = client.name.toLowerCase();
-                if (text.indexOf(name) !== -1) {
-                    var score = name.length * 2;
-                    if (score > bestScore) {
-                        bestScore = score;
-                        bestMatch = client;
-                    }
-                }
-            }
-
-            if (bestMatch && bestScore >= 6) {
-                detectedClient = bestMatch;
-                clientNameEl.textContent = bestMatch.name;
-                banner.classList.remove('hidden');
-            } else {
-                detectedClient = null;
-                banner.classList.add('hidden');
-            }
+        // Add language support if not English
+        if (tinymceLang) {
+            config.language = tinymceLang;
+            config.language_url = 'https://cdn.jsdelivr.net/npm/tinymce-i18n@24.10.7/langs6/' + tinymceLang + '.js';
         }
 
+        tinymce.init(config);
+
+        // Client detection buttons
+        var acceptBtn = document.getElementById('accept-client-' + uniqueId);
+        var rejectBtn = document.getElementById('reject-client-' + uniqueId);
+
+        if (acceptBtn) {
+            acceptBtn.addEventListener('click', acceptClient);
+        }
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', rejectClient);
+        }
+
+        // Store globally
+        window.simpleEditors = window.simpleEditors || {};
         window.simpleEditors[uniqueId] = {
-            quill: quill,
-            acceptClient: function() {
-                if (!detectedClient) return;
-                var clientInput = document.querySelector('input[name="client_id"]');
-                if (clientInput) {
-                    var wrapper = clientInput.closest('[x-data]');
-                    if (wrapper && window.Alpine) {
-                        var data = Alpine.$data(wrapper);
-                        if (data) {
-                            data.selectedValue = String(detectedClient.id);
-                            data.selectedLabel = detectedClient.name;
-                        }
-                    }
-                }
-                detectedClient = null;
-                banner.classList.add('hidden');
-            },
-            rejectClient: function() {
-                if (detectedClient) {
-                    dismissedClients.push(detectedClient.id);
-                }
-                detectedClient = null;
-                banner.classList.add('hidden');
-            }
+            getEditor: function() { return tinymce.get(editorId); },
+            getContent: function() { var ed = tinymce.get(editorId); return ed ? ed.getContent() : ''; },
+            setContent: function(html) { var ed = tinymce.get(editorId); if (ed) ed.setContent(html); },
+            clearContent: function() { var ed = tinymce.get(editorId); if (ed) ed.setContent(''); }
         };
     }
 
+    function detectClient() {
+        var banner = document.getElementById('client-banner-' + uniqueId);
+        var clientNameEl = document.getElementById('client-name-' + uniqueId);
+        if (!banner || !editor) return;
+
+        // Check if client already selected
+        if (clientFieldId) {
+            var clientInput = document.querySelector('input[name="client_id"]');
+            if (clientInput) {
+                var wrapper = clientInput.closest('[x-data]');
+                if (wrapper && window.Alpine) {
+                    var data = Alpine.$data(wrapper);
+                    if (data && data.selectedValue) {
+                        banner.classList.add('hidden');
+                        return;
+                    }
+                }
+            }
+        }
+
+        var text = editor.getContent({ format: 'text' }).toLowerCase();
+        if (text.length < 3) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        var bestMatch = null;
+        var bestScore = 0;
+
+        for (var i = 0; i < clients.length; i++) {
+            var client = clients[i];
+            if (dismissedClients.indexOf(client.id) !== -1) continue;
+
+            var name = client.name.toLowerCase();
+            if (text.indexOf(name) !== -1) {
+                var score = name.length * 2;
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMatch = client;
+                }
+            }
+        }
+
+        if (bestMatch && bestScore >= 6) {
+            detectedClient = bestMatch;
+            clientNameEl.textContent = bestMatch.name;
+            banner.classList.remove('hidden');
+        } else {
+            detectedClient = null;
+            banner.classList.add('hidden');
+        }
+    }
+
+    function acceptClient() {
+        if (!detectedClient) return;
+        var banner = document.getElementById('client-banner-' + uniqueId);
+
+        var clientInput = document.querySelector('input[name="client_id"]');
+        if (clientInput) {
+            var wrapper = clientInput.closest('[x-data]');
+            if (wrapper && window.Alpine) {
+                var data = Alpine.$data(wrapper);
+                if (data) {
+                    data.selectedValue = String(detectedClient.id);
+                    data.selectedLabel = detectedClient.name;
+                }
+            }
+        }
+
+        detectedClient = null;
+        banner.classList.add('hidden');
+    }
+
+    function rejectClient() {
+        var banner = document.getElementById('client-banner-' + uniqueId);
+        if (detectedClient) {
+            dismissedClients.push(detectedClient.id);
+        }
+        detectedClient = null;
+        banner.classList.add('hidden');
+    }
+
+    // Initialize when DOM is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initEditor);
     } else {
