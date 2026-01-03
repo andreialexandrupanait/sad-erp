@@ -23,6 +23,7 @@ use App\Http\Controllers\OfferController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\ContractTemplateController;
 use App\Http\Controllers\DocumentTemplateController;
+use App\Http\Controllers\ClientNoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -122,6 +123,11 @@ Route::middleware('auth')->group(function () {
         Route::post('clients/bulk-export', [ClientController::class, 'bulkExport'])
             ->middleware('throttle:10,1')  // 10 bulk exports per minute
             ->name('clients.bulk-export');
+
+        // Client Notes
+        Route::resource('client-notes', ClientNoteController::class);
+        Route::get('api/clients/{client}/notes', [ClientNoteController::class, 'forClient'])->name('api.clients.notes');
+        Route::get('api/client-notes/tag-stats', [ClientNoteController::class, 'tagStats'])->name('api.client-notes.tag-stats');
     });
 
     // Credentials Module

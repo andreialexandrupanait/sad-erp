@@ -106,7 +106,8 @@ class ClientController extends Controller
                 $query->with('files')->orderBy($sortBy, $sortDir);
             },
             'domains',
-            'accessCredentials'
+            'accessCredentials',
+            'notes.user'
         ]);
 
         // Get active tab from request (default: overview)

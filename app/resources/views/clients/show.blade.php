@@ -123,6 +123,15 @@
                         class="border-transparent {{ $activeTab === 'credentials' ? 'border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:border-slate-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                         {{ __('Access Credentials') }}
                     </a>
+                    <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'notes']) }}"
+                        class="border-transparent {{ $activeTab === 'notes' ? 'border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:border-slate-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                        {{ __('Notes') }}
+                        @if($client->notes->count() > 0)
+                            <span class="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-slate-200 text-slate-700">
+                                {{ $client->notes->count() }}
+                            </span>
+                        @endif
+                    </a>
                 </nav>
             </div>
 
@@ -428,6 +437,85 @@
                                 </tbody>
                             </table>
                         </div>
+                    @endif
+                @elseif($activeTab === 'notes')
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-slate-900">{{ __('Client Notes') }}</h3>
+                        <x-ui.button variant="default" size="sm" onclick="window.location.href='{{ route('client-notes.create', ['client' => $client->slug]) }}'">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                            </svg>
+                            {{ __('Add Note') }}
+                        </x-ui.button>
+                    </div>
+
+                    @if($client->notes->isEmpty())
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No notes yet') }}</h3>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('Get started by creating a note for this client.') }}</p>
+                            <div class="mt-6">
+                                <x-ui.button variant="default" onclick="window.location.href='{{ route('client-notes.create', ['client' => $client->slug]) }}'">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    {{ __('Create Note') }}
+                                </x-ui.button>
+                            </div>
+                        </div>
+                    @else
+                        <div class="space-y-4">
+                            @foreach($client->notes->take(10) as $note)
+                                <div class="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1 min-w-0">
+                                            <!-- Date & Author -->
+                                            <div class="flex items-center gap-3 mb-2">
+                                                <span class="text-sm font-medium text-slate-900">
+                                                    {{ $note->created_at->format('d M Y, H:i') }}
+                                                </span>
+                                                <span class="text-xs text-slate-400">
+                                                    {{ __('by') }} {{ $note->user->name ?? 'Unknown' }}
+                                                </span>
+                                            </div>
+
+                                            <!-- Content -->
+                                            <div class="text-sm text-slate-700 whitespace-pre-wrap break-words">{{ Str::limit($note->content, 500) }}</div>
+
+                                            <!-- Tags -->
+                                            @if(!empty($note->tags))
+                                                <div class="mt-3 flex flex-wrap gap-1">
+                                                    @foreach($note->tags as $tag)
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                            {{ ucfirst($tag) }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Actions -->
+                                        <div class="flex items-center gap-1 ml-4">
+                                            <a href="{{ route('client-notes.edit', $note) }}" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors" title="{{ __('Edit') }}">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                </svg>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if($client->notes->count() > 10)
+                            <div class="mt-4 text-center">
+                                <a href="{{ route('client-notes.index', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:text-blue-800">
+                                    {{ __('View all :count notes', ['count' => $client->notes->count()]) }}
+                                </a>
+                            </div>
+                        @endif
                     @endif
                 @endif
             </x-ui.card-content>

@@ -59,7 +59,7 @@ class MetricsAggregator
             $credentialCount = Credential::count();
 
             // Include expiring domains in cache with eager loading
-            $expiringDomains = Domain::with(['client', 'subscriptions'])
+            $expiringDomains = Domain::with(['client'])
                 ->whereBetween('expiry_date', [now(), now()->addDays(30)])
                 ->orderBy('expiry_date')
                 ->get();
@@ -139,10 +139,9 @@ class MetricsAggregator
         return Cache::remember($cacheKey, $this->getCacheTtl(), function () {
             return [
                 'recentClients' => Client::with('status')->latest()->take(5)->get(),
-                'recentDomains' => Domain::with(['client', 'subscriptions.service'])->latest()->take(5)->get(),
-                'recentSubscriptions' => Subscription::with(['domain', 'service'])->latest()->take(5)->get(),
-                'overdueSubscriptions' => Subscription::with(['domain', 'service'])
-                    ->where('status', 'active')
+                'recentDomains' => Domain::with(['client'])->latest()->take(5)->get(),
+                'recentSubscriptions' => Subscription::latest()->take(5)->get(),
+                'overdueSubscriptions' => Subscription::where('status', 'active')
                     ->where('next_renewal_date', '<', now())
                     ->get(),
                 'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(200)->get(),

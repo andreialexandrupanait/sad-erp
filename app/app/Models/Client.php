@@ -163,6 +163,14 @@ class Client extends Model
     }
 
     /**
+     * Get all notes for this client
+     */
+    public function notes()
+    {
+        return $this->hasMany(ClientNote::class)->latest();
+    }
+
+    /**
      * Scope to filter by status
      */
     public function scopeByStatus($query, $statusId)
