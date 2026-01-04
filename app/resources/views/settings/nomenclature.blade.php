@@ -210,7 +210,14 @@
                     if (response.ok) {
                         window.location.reload();
                     } else {
-                        const errorMsg = responseData.message || '{{ __('settings.error_saving') }}';
+                        let errorMsg = responseData.message || '{{ __('settings.error_saving') }}';
+                        // Show specific validation errors
+                        if (responseData.errors) {
+                            const errors = Object.values(responseData.errors).flat();
+                            if (errors.length > 0) {
+                                errorMsg = errors.join('\n');
+                            }
+                        }
                         alert(errorMsg);
                         console.error('Error response:', responseData);
                     }

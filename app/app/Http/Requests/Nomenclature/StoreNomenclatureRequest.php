@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Nomenclature;
 
+use App\Models\SettingOption;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreNomenclatureRequest extends FormRequest
 {
@@ -37,10 +39,27 @@ class StoreNomenclatureRequest extends FormRequest
     {
         return [
             'category' => 'required|string|in:' . implode(',', $this->validCategories),
-            'label' => 'required|string|max:255',
+            'label' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('settings_options', 'label')
+                    ->where('category', $this->input('category'))
+                    ->whereNull('deleted_at'),
+            ],
             'value' => 'nullable|string|max:255',
             'color' => 'nullable|string|max:7',
             'parent_id' => 'nullable|integer|exists:settings_options,id',
+        ];
+    }
+
+    /**
+     * Get custom error messages.
+     */
+    public function messages(): array
+    {
+        return [
+            'label.unique' => 'Această opțiune există deja în această categorie.',
         ];
     }
 }

@@ -6,7 +6,7 @@ use App\Http\Requests\Nomenclature\StoreNomenclatureRequest;
 use App\Http\Requests\Nomenclature\UpdateNomenclatureRequest;
 use App\Models\SettingOption;
 use App\Models\FinancialExpense;
-use App\Http\View\Composers\SettingsComposer;
+use App\Services\NomenclatureService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -91,7 +91,7 @@ class NomenclatureController extends Controller
         $setting = SettingOption::create($data);
 
         // Clear cache
-        SettingsComposer::clearCache();
+        app(NomenclatureService::class)->clearCacheFor($category);
 
         return response()->json([
             'success' => true,
@@ -147,7 +147,7 @@ class NomenclatureController extends Controller
         $setting->update($validated);
 
         // Clear cache
-        SettingsComposer::clearCache();
+        app(NomenclatureService::class)->clearCacheFor($setting->category);
 
         return response()->json([
             'success' => true,
@@ -192,11 +192,13 @@ class NomenclatureController extends Controller
             session()->forget('financial.filters.category_id');
         }
 
+        $category = $setting->category;
+
         // Force delete (permanent removal from database)
         $setting->forceDelete();
 
         // Clear cache
-        SettingsComposer::clearCache();
+        app(NomenclatureService::class)->clearCacheFor($category);
 
         return response()->json([
             'success' => true
@@ -249,12 +251,16 @@ class NomenclatureController extends Controller
                 session()->forget('financial.filters.category_id');
             }
 
+            $deletedCategories[] = $setting->category;
             $setting->forceDelete();
             $deleted++;
         }
 
         // Clear cache
-        SettingsComposer::clearCache();
+        $nomenclatureService = app(NomenclatureService::class);
+        foreach (array_unique($deletedCategories ?? []) as $category) {
+            $nomenclatureService->clearCacheFor($category);
+        }
 
         if (count($errors) > 0) {
             return response()->json([
@@ -294,8 +300,13 @@ class NomenclatureController extends Controller
 
             SettingOption::setNewOrder($ids);
 
-            // Clear cache
-            SettingsComposer::clearCache();
+            // Clear cache - get category from first item
+            if (!empty($ids)) {
+                $firstItem = SettingOption::find($ids[0]);
+                if ($firstItem) {
+                    app(NomenclatureService::class)->clearCacheFor($firstItem->category);
+                }
+            }
 
             return response()->json([
                 'success' => true

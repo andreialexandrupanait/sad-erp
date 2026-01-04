@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Helpers\SettingsHelper;
 use App\Models\SettingOption;
+use App\Services\NomenclatureService;
 use Illuminate\Support\Facades\Log;
 
 class SettingOptionObserver
@@ -54,13 +55,17 @@ class SettingOptionObserver
      */
     protected function clearCaches(SettingOption $settingOption, string $event): void
     {
-        // Clear cache for the setting option's category
+        // Clear SettingsHelper cache
         SettingsHelper::clearCache($settingOption->category, $settingOption->organization_id);
+
+        // Clear NomenclatureService cache
+        app(NomenclatureService::class)->clearCacheFor($settingOption->category);
 
         // If the category changed during update, clear the old category cache too
         if ($event === 'updated' && $settingOption->isDirty('category')) {
             $oldCategory = $settingOption->getOriginal('category');
             SettingsHelper::clearCache($oldCategory, $settingOption->organization_id);
+            app(NomenclatureService::class)->clearCacheFor($oldCategory);
         }
 
         Log::debug('SettingOption cache cleared', [

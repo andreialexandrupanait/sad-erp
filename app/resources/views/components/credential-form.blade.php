@@ -61,14 +61,15 @@
                         {{ __('Platform') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-1.5">
-                        <x-ui.select name="platform" id="platform" required>
-                            <option value="">{{ __('Select platform') }}</option>
-                            @foreach($platforms as $platform)
-                                <option value="{{ $platform->value }}" {{ old('platform', $credential->platform ?? '') == $platform->value ? 'selected' : '' }}>
-                                    {{ $platform->label }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.nomenclature-select
+                            name="platform"
+                            category="access_platforms"
+                            :options="$platforms"
+                            :selected="old('platform', $credential->platform ?? '')"
+                            :placeholder="__('Select platform')"
+                            :hasColors="true"
+                            :required="true"
+                        />
                     </div>
                     @error('platform')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>

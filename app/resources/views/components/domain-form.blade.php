@@ -51,14 +51,15 @@
                 <div class="sm:col-span-3 field-wrapper">
                     <x-ui.label for="registrar">{{ __('Registrar') }}</x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="registrar" id="registrar">
-                            <option value="">{{ __('Select registrar') }}</option>
-                            @foreach($registrars as $registrar)
-                                <option value="{{ $registrar->value }}" {{ old('registrar', $domain->registrar ?? '') == $registrar->value ? 'selected' : '' }}>
-                                    {{ $registrar->label }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.nomenclature-select
+                            name="registrar"
+                            category="domain_registrars"
+                            :options="$registrars"
+                            :selected="old('registrar', $domain->registrar ?? '')"
+                            :placeholder="__('Select registrar')"
+                            :hasColors="true"
+                            :allowEmpty="true"
+                        />
                     </div>
                     @error('registrar')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -126,16 +127,18 @@
                         {{ __('Status') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="status" id="status" required>
-                            @php
-                                $defaultStatus = $statuses->first()?->value ?? 'Active';
-                            @endphp
-                            @foreach($statuses as $status)
-                                <option value="{{ $status->value }}" {{ old('status', $domain->status ?? $defaultStatus) == $status->value ? 'selected' : '' }}>
-                                    {{ __($status->label) }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        @php
+                            $defaultStatus = $statuses->first()?->value ?? 'Active';
+                        @endphp
+                        <x-ui.nomenclature-select
+                            name="status"
+                            category="domain_statuses"
+                            :options="$statuses"
+                            :selected="old('status', $domain->status ?? $defaultStatus)"
+                            :placeholder="__('Select status')"
+                            :hasColors="true"
+                            :required="true"
+                        />
                     </div>
                     @error('status')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

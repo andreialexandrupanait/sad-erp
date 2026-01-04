@@ -133,14 +133,16 @@
     <div class="{{ $compact ? '' : 'sm:col-span-3' }} field-wrapper">
         <x-ui.label for="{{ $idPrefix }}status_id">{{ __('Status') }}</x-ui.label>
         <div class="mt-2">
-            <x-ui.select name="{{ $namePrefix }}status_id" id="{{ $idPrefix }}status_id">
-                <option value="">{{ __('Select status') }}</option>
-                @foreach($statuses as $status)
-                    <option value="{{ $status->id }}" {{ old($namePrefix.'status_id', $client->status_id ?? '') == $status->id ? 'selected' : '' }}>
-                        {{ $status->name }}
-                    </option>
-                @endforeach
-            </x-ui.select>
+            <x-ui.nomenclature-select
+                name="{{ $namePrefix }}status_id"
+                category="client_statuses"
+                :options="$statuses"
+                :selected="old($namePrefix.'status_id', $client->status_id ?? '')"
+                :placeholder="__('Select status')"
+                :hasColors="true"
+                :allowEmpty="true"
+                valueKey="id"
+            />
         </div>
         @error($namePrefix.'status_id')
             <p class="mt-2 text-sm text-red-600">{{ $message }}</p>

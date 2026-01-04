@@ -98,18 +98,20 @@
                 </div>
 
                 <!-- Billing Cycle (Required) -->
-                <div class="sm:col-span-3 field-wrapper">
+                <div class="sm:col-span-3 field-wrapper" @nomenclature-selected.window="if ($event.target.closest('[id^=nom-sel]')?.querySelector('input[name=billing_cycle]')) billingCycle = $event.detail.value">
                     <x-ui.label for="billing_cycle">
                         {{ __('Billing Cycle') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="billing_cycle" id="billing_cycle" required x-model="billingCycle">
-                            @foreach($billingCycles as $cycle)
-                                <option value="{{ $cycle->value }}" {{ old('billing_cycle', $subscription->billing_cycle ?? 'monthly') === $cycle->value ? 'selected' : '' }}>
-                                    {{ __($cycle->label) }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.nomenclature-select
+                            name="billing_cycle"
+                            category="billing_cycles"
+                            :options="$billingCycles"
+                            :selected="old('billing_cycle', $subscription->billing_cycle ?? 'monthly')"
+                            :placeholder="__('Select billing cycle')"
+                            :hasColors="false"
+                            :required="true"
+                        />
                     </div>
                     @error('billing_cycle')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
@@ -162,13 +164,15 @@
                         {{ __('Status') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.select name="status" id="status" required>
-                            @foreach($statuses as $status)
-                                <option value="{{ $status->value }}" {{ old('status', $subscription->status ?? 'active') === $status->value ? 'selected' : '' }}>
-                                    {{ __($status->label) }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <x-ui.nomenclature-select
+                            name="status"
+                            category="subscription_statuses"
+                            :options="$statuses"
+                            :selected="old('status', $subscription->status ?? 'active')"
+                            :placeholder="__('Select status')"
+                            :hasColors="true"
+                            :required="true"
+                        />
                     </div>
                     @error('status')
                         <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
