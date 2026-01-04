@@ -2,7 +2,15 @@
     <x-slot name="pageTitle">{{ __('Credentials') }}</x-slot>
 
     <x-slot name="headerActions">
-        <x-ui.button variant="default" onclick="window.location.href='{{ route('credentials.create') }}'">
+        <x-ui.button variant="default" onclick="
+            if (typeof Alpine !== 'undefined') {
+                const filters = { search: '{{ request('search', '') }}', clientId: '{{ request('client_id', '') }}' };
+                if (filters.search || filters.clientId) {
+                    localStorage.setItem('credentialsFilters', JSON.stringify(filters));
+                }
+            }
+            window.location.href='{{ route('credentials.create') }}'
+        ">
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -385,7 +393,25 @@
             searchTimeout: null,
 
             init() {
-                // Nothing needed
+                // Restore filters from localStorage if no URL params
+                const savedFilters = localStorage.getItem('credentialsFilters');
+                console.log('init() - savedFilters:', savedFilters, 'URL search:', window.location.search);
+                if (savedFilters && !window.location.search) {
+                    const filters = JSON.parse(savedFilters);
+                    console.log('Restoring filters:', filters);
+                    if (filters.search || filters.clientId) {
+                        localStorage.removeItem('credentialsFilters');
+                        // Redirect with saved filters
+                        const url = new URL(window.location.origin + '{{ route('credentials.index') }}');
+                        if (filters.search) url.searchParams.set('search', filters.search);
+                        if (filters.clientId) url.searchParams.set('client_id', filters.clientId);
+                        console.log('Redirecting to:', url.toString());
+                        window.location.href = url.toString();
+                        return;
+                    }
+                }
+                // Clear saved filters after restoring
+                localStorage.removeItem('credentialsFilters');
             },
 
             performSearch() {
@@ -407,7 +433,20 @@
             clearFilters() {
                 this.search = '';
                 this.clientId = '';
+                localStorage.removeItem('credentialsFilters');
                 window.location.href = '{{ route('credentials.index') }}';
+            },
+
+            saveFilters() {
+                // Save current filters to localStorage before navigating away
+                console.log('saveFilters called', { search: this.search, clientId: this.clientId });
+                if (this.search || this.clientId) {
+                    localStorage.setItem('credentialsFilters', JSON.stringify({
+                        search: this.search,
+                        clientId: this.clientId
+                    }));
+                    console.log('Filters saved to localStorage');
+                }
             }
         };
     }
