@@ -182,16 +182,17 @@ document.addEventListener('alpine:init', () => {
 
 async function fetchPassword(credentialId) {
     try {
-        const response = await fetch(`/credentials/${credentialId}/reveal-password`, {
+        const response = await fetch(`/credentials/${credentialId}/password`, {
             headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json'
-            }
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+            },
+            credentials: 'same-origin'
         });
         const data = await response.json();
-        return data.password;
+        return data.password || '';
     } catch (error) {
-        showToast('{{ __("Error fetching password") }}', 'error');
+        console.error('Error fetching password:', error);
         return '';
     }
 }
@@ -204,18 +205,23 @@ function copyToClipboard(text, button) {
 }
 
 function copyPassword(credentialId, button) {
-    fetch(`/credentials/${credentialId}/reveal-password`, {
+    fetch(`/credentials/${credentialId}/password`, {
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+        },
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
-        navigator.clipboard.writeText(data.password).then(() => {
-            showToast('{{ __("Password copied to clipboard") }}');
-            showCopyFeedback(button);
-        });
+        if (data.password) {
+            navigator.clipboard.writeText(data.password).then(() => {
+                showToast('{{ __("Password copied to clipboard") }}');
+                showCopyFeedback(button);
+            });
+        } else {
+            showToast('{{ __("No password set") }}', 'error');
+        }
     })
     .catch(error => {
         showToast('{{ __("Error copying password") }}', 'error');

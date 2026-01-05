@@ -34,9 +34,13 @@
                     <div>
                         <label class="block text-sm font-medium text-slate-500">{{ __('Client') }}</label>
                         <p class="mt-1.5 text-slate-900">
-                            <a href="{{ route('clients.show', $credential->client) }}" class="text-slate-900 hover:text-slate-600 font-medium underline">
-                                {{ $credential->client->display_name }}
-                            </a>
+                            @if($credential->client)
+                                <a href="{{ route('clients.show', $credential->client) }}" class="text-slate-900 hover:text-slate-600 font-medium underline">
+                                    {{ $credential->client->display_name }}
+                                </a>
+                            @else
+                                <span class="text-slate-400 italic">{{ __('No client assigned') }}</span>
+                            @endif
                         </p>
                     </div>
 

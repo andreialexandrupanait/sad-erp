@@ -253,20 +253,25 @@ function copyToClipboard(text, button) {
 }
 
 function copyPassword(credentialId, button) {
-    fetch(`/credentials/${credentialId}/reveal-password`, {
+    fetch(`/credentials/${credentialId}/password`, {
         headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            'Accept': 'application/json'
-        }
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+        },
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
-        navigator.clipboard.writeText(data.password).then(() => {
-            showToast('{{ __("Password copied to clipboard") }}');
-            const originalHtml = button.innerHTML;
-            button.innerHTML = '<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
-            setTimeout(() => { button.innerHTML = originalHtml; }, 1500);
-        });
+        if (data.password) {
+            navigator.clipboard.writeText(data.password).then(() => {
+                showToast('{{ __("Password copied to clipboard") }}');
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>';
+                setTimeout(() => { button.innerHTML = originalHtml; }, 1500);
+            });
+        } else {
+            showToast('{{ __("No password set") }}', 'error');
+        }
     })
     .catch(error => {
         showToast('{{ __("Error copying password") }}', 'error');

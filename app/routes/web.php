@@ -161,7 +161,6 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:3,1')
             ->name('credentials.reveal-password');
         Route::get('credentials/{credential}/password', [CredentialController::class, 'getPassword'])
-            ->middleware('require.password.confirmation')
             ->middleware('throttle:30,1')
             ->name('credentials.get-password');
     });

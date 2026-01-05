@@ -34,9 +34,16 @@ class StoreClientNoteRequest extends FormRequest
     {
         $validated = parent::validated($key, $default);
 
-        // Sanitize content for XSS
-        if (isset($validated['content']) && function_exists('sanitize_input')) {
-            $validated['content'] = sanitize_input($validated['content']);
+        // Sanitize content for XSS while preserving TinyMCE formatting
+        if (isset($validated['content']) && function_exists('sanitize_html')) {
+            $allowedTags = [
+                'p', 'br', 'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+                'ul', 'ol', 'li', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+                'blockquote', 'pre', 'code', 'hr', 'span', 'div',
+                'table', 'thead', 'tbody', 'tr', 'td', 'th',
+                'sub', 'sup',
+            ];
+            $validated['content'] = sanitize_html($validated['content'], $allowedTags);
         }
 
         return $validated;

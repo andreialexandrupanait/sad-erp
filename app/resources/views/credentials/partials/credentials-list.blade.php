@@ -119,16 +119,17 @@
                             </div>
 
                             {{-- Password --}}
-                            <div class="pl-6 shrink-0" style="width: 140px;" x-data="{ password: '', loaded: false }">
+                            <div class="pl-6 shrink-0" style="min-width: 250px; max-width: 300px;" x-data="{ password: '', loaded: false }">
                                 <div x-init="fetchPassword({{ $credential->id }}).then(p => { password = p; loaded = true; })"
                                      @click="if(password) { copyToClipboard(password, $el); }"
-                                     class="font-mono text-sm text-slate-700 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-2 group"
-                                     title="{{ __('Click to copy') }}">
-                                    <svg class="w-4 h-4 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                     class="font-mono text-sm transition-colors inline-flex items-center gap-2 group max-w-full"
+                                     :class="password ? 'text-slate-700 cursor-pointer hover:text-blue-600' : 'text-red-400 italic'"
+                                     :title="password ? password : '{{ __('No password - click edit to add') }}'">
+                                    <svg class="w-4 h-4 flex-shrink-0" :class="password ? 'text-slate-400' : 'text-red-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
                                     </svg>
-                                    <span x-text="loaded ? password : '••••••••'"></span>
-                                    <svg x-show="loaded" class="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span class="truncate" x-text="loaded ? (password || '{{ __('No password') }}') : '••••••••'"></span>
+                                    <svg x-show="loaded && password" class="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                                     </svg>
                                 </div>

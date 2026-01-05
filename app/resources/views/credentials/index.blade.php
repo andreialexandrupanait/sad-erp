@@ -357,8 +357,10 @@
         try {
             const response = await fetch(`/credentials/${credentialId}/password`, {
                 headers: {
-                    'Accept': 'application/json'
-                }
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                },
+                credentials: 'same-origin'
             });
 
             if (!response.ok) {
@@ -366,10 +368,10 @@
             }
 
             const data = await response.json();
-            return data.password || '••••••••';
+            return data.password || '';
         } catch (error) {
             console.error('Error fetching password:', error);
-            return '••••••••';
+            return '';
         }
     }
 

@@ -392,7 +392,7 @@
                         </div>
 
                         <!-- Form -->
-                        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                        <div id="new-client-form-container" class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
                             <div x-show="formErrors.length > 0" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                                 <template x-for="error in formErrors" :key="error">
                                     <p class="text-sm text-red-700" x-text="error"></p>
@@ -442,13 +442,19 @@
                 this.saving = true;
                 this.formErrors = [];
 
-                const form = document.querySelector('[x-show="slideOverOpen"] .flex-1');
+                const form = document.getElementById('new-client-form-container');
                 const formData = new FormData();
 
                 // Collect form fields
                 form.querySelectorAll('input, select, textarea').forEach(el => {
                     if (el.name) {
-                        formData.append(el.name.replace('new_client_', ''), el.value);
+                        const fieldName = el.name.replace('new_client_', '');
+                        // Handle checkboxes properly
+                        if (el.type === 'checkbox') {
+                            formData.append(fieldName, el.checked ? '1' : '0');
+                        } else {
+                            formData.append(fieldName, el.value);
+                        }
                     }
                 });
 
