@@ -97,11 +97,11 @@ class FinancialFile extends Model
             }
         });
 
-        // Global scope for organization and user isolation
-        static::addGlobalScope('user_scope', function (Builder $query) {
-            if (Auth::check()) {
-                $query->where('organization_id', Auth::user()->organization_id)
-                      ->where('user_id', Auth::id());
+        // Global scope for organization isolation (not user-specific)
+        // Files should be visible to all users within the same organization
+        static::addGlobalScope('organization', function (Builder $query) {
+            if (Auth::check() && Auth::user()->organization_id) {
+                $query->where('organization_id', Auth::user()->organization_id);
             }
         });
 

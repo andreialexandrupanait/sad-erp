@@ -651,8 +651,8 @@ class RevenueImportService
             Storage::disk('financial')->put($path, $pdfContent);
 
             // Create file record using firstOrCreate to prevent duplicates
-            // Bypass user_scope to check org-wide for existing files
-            $file = FinancialFile::withoutGlobalScope('user_scope')->firstOrCreate(
+            // Bypass organization scope to check org-wide for existing files
+            $file = FinancialFile::withoutGlobalScope('organization')->firstOrCreate(
                 [
                     'organization_id' => $this->organizationId,
                     'file_path' => $path,
@@ -701,9 +701,9 @@ class RevenueImportService
 
         $expectedPath = "{$year}/{$monthName}/Incasari/{$filename}";
 
-        // Check if file already exists by path (org-level, bypassing user scope)
+        // Check if file already exists by path (org-level, bypassing organization scope)
         // This prevents duplicates even when different users re-import
-        $hasFile = FinancialFile::withoutGlobalScope('user_scope')
+        $hasFile = FinancialFile::withoutGlobalScope('organization')
             ->where('organization_id', $this->organizationId)
             ->where('file_path', $expectedPath)
             ->exists();

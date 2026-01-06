@@ -143,34 +143,4 @@ class SettingsHelper
         }
     }
 
-    /**
-     * Check if a value exists in a group
-     *
-     * @param string $groupKey
-     * @param string $value
-     * @return bool
-     */
-    public static function valueExists(string $groupKey, string $value): bool
-    {
-        return self::getOption($groupKey, $value) !== null;
-    }
-
-    /**
-     * Get default option for a group
-     *
-     * @param string $groupKey
-     * @return SettingOption|null
-     */
-    public static function getDefault(string $groupKey): ?SettingOption
-    {
-        $prefix = self::getCachePrefix();
-        $cacheKey = "{$prefix}.{$groupKey}.default";
-
-        return Cache::remember($cacheKey, 3600, function () use ($groupKey) {
-            return SettingOption::where('category', $groupKey)
-                ->where('is_default', true)
-                ->where('is_active', true)
-                ->first();
-        });
-    }
 }

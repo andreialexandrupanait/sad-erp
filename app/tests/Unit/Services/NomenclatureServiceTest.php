@@ -182,28 +182,6 @@ class NomenclatureServiceTest extends TestCase
     }
 
     /** @test */
-    public function it_retrieves_all_expense_categories_flat()
-    {
-        $parent = SettingOption::factory()->create([
-            'organization_id' => $this->organization->id,
-            'category' => 'expense_categories',
-            'parent_id' => null,
-            'label' => 'Utilities',
-        ]);
-
-        SettingOption::factory()->create([
-            'organization_id' => $this->organization->id,
-            'category' => 'expense_categories',
-            'parent_id' => $parent->id,
-            'label' => 'Electricity',
-        ]);
-
-        $result = $this->service->getAllExpenseCategories();
-
-        $this->assertCount(2, $result); // Both parent and child
-    }
-
-    /** @test */
     public function it_retrieves_all_nomenclature_at_once()
     {
         SettingOption::factory()->create([

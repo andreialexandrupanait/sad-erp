@@ -155,18 +155,6 @@ class NomenclatureService
     }
 
     /**
-     * Get all expense categories (flat list)
-     */
-    public function getAllExpenseCategories(): Collection
-    {
-        return Cache::remember(
-            $this->cacheKey('expense_categories_flat'),
-            self::CACHE_TTL,
-            fn() => SettingOption::where('category', 'expense_categories')->get()
-        );
-    }
-
-    /**
      * Get dashboard quick actions
      */
     public function getQuickActions(): Collection
@@ -215,7 +203,6 @@ class NomenclatureService
             'currencies',
             'payment_methods',
             'expense_categories',
-            'expense_categories_flat',
             'quick_actions',
             'counts',
         ];

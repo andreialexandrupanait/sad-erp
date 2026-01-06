@@ -62,24 +62,4 @@ trait HasOrganization
     {
         return $query->where($this->getTable() . '.organization_id', $organizationId);
     }
-
-    /**
-     * Check if this model belongs to the given organization.
-     */
-    public function belongsToOrganization(int $organizationId): bool
-    {
-        return $this->organization_id === $organizationId;
-    }
-
-    /**
-     * Check if this model belongs to the current user's organization.
-     */
-    public function belongsToCurrentOrganization(): bool
-    {
-        if (!auth()->check()) {
-            return false;
-        }
-
-        return $this->organization_id === auth()->user()->organization_id;
-    }
 }

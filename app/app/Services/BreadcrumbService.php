@@ -163,20 +163,4 @@ class BreadcrumbService
 
         return $breadcrumbs;
     }
-
-    /**
-     * Get label for a specific route
-     */
-    public static function getLabel(string $routeName): string
-    {
-        return self::$routeLabels[$routeName] ?? ucfirst(last(explode('.', $routeName)));
-    }
-
-    /**
-     * Add custom route label
-     */
-    public static function addLabel(string $routeName, string $label): void
-    {
-        self::$routeLabels[$routeName] = $label;
-    }
 }
