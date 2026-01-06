@@ -5,6 +5,8 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class BackupDatabase extends Command
 {
@@ -69,20 +71,21 @@ class BackupDatabase extends Command
 
         $command .= ' > ' . escapeshellarg($filepath);
 
-        // Execute backup
+        // Execute backup using Symfony Process for better security and error handling
         $this->info("Executing mysqldump to {$filepath}...");
 
-        $returnCode = null;
-        $output = [];
-        exec($command . ' 2>&1', $output, $returnCode);
+        $process = Process::fromShellCommandline($command);
+        $process->setTimeout(600); // 10 minutes max for large databases
 
-        if ($returnCode !== 0) {
-            $error = implode("\n", $output);
+        try {
+            $process->mustRun();
+        } catch (ProcessFailedException $e) {
+            $error = $process->getErrorOutput() ?: $process->getOutput();
             $this->error("Backup failed: {$error}");
             Log::error("Database backup failed", [
                 'type' => $type,
                 'error' => $error,
-                'return_code' => $returnCode,
+                'return_code' => $process->getExitCode(),
             ]);
             return Command::FAILURE;
         }
@@ -101,8 +104,9 @@ class BackupDatabase extends Command
 
         // Verify gzip integrity if compressed
         if ($compress) {
-            exec("gzip -t " . escapeshellarg($filepath) . " 2>&1", $gzipOutput, $gzipReturn);
-            if ($gzipReturn !== 0) {
+            $gzipProcess = new Process(['gzip', '-t', $filepath]);
+            $gzipProcess->run();
+            if (!$gzipProcess->isSuccessful()) {
                 $this->error("Backup file is corrupted!");
                 Log::error("Backup gzip verification failed", ['filepath' => $filepath]);
                 return Command::FAILURE;
@@ -175,16 +179,12 @@ class BackupDatabase extends Command
             $dirName = basename($sourceDir);
             $targetPath = "{$targetDir}/{$dirName}";
 
-            // Use rsync for efficient copying
-            $command = sprintf(
-                'cp -r %s %s 2>&1',
-                escapeshellarg($sourceDir),
-                escapeshellarg($targetPath)
-            );
+            // Use cp for copying files
+            $cpProcess = new Process(['cp', '-r', $sourceDir, $targetPath]);
+            $cpProcess->setTimeout(300);
+            $cpProcess->run();
 
-            exec($command, $output, $returnCode);
-
-            if ($returnCode === 0) {
+            if ($cpProcess->isSuccessful()) {
                 $this->info("  Backed up: {$dirName}");
             } else {
                 $this->warn("  Failed to backup: {$dirName}");
@@ -193,17 +193,14 @@ class BackupDatabase extends Command
 
         // Create tar.gz archive
         $archivePath = "{$targetDir}.tar.gz";
-        $command = sprintf(
-            'tar -czf %s -C %s . 2>&1',
-            escapeshellarg($archivePath),
-            escapeshellarg($targetDir)
-        );
+        $tarProcess = new Process(['tar', '-czf', $archivePath, '-C', $targetDir, '.']);
+        $tarProcess->setTimeout(300);
+        $tarProcess->run();
 
-        exec($command, $output, $returnCode);
-
-        if ($returnCode === 0) {
+        if ($tarProcess->isSuccessful()) {
             // Remove uncompressed directory
-            exec("rm -rf " . escapeshellarg($targetDir));
+            $rmProcess = new Process(['rm', '-rf', $targetDir]);
+            $rmProcess->run();
             $this->info("Files backup archived: {$archivePath}");
         }
     }

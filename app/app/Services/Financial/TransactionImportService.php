@@ -67,6 +67,16 @@ class TransactionImportService
         // Get expense categories with hierarchy
         $categories = $this->getExpenseCategories();
 
+        // Build maps for auto-categorization
+        $allCategories = $categories->flatMap(function ($cat) {
+            return collect([$cat])->merge($cat->children ?? []);
+        });
+        $categoryValueToId = $allCategories->pluck('id', 'value')->toArray();
+        // Also build label => ID map for direct matching
+        $categoryLabelToId = $allCategories->mapWithKeys(function ($cat) {
+            return [strtolower($cat->label) => $cat->id];
+        })->toArray();
+
         // Check for existing transactions to detect duplicates
         $existingTransactions = $this->getExistingTransactions(
             $file->an,
@@ -74,15 +84,56 @@ class TransactionImportService
             $result['metadata']['currency'] ?? 'RON'
         );
 
-        // Mark duplicates in transactions and get existing category
+        // Mark duplicates in transactions and set suggested category
         foreach ($result['transactions'] as &$transaction) {
+            // Try to find category: first from mapping, then from direct label/value match
+            $suggestedCategoryId = null;
+
+            if (!empty($transaction['suggested_category'])) {
+                // Convert mapping value to ID
+                $suggestedCategoryId = $categoryValueToId[$transaction['suggested_category']] ?? null;
+            }
+
+            // If no mapping found, try direct match against category labels/values
+            if (!$suggestedCategoryId && !empty($transaction['description'])) {
+                // Helper to check if pattern matches as whole word or word prefix
+                $matchesWord = function($pattern, $text) {
+                    // Match whole word OR word that starts with pattern (e.g., "postmark" matches "POSTMARKAPP")
+                    return preg_match('/\b' . preg_quote($pattern, '/') . '(\b|\w)/i', $text);
+                };
+
+                // Check category labels (min 4 chars to avoid false positives)
+                foreach ($categoryLabelToId as $label => $catId) {
+                    if (strlen($label) >= 4 && $matchesWord($label, $transaction['description'])) {
+                        $suggestedCategoryId = $catId;
+                        break;
+                    }
+                }
+
+                // Also check category values
+                if (!$suggestedCategoryId) {
+                    foreach ($categoryValueToId as $value => $catId) {
+                        if (strlen($value) >= 4 && $matchesWord($value, $transaction['description'])) {
+                            $suggestedCategoryId = $catId;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            $transaction['suggested_category'] = $suggestedCategoryId;
+
             $duplicateInfo = $this->findDuplicateInfo($transaction, $existingTransactions);
             if ($duplicateInfo) {
                 $transaction['is_duplicate'] = true;
+                $transaction['existing_id'] = $duplicateInfo['existing_id'];
+                $transaction['existing_entity_type'] = $duplicateInfo['existing_entity_type'];
                 $transaction['existing_description'] = $duplicateInfo['existing_description'];
                 $transaction['existing_category_id'] = $duplicateInfo['existing_category_id'];
+                $transaction['existing_files'] = $duplicateInfo['existing_files'];
             } else {
                 $transaction['is_duplicate'] = false;
+                $transaction['existing_files'] = [];
             }
         }
 
@@ -100,9 +151,10 @@ class TransactionImportService
      * @param FinancialFile $file The source file
      * @param array $transactions Validated transaction data
      * @param string $currency Currency code
+     * @param array $transactionFiles Files indexed by transaction index
      * @return array Import results with counts
      */
-    public function importTransactions(FinancialFile $file, array $transactions, string $currency = 'RON'): array
+    public function importTransactions(FinancialFile $file, array $transactions, string $currency = 'RON', array $transactionFiles = []): array
     {
         $organizationId = auth()->user()->organization_id;
         $userId = auth()->id();
@@ -110,10 +162,11 @@ class TransactionImportService
         $importedExpenses = 0;
         $importedRevenues = 0;
         $skipped = 0;
+        $filesUploaded = 0;
 
         DB::beginTransaction();
         try {
-            foreach ($transactions as $tx) {
+            foreach ($transactions as $index => $tx) {
                 // Skip if not selected
                 if (empty($tx['selected'])) {
                     $skipped++;
@@ -122,12 +175,15 @@ class TransactionImportService
 
                 $date = \Carbon\Carbon::parse($tx['date']);
 
+                // Truncate description to fit database column (255 chars max)
+                $description = \Illuminate\Support\Str::limit($tx['description'], 250, '...');
+
                 if ($tx['type'] === 'debit') {
                     // Create expense
-                    FinancialExpense::create([
+                    $entity = FinancialExpense::create([
                         'organization_id' => $organizationId,
                         'user_id' => $userId,
-                        'document_name' => $tx['description'],
+                        'document_name' => $description,
                         'amount' => $tx['amount'],
                         'currency' => $currency,
                         'occurred_at' => $date,
@@ -137,12 +193,13 @@ class TransactionImportService
                         'note' => __('Importat din extras de cont: ') . $file->file_name,
                     ]);
                     $importedExpenses++;
+                    $entityType = 'plata';
                 } else {
                     // Create revenue
-                    FinancialRevenue::create([
+                    $entity = FinancialRevenue::create([
                         'organization_id' => $organizationId,
                         'user_id' => $userId,
-                        'document_name' => $tx['description'],
+                        'document_name' => $description,
                         'amount' => $tx['amount'],
                         'currency' => $currency,
                         'occurred_at' => $date,
@@ -151,6 +208,15 @@ class TransactionImportService
                         'note' => __('Importat din extras de cont: ') . $file->file_name,
                     ]);
                     $importedRevenues++;
+                    $entityType = 'incasare';
+                }
+
+                // Upload files for this transaction
+                if (!empty($transactionFiles[$index])) {
+                    foreach ($transactionFiles[$index] as $uploadedFile) {
+                        $this->uploadFileToEntity($uploadedFile, $entity, $entityType, $date);
+                        $filesUploaded++;
+                    }
                 }
             }
 
@@ -161,7 +227,8 @@ class TransactionImportService
                 'imported_expenses' => $importedExpenses,
                 'imported_revenues' => $importedRevenues,
                 'skipped' => $skipped,
-                'message' => $this->buildImportMessage($importedExpenses, $importedRevenues, $skipped),
+                'files_uploaded' => $filesUploaded,
+                'message' => $this->buildImportMessage($importedExpenses, $importedRevenues, $skipped, $filesUploaded),
             ];
 
         } catch (\Exception $e) {
@@ -171,6 +238,66 @@ class TransactionImportService
                 'error' => __('Eroare la import: ') . $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Upload a file and attach it to an entity (expense or revenue).
+     */
+    protected function uploadFileToEntity($uploadedFile, $entity, string $entityType, \Carbon\Carbon $date): void
+    {
+        $organizationId = auth()->user()->organization_id;
+        $userId = auth()->id();
+
+        // Allowed extensions
+        $allowedExtensions = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx'];
+        $extension = strtolower($uploadedFile->getClientOriginalExtension());
+
+        if (!in_array($extension, $allowedExtensions)) {
+            return; // Skip invalid files
+        }
+
+        // Romanian month names for folder structure (format: MM-MonthName)
+        $romanianMonths = [
+            1 => '01-Ianuarie', 2 => '02-Februarie', 3 => '03-Martie', 4 => '04-Aprilie',
+            5 => '05-Mai', 6 => '06-Iunie', 7 => '07-Iulie', 8 => '08-August',
+            9 => '09-Septembrie', 10 => '10-Octombrie', 11 => '11-Noiembrie', 12 => '12-Decembrie'
+        ];
+
+        // Build folder path: year/month/type
+        $folderType = $entityType === 'plata' ? 'Plati' : 'Incasari';
+        $folderPath = $date->year . '/' . $romanianMonths[$date->month] . '/' . $folderType;
+
+        // Generate friendly filename: DD.MM - DocumentName.ext
+        $docName = preg_replace('/[^\w\s\-\.\(\)]/u', '', $entity->document_name);
+        $docName = trim(substr($docName, 0, 100)); // Limit length
+        $baseFilename = $date->format('d.m') . ' - ' . $docName;
+        $filename = $baseFilename . '.' . $extension;
+
+        // Check for duplicates and add counter
+        $counter = 1;
+        while (Storage::disk('financial')->exists($folderPath . '/' . $filename)) {
+            $filename = $baseFilename . ' (' . $counter . ').' . $extension;
+            $counter++;
+        }
+
+        // Store the file
+        $path = $uploadedFile->storeAs($folderPath, $filename, 'financial');
+
+        // Create the FinancialFile record with the friendly filename
+        FinancialFile::create([
+            'organization_id' => $organizationId,
+            'user_id' => $userId,
+            'file_name' => $filename, // Use generated friendly name, not original
+            'file_path' => $path,
+            'file_type' => $uploadedFile->getMimeType(),
+            'mime_type' => $uploadedFile->getMimeType(),
+            'file_size' => $uploadedFile->getSize(),
+            'entity_type' => get_class($entity),
+            'entity_id' => $entity->id,
+            'an' => $date->year,
+            'luna' => $date->month,
+            'tip' => $entityType,
+        ]);
     }
 
     /**
@@ -203,14 +330,25 @@ class TransactionImportService
             ->where('year', $year)
             ->where('month', $month)
             ->where('currency', $currency)
-            ->get(['occurred_at', 'amount', 'document_name', 'category_option_id'])
+            ->with(['files' => function ($q) {
+                $q->select('id', 'entity_type', 'entity_id', 'file_name', 'file_path', 'file_type');
+            }])
+            ->get(['id', 'occurred_at', 'amount', 'document_name', 'category_option_id'])
             ->map(fn($e) => [
+                'id' => $e->id,
+                'entity_type' => FinancialExpense::class,
                 'date' => $e->occurred_at->format('Y-m-d'),
                 'amount' => (float) $e->amount,
                 'description' => strtolower($e->document_name),
                 'original_description' => $e->document_name,
                 'type' => 'debit',
                 'category_id' => $e->category_option_id,
+                'files' => $e->files->map(fn($f) => [
+                    'id' => $f->id,
+                    'name' => $f->file_name,
+                    'path' => $f->file_path,
+                    'type' => $f->file_type,
+                ])->toArray(),
             ])
             ->toArray();
 
@@ -218,14 +356,25 @@ class TransactionImportService
             ->where('year', $year)
             ->where('month', $month)
             ->where('currency', $currency)
-            ->get(['occurred_at', 'amount', 'document_name'])
+            ->with(['files' => function ($q) {
+                $q->select('id', 'entity_type', 'entity_id', 'file_name', 'file_path', 'file_type');
+            }])
+            ->get(['id', 'occurred_at', 'amount', 'document_name'])
             ->map(fn($r) => [
+                'id' => $r->id,
+                'entity_type' => FinancialRevenue::class,
                 'date' => $r->occurred_at->format('Y-m-d'),
                 'amount' => (float) $r->amount,
                 'description' => strtolower($r->document_name),
                 'original_description' => $r->document_name,
                 'type' => 'credit',
                 'category_id' => null,
+                'files' => $r->files->map(fn($f) => [
+                    'id' => $f->id,
+                    'name' => $f->file_name,
+                    'path' => $f->file_path,
+                    'type' => $f->file_type,
+                ])->toArray(),
             ])
             ->toArray();
 
@@ -244,8 +393,11 @@ class TransactionImportService
                 $existing['type'] === $transaction['type']) {
                 return [
                     'is_duplicate' => true,
+                    'existing_id' => $existing['id'],
+                    'existing_entity_type' => $existing['entity_type'],
                     'existing_description' => $existing['original_description'],
                     'existing_category_id' => $existing['category_id'],
+                    'existing_files' => $existing['files'] ?? [],
                 ];
             }
         }
@@ -255,12 +407,16 @@ class TransactionImportService
     /**
      * Build the import result message.
      */
-    protected function buildImportMessage(int $expenses, int $revenues, int $skipped): string
+    protected function buildImportMessage(int $expenses, int $revenues, int $skipped, int $filesUploaded = 0): string
     {
         $message = __('Import finalizat: :expenses cheltuieli si :revenues venituri importate.', [
             'expenses' => $expenses,
             'revenues' => $revenues,
         ]);
+
+        if ($filesUploaded > 0) {
+            $message .= ' ' . __(':files fisiere atasate.', ['files' => $filesUploaded]);
+        }
 
         if ($skipped > 0) {
             $message .= ' ' . __(':skipped tranzactii omise.', ['skipped' => $skipped]);

@@ -104,9 +104,19 @@ class BankStatementPdfParser
                 $metadata['currency'] = 'USD';
             }
         }
-        
-        // Also check for explicit currency text in statement
+
+        // Also check for explicit currency text in statement (account-level, not transaction-level)
         if (preg_match('/Valuta\s*[:\-]?\s*(EUR|USD|RON)/i', $text, $matches)) {
+            $metadata['currency'] = strtoupper($matches[1]);
+        }
+
+        // Check for "Cont curent EUR" or similar patterns (account-level indicator)
+        if (preg_match('/Cont\s+curent\s+(EUR|USD)/i', $text, $matches)) {
+            $metadata['currency'] = strtoupper($matches[1]);
+        }
+
+        // Check for "EXTRAS DE CONT IN EUR" or similar header patterns
+        if (preg_match('/EXTRAS\s+(?:DE\s+)?CONT\s+(?:IN\s+)?(EUR|USD)/i', $text, $matches)) {
             $metadata['currency'] = strtoupper($matches[1]);
         }
         if (preg_match('/SOLD FINAL CONT\s+([\d\.,]+)/i', $text, $matches)) {
@@ -267,6 +277,12 @@ class BankStatementPdfParser
     {
         $description = $this->cleanDescription($description);
 
+        // Extract RON equivalent for foreign currency transactions
+        $ronEquivalent = null;
+        if (preg_match('/ECHIVALENT\s+LEI\s+([\d\.,]+)/i', $description, $matches)) {
+            $ronEquivalent = $this->parseAmount($matches[1]);
+        }
+
         return [
             'date' => $date,
             'description' => $description,
@@ -276,6 +292,7 @@ class BankStatementPdfParser
             'type' => $debit ? 'debit' : 'credit',
             'suggested_category' => $debit ? ExpenseCategoryMapping::findCategoryForDescription($description) : null,
             'reference' => $this->extractReference($description),
+            'ron_equivalent' => $ronEquivalent,
         ];
     }
 

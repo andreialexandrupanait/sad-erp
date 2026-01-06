@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Set application locale based on settings
         $middleware->web(append: [
+            \App\Http\Middleware\AddRequestId::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\AuditLogger::class,
             \App\Http\Middleware\SecurityHeaders::class,
@@ -38,6 +39,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'module' => \App\Http\Middleware\CheckModuleAccess::class,
             'org' => \App\Http\Middleware\EnsureOrganizationScope::class,
             'require.password.confirmation' => \App\Http\Middleware\RequirePasswordConfirmation::class,
+            '2fa' => \App\Http\Middleware\Require2FA::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

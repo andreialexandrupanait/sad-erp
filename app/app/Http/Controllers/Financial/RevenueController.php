@@ -35,12 +35,24 @@ class RevenueController extends Controller
     }
     public function index(Request $request)
     {
-        // Get filter values from request or session, with defaults
-        $year = $request->get('year', session('financial.filters.year', now()->year));
-        $month = $request->get('month', session('financial.filters.month', now()->month));
-        $currency = $request->get('currency', session('financial.filters.currency'));
-        $clientId = $request->get('client_id', session('financial.filters.client_id'));
-        $search = $request->get('search', '');
+        // Validate all filter parameters for security
+        $validated = $request->validate([
+            'year' => 'nullable|integer|min:2000|max:2100',
+            'month' => 'nullable|integer|min:1|max:12',
+            'currency' => 'nullable|string|in:RON,EUR,USD',
+            'client_id' => 'nullable|integer|exists:clients,id',
+            'search' => 'nullable|string|max:255',
+            'sort' => 'nullable|string|in:occurred_at,amount,document_name,client_id,currency,created_at',
+            'dir' => 'nullable|string|in:asc,desc',
+            'per_page' => 'nullable|integer|min:10|max:100',
+        ]);
+
+        // Get filter values from validated request or session, with defaults
+        $year = $validated['year'] ?? session('financial.filters.year', now()->year);
+        $month = $validated['month'] ?? session('financial.filters.month', now()->month);
+        $currency = $validated['currency'] ?? session('financial.filters.currency');
+        $clientId = $validated['client_id'] ?? session('financial.filters.client_id');
+        $search = $validated['search'] ?? '';
 
         // Store filter values in session for persistence
         session([
@@ -50,15 +62,11 @@ class RevenueController extends Controller
             'financial.filters.client_id' => $clientId,
         ]);
 
-        // Sorting
-        $sortBy = $request->get('sort', 'occurred_at');
-        $sortDir = $request->get('dir', 'desc');
-        $allowedColumns = ['occurred_at', 'amount', 'document_name', 'client_id', 'currency', 'created_at'];
-        if (!in_array($sortBy, $allowedColumns)) {
-            $sortBy = 'occurred_at';
-        }
+        // Sorting (already validated above)
+        $sortBy = $validated['sort'] ?? 'occurred_at';
+        $sortDir = $validated['dir'] ?? 'desc';
 
-        $perPage = $request->get('per_page', 50);
+        $perPage = $validated['per_page'] ?? 50;
 
         // Prepare filters array
         $filters = [

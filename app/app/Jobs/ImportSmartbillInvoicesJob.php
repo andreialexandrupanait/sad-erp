@@ -522,12 +522,42 @@ class ImportSmartbillInvoicesJob implements ShouldQueue
 
     /**
      * Handle a job failure.
+     *
+     * This method is called when all retry attempts have been exhausted.
+     * We update the import record to reflect the failure state.
      */
     public function failed(\Throwable $exception): void
     {
         Log::error('Smartbill import job failed permanently', [
             'import_id' => $this->importId,
             'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString(),
         ]);
+
+        // Update import record to failed state
+        try {
+            $import = SmartbillImport::find($this->importId);
+            if ($import && $import->status !== 'failed') {
+                $import->update([
+                    'status' => 'failed',
+                    'completed_at' => now(),
+                    'errors' => array_merge(
+                        $import->errors ?? [],
+                        ['Job failed after ' . $this->tries . ' attempts: ' . $exception->getMessage()]
+                    ),
+                ]);
+
+                // Cleanup: delete temporary import file if it exists
+                if ($import->file_path && Storage::disk('local')->exists($import->file_path)) {
+                    Storage::disk('local')->delete($import->file_path);
+                }
+            }
+        } catch (\Throwable $e) {
+            // Don't let failed() itself throw - just log it
+            Log::error('Failed to update import record in failed() handler', [
+                'import_id' => $this->importId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

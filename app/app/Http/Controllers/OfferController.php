@@ -388,9 +388,13 @@ class OfferController extends Controller
         // Record the view
         $this->offerPublicService->recordView($offer, request()->ip(), request()->userAgent());
 
-        // Load relationships without global scopes
+        // Load relationships - scope client query to offer's organization for security
         $offer->load(['items']);
-        $offer->setRelation('client', $offer->client_id ? \App\Models\Client::withoutGlobalScopes()->find($offer->client_id) : null);
+        $offer->setRelation('client', $offer->client_id
+            ? \App\Models\Client::where('id', $offer->client_id)
+                ->where('organization_id', $offer->organization_id)
+                ->first()
+            : null);
         $offer->setRelation('organization', \App\Models\Organization::find($offer->organization_id));
 
         return view('offers.public', compact('offer'));
@@ -975,9 +979,13 @@ class OfferController extends Controller
         // Record the view using the token (for compatibility with existing service)
         $this->offerPublicService->recordView($offer, request()->ip(), request()->userAgent());
 
-        // Load relationships without global scopes
+        // Load relationships - scope client query to offer's organization for security
         $offer->load(['items']);
-        $offer->setRelation('client', $offer->client_id ? \App\Models\Client::withoutGlobalScopes()->find($offer->client_id) : null);
+        $offer->setRelation('client', $offer->client_id
+            ? \App\Models\Client::where('id', $offer->client_id)
+                ->where('organization_id', $offer->organization_id)
+                ->first()
+            : null);
         $offer->setRelation('organization', \App\Models\Organization::find($offer->organization_id));
 
         return view('offers.public', compact('offer'));

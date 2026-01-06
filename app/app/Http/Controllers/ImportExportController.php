@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Services\Import\CsvImportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
@@ -55,11 +56,22 @@ class ImportExportController extends Controller
             'csv_file' => 'required|file|mimes:csv,txt|max:2048',
         ]);
 
-        $method = 'import' . ucfirst($module);
+        // SECURITY: Whitelist allowed import methods to prevent arbitrary method invocation
+        $allowedImportMethods = [
+            'clients' => 'importClients',
+            'revenues' => 'importRevenues',
+            'expenses' => 'importExpenses',
+            'subscriptions' => 'importSubscriptions',
+            'domains' => 'importDomains',
+            'credentials' => 'importCredentials',
+            'accounts' => 'importAccounts',
+        ];
 
-        if (!method_exists($this, $method)) {
+        if (!isset($allowedImportMethods[$module])) {
             return back()->with('error', 'Import not supported for this module');
         }
+
+        $method = $allowedImportMethods[$module];
 
         return $this->$method($request);
     }
@@ -71,7 +83,22 @@ class ImportExportController extends Controller
     {
         $this->validateModule($module);
 
-        $method = 'downloadTemplate' . ucfirst($module);
+        // SECURITY: Whitelist allowed template methods
+        $allowedTemplateMethods = [
+            'clients' => 'downloadTemplateClients',
+            'revenues' => 'downloadTemplateRevenues',
+            'expenses' => 'downloadTemplateExpenses',
+            'subscriptions' => 'downloadTemplateSubscriptions',
+            'domains' => 'downloadTemplateDomains',
+            'credentials' => 'downloadTemplateCredentials',
+            'accounts' => 'downloadTemplateAccounts',
+        ];
+
+        if (!isset($allowedTemplateMethods[$module])) {
+            abort(404, 'Template not available for this module');
+        }
+
+        $method = $allowedTemplateMethods[$module];
 
         if (!method_exists($this, $method)) {
             abort(404, 'Template not available for this module');
@@ -89,13 +116,59 @@ class ImportExportController extends Controller
     {
         $this->validateModule($module);
 
-        $method = 'export' . ucfirst($module);
+        // SECURITY: Whitelist allowed export methods
+        $allowedExportMethods = [
+            'clients' => 'exportClients',
+            'revenues' => 'exportRevenues',
+            'expenses' => 'exportExpenses',
+            'subscriptions' => 'exportSubscriptions',
+            'domains' => 'exportDomains',
+            'credentials' => 'exportCredentials',
+            'accounts' => 'exportAccounts',
+        ];
+
+        if (!isset($allowedExportMethods[$module])) {
+            return back()->with('error', 'Export not supported for this module');
+        }
+
+        $method = $allowedExportMethods[$module];
 
         if (!method_exists($this, $method)) {
             return back()->with('error', 'Export not supported for this module');
         }
 
-        return $this->$method($request);
+        // AUDIT: Log all data exports for compliance and security tracking
+        $startTime = microtime(true);
+        Log::channel('audit')->info('Data export initiated', [
+            'module' => $module,
+            'user_id' => auth()->id(),
+            'user_email' => auth()->user()?->email,
+            'organization_id' => auth()->user()?->organization_id,
+            'ip_address' => $request->ip(),
+            'filters' => $request->except(['_token']),
+        ]);
+
+        try {
+            $result = $this->$method($request);
+
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+            Log::channel('audit')->info('Data export completed', [
+                'module' => $module,
+                'user_id' => auth()->id(),
+                'duration_ms' => $duration,
+            ]);
+
+            return $result;
+        } catch (\Exception $e) {
+            $duration = round((microtime(true) - $startTime) * 1000, 2);
+            Log::channel('audit')->error('Data export failed', [
+                'module' => $module,
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'duration_ms' => $duration,
+            ]);
+            throw $e;
+        }
     }
 
     // ==================== CLIENTS ====================

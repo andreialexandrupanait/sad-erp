@@ -94,23 +94,36 @@ class SmartbillImporter
                 // Wrap in transaction and disable events to prevent redundant cache clearing
                 $chunks = array_chunk($invoices, 25);
                 foreach ($chunks as $chunk) {
-                    DB::transaction(function () use ($chunk, $downloadPdfs, $preview) {
-                        // Disable observer events during bulk import
-                        // Observers clear cache on each save, which is inefficient for bulk operations
-                        FinancialRevenue::withoutEvents(function () use ($chunk, $downloadPdfs, $preview) {
-                            foreach ($chunk as $invoice) {
-                                try {
-                                    $this->processInvoice($invoice, $downloadPdfs, $preview);
-                                } catch (Exception $e) {
-                                    $this->stats['errors']++;
-                                    Log::error('Error processing invoice', [
-                                        'invoice' => $invoice,
-                                        'error' => $e->getMessage(),
-                                    ]);
+                    try {
+                        DB::transaction(function () use ($chunk, $downloadPdfs, $preview) {
+                            // Disable observer events during bulk import
+                            // Observers clear cache on each save, which is inefficient for bulk operations
+                            FinancialRevenue::withoutEvents(function () use ($chunk, $downloadPdfs, $preview) {
+                                foreach ($chunk as $invoice) {
+                                    try {
+                                        $this->processInvoice($invoice, $downloadPdfs, $preview);
+                                    } catch (\Illuminate\Database\QueryException $e) {
+                                        // Database errors should rollback the entire chunk
+                                        throw $e;
+                                    } catch (Exception $e) {
+                                        // Application errors are logged but don't rollback
+                                        $this->stats['errors']++;
+                                        Log::error('Error processing invoice', [
+                                            'invoice' => $invoice,
+                                            'error' => $e->getMessage(),
+                                        ]);
+                                    }
                                 }
-                            }
+                            });
                         });
-                    });
+                    } catch (\Illuminate\Database\QueryException $e) {
+                        // Database error rolled back the chunk - log and continue with next chunk
+                        $this->stats['errors'] += count($chunk);
+                        Log::error('Database error processing chunk - rolled back', [
+                            'error' => $e->getMessage(),
+                            'chunk_size' => count($chunk),
+                        ]);
+                    }
                     // Free memory between chunks
                     gc_collect_cycles();
                 }

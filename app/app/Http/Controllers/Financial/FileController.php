@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Financial;
 
 use App\Http\Controllers\Controller;
+use App\Rules\SecureFileUpload;
 use App\Services\Financial\FileUploadService;
 use App\Services\Financial\TransactionImportService;
 use App\Services\Financial\ZipExportService;
@@ -163,7 +164,7 @@ class FileController extends Controller
     {
         $validated = $request->validate([
             'files' => 'required|array',
-            'files.*' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
+            'files.*' => ['required', 'file', 'max:10240', new SecureFileUpload()],
             'entity_type' => 'nullable|string|in:App\Models\FinancialRevenue,App\Models\FinancialExpense',
             'entity_id' => 'nullable|integer',
             'tip' => 'nullable|string|in:incasare,plata,extrase,general',
@@ -348,7 +349,7 @@ class FileController extends Controller
     public function upload(Request $request)
     {
         $validated = $request->validate([
-            'file' => 'required|file|max:10240|mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,zip,rar',
+            'file' => ['required', 'file', 'max:10240', new SecureFileUpload()],
             'entity_type' => 'required|string',
             'entity_id' => 'required|integer',
         ]);
@@ -463,11 +464,11 @@ class FileController extends Controller
      *
      * Pattern 1 - BT Export format:
      * Extrase_RO82BTRLEURCRT0512531701_2025-10-01_2025-10-31_SIMPLEAD_S_R_L
-     * → 10.2025 - Cont curent EUR
+     * → Extras BT EUR 01.10 - 31.10.2025
      *
      * Pattern 2 - BT Monthly format:
      * 092025_RO35BTRLRONCRT0512531701_CURRENT.pdf
-     * → 09.2025 - Cont curent RON
+     * → Extras BT RON 01.09 - 30.09.2025
      */
     private function generateBankStatementName($originalFilename)
     {
@@ -479,12 +480,15 @@ class FileController extends Controller
             // Extract currency from IBAN in filename
             $currency = $this->detectCurrencyFromFilename($nameWithoutExt);
 
-            // Extract month and year from date range pattern: _YYYY-MM-DD_
-            if (preg_match('/_(\d{4})-(\d{2})-\d{2}_/', $nameWithoutExt, $matches)) {
-                $year = $matches[1];
-                $month = $matches[2];
+            // Extract full date range: _YYYY-MM-DD_YYYY-MM-DD_
+            if (preg_match('/_(\d{4})-(\d{2})-(\d{2})_(\d{4})-(\d{2})-(\d{2})_/', $nameWithoutExt, $matches)) {
+                $startDay = $matches[3];
+                $startMonth = $matches[2];
+                $endDay = $matches[6];
+                $endMonth = $matches[5];
+                $endYear = $matches[4];
 
-                return "{$month}.{$year} - Cont curent {$currency}";
+                return "Extras BT {$currency} {$startDay}.{$startMonth} - {$endDay}.{$endMonth}.{$endYear}";
             }
         }
 
@@ -497,7 +501,10 @@ class FileController extends Controller
             // Extract currency from IBAN
             $currency = $this->detectCurrencyFromFilename($iban);
 
-            return "{$month}.{$year} - Cont curent {$currency}";
+            // Calculate last day of month
+            $lastDay = cal_days_in_month(CAL_GREGORIAN, (int)$month, (int)$year);
+
+            return "Extras BT {$currency} 01.{$month} - {$lastDay}.{$month}.{$year}";
         }
 
         // Pattern not matched, keep original name
@@ -569,6 +576,7 @@ class FileController extends Controller
     public function processImportTransactions(Request $request, FinancialFile $file)
     {
         $validated = $request->validate([
+            'currency' => 'required|string|in:RON,EUR,USD',
             'transactions' => 'required|array|min:1',
             'transactions.*.selected' => 'sometimes|boolean',
             'transactions.*.date' => 'required|date',
@@ -576,14 +584,19 @@ class FileController extends Controller
             'transactions.*.amount' => 'required|numeric|min:0.01',
             'transactions.*.type' => 'required|in:debit,credit',
             'transactions.*.category_id' => 'nullable|integer',
+            'transaction_files' => 'nullable|array',
+            'transaction_files.*' => 'nullable|array',
+            'transaction_files.*.*' => ['nullable', 'file', 'max:10240', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx'],
         ]);
 
-        $currency = $request->input('currency', 'RON');
+        $currency = $validated['currency'];
+        $transactionFiles = $request->file('transaction_files', []);
 
         $result = $this->transactionImportService->importTransactions(
             $file,
             $validated['transactions'],
-            $currency
+            $currency,
+            $transactionFiles
         );
 
         if (!$result['success']) {

@@ -48,12 +48,27 @@ class BackupController extends Controller
      */
     public function export(Request $request)
     {
+        // Get the list of allowed tables from the backup service
+        $allowedTables = $this->backupService->getAvailableTables();
+
         $request->validate([
             'tables' => 'nullable|array',
-            'tables.*' => 'string',
+            'tables.*' => 'string|in:' . implode(',', $allowedTables),
         ]);
 
         $tables = $request->input('tables');
+
+        // SECURITY: Double-check that all requested tables are in the allowed list
+        if ($tables) {
+            $tables = array_filter($tables, fn($table) => in_array($table, $allowedTables));
+            if (empty($tables)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('No valid tables specified for backup.'),
+                ], 400);
+            }
+        }
+
         $result = $this->backupService->createBackup($tables);
 
         if ($result['success']) {

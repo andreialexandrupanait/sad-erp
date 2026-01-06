@@ -3,6 +3,7 @@
 namespace App\Services\Banking;
 
 use App\Models\BankingCredential;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -157,14 +158,40 @@ class BancaTransilvaniaService
     }
 
     /**
+     * Refresh token with database locking to prevent race conditions
+     *
+     * When multiple concurrent requests detect an expired token, this method ensures
+     * only one actually performs the refresh while others wait and get the new token.
+     */
+    protected function refreshTokenWithLock(BankingCredential $credential): void
+    {
+        DB::transaction(function () use ($credential) {
+            // Lock the credential row for update
+            $lockedCredential = BankingCredential::lockForUpdate()->find($credential->id);
+
+            if (!$lockedCredential) {
+                throw new \Exception('Banking credential not found');
+            }
+
+            // Double-check if token is still expired after acquiring lock
+            // Another process might have already refreshed it
+            if ($lockedCredential->isTokenExpired()) {
+                $this->refreshAccessToken($lockedCredential);
+            }
+
+            // Reload the credential with new token data
+            $credential->refresh();
+        });
+    }
+
+    /**
      * Make authenticated API request
      */
     protected function makeRequest(string $method, string $endpoint, BankingCredential $credential, array $params = []): array
     {
-        // Refresh token if expired
+        // Refresh token if expired - use locking to prevent race conditions
         if ($credential->isTokenExpired()) {
-            $this->refreshAccessToken($credential);
-            $credential->refresh(); // Reload from database
+            $this->refreshTokenWithLock($credential);
         }
 
         try {
@@ -269,10 +296,9 @@ class BancaTransilvaniaService
         string $dateFrom,
         string $dateTo
     ): string {
-        // Refresh token if expired
+        // Refresh token if expired - use locking to prevent race conditions
         if ($credential->isTokenExpired()) {
-            $this->refreshAccessToken($credential);
-            $credential->refresh();
+            $this->refreshTokenWithLock($credential);
         }
 
         try {

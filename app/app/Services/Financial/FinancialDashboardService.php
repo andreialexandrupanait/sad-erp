@@ -384,19 +384,27 @@ class FinancialDashboardService
 
     /**
      * Find expense spikes (months with expenses > 2x average).
+     *
+     * Optimized: Batch loads all years in a single query to avoid N+1.
      */
     private function findExpenseSpikes(Collection $availableYears): array
     {
         $expenseSpikes = [];
 
-        foreach ($availableYears as $year) {
-            $monthlyExpenses = FinancialExpense::forYear($year)
-                ->where('currency', 'RON')
-                ->select('month', DB::raw('SUM(amount) as total'))
-                ->groupBy('month')
-                ->get()
-                ->pluck('total', 'month');
+        if ($availableYears->isEmpty()) {
+            return $expenseSpikes;
+        }
 
+        // PERFORMANCE: Load all years in single query instead of N queries
+        $allExpenses = FinancialExpense::whereIn('year', $availableYears->toArray())
+            ->where('currency', 'RON')
+            ->select('year', 'month', DB::raw('SUM(amount) as total'))
+            ->groupBy('year', 'month')
+            ->get()
+            ->groupBy('year');
+
+        foreach ($availableYears as $year) {
+            $monthlyExpenses = $allExpenses->get($year, collect())->pluck('total', 'month');
             $avgExpense = $monthlyExpenses->avg() ?: 0;
 
             foreach ($monthlyExpenses as $month => $amount) {

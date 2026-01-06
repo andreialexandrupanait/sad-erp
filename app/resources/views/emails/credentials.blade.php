@@ -193,7 +193,7 @@
                     <tr>
                         <th>{{ __('Platform') }}</th>
                         <th>{{ __('Username') }}</th>
-                        <th>{{ __('Password') }}</th>
+                        {{-- SECURITY: Passwords are NOT sent via email --}}
                         <th>{{ __('URL') }}</th>
                     </tr>
                 </thead>
@@ -207,9 +207,6 @@
                             <span class="credential-value">{{ $credential->username ?? '-' }}</span>
                         </td>
                         <td>
-                            <span class="credential-value">{{ $credential->password ?? '-' }}</span>
-                        </td>
-                        <td>
                             @if($credential->url)
                                 <a href="{{ $credential->url }}" class="url-link" target="_blank">{{ $credential->url }}</a>
                             @else
@@ -220,6 +217,11 @@
                     @endforeach
                 </tbody>
             </table>
+
+            <div class="security-notice" style="background-color: #dbeafe; border-color: #93c5fd; margin-top: 16px;">
+                <h3 style="color: #1e40af;">{{ __('Password Access') }}</h3>
+                <p style="color: #1e40af;">{{ __('For security reasons, passwords are not included in emails. Please log in to the application to view passwords securely.') }}</p>
+            </div>
 
             <div class="security-notice">
                 <h3>{{ __('Security Reminder') }}</h3>

@@ -22,31 +22,33 @@ class InternalAccountController extends Controller
      */
     public function index(Request $request)
     {
+        // Validate all filter parameters for security
+        $validated = $request->validate([
+            'search' => 'nullable|string|max:255',
+            'ownership' => 'nullable|string|in:mine,team',
+            'sort' => 'nullable|string|in:account_name,url,username,created_at,updated_at',
+            'dir' => 'nullable|string|in:asc,desc',
+        ]);
+
         $query = InternalAccount::with('user');
 
         // Search
-        if ($request->has('search') && $request->search != '') {
-            $query->search($request->search);
+        if (!empty($validated['search'])) {
+            $query->search($validated['search']);
         }
 
         // Filter by ownership
-        if ($request->has('ownership') && $request->ownership != '') {
-            if ($request->ownership === 'mine') {
+        if (!empty($validated['ownership'])) {
+            if ($validated['ownership'] === 'mine') {
                 $query->ownedByMe();
-            } elseif ($request->ownership === 'team') {
+            } elseif ($validated['ownership'] === 'team') {
                 $query->teamAccessible(true);
             }
         }
 
-        // Sort
-        $sortBy = $request->get('sort', 'created_at');
-        $sortOrder = $request->get('dir', 'desc');
-
-        // Validate sort column
-        $allowedSortColumns = ['account_name', 'url', 'username', 'created_at', 'updated_at'];
-        if (!in_array($sortBy, $allowedSortColumns)) {
-            $sortBy = 'created_at';
-        }
+        // Sort (already validated above)
+        $sortBy = $validated['sort'] ?? 'created_at';
+        $sortOrder = $validated['dir'] ?? 'desc';
 
         $query->orderBy($sortBy, $sortOrder);
 
@@ -183,8 +185,13 @@ class InternalAccountController extends Controller
             'user_agent' => request()->userAgent(),
         ]);
 
+        // Return password with security headers to prevent caching
         return response()->json([
             'password' => $internalAccount->password,
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 }

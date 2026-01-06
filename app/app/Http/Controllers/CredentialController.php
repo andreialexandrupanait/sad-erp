@@ -281,6 +281,10 @@ class CredentialController extends Controller
 
         return response()->json([
             'password' => $credential->password,
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 
@@ -311,6 +315,10 @@ class CredentialController extends Controller
 
         return response()->json([
             'password' => $credential->password,
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
         ]);
     }
 
@@ -390,13 +398,13 @@ class CredentialController extends Controller
             $file = fopen("php://output", "w");
             // UTF-8 BOM for Excel compatibility
             fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
-            fputcsv($file, ["Platform", "Username", "Password", "URL", "Notes"]);
+            // SECURITY: Passwords are NOT exported to CSV for security reasons
+            fputcsv($file, ["Platform", "Username", "URL", "Notes"]);
 
             foreach ($credentials as $credential) {
                 fputcsv($file, [
                     $credential->platform,
                     $credential->username ?? "",
-                    $credential->password ?? "",
                     $credential->url ?? "",
                     $credential->notes ?? "",
                 ]);

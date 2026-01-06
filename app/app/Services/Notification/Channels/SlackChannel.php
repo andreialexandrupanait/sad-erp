@@ -68,9 +68,20 @@ class SlackChannel implements NotificationChannelInterface
     protected function sendPayload(string $webhookUrl, array $payload): bool
     {
         $timeout = config('notifications.channels.slack.timeout', 5);
+        $retries = config('notifications.channels.slack.retries', 3);
 
         try {
+            // Use retry with exponential backoff for transient failures
             $response = Http::timeout($timeout)
+                ->retry($retries, function (int $attempt, \Exception $exception) {
+                    // Exponential backoff: 500ms, 1s, 2s
+                    return $attempt * 500;
+                }, function (\Exception $exception) {
+                    // Only retry on connection errors or 5xx server errors
+                    return $exception instanceof \Illuminate\Http\Client\ConnectionException
+                        || ($exception instanceof \Illuminate\Http\Client\RequestException
+                            && $exception->response?->serverError());
+                })
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                 ])
@@ -87,7 +98,7 @@ class SlackChannel implements NotificationChannelInterface
 
             return false;
         } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('Slack webhook connection failed', [
+            Log::error('Slack webhook connection failed after retries', [
                 'error' => $e->getMessage(),
             ]);
             throw new \RuntimeException('Failed to connect to Slack: ' . $e->getMessage(), 0, $e);

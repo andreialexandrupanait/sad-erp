@@ -59,9 +59,11 @@ class MetricsAggregator
             $credentialCount = Credential::count();
 
             // Include expiring domains in cache with eager loading
+            // PERFORMANCE: Limit to 50 to prevent unbounded queries
             $expiringDomains = Domain::with(['client'])
                 ->whereBetween('expiry_date', [now(), now()->addDays(30)])
                 ->orderBy('expiry_date')
+                ->limit(50)
                 ->get();
 
             return [
@@ -141,10 +143,13 @@ class MetricsAggregator
                 'recentClients' => Client::with('status')->latest()->take(5)->get(),
                 'recentDomains' => Domain::with(['client'])->latest()->take(5)->get(),
                 'recentSubscriptions' => Subscription::latest()->take(5)->get(),
+                // PERFORMANCE: Limit overdue subscriptions to prevent unbounded queries
                 'overdueSubscriptions' => Subscription::where('status', 'active')
                     ->where('next_renewal_date', '<', now())
+                    ->limit(50)
                     ->get(),
-                'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(200)->get(),
+                // PERFORMANCE: Reduced from 200 to 20 for dashboard widget
+                'clients' => Client::with('status')->orderBy('updated_at', 'desc')->limit(20)->get(),
             ];
         });
     }

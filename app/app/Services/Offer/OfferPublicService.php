@@ -3,6 +3,7 @@
 namespace App\Services\Offer;
 
 use App\Models\Offer;
+use App\Models\OfferItem;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -116,20 +117,36 @@ class OfferPublicService
         // Track if any changes were made for admin notification
         $changesWereMade = false;
 
+        // PERFORMANCE: Use batch updates instead of individual saves in loops
         // Update custom service selections
         if (isset($selections['deselected_services'])) {
             $deselectedIds = $selections['deselected_services'];
 
-            // Update each custom item's is_selected status
-            foreach ($offer->items as $item) {
-                if ($item->type === 'custom' || $item->type === null) {
-                    $newSelected = !in_array($item->id, $deselectedIds);
-                    if ($item->is_selected !== $newSelected) {
-                        $changesWereMade = true;
-                        $item->is_selected = $newSelected;
-                        $item->saveQuietly(); // Don't trigger events
-                    }
-                }
+            // Get IDs of custom items that need to change
+            $customItems = $offer->items->filter(fn($item) => $item->type === 'custom' || $item->type === null);
+
+            // Items to deselect (currently selected but should be deselected)
+            $toDeselect = $customItems
+                ->filter(fn($item) => $item->is_selected && in_array($item->id, $deselectedIds))
+                ->pluck('id')
+                ->toArray();
+
+            // Items to select (currently deselected but should be selected)
+            $toSelect = $customItems
+                ->filter(fn($item) => !$item->is_selected && !in_array($item->id, $deselectedIds))
+                ->pluck('id')
+                ->toArray();
+
+            // Batch update deselected items
+            if (!empty($toDeselect)) {
+                $changesWereMade = true;
+                OfferItem::whereIn('id', $toDeselect)->update(['is_selected' => false]);
+            }
+
+            // Batch update selected items
+            if (!empty($toSelect)) {
+                $changesWereMade = true;
+                OfferItem::whereIn('id', $toSelect)->update(['is_selected' => true]);
             }
         }
 
@@ -137,15 +154,31 @@ class OfferPublicService
         if (isset($selections['selected_cards'])) {
             $selectedCardIds = $selections['selected_cards'];
 
-            foreach ($offer->items as $item) {
-                if ($item->type === 'card') {
-                    $newSelected = in_array($item->id, $selectedCardIds);
-                    if ($item->is_selected !== $newSelected) {
-                        $changesWereMade = true;
-                        $item->is_selected = $newSelected;
-                        $item->saveQuietly();
-                    }
-                }
+            // Get IDs of card items that need to change
+            $cardItems = $offer->items->filter(fn($item) => $item->type === 'card');
+
+            // Items to select (in selectedCardIds but currently not selected)
+            $toSelect = $cardItems
+                ->filter(fn($item) => !$item->is_selected && in_array($item->id, $selectedCardIds))
+                ->pluck('id')
+                ->toArray();
+
+            // Items to deselect (not in selectedCardIds but currently selected)
+            $toDeselect = $cardItems
+                ->filter(fn($item) => $item->is_selected && !in_array($item->id, $selectedCardIds))
+                ->pluck('id')
+                ->toArray();
+
+            // Batch update selected items
+            if (!empty($toSelect)) {
+                $changesWereMade = true;
+                OfferItem::whereIn('id', $toSelect)->update(['is_selected' => true]);
+            }
+
+            // Batch update deselected items
+            if (!empty($toDeselect)) {
+                $changesWereMade = true;
+                OfferItem::whereIn('id', $toDeselect)->update(['is_selected' => false]);
             }
         }
 

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\Profile\UserServiceController;
@@ -29,6 +30,11 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect()->route('login');
 });
+
+// Health check endpoint (no auth required)
+Route::get('/health', App\Http\Controllers\HealthController::class)
+    ->middleware('throttle:60,1')
+    ->name('health');
 
 // Public Offer Routes (no auth required) - Rate limited for security
 // Legacy token-based routes (kept for backward compatibility with existing shared links)
@@ -73,16 +79,29 @@ Route::prefix('offers/s')->name('offers.public.signed')->middleware('signed')->g
         ->name('.reject');
 });
 
+// Two-Factor Authentication Challenge (login verification)
+// These routes require auth but NOT 2FA verification (to avoid redirect loop)
+Route::middleware('auth')->group(function () {
+    Route::get('/two-factor-challenge', [TwoFactorChallengeController::class, 'create'])
+        ->name('2fa.challenge');
+    Route::post('/two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
+        ->middleware('throttle:5,1')  // 5 attempts per minute
+        ->name('2fa.verify');
+    Route::post('/two-factor-challenge/cancel', [TwoFactorChallengeController::class, 'destroy'])
+        ->name('2fa.cancel');
+});
+
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'module:dashboard'])
+    ->middleware(['auth', 'verified', '2fa', 'module:dashboard'])
     ->name('dashboard');
 
+// Profile routes - auth only, no 2FA requirement (so users can manage their 2FA settings)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Two-Factor Authentication
+    // Two-Factor Authentication Management
     Route::get("/profile/two-factor", [TwoFactorController::class, "show"])->name("profile.two-factor");
     Route::post("/profile/two-factor/enable", [TwoFactorController::class, "enable"])->name("profile.two-factor.enable");
     Route::post("/profile/two-factor/confirm", [TwoFactorController::class, "confirm"])->name("profile.two-factor.confirm");
@@ -100,7 +119,10 @@ Route::middleware('auth')->group(function () {
     Route::post("/profile/services", [UserServiceController::class, "store"])->name("profile.services.store");
     Route::put("/profile/services/{userService}", [UserServiceController::class, "update"])->name("profile.services.update");
     Route::delete("/profile/services/{userService}", [UserServiceController::class, "destroy"])->name("profile.services.destroy");
+});
 
+// Protected routes - require both auth and 2FA verification
+Route::middleware(['auth', '2fa'])->group(function () {
     // Centralized Import/Export System
     Route::get('import-export', [ImportExportController::class, 'index'])->name('import-export.index');
     Route::get('import-export/{module}', [ImportExportController::class, 'showImportForm'])->name('import-export.import.form');

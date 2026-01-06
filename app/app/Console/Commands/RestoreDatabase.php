@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\Process\Process;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 
 class RestoreDatabase extends Command
 {
@@ -95,17 +97,20 @@ class RestoreDatabase extends Command
         $this->info("Restoring database...");
         $startTime = microtime(true);
 
-        $returnCode = null;
-        $output = [];
-        exec($command . ' 2>&1', $output, $returnCode);
+        // Use Symfony Process for better security and error handling
+        $process = Process::fromShellCommandline($command);
+        $process->setTimeout(1800); // 30 minutes max for large database restores
 
-        if ($returnCode !== 0) {
-            $error = implode("\n", $output);
+        try {
+            $process->mustRun();
+        } catch (ProcessFailedException $e) {
+            $error = $process->getErrorOutput() ?: $process->getOutput();
             $this->error("Restore failed: {$error}");
             Log::error("Database restore failed", [
                 'file' => $filepath,
                 'database' => $targetDatabase,
                 'error' => $error,
+                'return_code' => $process->getExitCode(),
             ]);
             return Command::FAILURE;
         }

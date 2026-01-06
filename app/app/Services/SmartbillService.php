@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Exception;
@@ -70,16 +71,25 @@ class SmartbillService
         $url = $this->baseUrl . $endpoint;
 
         try {
+            // Use retry with exponential backoff for transient failures
             $request = Http::withHeaders([
                 'Authorization' => $this->getAuthHeader(),
                 'Accept' => 'application/json',
                 'Content-Type' => 'application/json',
-            ]);
+            ])->retry(3, function (int $attempt, \Exception $exception) {
+                // Exponential backoff: 1s, 2s, 4s
+                return $attempt * 1000;
+            }, function (\Exception $exception) {
+                // Only retry on connection errors or 5xx server errors
+                return $exception instanceof ConnectionException
+                    || ($exception instanceof \Illuminate\Http\Client\RequestException
+                        && $exception->response?->serverError());
+            });
 
             if ($method === 'GET') {
-                $response = $request->timeout(15)->get($url, $data ?? []);
+                $response = $request->timeout(30)->get($url, $data ?? []);
             } elseif ($method === 'POST') {
-                $response = $request->timeout(15)->post($url, $data ?? []);
+                $response = $request->timeout(30)->post($url, $data ?? []);
             } else {
                 throw new Exception("Unsupported HTTP method: {$method}");
             }

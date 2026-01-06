@@ -18,27 +18,36 @@ class ClientNoteController extends Controller
      */
     public function index(Request $request): View|JsonResponse
     {
+        // Validate filter parameters for security
+        $validated = $request->validate([
+            'client_id' => 'nullable|integer|exists:clients,id',
+            'tag' => 'nullable|string|max:100',
+            'q' => 'nullable|string|max:255',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
+        ]);
+
         $query = ClientNote::with(['client', 'user'])->latest();
 
-        // Apply filters
-        if ($request->filled('client_id')) {
-            $query->forClient($request->client_id);
+        // Apply filters using validated data
+        if (!empty($validated['client_id'])) {
+            $query->forClient($validated['client_id']);
         }
 
-        if ($request->filled('tag')) {
-            $query->withTag($request->tag);
+        if (!empty($validated['tag'])) {
+            $query->withTag($validated['tag']);
         }
 
-        if ($request->filled('q')) {
-            $query->search($request->q);
+        if (!empty($validated['q'])) {
+            $query->search($validated['q']);
         }
 
-        if ($request->filled('start_date')) {
-            $query->where('created_at', '>=', $request->start_date);
+        if (!empty($validated['start_date'])) {
+            $query->where('created_at', '>=', $validated['start_date']);
         }
 
-        if ($request->filled('end_date')) {
-            $query->where('created_at', '<=', $request->end_date . ' 23:59:59');
+        if (!empty($validated['end_date'])) {
+            $query->where('created_at', '<=', $validated['end_date'] . ' 23:59:59');
         }
 
         $notes = $query->paginate(20)->withQueryString();
@@ -61,7 +70,7 @@ class ClientNoteController extends Controller
             'notes' => $notes,
             'clients' => $clients,
             'availableTags' => $availableTags,
-            'filters' => $request->only(['client_id', 'tag', 'q', 'start_date', 'end_date']),
+            'filters' => $validated,
         ]);
     }
 
