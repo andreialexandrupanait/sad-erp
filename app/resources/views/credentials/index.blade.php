@@ -2,15 +2,7 @@
     <x-slot name="pageTitle">{{ __('Credentials') }}</x-slot>
 
     <x-slot name="headerActions">
-        <x-ui.button variant="default" onclick="
-            if (typeof Alpine !== 'undefined') {
-                const filters = { search: '{{ request('search', '') }}', clientId: '{{ request('client_id', '') }}' };
-                if (filters.search || filters.clientId) {
-                    localStorage.setItem('credentialsFilters', JSON.stringify(filters));
-                }
-            }
-            window.location.href='{{ route('credentials.create') }}'
-        ">
+        <x-ui.button variant="default" @click="$dispatch('open-quick-add-credential')">
             <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
@@ -353,26 +345,103 @@
         };
     }
 
-    async function fetchPassword(credentialId) {
-        try {
-            const response = await fetch(`/credentials/${credentialId}/password`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
-                },
-                credentials: 'same-origin'
-            });
+    // Password reveal component with auto-hide
+    function passwordReveal(credentialId, hasPassword) {
+        return {
+            credentialId,
+            hasPassword,
+            password: '',
+            visible: false,
+            loading: false,
+            autoHideSeconds: 0,
+            autoHideTimer: null,
+            countdownTimer: null,
 
-            if (!response.ok) {
-                throw new Error('Failed to fetch password');
+            async toggle() {
+                if (this.visible) {
+                    this.hide();
+                } else {
+                    await this.show();
+                }
+            },
+
+            async show() {
+                if (!this.hasPassword) return;
+
+                // If password already loaded, just show it
+                if (this.password) {
+                    this.visible = true;
+                    this.startAutoHide();
+                    return;
+                }
+
+                // Fetch password from server
+                this.loading = true;
+                try {
+                    const response = await fetch(`/credentials/${this.credentialId}/password`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                        },
+                        credentials: 'same-origin'
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch password');
+                    }
+
+                    const data = await response.json();
+                    this.password = data.password || '';
+                    this.visible = true;
+                    this.startAutoHide();
+                } catch (error) {
+                    console.error('Error fetching password:', error);
+                    showToast('{{ __("Failed to load password") }}', 'error');
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            hide() {
+                this.visible = false;
+                this.clearTimers();
+            },
+
+            startAutoHide() {
+                this.clearTimers();
+                this.autoHideSeconds = 15;
+
+                // Countdown timer
+                this.countdownTimer = setInterval(() => {
+                    this.autoHideSeconds--;
+                    if (this.autoHideSeconds <= 0) {
+                        this.hide();
+                    }
+                }, 1000);
+            },
+
+            clearTimers() {
+                if (this.autoHideTimer) {
+                    clearTimeout(this.autoHideTimer);
+                    this.autoHideTimer = null;
+                }
+                if (this.countdownTimer) {
+                    clearInterval(this.countdownTimer);
+                    this.countdownTimer = null;
+                }
+                this.autoHideSeconds = 0;
+            },
+
+            copyPassword() {
+                if (this.password) {
+                    navigator.clipboard.writeText(this.password).then(() => {
+                        showToast('{{ __("Password copied to clipboard") }}');
+                        // Reset auto-hide timer after copy
+                        this.startAutoHide();
+                    });
+                }
             }
-
-            const data = await response.json();
-            return data.password || '';
-        } catch (error) {
-            console.error('Error fetching password:', error);
-            return '';
-        }
+        };
     }
 
     function copyToClipboard(text, element) {
@@ -449,6 +518,244 @@
                     }));
                     console.log('Filters saved to localStorage');
                 }
+            }
+        };
+    }
+    </script>
+
+    {{-- Quick Add Credential Slide-Over --}}
+    <div x-data="quickAddCredential()"
+         @open-quick-add-credential.window="open()"
+         @open-quick-add-credential-for-site.window="openForSite($event.detail.siteName, $event.detail.clientId)"
+         @credential-created.window="onCredentialCreated($event.detail)">
+
+        {{-- Slide-Over Panel --}}
+        <div x-show="isOpen"
+             x-cloak
+             class="fixed inset-0 z-[100] overflow-hidden"
+             aria-labelledby="slide-over-title"
+             role="dialog"
+             aria-modal="true">
+
+            {{-- Backdrop --}}
+            <div x-show="isOpen"
+                 x-transition:enter="ease-in-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in-out duration-300"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="fixed inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+                 @click="close()"></div>
+
+            {{-- Panel --}}
+            <div class="fixed inset-y-0 right-0 flex max-w-full pl-10">
+                <div x-show="isOpen"
+                     x-transition:enter="transform transition ease-in-out duration-300"
+                     x-transition:enter-start="translate-x-full"
+                     x-transition:enter-end="translate-x-0"
+                     x-transition:leave="transform transition ease-in-out duration-300"
+                     x-transition:leave-start="translate-x-0"
+                     x-transition:leave-end="translate-x-full"
+                     class="w-screen max-w-lg"
+                     @keydown.escape.window="close()">
+
+                    <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
+                        {{-- Header --}}
+                        <div class="bg-slate-50 px-4 py-6 sm:px-6 border-b">
+                            <div class="flex items-center justify-between">
+                                <h2 class="text-lg font-semibold text-slate-900" id="slide-over-title">
+                                    {{ __('Quick Add Credential') }}
+                                </h2>
+                                <button type="button"
+                                        @click="close()"
+                                        class="rounded-md text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <span class="sr-only">{{ __('Close') }}</span>
+                                    <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
+                                </button>
+                            </div>
+                            <p class="mt-1 text-sm text-slate-500" x-show="prefilledSite" x-cloak>
+                                {{ __('Adding to site:') }} <span class="font-medium text-slate-700" x-text="prefilledSite"></span>
+                            </p>
+                        </div>
+
+                        {{-- Form --}}
+                        <form @submit.prevent="submit()" class="flex-1 flex flex-col">
+                            <div class="flex-1 px-4 py-6 sm:px-6 space-y-6">
+                                <x-credential-form-fields
+                                    :clients="$clients"
+                                    :platforms="$platforms"
+                                    :sites="$sites"
+                                    :clientStatuses="$clientStatuses"
+                                    prefix="quick_"
+                                    :compact="true"
+                                />
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="flex-shrink-0 border-t border-slate-200 px-4 py-4 sm:px-6">
+                                <div class="flex justify-end gap-3">
+                                    <x-ui.button type="button" variant="ghost" @click="close()">
+                                        {{ __('Cancel') }}
+                                    </x-ui.button>
+                                    <x-ui.button type="submit" variant="default" x-bind:disabled="saving">
+                                        <svg x-show="saving" class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span x-text="saving ? '{{ __('Creating...') }}' : '{{ __('Create Credential') }}'"></span>
+                                    </x-ui.button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    function quickAddCredential() {
+        return {
+            isOpen: false,
+            saving: false,
+            prefilledSite: '',
+            prefilledClientId: '',
+
+            open() {
+                this.prefilledSite = '';
+                this.prefilledClientId = '';
+                this.isOpen = true;
+                this.$nextTick(() => {
+                    // Focus first input
+                    const firstInput = document.querySelector('[name="quick_site_name"]');
+                    if (firstInput) firstInput.focus();
+                });
+            },
+
+            openForSite(siteName, clientId) {
+                this.prefilledSite = siteName || '';
+                this.prefilledClientId = clientId || '';
+                this.isOpen = true;
+                this.$nextTick(() => {
+                    // Pre-fill site name
+                    const siteInput = document.querySelector('[name="quick_site_name"]');
+                    if (siteInput && siteName) {
+                        siteInput.value = siteName;
+                        siteInput.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                    // Pre-fill client_id if provided
+                    if (clientId) {
+                        const clientSelect = document.querySelector('[name="quick_client_id"]');
+                        if (clientSelect) {
+                            clientSelect.value = clientId;
+                            clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                        }
+                    }
+                    // Focus platform select since site and client are prefilled
+                    const platformSelect = document.querySelector('[name="quick_platform"]');
+                    if (platformSelect) {
+                        platformSelect.focus();
+                    } else {
+                        // Fallback to username
+                        const usernameInput = document.querySelector('[name="quick_username"]');
+                        if (usernameInput) usernameInput.focus();
+                    }
+                });
+            },
+
+            close() {
+                this.isOpen = false;
+                this.resetForm();
+            },
+
+            resetForm() {
+                // Clear form fields
+                const form = document.querySelector('[x-data="quickAddCredential()"] form');
+                if (form) {
+                    form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(el => {
+                        if (el.name && el.name.startsWith('quick_')) {
+                            el.value = '';
+                            el.dispatchEvent(new Event('input', { bubbles: true }));
+                        }
+                    });
+                }
+            },
+
+            async submit() {
+                this.saving = true;
+
+                // Collect form data
+                const formData = this.collectFormData();
+
+                try {
+                    const response = await fetch('{{ route('credentials.store') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        // Show validation errors
+                        if (data.errors) {
+                            // Dispatch errors to form fields component
+                            const formFieldsEl = document.querySelector('[x-data*="credentialFormFields"]');
+                            if (formFieldsEl && formFieldsEl.__x) {
+                                formFieldsEl.__x.$data.errors = data.errors;
+                            }
+                            showToast(data.message || '{{ __("Please fix the errors below") }}', 'error');
+                        }
+                        return;
+                    }
+
+                    // Success
+                    showToast(data.message || '{{ __("Credential created successfully") }}');
+                    this.close();
+
+                    // Dispatch event for any listeners
+                    window.dispatchEvent(new CustomEvent('credential-created', { detail: data }));
+
+                    // Reload the page to show new credential
+                    window.location.reload();
+
+                } catch (error) {
+                    console.error('Error creating credential:', error);
+                    showToast('{{ __("An error occurred. Please try again.") }}', 'error');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            collectFormData() {
+                const data = {};
+                const form = document.querySelector('[x-data="quickAddCredential()"] form');
+                if (!form) return data;
+
+                form.querySelectorAll('input, select, textarea').forEach(el => {
+                    if (el.name && el.name.startsWith('quick_')) {
+                        const key = el.name.replace('quick_', '');
+                        if (el.type === 'checkbox') {
+                            data[key] = el.checked;
+                        } else if (el.value) {
+                            data[key] = el.value;
+                        }
+                    }
+                });
+
+                return data;
+            },
+
+            onCredentialCreated(detail) {
+                // Can be used for additional actions after creation
+                console.log('Credential created:', detail);
             }
         };
     }

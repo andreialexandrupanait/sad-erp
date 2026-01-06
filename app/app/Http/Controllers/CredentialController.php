@@ -44,7 +44,18 @@ class CredentialController extends Controller
         // Get clients for filters (only for full page load)
         $clients = Client::select('id', 'name')->orderBy('name')->get();
 
-        return view('credentials.index', compact('credentialsBySite', 'clients'));
+        // Additional data for quick-add slide-over form
+        $platforms = $this->nomenclatureService->getAccessPlatforms();
+        $sites = Credential::getUniqueSites();
+        $clientStatuses = \App\Models\SettingOption::clientStatuses()->get();
+
+        return view('credentials.index', compact(
+            'credentialsBySite',
+            'clients',
+            'platforms',
+            'sites',
+            'clientStatuses'
+        ));
     }
 
     /**

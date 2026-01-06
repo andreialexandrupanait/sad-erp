@@ -57,7 +57,7 @@ class ClientNoteController extends Controller
             ]);
         }
 
-        return view('client-notes.index', [
+        return view('notes.index', [
             'notes' => $notes,
             'clients' => $clients,
             'availableTags' => $availableTags,
@@ -77,7 +77,7 @@ class ClientNoteController extends Controller
             $selectedClient = Client::where('slug', $request->client)->first();
         }
 
-        return view('client-notes.create', [
+        return view('notes.create', [
             'clients' => $clients,
             'selectedClient' => $selectedClient,
         ]);
@@ -101,7 +101,7 @@ class ClientNoteController extends Controller
         }
 
         return redirect()
-            ->route('client-notes.index', ['client_id' => $note->client_id])
+            ->route('notes.index', ['client_id' => $note->client_id])
             ->with('success', __('Note created successfully.'));
     }
 
@@ -116,7 +116,7 @@ class ClientNoteController extends Controller
             return response()->json($clientNote);
         }
 
-        return view('client-notes.show', [
+        return view('notes.show', [
             'note' => $clientNote,
         ]);
     }
@@ -128,7 +128,7 @@ class ClientNoteController extends Controller
     {
         $clients = Client::orderBy('name')->get(['id', 'name', 'slug']);
 
-        return view('client-notes.edit', [
+        return view('notes.edit', [
             'note' => $clientNote,
             'clients' => $clients,
         ]);
@@ -152,7 +152,7 @@ class ClientNoteController extends Controller
         }
 
         return redirect()
-            ->route('client-notes.index', ['client_id' => $clientNote->client_id])
+            ->route('notes.index', ['client_id' => $clientNote->client_id])
             ->with('success', __('Note updated successfully.'));
     }
 
@@ -173,7 +173,7 @@ class ClientNoteController extends Controller
         }
 
         return redirect()
-            ->route('client-notes.index', ['client_id' => $clientId])
+            ->route('notes.index', ['client_id' => $clientId])
             ->with('success', __('Note deleted successfully.'));
     }
 

@@ -11,8 +11,17 @@ use App\Models\Domain;
 use App\Models\Subscription;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
+/**
+ * DatabaseSeeder - Development and Demo Data Only
+ *
+ * WARNING: This seeder contains sample data for development/demo purposes.
+ * DO NOT run this seeder in production environments!
+ *
+ * The seeder will automatically abort if APP_ENV is set to 'production'.
+ */
 class DatabaseSeeder extends Seeder
 {
     /**
@@ -20,6 +29,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // CRITICAL: Prevent seeding in production environment
+        if (app()->environment('production')) {
+            $this->command->error('⛔ ABORT: Cannot seed database in production environment!');
+            $this->command->error('   This seeder is only for development and demo purposes.');
+            return;
+        }
+
+        $this->command->warn('⚠️  Running development seeder - NOT for production use!');
         // Create Demo Organization
         $organization = Organization::create([
             'name' => 'Demo Company Inc',
@@ -86,14 +103,14 @@ class DatabaseSeeder extends Seeder
             ]));
         }
 
-        // Create Sample Credentials
+        // Create Sample Credentials (with randomly generated demo passwords)
         $credentials = [
             [
                 'client_id' => $clientRecords[0]->id,
                 'platform' => 'Facebook',
                 'url' => 'https://business.facebook.com',
                 'username' => 'john@techsolutions.com',
-                'password' => 'SecurePass123!',
+                'password' => $this->generateDemoPassword(),
                 'notes' => 'Facebook Business Manager account for advertising campaigns',
             ],
             [
@@ -101,7 +118,7 @@ class DatabaseSeeder extends Seeder
                 'platform' => 'Google Ads',
                 'url' => 'https://ads.google.com',
                 'username' => 'john@techsolutions.com',
-                'password' => 'GoogleAds2025',
+                'password' => $this->generateDemoPassword(),
                 'notes' => 'Google Ads account - Monthly budget $5000',
             ],
             [
@@ -109,7 +126,7 @@ class DatabaseSeeder extends Seeder
                 'platform' => 'WordPress',
                 'url' => 'https://digitalmarketingpro.com/wp-admin',
                 'username' => 'admin',
-                'password' => 'WP@dmin2025',
+                'password' => $this->generateDemoPassword(),
                 'notes' => 'Main website admin access',
             ],
             [
@@ -117,7 +134,7 @@ class DatabaseSeeder extends Seeder
                 'platform' => 'LinkedIn',
                 'url' => 'https://linkedin.com',
                 'username' => 'maria@digitalmarketingpro.com',
-                'password' => 'LinkedIn#2025',
+                'password' => $this->generateDemoPassword(),
                 'notes' => 'Company LinkedIn page administrator',
             ],
             [
@@ -125,7 +142,7 @@ class DatabaseSeeder extends Seeder
                 'platform' => 'AWS',
                 'url' => 'https://console.aws.amazon.com',
                 'username' => 'robert@globalenterprises.com',
-                'password' => 'AWS_Secure_Pass_2025',
+                'password' => $this->generateDemoPassword(),
                 'notes' => 'AWS Console - Production environment access',
             ],
         ];
@@ -136,14 +153,14 @@ class DatabaseSeeder extends Seeder
             ]));
         }
 
-        // Create Sample Internal Accounts
+        // Create Sample Internal Accounts (with randomly generated demo passwords)
         $internalAccounts = [
             [
                 'user_id' => $adminUser->id,
                 'account_name' => 'Company Bank Account - Main',
                 'url' => 'https://online-banking.example.com',
                 'username' => 'democompany',
-                'password' => 'BankSecure2025!',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => true,
                 'notes' => 'Primary business checking account - Account #1234567890',
             ],
@@ -152,7 +169,7 @@ class DatabaseSeeder extends Seeder
                 'account_name' => 'AWS Root Account',
                 'url' => 'https://console.aws.amazon.com',
                 'username' => 'root@democompany.com',
-                'password' => 'AWS_R00t_P@ss_2025',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => false,
                 'notes' => 'AWS root account - DO NOT USE FOR DAILY OPERATIONS. Use IAM users instead.',
             ],
@@ -161,7 +178,7 @@ class DatabaseSeeder extends Seeder
                 'account_name' => 'Stripe Payment Gateway',
                 'url' => 'https://dashboard.stripe.com',
                 'username' => 'billing@democompany.com',
-                'password' => 'Stripe_Secure_2025',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => true,
                 'notes' => 'Live API keys stored separately. Test mode: enabled',
             ],
@@ -170,7 +187,7 @@ class DatabaseSeeder extends Seeder
                 'account_name' => 'Mailchimp Marketing',
                 'url' => 'https://mailchimp.com',
                 'username' => 'marketing@democompany.com',
-                'password' => 'Mail_Ch1mp_2025',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => true,
                 'notes' => 'Email marketing campaigns - Subscriber count: 15,000',
             ],
@@ -179,7 +196,7 @@ class DatabaseSeeder extends Seeder
                 'account_name' => 'Domain Registrar - GoDaddy',
                 'url' => 'https://sso.godaddy.com',
                 'username' => 'admin@democompany.com',
-                'password' => 'G0Daddy_Secure_2025!',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => false,
                 'notes' => 'Domains: democompany.com, democompany.net (expires 2026-12)',
             ],
@@ -188,7 +205,7 @@ class DatabaseSeeder extends Seeder
                 'account_name' => 'QuickBooks Accounting',
                 'url' => 'https://quickbooks.intuit.com',
                 'username' => 'accounting@democompany.com',
-                'password' => 'QB_Acc0unting_2025',
+                'password' => $this->generateDemoPassword(),
                 'team_accessible' => true,
                 'notes' => 'Fiscal year: Jan-Dec. Accountant access: enabled',
             ],
@@ -406,16 +423,26 @@ class DatabaseSeeder extends Seeder
             ]));
         }
 
-        echo "\n✓ Database seeded successfully!\n";
-        echo "✓ Created 1 organization: Demo Company Inc\n";
-        echo "✓ Created 2 users\n";
-        echo "✓ Created 3 sample clients\n";
-        echo "✓ Created 5 sample credentials\n";
-        echo "✓ Created 6 sample internal accounts\n";
-        echo "✓ Created 7 sample domains (1 expired, 2 expiring soon, 4 valid)\n";
-        echo "✓ Created 10 sample subscriptions (1 overdue, 3 urgent/warning, 5 active, 1 paused, 1 cancelled)\n\n";
-        echo "Login credentials:\n";
-        echo "  Admin:   admin@example.com / password\n";
-        echo "  Manager: manager@example.com / password\n\n";
+        $this->command->info("\n✓ Database seeded successfully!");
+        $this->command->info("✓ Created 1 organization: Demo Company Inc");
+        $this->command->info("✓ Created 2 users");
+        $this->command->info("✓ Created 3 sample clients");
+        $this->command->info("✓ Created 5 sample credentials (with random passwords)");
+        $this->command->info("✓ Created 6 sample internal accounts (with random passwords)");
+        $this->command->info("✓ Created 7 sample domains (1 expired, 2 expiring soon, 4 valid)");
+        $this->command->info("✓ Created 10 sample subscriptions (1 overdue, 3 urgent/warning, 5 active, 1 paused, 1 cancelled)\n");
+        $this->command->warn("Login credentials:");
+        $this->command->line("  Admin:   admin@example.com / password");
+        $this->command->line("  Manager: manager@example.com / password\n");
+    }
+
+    /**
+     * Generate a random secure password for demo purposes.
+     *
+     * @return string Random 16-character password
+     */
+    private function generateDemoPassword(): string
+    {
+        return Str::password(16);
     }
 }

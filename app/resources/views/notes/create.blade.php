@@ -4,7 +4,7 @@
     <div class="p-6 space-y-6">
         <x-ui.card>
             <x-ui.card-content>
-                <form method="POST" action="{{ route('client-notes.store') }}" class="space-y-6">
+                <form method="POST" action="{{ route('notes.store') }}" class="space-y-6">
                     @csrf
 
                     <!-- Client Selection -->

@@ -119,20 +119,56 @@
                             </div>
 
                             {{-- Password --}}
-                            <div class="pl-6 shrink-0" style="min-width: 250px; max-width: 300px;" x-data="{ password: '', loaded: false }">
-                                <div x-init="fetchPassword({{ $credential->id }}).then(p => { password = p; loaded = true; })"
-                                     @click="if(password) { copyToClipboard(password, $el); }"
-                                     class="font-mono text-sm transition-colors inline-flex items-center gap-2 group max-w-full"
-                                     :class="password ? 'text-slate-700 cursor-pointer hover:text-blue-600' : 'text-red-400 italic'"
-                                     :title="password ? password : '{{ __('No password - click edit to add') }}'">
-                                    <svg class="w-4 h-4 flex-shrink-0" :class="password ? 'text-slate-400' : 'text-red-300'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                    </svg>
-                                    <span class="truncate" x-text="loaded ? (password || '{{ __('No password') }}') : '••••••••'"></span>
-                                    <svg x-show="loaded && password" class="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                    </svg>
-                                </div>
+                            <div class="pl-6 shrink-0" style="min-width: 250px; max-width: 300px;"
+                                 x-data="passwordReveal({{ $credential->id }}, {{ $credential->hasPassword() ? 'true' : 'false' }})">
+                                @if($credential->hasPassword())
+                                    {{-- Has password - show reveal/hide toggle --}}
+                                    <div class="font-mono text-sm inline-flex items-center gap-2 group max-w-full">
+                                        {{-- Eye toggle button --}}
+                                        <button type="button"
+                                                @click="toggle()"
+                                                class="flex-shrink-0 p-1 -m-1 rounded hover:bg-slate-100 transition-colors"
+                                                :title="visible ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'">
+                                            {{-- Loading spinner --}}
+                                            <svg x-show="loading" class="w-4 h-4 text-slate-400 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                            </svg>
+                                            {{-- Eye open (show) --}}
+                                            <svg x-show="!loading && !visible" class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                            {{-- Eye closed (hide) --}}
+                                            <svg x-show="!loading && visible" class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+                                            </svg>
+                                        </button>
+                                        {{-- Password display --}}
+                                        <div @click="visible && copyPassword()"
+                                             class="truncate transition-colors"
+                                             :class="visible ? 'text-slate-700 cursor-pointer hover:text-blue-600' : 'text-slate-400'"
+                                             :title="visible ? '{{ __('Click to copy') }}' : ''">
+                                            <span x-text="visible ? password : '••••••••'"></span>
+                                        </div>
+                                        {{-- Copy icon --}}
+                                        <svg x-show="visible" x-cloak class="w-3.5 h-3.5 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                        </svg>
+                                        {{-- Auto-hide timer indicator --}}
+                                        <span x-show="visible && autoHideSeconds > 0" x-cloak
+                                              class="text-xs text-slate-400 tabular-nums"
+                                              x-text="autoHideSeconds + 's'"></span>
+                                    </div>
+                                @else
+                                    {{-- No password --}}
+                                    <div class="font-mono text-sm text-red-400 italic inline-flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-red-300 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                        </svg>
+                                        <span>{{ __('No password') }}</span>
+                                    </div>
+                                @endif
                             </div>
 
                             {{-- URL --}}

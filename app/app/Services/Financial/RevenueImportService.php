@@ -650,19 +650,27 @@ class RevenueImportService
             $path = "{$year}/{$monthName}/Incasari/{$filename}";
             Storage::disk('financial')->put($path, $pdfContent);
 
-            // Create file record
-            FinancialFile::create([
-                'entity_type' => FinancialRevenue::class,
-                'entity_id' => $revenue->id,
-                'organization_id' => $this->organizationId,
-                'file_name' => $filename,
-                'file_path' => $path,
-                'file_type' => 'application/pdf',
-                'file_size' => strlen($pdfContent),
-                'uploaded_by' => $this->userId,
-            ]);
+            // Create file record using firstOrCreate to prevent duplicates
+            // Bypass user_scope to check org-wide for existing files
+            $file = FinancialFile::withoutGlobalScope('user_scope')->firstOrCreate(
+                [
+                    'organization_id' => $this->organizationId,
+                    'file_path' => $path,
+                ],
+                [
+                    'entity_type' => FinancialRevenue::class,
+                    'entity_id' => $revenue->id,
+                    'file_name' => $filename,
+                    'file_type' => 'application/pdf',
+                    'file_size' => strlen($pdfContent),
+                    'user_id' => $this->userId,
+                ]
+            );
 
-            $this->stats['pdfs_downloaded']++;
+            // Only count as downloaded if it was actually created (not found)
+            if ($file->wasRecentlyCreated) {
+                $this->stats['pdfs_downloaded']++;
+            }
         } catch (\Exception $e) {
             Log::warning("Failed to download PDF for invoice {$series}-{$number}: " . $e->getMessage());
         }
@@ -676,13 +684,32 @@ class RevenueImportService
         array $data,
         array $smartbillSettings
     ): void {
-        // Check if this revenue already has a PDF file attached
-        $hasFile = FinancialFile::where('entity_type', FinancialRevenue::class)
-            ->where('entity_id', $revenue->id)
+        $series = trim($data['serie'] ?? $data['Serie'] ?? '');
+        $number = trim($data['numar'] ?? $data['Numar'] ?? '');
+
+        if (empty($series) || empty($number)) {
+            return;
+        }
+
+        // Build the expected file path
+        $invoiceNumber = str_pad($number, 4, '0', STR_PAD_LEFT);
+        $filename = "Factura {$series}{$invoiceNumber}.pdf";
+
+        $year = $revenue->occurred_at->year;
+        $month = $revenue->occurred_at->month;
+        $monthName = romanian_month($month);
+
+        $expectedPath = "{$year}/{$monthName}/Incasari/{$filename}";
+
+        // Check if file already exists by path (org-level, bypassing user scope)
+        // This prevents duplicates even when different users re-import
+        $hasFile = FinancialFile::withoutGlobalScope('user_scope')
+            ->where('organization_id', $this->organizationId)
+            ->where('file_path', $expectedPath)
             ->exists();
 
         if ($hasFile) {
-            return; // Already has a file, skip
+            return; // File already exists, skip
         }
 
         // Download the PDF

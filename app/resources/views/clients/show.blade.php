@@ -441,7 +441,7 @@
                 @elseif($activeTab === 'notes')
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-medium text-slate-900">{{ __('Client Notes') }}</h3>
-                        <x-ui.button variant="default" size="sm" onclick="window.location.href='{{ route('client-notes.create', ['client' => $client->slug]) }}'">
+                        <x-ui.button variant="default" size="sm" onclick="window.location.href='{{ route('notes.create', ['client' => $client->slug]) }}'">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
@@ -457,7 +457,7 @@
                             <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No notes yet') }}</h3>
                             <p class="mt-1 text-sm text-slate-500">{{ __('Get started by creating a note for this client.') }}</p>
                             <div class="mt-6">
-                                <x-ui.button variant="default" onclick="window.location.href='{{ route('client-notes.create', ['client' => $client->slug]) }}'">
+                                <x-ui.button variant="default" onclick="window.location.href='{{ route('notes.create', ['client' => $client->slug]) }}'">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                     </svg>
@@ -498,7 +498,7 @@
 
                                         <!-- Actions -->
                                         <div class="flex items-center gap-1 ml-4">
-                                            <a href="{{ route('client-notes.edit', $note) }}" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors" title="{{ __('Edit') }}">
+                                            <a href="{{ route('notes.edit', $note) }}" class="p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors" title="{{ __('Edit') }}">
                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
@@ -511,7 +511,7 @@
 
                         @if($client->notes->count() > 10)
                             <div class="mt-4 text-center">
-                                <a href="{{ route('client-notes.index', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:text-blue-800">
+                                <a href="{{ route('notes.index', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:text-blue-800">
                                     {{ __('View all :count notes', ['count' => $client->notes->count()]) }}
                                 </a>
                             </div>

@@ -434,7 +434,7 @@ class ContractController extends Controller
         return response()->json([
             'success' => true,
             'message' => __('Contract content saved successfully.'),
-            'content_hash' => md5($contract->content ?? ''),
+            'content_hash' => hash('sha256', $contract->content ?? ''),
         ]);
     }
 
@@ -488,7 +488,7 @@ class ContractController extends Controller
         $this->authorize('view', $contract);
 
         return response()->json([
-            'hash' => md5($contract->content ?? ''),
+            'hash' => hash('sha256', $contract->content ?? ''),
         ]);
     }
 

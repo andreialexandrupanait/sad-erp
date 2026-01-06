@@ -40,7 +40,21 @@
         return '';
     }
 
-    // Map quick action values to routes
+    // Map quick action values to event names
+    function getEventForAction($actionValue) {
+        $eventMap = [
+            'client-create' => 'open-quick-add-client',
+            'credential-create' => 'open-quick-add-credential',
+            'domain-create' => 'open-quick-add-domain',
+            'subscription-create' => 'open-quick-add-subscription',
+            'expense-create' => 'open-quick-add-expense',
+            'revenue-create' => 'open-quick-add-revenue',
+        ];
+
+        return $eventMap[$actionValue] ?? null;
+    }
+
+    // Map quick action values to routes (fallback for unsupported actions)
     function getRouteForAction($actionValue) {
         $routeMap = [
             'client-create' => 'clients.create',
@@ -57,9 +71,16 @@
 
 <div class="flex items-center gap-2">
     @forelse($quickActions ?? [] as $action)
+        @php
+            $eventName = getEventForAction($action->value);
+        @endphp
         <button
             type="button"
-            onclick="window.location.href='{{ route(getRouteForAction($action->value)) }}'"
+            @if($eventName)
+                @click="$dispatch('{{ $eventName }}')"
+            @else
+                onclick="window.location.href='{{ route(getRouteForAction($action->value)) }}'"
+            @endif
             class="{{ getButtonClasses($action->color_class) }}"
             style="{{ getButtonStyle($action->color_class) }}"
             @if(strtolower($action->color_class) !== '#ffffff' && strtolower($action->color_class) !== '#fff')

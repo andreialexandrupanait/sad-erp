@@ -4,7 +4,7 @@
     <div class="p-6 space-y-6">
         <x-ui.card>
             <x-ui.card-content>
-                <form method="POST" action="{{ route('client-notes.update', $note) }}" class="space-y-6">
+                <form method="POST" action="{{ route('notes.update', $note) }}" class="space-y-6">
                     @csrf
                     @method('PUT')
 
@@ -81,7 +81,7 @@
 
                     <!-- Actions -->
                     <div class="flex items-center justify-between border-t border-slate-200 pt-4">
-                        <form method="POST" action="{{ route('client-notes.destroy', $note) }}"
+                        <form method="POST" action="{{ route('notes.destroy', $note) }}"
                               onsubmit="return confirm('{{ __('Are you sure you want to delete this note?') }}')">
                             @csrf
                             @method('DELETE')

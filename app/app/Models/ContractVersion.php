@@ -79,7 +79,7 @@ class ContractVersion extends Model
         ?string $reason = null,
         ?int $userId = null
     ): ?self {
-        $contentHash = md5($contract->content ?? '');
+        $contentHash = hash('sha256', $contract->content ?? '');
 
         // Check if content has actually changed from the latest version
         $latestVersion = static::where('contract_id', $contract->id)

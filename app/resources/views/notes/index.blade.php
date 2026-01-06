@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __('Client Notes') }}</x-slot>
+    <x-slot name="pageTitle">{{ __('Notes') }}</x-slot>
 
     @php
         $clientStatuses = \App\Models\SettingOption::clientStatuses()->get();
@@ -19,7 +19,7 @@
         <!-- New Note Form -->
         <x-ui.card>
             <x-ui.card-content>
-                <form method="POST" action="{{ route('client-notes.store') }}" class="space-y-4">
+                <form method="POST" action="{{ route('notes.store') }}" class="space-y-4">
                     @csrf
 
                     <!-- Client Selection (Optional) - Full Width -->
@@ -72,12 +72,11 @@
 
         <!-- Filters -->
         <x-ui.card>
-            <x-ui.card-content>
-                <form method="GET" action="{{ route('client-notes.index') }}">
-                    <div class="flex flex-col lg:flex-row gap-4">
+            <x-ui.card-content class="py-3">
+                <form method="GET" action="{{ route('notes.index') }}">
+                    <div class="flex flex-col lg:flex-row gap-3">
                         <!-- Search -->
                         <div class="flex-1">
-                            <x-ui.label for="q">{{ __('Search') }}</x-ui.label>
                             <x-ui.input
                                 type="text"
                                 name="q"
@@ -88,8 +87,7 @@
                         </div>
 
                         <!-- Client Filter -->
-                        <div class="w-full lg:w-64">
-                            <x-ui.label for="filter_client_id">{{ __('Filter by Client') }}</x-ui.label>
+                        <div class="w-full lg:w-56">
                             <x-ui.searchable-select
                                 name="client_id"
                                 id="filter_client_id"
@@ -101,8 +99,7 @@
                         </div>
 
                         <!-- Tag Filter -->
-                        <div class="w-full lg:w-48">
-                            <x-ui.label for="tag">{{ __('Tag') }}</x-ui.label>
+                        <div class="w-full lg:w-40">
                             <x-ui.select name="tag" id="tag">
                                 <option value="">{{ __('All Tags') }}</option>
                                 @foreach($availableTags as $tag)
@@ -113,38 +110,40 @@
                             </x-ui.select>
                         </div>
 
-                        <!-- Date Range -->
-                        <div class="w-full lg:w-40">
-                            <x-ui.label for="start_date">{{ __('From') }}</x-ui.label>
-                            <x-ui.input
-                                type="date"
-                                name="start_date"
-                                id="start_date"
-                                value="{{ $filters['start_date'] ?? '' }}"
-                            />
-                        </div>
-
-                        <div class="w-full lg:w-40">
-                            <x-ui.label for="end_date">{{ __('To') }}</x-ui.label>
-                            <x-ui.input
-                                type="date"
-                                name="end_date"
-                                id="end_date"
-                                value="{{ $filters['end_date'] ?? '' }}"
-                            />
+                        <!-- Date Range (collapsible on mobile) -->
+                        <div class="hidden lg:flex gap-2">
+                            <div class="w-36">
+                                <x-ui.input
+                                    type="date"
+                                    name="start_date"
+                                    id="start_date"
+                                    value="{{ $filters['start_date'] ?? '' }}"
+                                    placeholder="{{ __('From') }}"
+                                />
+                            </div>
+                            <div class="w-36">
+                                <x-ui.input
+                                    type="date"
+                                    name="end_date"
+                                    id="end_date"
+                                    value="{{ $filters['end_date'] ?? '' }}"
+                                    placeholder="{{ __('To') }}"
+                                />
+                            </div>
                         </div>
 
                         <!-- Buttons -->
-                        <div class="flex items-end gap-2">
-                            <x-ui.button type="submit" variant="default">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="flex items-center gap-2">
+                            <x-ui.button type="submit" variant="default" size="sm">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
-                                {{ __('Filter') }}
                             </x-ui.button>
                             @if(!empty(array_filter($filters ?? [])))
-                                <x-ui.button type="button" variant="outline" onclick="window.location.href='{{ route('client-notes.index') }}'">
-                                    {{ __('Clear') }}
+                                <x-ui.button type="button" variant="outline" size="sm" onclick="window.location.href='{{ route('notes.index') }}'">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                    </svg>
                                 </x-ui.button>
                             @endif
                         </div>
@@ -160,7 +159,7 @@
                     <x-ui.empty-state
                         icon="document"
                         :title="__('No notes yet')"
-                        :description="__('Create your first note using the form above.')"
+                        :description="__('Use the form above to create your first note.')"
                     />
                 @else
                     <div class="divide-y divide-slate-200" id="notes-list">
@@ -177,7 +176,7 @@
                                      async updateClient(newClientId) {
                                          this.saving = true;
                                          try {
-                                             const res = await fetch('{{ route('client-notes.update-client', $note) }}', {
+                                             const res = await fetch('{{ route('notes.update-client', $note) }}', {
                                                  method: 'PATCH',
                                                  headers: {
                                                      'Content-Type': 'application/json',
@@ -199,7 +198,7 @@
                                          if (!confirm('{{ __('Are you sure you want to delete this note?') }}')) return;
                                          this.deleting = true;
                                          try {
-                                             const res = await fetch('{{ route('client-notes.destroy', $note) }}', {
+                                             const res = await fetch('{{ route('notes.destroy', $note) }}', {
                                                  method: 'DELETE',
                                                  headers: {
                                                      'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -300,7 +299,7 @@
                                         @if(!empty($note->tags))
                                             <div class="mt-2 flex flex-wrap gap-1">
                                                 @foreach($note->tags as $tag)
-                                                    <a href="{{ route('client-notes.index', ['tag' => $tag]) }}"
+                                                    <a href="{{ route('notes.index', ['tag' => $tag]) }}"
                                                        class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors">
                                                         {{ ucfirst($tag) }}
                                                     </a>
@@ -311,7 +310,7 @@
 
                                     <!-- Actions -->
                                     <div class="flex items-center gap-3 ml-3">
-                                        <a href="{{ route('client-notes.edit', $note) }}"
+                                        <a href="{{ route('notes.edit', $note) }}"
                                            class="inline-flex items-center text-blue-600 hover:text-blue-900 transition-colors"
                                            title="{{ __('Edit') }}">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

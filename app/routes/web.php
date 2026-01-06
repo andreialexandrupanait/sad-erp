@@ -124,11 +124,11 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:10,1')  // 10 bulk exports per minute
             ->name('clients.bulk-export');
 
-        // Client Notes
-        Route::resource('client-notes', ClientNoteController::class);
-        Route::patch('client-notes/{clientNote}/update-client', [ClientNoteController::class, 'updateClient'])->name('client-notes.update-client');
+        // Notes
+        Route::resource('notes', ClientNoteController::class)->parameters(['notes' => 'clientNote']);
+        Route::patch('notes/{clientNote}/update-client', [ClientNoteController::class, 'updateClient'])->name('notes.update-client');
         Route::get('api/clients/{client}/notes', [ClientNoteController::class, 'forClient'])->name('api.clients.notes');
-        Route::get('api/client-notes/tag-stats', [ClientNoteController::class, 'tagStats'])->name('api.client-notes.tag-stats');
+        Route::get('api/notes/tag-stats', [ClientNoteController::class, 'tagStats'])->name('api.notes.tag-stats');
     });
 
     // Credentials Module
@@ -161,7 +161,7 @@ Route::middleware('auth')->group(function () {
             ->middleware('throttle:3,1')
             ->name('credentials.reveal-password');
         Route::get('credentials/{credential}/password', [CredentialController::class, 'getPassword'])
-            ->middleware('throttle:30,1')
+            ->middleware('throttle:60,1')
             ->name('credentials.get-password');
     });
 

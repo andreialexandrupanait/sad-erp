@@ -1717,5 +1717,14 @@
     "Yes": "Da",
     "optional": "opțional",
     "Start typing...": "Începe să scrii...",
-    "Search": "Caută"
+    "Search": "Caută",
+    "Quick Add Client": "Adaugă Client Rapid",
+    "Quick Add Credential": "Adaugă Acces Rapid",
+    "Quick Add Domain": "Adaugă Domeniu Rapid",
+    "Quick Add Subscription": "Adaugă Abonament Rapid",
+    "Quick Add Expense": "Adaugă Cheltuială Rapid",
+    "Quick Add Revenue": "Adaugă Venit Rapid",
+    "Creating...": "Se creează...",
+    "Created successfully": "Creat cu succes",
+    "An error occurred. Please try again.": "A apărut o eroare. Vă rugăm încercați din nou."
 }
