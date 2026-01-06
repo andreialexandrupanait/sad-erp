@@ -35,7 +35,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {{-- Main Form --}}
                         <div class="lg:col-span-2 space-y-6">
-                            <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
                                 <div class="px-6 py-4 bg-slate-100 border-b border-slate-200">
                                     <h3 class="text-lg font-semibold text-gray-900">{{ __('Template Details') }}</h3>
                                 </div>
@@ -111,7 +111,7 @@
                         {{-- Sidebar --}}
                         <div class="space-y-6">
                             {{-- Actions --}}
-                            <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
                                 <div class="px-6 py-4 bg-slate-100 border-b border-slate-200">
                                     <h3 class="font-semibold text-gray-900">{{ __('Actions') }}</h3>
                                 </div>
@@ -131,7 +131,7 @@
                             </div>
 
                             {{-- Available Variables --}}
-                            <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                            <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
                                 <div class="px-6 py-4 bg-slate-100 border-b border-slate-200">
                                     <h3 class="font-semibold text-gray-900">{{ __('Available Variables') }}</h3>
                                 </div>

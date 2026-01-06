@@ -8,7 +8,7 @@
 ])
 
 @php
-    $baseClasses = 'rounded-[10px] shadow-sm transition-all duration-200 overflow-hidden';
+    $baseClasses = 'rounded-lg shadow-sm transition-all duration-200 overflow-hidden';
     $hoverClasses = $clickable ? 'hover:shadow-lg cursor-pointer' : '';
 
     $colorClasses = match($color) {

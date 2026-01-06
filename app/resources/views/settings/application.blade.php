@@ -36,7 +36,7 @@
                     @csrf
 
                     <!-- Basic Information -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +81,7 @@
                     </div>
 
                     <!-- Branding -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -175,7 +175,7 @@
                     </div>
 
                     <!-- Appearance -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +212,7 @@
                     </div>
 
                     <!-- Regional Settings -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

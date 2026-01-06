@@ -86,24 +86,27 @@
                         <button @click="setViewMode('table')"
                                 :class="ui.viewMode === 'table' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
                                 class="p-2 rounded transition-colors"
-                                title="{{ __('Table') }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                title="{{ __('Table') }}"
+                                aria-label="{{ __('Switch to table view') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                             </svg>
                         </button>
                         <button @click="setViewMode('kanban')"
                                 :class="ui.viewMode === 'kanban' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
                                 class="p-2 rounded transition-colors"
-                                title="{{ __('Kanban') }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                title="{{ __('Kanban') }}"
+                                aria-label="{{ __('Switch to kanban view') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
                             </svg>
                         </button>
                         <button @click="setViewMode('grid')"
                                 :class="ui.viewMode === 'grid' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-100'"
                                 class="p-2 rounded transition-colors"
-                                title="{{ __('Grid') }}">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                title="{{ __('Grid') }}"
+                                aria-label="{{ __('Switch to grid view') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
                         </button>
@@ -236,7 +239,7 @@
                                 </div>
 
                                 {{-- Status Group Table --}}
-                                <div x-show="!isGroupCollapsed(status.id)" class="rounded-[10px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+                                <div x-show="!isGroupCollapsed(status.id)" class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                                     <div class="overflow-x-auto">
                                         <table class="w-full caption-bottom text-sm">
                                             <thead class="bg-slate-100">
@@ -400,7 +403,7 @@
                                 </span>
                             </div>
 
-                            <div x-show="!isGroupCollapsed(null)" class="rounded-[10px] border border-slate-200 bg-white shadow-sm overflow-hidden">
+                            <div x-show="!isGroupCollapsed(null)" class="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
                                 {{-- Same table structure as above for clients without status --}}
                                 <div class="overflow-x-auto">
                                     <table class="w-full caption-bottom text-sm">

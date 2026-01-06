@@ -31,7 +31,7 @@
                     </div>
                 @endif
 
-                <div class="bg-white rounded-[10px] border border-slate-200 overflow-hidden">
+                <div class="bg-white rounded-lg border border-slate-200 overflow-hidden">
                     <!-- Section Header -->
                     <div class="px-6 py-4 bg-slate-100 border-b border-slate-200 flex items-center gap-3">
                         <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">

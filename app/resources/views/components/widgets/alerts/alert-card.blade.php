@@ -21,7 +21,7 @@
     };
 @endphp
 
-<div class="bg-white border border-slate-200 rounded-[10px] shadow-sm overflow-hidden">
+<div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
     <div class="flex items-center gap-2 px-6 py-4 border-b border-slate-200 bg-slate-100">
         <div class="{{ $iconColors }}">
             {!! $icon !!}

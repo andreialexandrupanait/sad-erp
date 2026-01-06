@@ -140,7 +140,7 @@
                     <div class="space-y-6">
                         <!-- Quick Stats Grid -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
+                            <div class="bg-white p-6 rounded-lg border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +158,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
+                            <div class="bg-white p-6 rounded-lg border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -176,7 +176,7 @@
                                 </div>
                             </div>
 
-                            <div class="bg-white p-6 rounded-[10px] border border-slate-200">
+                            <div class="bg-white p-6 rounded-lg border border-slate-200">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0">
                                         <svg class="h-10 w-10 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

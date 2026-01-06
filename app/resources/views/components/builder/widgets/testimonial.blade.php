@@ -26,7 +26,7 @@
                            @change="handleBlockImageUpload($event, block)">
                 </div>
                 <div x-show="block.data.avatar" class="relative">
-                    <img :src="block.data.avatar" class="w-10 h-10 rounded-full object-cover">
+                    <img :src="block.data.avatar" :alt="block.data.author ? block.data.author + ' avatar' : 'Testimonial avatar'" class="w-10 h-10 rounded-full object-cover">
                     <button type="button" @click="block.data.avatar = ''"
                             class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@
 
         <div class="mt-4 flex items-center gap-3">
             <div x-show="block.data.avatar">
-                <img :src="block.data.avatar" class="w-10 h-10 rounded-full object-cover">
+                <img :src="block.data.avatar" :alt="block.data.author ? block.data.author + ' avatar' : 'Testimonial avatar'" class="w-10 h-10 rounded-full object-cover">
             </div>
             <div x-show="!block.data.avatar"
                  class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center">

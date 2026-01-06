@@ -36,7 +36,7 @@
                     @csrf
 
                     <!-- Expense Budget -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,7 +93,7 @@
                     </div>
 
                     <!-- Revenue Target -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +150,7 @@
                     </div>
 
                     <!-- Profit Margin -->
-                    <div class="bg-white rounded-[10px] border border-slate-200 mb-6 overflow-hidden">
+                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
                             <div class="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                                 <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,7 +196,7 @@
                     </div>
 
                     <!-- Info Box -->
-                    <div class="bg-blue-50 border border-blue-200 rounded-[10px] p-4 mb-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                         <div class="flex items-start gap-3">
                             <svg class="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>

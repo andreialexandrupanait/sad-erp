@@ -6,7 +6,7 @@
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-6">
-            <div class="bg-white rounded-[10px] border border-slate-200">
+            <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-6">
                     <div class="mb-6">
                         <h2 class="text-lg font-medium text-slate-900">

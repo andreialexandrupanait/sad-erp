@@ -7,7 +7,7 @@
         <div class="flex-1 overflow-y-auto">
             <div class="p-6">
             <!-- User Info Card -->
-            <div class="bg-white rounded-[10px] border border-slate-200 mb-6">
+            <div class="bg-white rounded-lg border border-slate-200 mb-6">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex items-center gap-4">
@@ -69,7 +69,7 @@
             @endif
 
             <!-- Permission Matrix -->
-            <div class="bg-white rounded-[10px] border border-slate-200">
+            <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
@@ -182,7 +182,7 @@
             </div>
 
             <!-- User Activity Info -->
-            <div class="mt-6 bg-white rounded-[10px] border border-slate-200">
+            <div class="mt-6 bg-white rounded-lg border border-slate-200">
                 <div class="p-6">
                     <h3 class="text-lg font-medium text-slate-900 mb-4">{{ __("Account Information") }}</h3>
                     <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4">

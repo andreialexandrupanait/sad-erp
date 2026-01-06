@@ -24,7 +24,7 @@
         <!-- Statistics Cards -->
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             <!-- Total Accounts - Featured -->
-            <div class="rounded-[10px] border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -42,7 +42,7 @@
             </div>
 
             <!-- My Accounts -->
-            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
@@ -60,7 +60,7 @@
             </div>
 
             <!-- Team Shared -->
-            <div class="rounded-[10px] border border-slate-200 bg-white shadow-sm">
+            <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">

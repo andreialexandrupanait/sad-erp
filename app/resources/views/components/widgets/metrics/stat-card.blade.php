@@ -20,7 +20,7 @@
 @endphp
 
 <div
-    class="bg-white border border-slate-200 rounded-[10px] shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5"
+    class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5"
     @if($href)
         onclick="window.location.href='{{ $href }}'"
     @endif

@@ -8,7 +8,7 @@
             <div class="p-6">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-white rounded-[10px] border border-slate-200 p-4">
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-500">{{ __("Total Users") }}</p>
@@ -21,7 +21,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-[10px] border border-slate-200 p-4">
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-500">{{ __("Active") }}</p>
@@ -34,7 +34,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-[10px] border border-slate-200 p-4">
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-500">{{ __("Inactive") }}</p>
@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-[10px] border border-slate-200 p-4">
+                <div class="bg-white rounded-lg border border-slate-200 p-4">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm text-slate-500">{{ __("Archived") }}</p>
@@ -62,7 +62,7 @@
                 </div>
             </div>
 
-            <div class="bg-white rounded-[10px] border border-slate-200">
+            <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>

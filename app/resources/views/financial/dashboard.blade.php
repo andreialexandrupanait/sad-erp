@@ -98,7 +98,7 @@
         <!-- Widgets Container - 3 Widgets -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <!-- Widget 1: Venituri (RON + EUR) -->
-            <div class="bg-white rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['revenue_target_ron'] && $revenueProgress < 50 ? 'ring-2 ring-amber-300' : '' }}">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['revenue_target_ron'] && $revenueProgress < 50 ? 'ring-2 ring-amber-300' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-700 uppercase">{{ __('Revenues') }}</h3>
                     <div class="flex items-center gap-2">
@@ -140,7 +140,7 @@
             </div>
 
             <!-- Widget 2: Cheltuieli (RON + EUR) -->
-            <div class="bg-white rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['expense_budget_ron'] && $expenseProgress >= 100 ? 'ring-2 ring-red-300' : ($budgetThresholds['expense_budget_ron'] && $expenseProgress >= 80 ? 'ring-2 ring-amber-300' : '') }}">
+            <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['expense_budget_ron'] && $expenseProgress >= 100 ? 'ring-2 ring-red-300' : ($budgetThresholds['expense_budget_ron'] && $expenseProgress >= 80 ? 'ring-2 ring-amber-300' : '') }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-slate-700 uppercase">{{ __('Expenses') }}</h3>
                     <div class="flex items-center gap-2">
@@ -184,7 +184,7 @@
             </div>
 
             <!-- Widget 3: Profit Net (RON + EUR) -->
-            <div class="bg-gradient-to-br {{ $yearlyProfitRON >= 0 ? 'from-emerald-500 to-green-600' : 'from-red-500 to-rose-600' }} rounded-[10px] shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['profit_margin_min'] && $profitMargin < $budgetThresholds['profit_margin_min'] ? 'ring-2 ring-red-300' : '' }}">
+            <div class="bg-gradient-to-br {{ $yearlyProfitRON >= 0 ? 'from-emerald-500 to-green-600' : 'from-red-500 to-rose-600' }} rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['profit_margin_min'] && $profitMargin < $budgetThresholds['profit_margin_min'] ? 'ring-2 ring-red-300' : '' }}">
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-semibold text-white uppercase">{{ __('Net Profit') }}</h3>
                     <div class="flex items-center gap-2">

@@ -14,7 +14,7 @@
     $iconBgClass = $colorClasses[$color] ?? $colorClasses['primary'];
 @endphp
 
-<div {{ $attributes->merge(['class' => 'bg-white rounded-[10px] shadow-sm border border-slate-200 p-6 hover:shadow-md transition-all duration-200']) }}>
+<div {{ $attributes->merge(['class' => 'bg-white rounded-lg shadow-sm border border-slate-200 p-6 hover:shadow-md transition-all duration-200']) }}>
     <div class="flex items-start justify-between">
         <div class="flex-1">
             <p class="text-sm font-medium text-gray-600 mb-1">{{ $title }}</p>

@@ -30,7 +30,7 @@
 @endphp
 
 <div
-    class="{{ $colors }} text-white rounded-[10px] shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-5"
+    class="{{ $colors }} text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-5"
     @if($href)
         onclick="window.location.href='{{ $href }}'"
     @endif
