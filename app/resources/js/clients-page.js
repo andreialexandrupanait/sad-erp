@@ -14,7 +14,7 @@ function clientsPage(initialData = {}) {
         filters: {
             status: initialData.filters?.status || [],
             q: initialData.filters?.q || '',
-            sort: initialData.filters?.sort || 'name:asc',
+            sort: initialData.filters?.sort || 'activity:desc',
             page: initialData.filters?.page || 1
         },
 
@@ -45,6 +45,7 @@ function clientsPage(initialData = {}) {
         selectedIds: [],
         selectAll: false,
         savingStatus: {},
+        openStatusDropdown: null, // Track which client's dropdown is open
 
         // === Computed Properties ===
         get selectedCount() {
@@ -172,7 +173,7 @@ function clientsPage(initialData = {}) {
                 if (this.filters.q) {
                     params.set('q', this.filters.q);
                 }
-                if (this.filters.sort && this.filters.sort !== 'name:asc') {
+                if (this.filters.sort && this.filters.sort !== 'activity:desc') {
                     params.set('sort', this.filters.sort);
                 }
                 if (this.filters.page > 1) {
@@ -220,7 +221,7 @@ function clientsPage(initialData = {}) {
             if (this.filters.q) {
                 params.set('q', this.filters.q);
             }
-            if (this.filters.sort && this.filters.sort !== 'name:asc') {
+            if (this.filters.sort && this.filters.sort !== 'activity:desc') {
                 params.set('sort', this.filters.sort);
             }
             if (this.filters.page > 1) {
@@ -260,7 +261,7 @@ function clientsPage(initialData = {}) {
                 this.filters.sort = `${column}:${newDir}`;
             } else {
                 // Default direction for new column
-                const defaultDesc = ['revenue', 'total_incomes', 'created', 'created_at'];
+                const defaultDesc = ['revenue', 'total_incomes', 'created', 'created_at', 'activity', 'last_invoice_at'];
                 const dir = defaultDesc.includes(column) ? 'desc' : 'asc';
                 this.filters.sort = `${column}:${dir}`;
             }
@@ -364,6 +365,19 @@ function clientsPage(initialData = {}) {
                              this.selectedIds.length === this.clients.length;
         },
 
+        // === Status Dropdown Management ===
+        toggleStatusDropdown(clientId) {
+            this.openStatusDropdown = this.openStatusDropdown === clientId ? null : clientId;
+        },
+
+        closeStatusDropdown() {
+            this.openStatusDropdown = null;
+        },
+
+        isStatusDropdownOpen(clientId) {
+            return this.openStatusDropdown === clientId;
+        },
+
         // === Status Updates ===
         async updateClientStatus(client, newStatusId) {
             if (this.savingStatus[client.id]) return;
@@ -385,6 +399,9 @@ function clientsPage(initialData = {}) {
                 const data = await response.json();
 
                 if (data.success) {
+                    // Close the dropdown
+                    this.openStatusDropdown = null;
+
                     // Find and update the client in our local data
                     const clientIndex = this.clients.findIndex(c => c.id === client.id);
                     if (clientIndex !== -1) {
@@ -394,6 +411,7 @@ function clientsPage(initialData = {}) {
                             id: newStatus.id,
                             name: newStatus.name,
                             slug: newStatus.slug,
+                            color_class: newStatus.color_class,
                             color_background: newStatus.color_background,
                             color_text: newStatus.color_text
                         } : null;
@@ -648,11 +666,11 @@ function clientsPage(initialData = {}) {
             return container;
         },
 
-        formatCurrency(value) {
+        formatCurrency(value, currency = 'RON') {
             return new Intl.NumberFormat('ro-RO', {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2
-            }).format(value || 0) + ' RON';
+            }).format(value || 0) + ' ' + (currency || 'RON');
         },
 
         copyToClipboard(text, event) {

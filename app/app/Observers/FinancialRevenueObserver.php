@@ -25,7 +25,7 @@ class FinancialRevenueObserver
      */
     public function saved(FinancialRevenue $revenue): void
     {
-        $this->updateClientTotal($revenue->client_id, $revenue->organization_id);
+        $this->updateClientStats($revenue->client_id, $revenue->organization_id);
         $this->clearRevenueCache($revenue->year);
     }
 
@@ -34,7 +34,7 @@ class FinancialRevenueObserver
      */
     public function deleted(FinancialRevenue $revenue): void
     {
-        $this->updateClientTotal($revenue->client_id, $revenue->organization_id);
+        $this->updateClientStats($revenue->client_id, $revenue->organization_id);
         $this->clearRevenueCache($revenue->year);
     }
 
@@ -43,7 +43,7 @@ class FinancialRevenueObserver
      */
     public function restored(FinancialRevenue $revenue): void
     {
-        $this->updateClientTotal($revenue->client_id, $revenue->organization_id);
+        $this->updateClientStats($revenue->client_id, $revenue->organization_id);
         $this->clearRevenueCache($revenue->year);
     }
 
@@ -52,7 +52,7 @@ class FinancialRevenueObserver
      */
     public function forceDeleted(FinancialRevenue $revenue): void
     {
-        $this->updateClientTotal($revenue->client_id, $revenue->organization_id);
+        $this->updateClientStats($revenue->client_id, $revenue->organization_id);
         $this->clearRevenueCache($revenue->year);
     }
 
@@ -75,12 +75,12 @@ class FinancialRevenueObserver
     }
 
     /**
-     * Update the client's total_incomes from financial_revenues.
+     * Update the client's total_incomes, last_invoice_at, and currency from financial_revenues.
      *
      * Uses user_id for client isolation since the clients table uses user_id,
      * while revenues use organization_id.
      */
-    private function updateClientTotal(?int $clientId, ?int $organizationId): void
+    private function updateClientStats(?int $clientId, ?int $organizationId): void
     {
         if (!$clientId) {
             return;
@@ -98,8 +98,27 @@ class FinancialRevenueObserver
             ->when($organizationId, fn($q) => $q->where('organization_id', $organizationId))
             ->sum('amount');
 
-        // Update the client's total_incomes
+        // Get the most recent invoice date
+        $lastInvoiceAt = FinancialRevenue::withoutGlobalScopes()
+            ->where('client_id', $clientId)
+            ->when($organizationId, fn($q) => $q->where('organization_id', $organizationId))
+            ->max('occurred_at');
+
+        // Get the most common currency for this client
+        $currency = FinancialRevenue::withoutGlobalScopes()
+            ->where('client_id', $clientId)
+            ->when($organizationId, fn($q) => $q->where('organization_id', $organizationId))
+            ->selectRaw('currency, COUNT(*) as cnt')
+            ->groupBy('currency')
+            ->orderByDesc('cnt')
+            ->value('currency');
+
+        // Update the client's stats
         $client->total_incomes = $total ?? 0;
+        $client->last_invoice_at = $lastInvoiceAt;
+        if ($currency) {
+            $client->currency = $currency;
+        }
         $client->saveQuietly();
     }
 }

@@ -6,8 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Auth;
 use Spatie\EloquentSortable\Sortable;
 use Spatie\EloquentSortable\SortableTrait;
@@ -70,18 +68,6 @@ class Service extends Model implements Sortable
         return $this->belongsTo(Organization::class);
     }
 
-    public function users(): BelongsToMany
-    {
-        return $this->belongsToMany(User::class, 'user_services')
-            ->withPivot(['hourly_rate', 'currency', 'is_active'])
-            ->withTimestamps();
-    }
-
-    public function userServices(): HasMany
-    {
-        return $this->hasMany(UserService::class);
-    }
-
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
@@ -117,23 +103,5 @@ class Service extends Model implements Sortable
     public function getUnitLabelAttribute(): string
     {
         return self::UNITS[$this->unit] ?? $this->unit;
-    }
-
-    public function getRateForUser(User $user): ?float
-    {
-        $userService = $this->userServices()
-            ->where('user_id', $user->id)
-            ->where('is_active', true)
-            ->first();
-
-        return $userService?->hourly_rate ?? $this->default_rate;
-    }
-
-    public function isOfferedBy(User $user): bool
-    {
-        return $this->userServices()
-            ->where('user_id', $user->id)
-            ->where('is_active', true)
-            ->exists();
     }
 }

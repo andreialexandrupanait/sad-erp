@@ -37,8 +37,7 @@ class DatabaseRestoreService
         'domains',
         'subscriptions',
         'services',
-        'user_services',
-        
+
         // Settings and configuration
         'settings_options',
         'modules',

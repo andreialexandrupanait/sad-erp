@@ -164,8 +164,9 @@ class Client extends Model
 
     /**
      * Get all notes for this client
+     * Named clientNotes to avoid conflict with 'notes' database column
      */
-    public function notes()
+    public function clientNotes()
     {
         return $this->hasMany(ClientNote::class)->latest();
     }

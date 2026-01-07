@@ -1203,6 +1203,7 @@
                 selectedIds: [],
                 selectAll: false,
                 savingStatus: {},
+                openStatusDropdown: null,
 
                 get selectedCount() { return this.selectedIds.length; },
                 get hasSelection() { return this.selectedIds.length > 0; },
@@ -1414,6 +1415,19 @@
                         else throw new Error('Failed');
                     } catch (error) { this.showToast('An error occurred', 'error'); }
                     finally { this.loading = false; }
+                },
+
+                // Status Dropdown Management
+                toggleStatusDropdown(clientId) {
+                    this.openStatusDropdown = this.openStatusDropdown === clientId ? null : clientId;
+                },
+
+                closeStatusDropdown() {
+                    this.openStatusDropdown = null;
+                },
+
+                isStatusDropdownOpen(clientId) {
+                    return this.openStatusDropdown === clientId;
                 },
 
                 showToast(message, type = 'info') {

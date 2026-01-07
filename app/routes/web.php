@@ -5,7 +5,6 @@ use App\Http\Controllers\Auth\TwoFactorController;
 use App\Http\Controllers\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\SessionController;
 use App\Http\Controllers\ServiceController;
-use App\Http\Controllers\Profile\UserServiceController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\ImportExportController;
@@ -25,6 +24,7 @@ use App\Http\Controllers\ContractController;
 use App\Http\Controllers\ContractTemplateController;
 use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\ClientNoteController;
+use App\Http\Controllers\ShareController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -35,6 +35,12 @@ Route::get('/', function () {
 Route::get('/health', App\Http\Controllers\HealthController::class)
     ->middleware('throttle:60,1')
     ->name('health');
+
+// Public Share Routes (signed URLs - no auth required)
+Route::prefix('share')->name('share.')->middleware('throttle:60,1')->group(function () {
+    Route::get('invoice/{file}', [ShareController::class, 'invoice'])->name('invoice');
+    Route::get('invoice/{file}/download', [ShareController::class, 'download'])->name('invoice.download');
+});
 
 // Public Offer Routes (no auth required) - Rate limited for security
 // Legacy token-based routes (kept for backward compatibility with existing shared links)
@@ -114,11 +120,10 @@ Route::middleware('auth')->group(function () {
     Route::delete("/profile/sessions/{session}", [SessionController::class, "destroy"])->name("profile.sessions.destroy");
     Route::delete("/profile/sessions", [SessionController::class, "destroyOthers"])->name("profile.sessions.destroy-others");
 
-    // User Services (rates per service)
-    Route::get("/profile/services", [UserServiceController::class, "index"])->name("profile.services");
-    Route::post("/profile/services", [UserServiceController::class, "store"])->name("profile.services.store");
-    Route::put("/profile/services/{userService}", [UserServiceController::class, "update"])->name("profile.services.update");
-    Route::delete("/profile/services/{userService}", [UserServiceController::class, "destroy"])->name("profile.services.destroy");
+    // User Preferences & Notifications
+    Route::patch("/profile/preferences", [ProfileController::class, "updatePreferences"])->name("profile.preferences.update");
+    Route::patch("/profile/notifications", [ProfileController::class, "updateNotifications"])->name("profile.notifications.update");
+    Route::get("/profile/activities", [ProfileController::class, "activities"])->name("profile.activities");
 });
 
 // Protected routes - require both auth and 2FA verification

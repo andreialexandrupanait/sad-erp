@@ -29,12 +29,14 @@ class ClientQueryService
         'total_incomes' => 'total_incomes',
         'status_id' => 'status_id',
         'created_at' => 'created_at',
+        'activity' => 'activity',
+        'last_invoice_at' => 'last_invoice_at',
     ];
 
     /**
      * Columns that default to descending sort.
      */
-    protected array $defaultDescColumns = ['revenue', 'total_incomes', 'created', 'created_at'];
+    protected array $defaultDescColumns = ['revenue', 'total_incomes', 'created', 'created_at', 'activity', 'last_invoice_at'];
 
     public function __construct(
         protected NomenclatureService $nomenclatureService
@@ -90,9 +92,16 @@ class ClientQueryService
      */
     protected function applySorting($query, Request $request): void
     {
-        $sort = $request->get('sort', 'name:asc');
+        $sort = $request->get('sort', 'activity:desc');
         [$column, $direction] = $this->parseSort($sort);
-        $query->orderBy($column, $direction);
+
+        if ($column === 'activity') {
+            // Combined sort: invoice count (most active) + last invoice date (most recent)
+            $query->orderByRaw('(SELECT COUNT(*) FROM financial_revenues WHERE financial_revenues.client_id = clients.id) DESC')
+                  ->orderBy('last_invoice_at', 'desc');
+        } else {
+            $query->orderBy($column, $direction);
+        }
     }
 
     /**
@@ -182,7 +191,7 @@ class ClientQueryService
         return [
             'status' => $request->filled('status') ? explode(',', $request->status) : [],
             'q' => $request->get('q', ''),
-            'sort' => $request->get('sort', 'name:asc'),
+            'sort' => $request->get('sort', 'activity:desc'),
             'page' => (int) $request->get('page', 1),
         ];
     }
@@ -202,6 +211,7 @@ class ClientQueryService
             'company_name' => $client->company_name,
             'tax_id' => $client->tax_id,
             'total_incomes' => $client->total_incomes,
+            'currency' => $client->currency ?? 'RON',
             'invoices_count' => $client->invoices_count ?? 0,
             'status_id' => $client->status_id,
             'status' => $this->transformStatus($client->status),
@@ -223,6 +233,7 @@ class ClientQueryService
             'id' => $status->id,
             'name' => $status->name,
             'slug' => $status->slug,
+            'color_class' => $status->color_class,
             'color_background' => $status->color_background,
             'color_text' => $status->color_text,
         ];

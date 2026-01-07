@@ -43,12 +43,6 @@ return [
     'this_device' => 'Acest dispozitiv',
     'last_active' => 'Ultima activitate',
 
-    // Tarife servicii
-    'my_rates' => 'Tarifele mele',
-    'hourly_rates' => 'Tarife orare',
-    'service_rates' => 'Tarife servicii',
-    'add_rate' => 'Adaugă tarif',
-
     // Setări aplicație
     'app_settings' => 'Setări aplicație',
     'organization' => 'Organizație',

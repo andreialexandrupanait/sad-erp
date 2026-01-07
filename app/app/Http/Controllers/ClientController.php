@@ -108,7 +108,7 @@ class ClientController extends Controller
             },
             'domains',
             'accessCredentials',
-            'notes.user'
+            'clientNotes.user'
         ]);
 
         // Get active tab from request (default: overview)

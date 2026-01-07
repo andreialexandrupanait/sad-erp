@@ -16,6 +16,7 @@
             'id' => $s->id,
             'name' => $s->name,
             'slug' => $s->slug,
+            'color_class' => $s->color_class,
             'color_background' => $s->color_background,
             'color_text' => $s->color_text
         ])->values()->all();
@@ -176,11 +177,10 @@
             <template x-for="status in statuses" :key="status.id">
                 <button @click="toggleStatus(status.slug)"
                         :class="filters.status.includes(status.slug) ? '' : 'opacity-60 hover:opacity-100'"
-                        :style="'background-color: ' + status.color_background + '; color: ' + status.color_text"
+                        :style="'background-color: ' + status.color_class + '; color: white'"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all">
                     <span x-text="status.name"></span>
-                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs rounded-full"
-                          :style="'background-color: ' + status.color_text + '20'"
+                    <span class="inline-flex items-center justify-center px-1.5 py-0.5 text-xs rounded-full bg-white/20"
                           x-text="getStatusCount(status.id)">
                     </span>
                 </button>
@@ -310,48 +310,43 @@
                                                         </td>
                                                         <td class="px-6 py-4 align-middle">
                                                             {{-- Status Dropdown --}}
-                                                            <div x-data="{ open: false }" @click.away="open = false" class="relative">
+                                                            <div class="relative">
                                                                 <button type="button"
-                                                                        @click="open = !open"
-                                                                        :disabled="savingStatus[client.id]"
-                                                                        :class="{ 'opacity-50': savingStatus[client.id] }"
-                                                                        class="cursor-pointer transition-all hover:scale-105 active:scale-95">
-                                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                                                                          :style="client.status ? 'background-color: ' + client.status.color_background + '; color: ' + client.status.color_text : 'background-color: #e2e8f0; color: #475569'">
-                                                                        <span x-show="savingStatus[client.id]" class="mr-1">
-                                                                            <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                                                            </svg>
-                                                                        </span>
-                                                                        <span x-text="client.status ? client.status.name : '{{ __('No Status') }}'"></span>
-                                                                        <svg class="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                                                        </svg>
-                                                                    </span>
+                                                                        @click.stop="toggleStatusDropdown(client.id)"
+                                                                        class="flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border-2 cursor-pointer transition-all hover:opacity-90"
+                                                                        :style="'background-color: ' + (client.status ? client.status.color_class : '#64748b') + '; color: white; border-color: ' + (client.status ? client.status.color_class : '#64748b')">
+                                                                    <span x-text="client.status ? client.status.name : '{{ __('No Status') }}'"></span>
+                                                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                                    </svg>
                                                                 </button>
 
-                                                                <div x-show="open"
-                                                                     x-transition
-                                                                     class="absolute z-50 mt-1 left-0 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1"
-                                                                     style="display: none;">
-                                                                    <template x-for="s in statuses" :key="s.id">
+                                                                <div x-show="isStatusDropdownOpen(client.id)"
+                                                                     x-transition:enter="transition ease-out duration-100"
+                                                                     x-transition:enter-start="opacity-0 transform scale-95"
+                                                                     x-transition:enter-end="opacity-100 transform scale-100"
+                                                                     x-transition:leave="transition ease-in duration-75"
+                                                                     x-transition:leave-start="opacity-100 transform scale-100"
+                                                                     x-transition:leave-end="opacity-0 transform scale-95"
+                                                                     @click.outside="closeStatusDropdown()"
+                                                                     class="absolute z-[100] mt-1 left-0 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 max-h-64 overflow-y-auto"
+                                                                     x-cloak>
+                                                                    @foreach($statuses as $status)
                                                                         <button type="button"
-                                                                                @click="updateClientStatus(client, s.id); open = false"
-                                                                                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                                                                                :class="{ 'bg-slate-100': client.status_id === s.id }">
-                                                                            <span class="w-3 h-3 rounded-full flex-shrink-0" :style="'background-color: ' + s.color_background"></span>
-                                                                            <span x-text="s.name"></span>
-                                                                            <svg x-show="client.status_id === s.id" class="w-4 h-4 ml-auto text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                @click.stop="updateClientStatus(client, {{ $status->id }})"
+                                                                                class="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2 transition-colors">
+                                                                            <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $status->color_class }}"></span>
+                                                                            <span class="flex-1">{{ $status->name }}</span>
+                                                                            <svg x-show="client.status_id === {{ $status->id }}" class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                                                             </svg>
                                                                         </button>
-                                                                    </template>
+                                                                    @endforeach
                                                                 </div>
                                                             </div>
                                                         </td>
                                                         <td class="px-6 py-4 align-middle text-right">
-                                                            <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
+                                                            <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes, client.currency)"></div>
                                                             <div x-show="client.invoices_count > 0" class="text-xs text-slate-500">
                                                                 <span x-text="client.invoices_count"></span> {{ __('invoices') }}
                                                             </div>
@@ -439,10 +434,40 @@
                                                         <div x-show="client.phone" class="text-sm text-slate-500" x-text="client.phone"></div>
                                                     </td>
                                                     <td class="px-6 py-4 align-middle">
-                                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-200 text-slate-600">{{ __('No Status') }}</span>
+                                                        {{-- Status Dropdown --}}
+                                                        <div class="relative">
+                                                            <button type="button"
+                                                                    @click.stop="toggleStatusDropdown(client.id)"
+                                                                    class="flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border-2 border-slate-500 cursor-pointer transition-all hover:opacity-90 bg-slate-500 text-white">
+                                                                <span>{{ __('No Status') }}</span>
+                                                                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                                </svg>
+                                                            </button>
+
+                                                            <div x-show="isStatusDropdownOpen(client.id)"
+                                                                 x-transition:enter="transition ease-out duration-100"
+                                                                 x-transition:enter-start="opacity-0 transform scale-95"
+                                                                 x-transition:enter-end="opacity-100 transform scale-100"
+                                                                 x-transition:leave="transition ease-in duration-75"
+                                                                 x-transition:leave-start="opacity-100 transform scale-100"
+                                                                 x-transition:leave-end="opacity-0 transform scale-95"
+                                                                 @click.outside="closeStatusDropdown()"
+                                                                 class="absolute z-[100] mt-1 left-0 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 max-h-64 overflow-y-auto"
+                                                                 x-cloak>
+                                                                @foreach($statuses as $status)
+                                                                    <button type="button"
+                                                                            @click.stop="updateClientStatus(client, {{ $status->id }})"
+                                                                            class="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2 transition-colors">
+                                                                        <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $status->color_class }}"></span>
+                                                                        <span class="flex-1">{{ $status->name }}</span>
+                                                                    </button>
+                                                                @endforeach
+                                                            </div>
+                                                        </div>
                                                     </td>
                                                     <td class="px-6 py-4 align-middle text-right">
-                                                        <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
+                                                        <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes, client.currency)"></div>
                                                     </td>
                                                     <td class="px-6 py-4 align-middle text-right">
                                                         <a :href="'/clients/' + (client.slug || client.id)" class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded">
@@ -459,160 +484,160 @@
                     </div>
                 </template>
 
-                {{-- Flat Table View --}}
+                {{-- Flat List View (ClickUp-style) --}}
                 <template x-if="clients.length > 0 && !ui.grouped">
-                    <x-ui.card>
-                        <div class="overflow-x-auto">
-                            <table class="w-full caption-bottom text-sm">
-                                <thead class="bg-slate-100">
-                                    <tr class="border-b border-slate-200">
-                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
-                                            <x-bulk-checkbox x-model="selectAll" @change="toggleSelectAll()" />
-                                        </th>
-                                        <th @click="setSort('name')" class="px-6 py-4 text-left align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                                            <div class="flex items-center gap-1">
-                                                {{ __('Client') }}
-                                                <span x-show="sortColumn === 'name'" class="text-blue-600">
-                                                    <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
-                                                    <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">{{ __('Contact') }}</th>
-                                        <th @click="setSort('status')" class="px-6 py-4 text-left align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                                            <div class="flex items-center gap-1">
-                                                {{ __('Status') }}
-                                                <span x-show="sortColumn === 'status' || sortColumn === 'status_id'" class="text-blue-600">
-                                                    <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
-                                                    <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th @click="setSort('revenue')" class="px-6 py-4 text-right align-middle font-medium text-slate-600 cursor-pointer hover:text-slate-900">
-                                            <div class="flex items-center justify-end gap-1">
-                                                {{ __('Revenue') }}
-                                                <span x-show="sortColumn === 'revenue' || sortColumn === 'total_incomes'" class="text-blue-600">
-                                                    <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
-                                                    <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-                                                </span>
-                                            </div>
-                                        </th>
-                                        <th class="px-6 py-4 text-right align-middle font-medium text-slate-500 w-24">{{ __('Actions') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="[&_tr:last-child]:border-0">
-                                    <template x-for="client in clients" :key="client.id">
-                                        <tr class="border-b border-slate-200 hover:bg-slate-50/50 transition-colors">
-                                            <td class="px-6 py-4 align-middle">
-                                                <input type="checkbox"
-                                                       :checked="isSelected(client.id)"
-                                                       @change="toggleItem(client.id)"
-                                                       class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
-                                            </td>
-                                            <td class="px-6 py-4 align-middle">
-                                                <div>
-                                                    <a :href="'/clients/' + (client.slug || client.id)"
-                                                       class="text-sm font-semibold text-slate-900 hover:text-slate-600 transition-colors"
-                                                       x-text="client.name"></a>
-                                                    <div x-show="client.contact_person" class="text-sm text-slate-500" x-text="client.contact_person"></div>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 align-middle">
-                                                <div x-show="client.email"
-                                                     @click="copyToClipboard(client.email, $event)"
-                                                     class="text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
-                                                     title="Click to copy">
-                                                    <span x-text="client.email"></span>
-                                                    <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                                    </svg>
-                                                </div>
-                                                <div x-show="!client.email" class="text-sm text-slate-500">—</div>
-                                                <div x-show="client.phone"
-                                                     @click="copyToClipboard(client.phone, $event)"
-                                                     class="text-sm text-slate-500 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group"
-                                                     title="Click to copy">
-                                                    <span x-text="client.phone"></span>
-                                                    <svg class="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                                                    </svg>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 align-middle">
-                                                {{-- Status Dropdown --}}
-                                                <div x-data="{ open: false }" @click.away="open = false" class="relative">
-                                                    <button type="button"
-                                                            @click="open = !open"
-                                                            :disabled="savingStatus[client.id]"
-                                                            :class="{ 'opacity-50': savingStatus[client.id] }"
-                                                            class="cursor-pointer transition-all hover:scale-105 active:scale-95">
-                                                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
-                                                              :style="client.status ? 'background-color: ' + client.status.color_background + '; color: ' + client.status.color_text : 'background-color: #e2e8f0; color: #475569'">
-                                                            <span x-show="savingStatus[client.id]" class="mr-1">
-                                                                <svg class="animate-spin h-3 w-3" fill="none" viewBox="0 0 24 24">
-                                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                                                                </svg>
-                                                            </span>
-                                                            <span x-text="client.status ? client.status.name : '{{ __('No Status') }}'"></span>
-                                                            <svg class="w-3 h-3 ml-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                                            </svg>
-                                                        </span>
-                                                    </button>
+                    <div class="bg-white rounded-lg border border-slate-200 shadow-sm">
+                        {{-- List Header --}}
+                        <div class="bg-slate-50 border-b border-slate-200 rounded-t-lg">
+                            <div class="flex items-center gap-4 px-4 py-3 text-sm font-medium text-slate-600">
+                                <div class="w-10 flex-shrink-0">
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleSelectAll()" />
+                                </div>
+                                <div class="flex-1 min-w-[200px] cursor-pointer hover:text-slate-900" @click="setSort('name')">
+                                    <span class="flex items-center gap-1">
+                                        {{ __('Client') }}
+                                        <span x-show="sortColumn === 'name'" class="text-blue-600">
+                                            <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                            <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="w-48 flex-shrink-0 hidden md:block">{{ __('Contact') }}</div>
+                                <div class="w-36 flex-shrink-0 cursor-pointer hover:text-slate-900" @click="setSort('status')">
+                                    <span class="flex items-center gap-1">
+                                        {{ __('Status') }}
+                                        <span x-show="sortColumn === 'status' || sortColumn === 'status_id'" class="text-blue-600">
+                                            <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                            <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="w-36 flex-shrink-0 text-right cursor-pointer hover:text-slate-900" @click="setSort('revenue')">
+                                    <span class="flex items-center justify-end gap-1">
+                                        {{ __('Revenue') }}
+                                        <span x-show="sortColumn === 'revenue' || sortColumn === 'total_incomes'" class="text-blue-600">
+                                            <svg x-show="sortDirection === 'asc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+                                            <svg x-show="sortDirection === 'desc'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                        </span>
+                                    </span>
+                                </div>
+                                <div class="w-20 flex-shrink-0 text-right">{{ __('Actions') }}</div>
+                            </div>
+                        </div>
 
-                                                    <div x-show="open"
-                                                         x-transition
-                                                         class="absolute z-50 mt-1 left-0 w-40 bg-white rounded-lg shadow-lg border border-slate-200 py-1"
-                                                         style="display: none;">
-                                                        <template x-for="s in statuses" :key="s.id">
-                                                            <button type="button"
-                                                                    @click="updateClientStatus(client, s.id); open = false"
-                                                                    class="w-full px-3 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2 transition-colors"
-                                                                    :class="{ 'bg-slate-100': client.status_id === s.id }">
-                                                                <span class="w-3 h-3 rounded-full flex-shrink-0" :style="'background-color: ' + s.color_background"></span>
-                                                                <span x-text="s.name"></span>
-                                                                <svg x-show="client.status_id === s.id" class="w-4 h-4 ml-auto text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                                                </svg>
-                                                            </button>
-                                                        </template>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 align-middle text-right">
-                                                <div class="text-sm font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
-                                                <div x-show="client.invoices_count > 0" class="text-xs text-slate-500">
-                                                    <span x-text="client.invoices_count"></span> {{ __('invoices') }}
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 align-middle text-right">
-                                                <div class="flex items-center justify-end gap-1">
-                                                    <a :href="'/clients/' + (client.slug || client.id)"
-                                                       class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                                                       title="{{ __('View') }}">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                                                        </svg>
-                                                    </a>
-                                                    <a :href="'/clients/' + (client.slug || client.id) + '/edit'"
-                                                       class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                                                       title="{{ __('Edit') }}">
-                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                                                        </svg>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
+                        {{-- Client Rows --}}
+                        <div class="divide-y divide-slate-200">
+                            <template x-for="client in clients" :key="client.id">
+                                <div class="flex items-center gap-4 px-4 py-3 hover:bg-slate-50 transition-colors group">
+                                    {{-- Checkbox --}}
+                                    <div class="w-10 flex-shrink-0">
+                                        <input type="checkbox"
+                                               :checked="isSelected(client.id)"
+                                               @change="toggleItem(client.id)"
+                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
+                                    </div>
+
+                                    {{-- Client Name --}}
+                                    <div class="flex-1 min-w-[200px]">
+                                        <a :href="'/clients/' + (client.slug || client.id)"
+                                           class="font-semibold text-slate-900 hover:text-blue-600 transition-colors"
+                                           x-text="client.name"></a>
+                                        <div x-show="client.contact_person" class="text-sm text-slate-500" x-text="client.contact_person"></div>
+                                    </div>
+
+                                    {{-- Contact --}}
+                                    <div class="w-48 flex-shrink-0 hidden md:block">
+                                        <div x-show="client.email"
+                                             @click="copyToClipboard(client.email, $event)"
+                                             class="text-sm text-slate-900 cursor-pointer hover:text-blue-600 transition-colors truncate inline-flex items-center gap-1 group/email"
+                                             title="Click to copy">
+                                            <span x-text="client.email" class="truncate"></span>
+                                            <svg class="w-3 h-3 opacity-0 group-hover/email:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                        <div x-show="!client.email" class="text-sm text-slate-400">—</div>
+                                        <div x-show="client.phone"
+                                             @click="copyToClipboard(client.phone, $event)"
+                                             class="text-sm text-slate-500 cursor-pointer hover:text-blue-600 transition-colors inline-flex items-center gap-1 group/phone"
+                                             title="Click to copy">
+                                            <span x-text="client.phone"></span>
+                                            <svg class="w-3 h-3 opacity-0 group-hover/phone:opacity-100 transition-opacity flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </div>
+                                    </div>
+
+                                    {{-- Status Dropdown --}}
+                                    <div class="w-40 flex-shrink-0 relative">
+                                        {{-- Trigger Button --}}
+                                        <button type="button"
+                                                @click.stop="toggleStatusDropdown(client.id)"
+                                                class="w-full flex items-center justify-between gap-2 px-3 py-1.5 text-xs font-medium rounded-lg border-2 cursor-pointer transition-all hover:opacity-90"
+                                                :style="'background-color: ' + (client.status ? client.status.color_class : '#64748b') + '; color: white; border-color: ' + (client.status ? client.status.color_class : '#64748b')">
+                                            <span x-text="client.status ? client.status.name : '{{ __('No Status') }}'"></span>
+                                            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                            </svg>
+                                        </button>
+
+                                        {{-- Dropdown Menu --}}
+                                        <div x-show="isStatusDropdownOpen(client.id)"
+                                             x-transition:enter="transition ease-out duration-100"
+                                             x-transition:enter-start="opacity-0 transform scale-95"
+                                             x-transition:enter-end="opacity-100 transform scale-100"
+                                             x-transition:leave="transition ease-in duration-75"
+                                             x-transition:leave-start="opacity-100 transform scale-100"
+                                             x-transition:leave-end="opacity-0 transform scale-95"
+                                             @click.outside="closeStatusDropdown()"
+                                             class="absolute z-[100] mt-1 left-0 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-1 max-h-64 overflow-y-auto"
+                                             x-cloak>
+                                            @foreach($statuses as $status)
+                                                <button type="button"
+                                                        @click.stop="updateClientStatus(client, {{ $status->id }})"
+                                                        class="w-full px-3 py-2 text-left text-sm hover:bg-slate-100 flex items-center gap-2 transition-colors">
+                                                    <span class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {{ $status->color_class }}"></span>
+                                                    <span class="flex-1">{{ $status->name }}</span>
+                                                    <svg x-show="client.status_id === {{ $status->id }}" class="w-4 h-4 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                    </svg>
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- Revenue --}}
+                                    <div class="w-36 flex-shrink-0 text-right">
+                                        <div class="font-semibold text-slate-900 whitespace-nowrap" x-text="formatCurrency(client.total_incomes, client.currency)"></div>
+                                        <div x-show="client.invoices_count > 0" class="text-xs text-slate-500">
+                                            <span x-text="client.invoices_count"></span> {{ __('invoices') }}
+                                        </div>
+                                    </div>
+
+                                    {{-- Actions (appear on hover) --}}
+                                    <div class="w-20 flex-shrink-0 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <a :href="'/clients/' + (client.slug || client.id)"
+                                           class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                                           title="{{ __('View') }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            </svg>
+                                        </a>
+                                        <a :href="'/clients/' + (client.slug || client.id) + '/edit'"
+                                           class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                                           title="{{ __('Edit') }}">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
 
                         {{-- Pagination --}}
-                        <div x-show="pagination.last_page > 1" class="bg-slate-100 px-6 py-4 border-t border-slate-200 flex items-center justify-between flex-wrap gap-4">
+                        <div x-show="pagination.last_page > 1" class="bg-slate-50 px-4 py-3 border-t border-slate-200 rounded-b-lg flex items-center justify-between flex-wrap gap-4">
                             <div class="flex items-center gap-2 text-sm text-slate-600">
                                 <span>{{ __('Per page:') }}</span>
                                 <select @change="setPerPage($event.target.value)"
@@ -633,13 +658,13 @@
                                     <button @click="goToPage(filters.page - 1)"
                                             :disabled="filters.page === 1"
                                             :class="{ 'opacity-50 cursor-not-allowed': filters.page === 1 }"
-                                            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50">
+                                            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 bg-white">
                                         {{ __('Prev') }}
                                     </button>
 
                                     <template x-for="p in pages" :key="p">
                                         <button @click="goToPage(p)"
-                                                :class="p === filters.page ? 'bg-slate-900 text-white' : 'hover:bg-slate-50'"
+                                                :class="p === filters.page ? 'bg-slate-900 text-white' : 'hover:bg-slate-50 bg-white'"
                                                 :disabled="p === '...'"
                                                 class="px-3 py-1 text-sm border border-slate-300 rounded-md"
                                                 x-text="p">
@@ -649,13 +674,13 @@
                                     <button @click="goToPage(filters.page + 1)"
                                             :disabled="filters.page === pagination.last_page"
                                             :class="{ 'opacity-50 cursor-not-allowed': filters.page === pagination.last_page }"
-                                            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50">
+                                            class="px-3 py-1 text-sm border border-slate-300 rounded-md hover:bg-slate-50 bg-white">
                                         {{ __('Next') }}
                                     </button>
                                 </div>
                             </div>
                         </div>
-                    </x-ui.card>
+                    </div>
                 </template>
             </div>
         </template>
@@ -694,7 +719,7 @@
                                             </a>
                                         </div>
                                         <div class="text-sm font-semibold text-slate-900 pt-2 border-t border-slate-200"
-                                             x-text="formatCurrency(client.total_incomes)">
+                                             x-text="formatCurrency(client.total_incomes, client.currency)">
                                         </div>
                                     </div>
                                 </template>
@@ -736,7 +761,7 @@
                                 <p x-show="client.company_name" class="text-sm text-slate-600 mb-2" x-text="client.company_name"></p>
                                 <div class="mt-3 pt-3 border-t border-slate-200">
                                     <div class="text-xs text-slate-500 uppercase mb-1">{{ __('Total Incomes') }}</div>
-                                    <div class="text-lg font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes)"></div>
+                                    <div class="text-lg font-semibold text-slate-900" x-text="formatCurrency(client.total_incomes, client.currency)"></div>
                                 </div>
                                 <div class="flex items-center justify-between pt-4 border-t border-slate-200 mt-4">
                                     <a :href="'/clients/' + (client.slug || client.id)"

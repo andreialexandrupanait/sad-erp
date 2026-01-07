@@ -5,7 +5,6 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -30,6 +29,7 @@ class User extends Authenticatable
         'organization_id',
         'role',
         'phone',
+        'avatar',
         'status',
         'settings',
         'two_factor_secret',
@@ -76,21 +76,53 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the services this user offers with their rates
+     * Get the user's activity log
      */
-    public function services(): BelongsToMany
+    public function activities(): HasMany
     {
-        return $this->belongsToMany(Service::class, 'user_services')
-            ->withPivot(['hourly_rate', 'currency', 'is_active'])
-            ->withTimestamps();
+        return $this->hasMany(UserActivity::class)->orderByDesc('created_at');
     }
 
     /**
-     * Get the user service records
+     * Get avatar URL
      */
-    public function userServices(): HasMany
+    public function getAvatarUrlAttribute(): ?string
     {
-        return $this->hasMany(UserService::class);
+        if (!$this->avatar) {
+            return null;
+        }
+
+        return asset('storage/avatars/' . $this->avatar);
+    }
+
+    /**
+     * Get initials for avatar placeholder
+     */
+    public function getInitialsAttribute(): string
+    {
+        $words = explode(' ', trim($this->name));
+        $initials = '';
+
+        foreach (array_slice($words, 0, 2) as $word) {
+            $initials .= mb_strtoupper(mb_substr($word, 0, 1));
+        }
+
+        return $initials ?: 'U';
+    }
+
+    /**
+     * Get role label for display
+     */
+    public function getRoleLabelAttribute(): string
+    {
+        return match ($this->role) {
+            'superadmin' => __('Super Admin'),
+            'admin' => __('Administrator'),
+            'manager' => __('Manager'),
+            'user' => __('User'),
+            'viewer' => __('Viewer'),
+            default => ucfirst($this->role ?? 'user'),
+        };
     }
 
     /**
@@ -147,30 +179,6 @@ class User extends Authenticatable
     public function hasTwoFactorEnabled(): bool
     {
         return !is_null($this->two_factor_secret) && !is_null($this->two_factor_confirmed_at);
-    }
-
-    /**
-     * Get hourly rate for a specific service
-     */
-    public function getRateForService(Service $service): ?float
-    {
-        $userService = $this->userServices()
-            ->where('service_id', $service->id)
-            ->where('is_active', true)
-            ->first();
-
-        return $userService?->hourly_rate ?? $service->default_rate;
-    }
-
-    /**
-     * Get all active services this user offers
-     */
-    public function getActiveServices()
-    {
-        return $this->services()
-            ->wherePivot('is_active', true)
-            ->orderBy('sort_order')
-            ->get();
     }
 
     /**

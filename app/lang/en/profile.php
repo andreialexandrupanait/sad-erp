@@ -43,12 +43,6 @@ return [
     'this_device' => 'This device',
     'last_active' => 'Last active',
 
-    // Service rates
-    'my_rates' => 'My Rates',
-    'hourly_rates' => 'Hourly rates',
-    'service_rates' => 'Service Rates',
-    'add_rate' => 'Add Rate',
-
     // App settings
     'app_settings' => 'App Settings',
     'organization' => 'Organization',
