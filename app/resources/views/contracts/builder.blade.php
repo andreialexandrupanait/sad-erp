@@ -28,6 +28,12 @@
                 </svg>
                 {{ __('Save & Generate PDF') }}
             </x-ui.button>
+            <x-ui.button variant="outline" @click="showSaveAsTemplateModal = true">
+                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+                {{ __('Save as Template') }}
+            </x-ui.button>
         </div>
     </x-slot>
 
@@ -39,6 +45,7 @@
             generatePdfUrl: '{{ route('contracts.generate-pdf', $contract) }}',
             previewUrl: '{{ route('contracts.preview', $contract) }}',
             applyTemplateUrl: '{{ route('contracts.apply-template', $contract) }}',
+            saveAsTemplateUrl: '{{ route('contracts.save-as-template', $contract) }}',
             initialContent: {{ json_encode($contract->content ?? '') }},
             templates: {{ json_encode($templates) }},
             variables: {{ json_encode($variables) }},
@@ -237,6 +244,50 @@
                         </div>
                     </div>
                 @endif
+            </div>
+        </div>
+
+        {{-- Save as Template Modal --}}
+        <div x-show="showSaveAsTemplateModal" x-cloak
+             class="fixed inset-0 z-50 overflow-y-auto"
+             @keydown.escape.window="showSaveAsTemplateModal = false">
+            <div class="flex items-center justify-center min-h-screen px-4">
+                <div class="fixed inset-0 bg-black/50" @click="showSaveAsTemplateModal = false"></div>
+                <div class="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                    <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Save as Template') }}</h3>
+                    <p class="text-sm text-slate-600 mb-4">{{ __('Create a new template from this contract. Variable values will be automatically replaced with placeholders.') }}</p>
+                    <form @submit.prevent="saveAsTemplate()">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Template Name') }} <span class="text-red-500">*</span></label>
+                            <input type="text" x-model="newTemplateName" required
+                                   class="w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="{{ __('e.g., Standard Service Contract') }}">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Category') }}</label>
+                            <select x-model="newTemplateCategory"
+                                    class="w-full border-slate-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                                <option value="General">{{ __('General') }}</option>
+                                <option value="Service">{{ __('Service') }}</option>
+                                <option value="Consulting">{{ __('Consulting') }}</option>
+                                <option value="Development">{{ __('Development') }}</option>
+                                <option value="Maintenance">{{ __('Maintenance') }}</option>
+                            </select>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="button" @click="showSaveAsTemplateModal = false"
+                                    class="flex-1 px-4 py-2 border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50">
+                                {{ __('Cancel') }}
+                            </button>
+                            <button type="submit" :disabled="loading || !newTemplateName.trim()"
+                                    :class="loading || !newTemplateName.trim() ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'"
+                                    class="flex-1 px-4 py-2 text-white rounded-md">
+                                <span x-show="!loading">{{ __('Create Template') }}</span>
+                                <span x-show="loading">{{ __('Creating...') }}</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
@@ -441,6 +492,7 @@
             saveUrl: config.saveUrl,
             generatePdfUrl: config.generatePdfUrl,
             applyTemplateUrl: config.applyTemplateUrl,
+            saveAsTemplateUrl: config.saveAsTemplateUrl,
             templates: config.templates || [],
             variables: config.variables || {},
             servicesHtml: config.servicesHtml || '',
@@ -451,6 +503,9 @@
             loading: false,
             message: '',
             messageType: 'info',
+            showSaveAsTemplateModal: false,
+            newTemplateName: '',
+            newTemplateCategory: 'General',
 
             init() {
                 this.$nextTick(() => this.loadInitialContent());
@@ -640,6 +695,45 @@
                 } catch (error) {
                     this.showMessage(error.message || '{{ __('Failed to apply template') }}', 'error');
                     this.selectedTemplateId = null;
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async saveAsTemplate() {
+                if (this.loading || !this.newTemplateName.trim()) return;
+
+                this.loading = true;
+
+                try {
+                    // First save the current content
+                    await this.saveContent(true);
+
+                    const response = await fetch(this.saveAsTemplateUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: this.newTemplateName,
+                            category: this.newTemplateCategory
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (response.ok && data.success) {
+                        this.showSaveAsTemplateModal = false;
+                        this.newTemplateName = '';
+                        this.newTemplateCategory = 'General';
+                        this.showMessage('{{ __('Template created successfully') }}', 'success');
+                    } else {
+                        throw new Error(data.message || 'Failed to create template');
+                    }
+                } catch (error) {
+                    this.showMessage(error.message || '{{ __('Failed to create template') }}', 'error');
                 } finally {
                     this.loading = false;
                 }

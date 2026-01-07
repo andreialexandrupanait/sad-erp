@@ -42,6 +42,7 @@ class Offer extends Model
         'discount_percent',
         'total',
         'currency',
+        'language',
         'sent_at',
         'viewed_at',
         'accepted_at',
@@ -65,6 +66,7 @@ class Offer extends Model
         'verification_code_expires_at' => 'datetime',
         'expiry_reminder_sent_at' => 'datetime',
         'expiry_reminder_enabled' => 'boolean',
+        'client_modified_at' => 'datetime',
         'subtotal' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'discount_percent' => 'decimal:2',
@@ -473,11 +475,15 @@ class Offer extends Model
 
         $this->subtotal = $subtotal;
 
+        // Calculate discount
+        $discountAmount = 0;
         if ($this->discount_percent) {
-            $this->discount_amount = round($subtotal * ($this->discount_percent / 100), 2);
+            $discountAmount = round($subtotal * ($this->discount_percent / 100), 2);
         }
+        $this->discount_amount = $discountAmount;
 
-        $this->total = $subtotal - ($this->discount_amount ?? 0);
+        // Total = subtotal - discount (VAT disabled for now)
+        $this->total = $subtotal - $discountAmount;
         $this->save();
 
         // Clear offer statistics cache since totals changed

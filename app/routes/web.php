@@ -416,6 +416,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('contracts/{contract}/finalize', [ContractController::class, 'finalize'])->name('contracts.finalize');
         Route::post('contracts/{contract}/finalize-and-download', [ContractController::class, 'finalizeAndDownload'])->name('contracts.finalize-and-download');
         Route::post('contracts/{contract}/apply-template', [ContractController::class, 'applyTemplate'])->name('contracts.apply-template');
+        Route::post('contracts/{contract}/save-as-template', [ContractController::class, 'saveAsTemplate'])->name('contracts.save-as-template');
         Route::post('contracts/{contract}/generate-pdf', [ContractController::class, 'generatePdf'])->name('contracts.generate-pdf');
         Route::get('contracts/{contract}/add-annex', [ContractController::class, 'addAnnexForm'])->name('contracts.add-annex');
         Route::post('contracts/{contract}/add-annex', [ContractController::class, 'addAnnex'])->name('contracts.add-annex.store');

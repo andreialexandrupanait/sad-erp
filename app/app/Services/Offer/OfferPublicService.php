@@ -185,11 +185,20 @@ class OfferPublicService
         // Touch the offer to update its timestamp
         $offer->touch();
 
+        // Refresh items relationship to get updated is_selected values
+        // (batch updates bypass Eloquent's model cache)
+        $offer->load('items');
+
         // Recalculate totals
         $offer->recalculateTotals();
 
-        // Log activity if changes were made
+        // Log activity and send notification if changes were made
         if ($changesWereMade) {
+            // Update client_modified_at timestamp for badge display
+            $offer->client_modified_at = now();
+            $offer->save();
+
+            // Log activity
             try {
                 $offer->logActivity('selections_modified', [
                     'deselected_services' => $selections['deselected_services'] ?? [],
@@ -198,6 +207,24 @@ class OfferPublicService
             } catch (\Exception $e) {
                 // Log activity failure is not critical
                 Log::warning('Failed to log selection modification', [
+                    'offer_id' => $offer->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Send email notification to admin
+            try {
+                // Format changes for email template
+                $formattedChanges = $this->formatChangesForEmail(
+                    $offer,
+                    $selections['deselected_services'] ?? [],
+                    $selections['selected_cards'] ?? []
+                );
+
+                $this->offerService->sendAdminModifiedEmail($offer, $formattedChanges);
+            } catch (\Exception $e) {
+                // Email notification failure is not critical
+                Log::warning('Failed to send admin modification email', [
                     'offer_id' => $offer->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -234,5 +261,43 @@ class OfferPublicService
     public function sendVerificationCode(string $token): void
     {
         $this->offerService->sendVerificationCode($token);
+    }
+
+    /**
+     * Format changes for the admin notification email.
+     * Converts selection IDs into a structured array for the email template.
+     */
+    protected function formatChangesForEmail(Offer $offer, array $deselectedServices, array $selectedCards): array
+    {
+        $changes = [];
+
+        // Get all items for lookup
+        $items = $offer->items->keyBy('id');
+
+        // Deselected custom services (removed by client)
+        foreach ($deselectedServices as $itemId) {
+            $item = $items->get($itemId);
+            if ($item && ($item->type === 'custom' || $item->type === null)) {
+                $changes[] = [
+                    'action' => 'removed',
+                    'item' => $item->title,
+                    'amount' => (float) $item->total_price,
+                ];
+            }
+        }
+
+        // Selected card services (added by client)
+        foreach ($selectedCards as $itemId) {
+            $item = $items->get($itemId);
+            if ($item && $item->type === 'card') {
+                $changes[] = [
+                    'action' => 'added',
+                    'item' => $item->title,
+                    'amount' => (float) $item->total_price,
+                ];
+            }
+        }
+
+        return $changes;
     }
 }

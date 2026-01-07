@@ -48,9 +48,9 @@ function simpleOfferBuilder() {
     const defaultCurrency = offerDefaults.currency || '{{ $defaultCurrency ?? "RON" }}';
 
     const defaultBlocks = [
-        { id: 'services', type: 'services', visible: true, data: { heading: '', cardsHeading: '', showDiscount: false } },
+        { id: 'services', type: 'services', visible: true, data: { heading: '{{ __("Oferta include următoarele servicii:") }}', cardsHeading: '{{ __("Servicii extra disponibile") }}', showDiscount: false } },
         { id: 'specifications', type: 'specifications', visible: true, data: { heading: '{{ __("Precizări") }}', sections: defaultSpecifications } },
-        { id: 'summary', type: 'summary', visible: true, data: { heading: '', showSubtotal: true, showDiscount: true, showVAT: defaultShowVAT, showGrandTotal: true, vatPercent: defaultVatPercent } },
+        { id: 'summary', type: 'summary', visible: true, data: { heading: '{{ __("Sumar servicii selectate") }}', showSubtotal: true, showDiscount: true, showGrandTotal: true } },
         { id: 'brands', type: 'brands', visible: true, data: { heading: offerDefaults.brands_heading || '', mode: 'image', image: offerDefaults.brands_image || '', logos: [], columns: 4 } },
         { id: 'acceptance', type: 'acceptance', visible: true, data: { heading: '', paragraph: offerDefaults.acceptance_paragraph || '', acceptButtonText: offerDefaults.accept_button_text || '{{ __("Accept Offer") }}', rejectButtonText: offerDefaults.decline_button_text || '{{ __("Decline") }}' } }
     ];

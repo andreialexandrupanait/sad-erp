@@ -90,20 +90,6 @@
                     </div>
                 </div>
 
-                {{-- VAT --}}
-                <div x-show="block.data.showVAT !== false"
-                     class="grid grid-cols-12 gap-2 px-4 py-2 items-center border-t border-dashed border-slate-200">
-                    <div class="col-span-10 text-right">
-                        <span class="text-sm text-slate-600">
-                            {{ __('TVA') }}
-                            <span class="text-xs text-slate-400 ml-1">(<span x-text="block.data.vatPercent || 19"></span>%)</span>
-                        </span>
-                    </div>
-                    <div class="col-span-2 text-right">
-                        <span class="font-medium text-slate-700">+<span x-text="formatCurrency(vatAmount)"></span></span>
-                    </div>
-                </div>
-
                 {{-- Grand Total --}}
                 <div x-show="block.data.showGrandTotal !== false"
                      class="grid grid-cols-12 gap-2 px-4 py-4 items-center border-t-2 border-slate-300 bg-slate-100">
@@ -129,38 +115,21 @@
 
     {{-- Block Options (Edit Mode Only) --}}
     <div x-show="!previewMode" class="mt-4 pt-4 border-t border-dashed border-slate-200">
-        <div class="grid grid-cols-2 gap-4">
-            {{-- Visibility Options --}}
-            <div class="space-y-2">
-                <span class="text-xs font-medium text-slate-600">{{ __('Display Options') }}</span>
-                <div class="space-y-1.5">
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
-                        <input type="checkbox" x-model="block.data.showSubtotal" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
-                        <span>{{ __('Show subtotal') }}</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
-                        <input type="checkbox" x-model="block.data.showDiscount" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
-                        <span>{{ __('Show discount') }}</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
-                        <input type="checkbox" x-model="block.data.showVAT" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
-                        <span>{{ __('Show VAT') }}</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
-                        <input type="checkbox" x-model="block.data.showGrandTotal" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
-                        <span>{{ __('Show grand total') }}</span>
-                    </label>
-                </div>
-            </div>
-
-            {{-- VAT Settings --}}
-            <div class="space-y-2">
-                <span class="text-xs font-medium text-slate-600">{{ __('VAT Settings') }}</span>
-                <div class="flex items-center gap-2">
-                    <input type="number" x-model.number="block.data.vatPercent" min="0" max="100" step="1"
-                           class="w-20 text-sm text-slate-700 bg-white border border-slate-200 rounded px-2 py-1 focus:border-blue-400">
-                    <span class="text-xs text-slate-500">%</span>
-                </div>
+        <div class="space-y-2">
+            <span class="text-xs font-medium text-slate-600">{{ __('Display Options') }}</span>
+            <div class="flex flex-wrap gap-4">
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
+                    <input type="checkbox" x-model="block.data.showSubtotal" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
+                    <span>{{ __('Show subtotal') }}</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
+                    <input type="checkbox" x-model="block.data.showDiscount" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
+                    <span>{{ __('Show discount') }}</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer text-xs text-slate-500">
+                    <input type="checkbox" x-model="block.data.showGrandTotal" class="rounded border-slate-300 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5">
+                    <span>{{ __('Show grand total') }}</span>
+                </label>
             </div>
         </div>
     </div>

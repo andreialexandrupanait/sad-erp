@@ -10,14 +10,17 @@
             padding: 0;
             box-sizing: border-box;
         }
+        @page {
+            margin: 2cm;
+        }
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 10pt;
-            line-height: 1.4;
-            color: #333;
+            line-height: 1.6;
+            color: #1a1a1a;
         }
         .container {
-            padding: 20px;
+            padding: 0;
         }
 
         /* Header block styles */
@@ -99,8 +102,11 @@
         }
         .items-table td {
             border: 1px solid #e2e8f0;
-            padding: 10px;
+            padding: 12px 10px;
             font-size: 10pt;
+        }
+        .items-table tr:nth-child(even) td {
+            background-color: #f8fafc;
         }
         .items-table .text-right {
             text-align: right;
@@ -160,7 +166,10 @@
         .totals {
             width: 300px;
             margin-left: auto;
-            margin-top: 15px;
+            margin-top: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
         }
         .totals-row {
             display: table;
@@ -168,11 +177,12 @@
             border-bottom: 1px solid #e2e8f0;
         }
         .totals-row.total {
-            border-bottom: 2px solid #1e293b;
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            border-bottom: none;
         }
         .totals-label, .totals-value {
             display: table-cell;
-            padding: 8px;
+            padding: 12px 15px;
             font-size: 10pt;
         }
         .totals-label {
@@ -182,14 +192,16 @@
         .totals-value {
             text-align: right;
             font-weight: bold;
+            color: #1e293b;
         }
         .totals-row.discount .totals-value {
             color: #dc2626;
         }
         .totals-row.total .totals-label,
         .totals-row.total .totals-value {
-            font-size: 12pt;
-            color: #1e293b;
+            font-size: 14pt;
+            color: white;
+            font-weight: bold;
         }
 
         /* Content/text block */
@@ -417,7 +429,8 @@
     <div class="container">
         @php
             $blocks = $offer->blocks ?? [];
-            $items = $offer->items;
+            // Only include selected items in PDF (filter out unselected card services)
+            $items = $offer->items->filter(fn($item) => $item->is_selected !== false);
             $organization = $offer->organization;
             $client = $offer->client;
         @endphp

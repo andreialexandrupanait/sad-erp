@@ -916,28 +916,20 @@ class OfferController extends Controller
     {
         $offer->refresh();
 
-        $subtotal = $offer->items->sum('total_price');
+        // Only sum items where is_selected is true or null (for backwards compatibility)
+        // Card-type items that are unselected should NOT be included in the total
+        $subtotal = $offer->items
+            ->filter(fn($item) => $item->is_selected !== false)
+            ->sum('total_price');
         $discountAmount = $subtotal * (($offer->discount_percent ?? 0) / 100);
 
-        // Get VAT from summary block if exists
-        $vatPercent = 19; // Default VAT
-        $blocks = $this->ensureArray($offer->blocks);
-        foreach ($blocks as $block) {
-            if (($block['type'] ?? '') === 'summary') {
-                $vatPercent = $block['data']['vatPercent'] ?? 19;
-                break;
-            }
-        }
-
-        $netTotal = $subtotal - $discountAmount;
-        $vatAmount = $netTotal * ($vatPercent / 100);
-        $grandTotal = $netTotal + $vatAmount;
+        // VAT is disabled - will be enabled from organization settings when needed
+        // When enabled, it should show as "TVA - XX%" in the table
+        $grandTotal = $subtotal - $discountAmount;
 
         $offer->update([
             'subtotal' => $subtotal,
             'discount_amount' => $discountAmount,
-            'vat_percent' => $vatPercent,
-            'vat_amount' => $vatAmount,
             'total' => $grandTotal,
         ]);
     }

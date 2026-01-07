@@ -523,6 +523,60 @@ class ContractController extends Controller
     }
 
     /**
+     * Save contract content as a new template.
+     * Auto-detects variable values and replaces them with placeholders.
+     */
+    public function saveAsTemplate(Request $request, Contract $contract): JsonResponse
+    {
+        $this->authorize('update', $contract);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'category' => 'required|string|max:100',
+        ]);
+
+        // Get the current contract content
+        $content = $contract->content ?? '';
+
+        // Resolve all variable values for this contract
+        $contract->load(['client', 'offer.items', 'items', 'organization']);
+        $values = ContractVariableRegistry::resolve($contract);
+
+        // Replace concrete values with variable placeholders
+        // Sort by value length descending to handle longer values first (avoids partial replacements)
+        $replacements = [];
+        foreach ($values as $key => $value) {
+            // Only replace non-empty string values with at least 2 characters
+            if (!empty($value) && is_string($value) && strlen($value) > 2) {
+                $replacements[$value] = '{{' . $key . '}}';
+            }
+        }
+
+        // Sort by key (value) length descending
+        uksort($replacements, fn($a, $b) => strlen($b) - strlen($a));
+
+        // Apply replacements
+        foreach ($replacements as $value => $placeholder) {
+            $content = str_replace($value, $placeholder, $content);
+        }
+
+        // Create the new template
+        $template = ContractTemplate::create([
+            'organization_id' => auth()->user()->organization_id,
+            'name' => $validated['name'],
+            'category' => $validated['category'],
+            'content' => $content,
+            'is_active' => true,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'template_id' => $template->id,
+            'message' => __('Contract saved as template successfully.'),
+        ]);
+    }
+
+    /**
      * Generate PDF for contract.
      */
     public function generatePdf(Contract $contract): JsonResponse

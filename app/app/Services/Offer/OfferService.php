@@ -45,6 +45,26 @@ class OfferService implements OfferServiceInterface
     ) {}
 
     /**
+     * Execute a callback with the offer's locale temporarily set.
+     * Restores the original locale after the callback completes.
+     *
+     * @param Offer $offer The offer whose language setting to use
+     * @param callable $callback The code to execute with the offer's locale
+     * @return mixed The callback's return value
+     */
+    protected function withOfferLocale(Offer $offer, callable $callback): mixed
+    {
+        $originalLocale = app()->getLocale();
+        app()->setLocale($offer->language ?? 'ro');
+
+        try {
+            return $callback();
+        } finally {
+            app()->setLocale($originalLocale);
+        }
+    }
+
+    /**
      * Create a new offer with items.
      */
     public function create(array $data, array $items = []): Offer
@@ -172,32 +192,35 @@ class OfferService implements OfferServiceInterface
     {
         $offer->load(['client', 'items', 'template', 'organization']);
 
-        // Get template content or use default
-        $template = $offer->template;
-        $content = $template ? $template->render($this->getTemplateVariables($offer)) : null;
+        // Use offer's language for PDF content
+        return $this->withOfferLocale($offer, function () use ($offer) {
+            // Get template content or use default
+            $template = $offer->template;
+            $content = $template ? $template->render($this->getTemplateVariables($offer)) : null;
 
-        // Generate PDF
-        $pdf = Pdf::loadView('offers.pdf', [
-            'offer' => $offer,
-            'content' => $content,
-        ]);
+            // Generate PDF
+            $pdf = Pdf::loadView('offers.pdf', [
+                'offer' => $offer,
+                'content' => $content,
+            ]);
 
-        // Save PDF
-        $filename = "offers/{$offer->organization_id}/{$offer->offer_number}.pdf";
-        $path = storage_path("app/{$filename}");
+            // Save PDF
+            $filename = "offers/{$offer->organization_id}/{$offer->offer_number}.pdf";
+            $path = storage_path("app/{$filename}");
 
-        // Ensure directory exists
-        $directory = dirname($path);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
+            // Ensure directory exists
+            $directory = dirname($path);
+            if (!is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
 
-        $pdf->save($path);
+            $pdf->save($path);
 
-        // Update offer with PDF path
-        $offer->update(['pdf_path' => $filename]);
+            // Update offer with PDF path
+            $offer->update(['pdf_path' => $filename]);
 
-        return $filename;
+            return $filename;
+        });
     }
 
     /**
@@ -270,24 +293,27 @@ class OfferService implements OfferServiceInterface
             // Configure SMTP from database settings if enabled
             $this->configureSmtpFromDatabase();
 
-            Mail::send('emails.offer-sent', [
-                'offer' => $offer,
-                'publicUrl' => $offer->public_url,
-                'organization' => $offer->organization,
-            ], function ($mail) use ($offer, $clientEmail, $clientName, $pdfDocument) {
-                $mail->to($clientEmail, $clientName)
-                    ->subject(__('Offer :number from :company', [
-                        'number' => $offer->offer_number,
-                        'company' => $offer->organization->name ?? config('app.name'),
-                    ]));
+            // Use offer's language for email content
+            $this->withOfferLocale($offer, function () use ($offer, $clientEmail, $clientName, $pdfDocument) {
+                Mail::send('emails.offer-sent', [
+                    'offer' => $offer,
+                    'publicUrl' => $offer->public_url,
+                    'organization' => $offer->organization,
+                ], function ($mail) use ($offer, $clientEmail, $clientName, $pdfDocument) {
+                    $mail->to($clientEmail, $clientName)
+                        ->subject(__('Offer :number from :company', [
+                            'number' => $offer->offer_number,
+                            'company' => $offer->organization->name ?? config('app.name'),
+                        ]));
 
-                // Attach PDF if exists
-                if ($pdfDocument && $pdfDocument->file_path && file_exists(storage_path('app/' . $pdfDocument->file_path))) {
-                    $mail->attach(storage_path('app/' . $pdfDocument->file_path), [
-                        'as' => $offer->offer_number . '.pdf',
-                        'mime' => 'application/pdf',
-                    ]);
-                }
+                    // Attach PDF if exists
+                    if ($pdfDocument && $pdfDocument->file_path && file_exists(storage_path('app/' . $pdfDocument->file_path))) {
+                        $mail->attach(storage_path('app/' . $pdfDocument->file_path), [
+                            'as' => $offer->offer_number . '.pdf',
+                            'mime' => 'application/pdf',
+                        ]);
+                    }
+                });
             });
 
             Log::info("Offer email sent", [
@@ -686,6 +712,12 @@ class OfferService implements OfferServiceInterface
      */
     public function getOfferForShow(Offer $offer): Offer
     {
+        // Clear client modification badge when admin views the offer
+        if ($offer->client_modified_at) {
+            $offer->client_modified_at = null;
+            $offer->save();
+        }
+
         return $offer->load(['client', 'creator', 'template', 'items.service', 'activities.user', 'contract']);
     }
 
@@ -892,6 +924,7 @@ class OfferService implements OfferServiceInterface
             'created_at' => $offer->created_at?->format('d.m.Y'),
             'sent_at' => $offer->sent_at?->format('d.m.Y'),
             'accepted_at' => $offer->accepted_at?->format('d.m.Y'),
+            'client_modified_at' => $offer->client_modified_at?->format('d.m.Y H:i'),
         ];
     }
 
@@ -1067,13 +1100,16 @@ class OfferService implements OfferServiceInterface
 
             $offer->load(['organization', 'items']);
 
-            Mail::send('emails.offer-accepted-client', [
-                'offer' => $offer,
-                'organization' => $offer->organization,
-            ], function ($mail) use ($offer, $clientEmail) {
-                $clientName = $offer->client?->display_name ?? $offer->temp_client_name ?? '';
-                $mail->to($clientEmail, $clientName)
-                    ->subject(__('Offer Confirmation - :number', ['number' => $offer->offer_number]));
+            // Use offer's language for email content
+            $this->withOfferLocale($offer, function () use ($offer, $clientEmail) {
+                Mail::send('emails.offer-accepted-client', [
+                    'offer' => $offer,
+                    'organization' => $offer->organization,
+                ], function ($mail) use ($offer, $clientEmail) {
+                    $clientName = $offer->client?->display_name ?? $offer->temp_client_name ?? '';
+                    $mail->to($clientEmail, $clientName)
+                        ->subject(__('Offer Confirmation - :number', ['number' => $offer->offer_number]));
+                });
             });
 
             Log::info("Client accepted confirmation sent", [
@@ -1130,13 +1166,16 @@ class OfferService implements OfferServiceInterface
 
             $offer->load('organization');
 
-            Mail::send('emails.offer-rejected-client', [
-                'offer' => $offer,
-                'organization' => $offer->organization,
-            ], function ($mail) use ($offer, $clientEmail) {
-                $clientName = $offer->client?->display_name ?? $offer->temp_client_name ?? '';
-                $mail->to($clientEmail, $clientName)
-                    ->subject(__('Offer Response Confirmed - :number', ['number' => $offer->offer_number]));
+            // Use offer's language for email content
+            $this->withOfferLocale($offer, function () use ($offer, $clientEmail) {
+                Mail::send('emails.offer-rejected-client', [
+                    'offer' => $offer,
+                    'organization' => $offer->organization,
+                ], function ($mail) use ($offer, $clientEmail) {
+                    $clientName = $offer->client?->display_name ?? $offer->temp_client_name ?? '';
+                    $mail->to($clientEmail, $clientName)
+                        ->subject(__('Offer Response Confirmed - :number', ['number' => $offer->offer_number]));
+                });
             });
 
             Log::info("Client rejected confirmation sent", [

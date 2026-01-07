@@ -31,6 +31,7 @@ class Contract extends Model
         'auto_renew',
         'total_value',
         'currency',
+        'language',
         'pdf_path',
         // Temp client fields for contracts without a linked client
         'temp_client_name',

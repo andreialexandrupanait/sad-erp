@@ -433,7 +433,12 @@ class ContractService
         // IMPORTANT: Only include items where is_selected = true
         if ($items->isEmpty() && $contract->offer) {
             $offerItems = $contract->offer->items ?? collect();
-            $items = $offerItems->filter(fn($item) => $item->is_selected === true);
+            // Sort: custom first, then card, then by sort_order
+            $items = $offerItems->filter(fn($item) => $item->is_selected === true)
+                ->sortBy([
+                    ['type', 'desc'], // 'custom' comes before 'card' alphabetically reversed
+                    ['sort_order', 'asc'],
+                ]);
         }
 
         if ($items->isEmpty()) {
@@ -529,6 +534,7 @@ class ContractService
                 'content' => $offer->introduction ?? '<p>Contract generated from offer ' . $offer->offer_number . '</p>',
                 'total_value' => $offer->total,
                 'currency' => $offer->currency,
+                'language' => $offer->language ?? 'ro',
                 'status' => 'draft', // Start as draft so user can edit
                 'start_date' => now(),
             ];
@@ -545,10 +551,18 @@ class ContractService
             // Link offer to contract
             $offer->update(['contract_id' => $contract->id]);
 
-            // Create ContractItems from OfferItems
+            // Create ContractItems from OfferItems (only selected items)
+            // Sort: custom (standard) services first, then card (extra) services
             if ($offer->items->isNotEmpty()) {
+                $sortedItems = $offer->items
+                    ->filter(fn($item) => $item->is_selected !== false)
+                    ->sortBy([
+                        ['type', 'desc'], // 'custom' comes before 'card' alphabetically reversed
+                        ['sort_order', 'asc'],
+                    ]);
+
                 $sortOrder = 0;
-                foreach ($offer->items as $offerItem) {
+                foreach ($sortedItems as $offerItem) {
                     ContractItem::create([
                         'contract_id' => $contract->id,
                         'offer_item_id' => $offerItem->id,

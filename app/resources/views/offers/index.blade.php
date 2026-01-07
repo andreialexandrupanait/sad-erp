@@ -254,17 +254,28 @@
                                         </template>
                                     </td>
                                     <td class="px-6 py-4">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                              :class="{
-                                                  'bg-slate-100 text-slate-700': offer.status === 'draft',
-                                                  'bg-blue-100 text-blue-700': offer.status === 'sent',
-                                                  'bg-purple-100 text-purple-700': offer.status === 'viewed',
-                                                  'bg-green-100 text-green-700': offer.status === 'accepted',
-                                                  'bg-red-100 text-red-700': offer.status === 'rejected',
-                                                  'bg-yellow-100 text-yellow-700': offer.status === 'expired'
-                                              }"
-                                              x-text="offer.status_label">
-                                        </span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                                  :class="{
+                                                      'bg-slate-100 text-slate-700': offer.status === 'draft',
+                                                      'bg-blue-100 text-blue-700': offer.status === 'sent',
+                                                      'bg-purple-100 text-purple-700': offer.status === 'viewed',
+                                                      'bg-green-100 text-green-700': offer.status === 'accepted',
+                                                      'bg-red-100 text-red-700': offer.status === 'rejected',
+                                                      'bg-yellow-100 text-yellow-700': offer.status === 'expired'
+                                                  }"
+                                                  x-text="offer.status_label">
+                                            </span>
+                                            {{-- Client modification badge --}}
+                                            <span x-show="offer.client_modified_at"
+                                                  class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700"
+                                                  :title="'{{ __('Client modified selections on') }} ' + offer.client_modified_at">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                                {{ __('Modified') }}
+                                            </span>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 text-right font-medium">
                                         <span x-text="formatCurrency(offer.total, offer.currency)"></span>

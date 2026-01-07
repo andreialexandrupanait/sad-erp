@@ -35,8 +35,8 @@
     <div class="flex gap-4">
         <!-- Main Editor Area -->
         <div class="flex-1">
-            <!-- Custom Toolbar -->
-            <div id="{{ $toolbarId }}" class="ql-toolbar ql-snow">
+            <!-- Custom Toolbar (sticky when scrolling) -->
+            <div id="{{ $toolbarId }}" class="ql-toolbar ql-snow sticky top-0 z-20 bg-white">
                 <span class="ql-formats">
                     <select class="ql-header">
                         <option value="">{{ __('Normal') }}</option>
@@ -87,6 +87,13 @@
                 <span class="ql-formats">
                     <button class="ql-blockquote" title="{{ __('Quote') }}"></button>
                     <button class="ql-code-block" title="{{ __('Code Block') }}"></button>
+                </span>
+                <span class="ql-formats">
+                    <button type="button" @click="showTableModal = true" class="ql-table-insert" title="{{ __('Insert Table') }}">
+                        <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
                 </span>
                 <span class="ql-formats">
                     <select class="ql-color" title="{{ __('Text Color') }}"></select>
@@ -230,6 +237,49 @@
         @endif
     </div>
 
+    <!-- Table Insert Modal -->
+    <div x-show="showTableModal"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+         @click.self="showTableModal = false"
+         @keydown.escape.window="showTableModal = false">
+        <div class="bg-white rounded-lg shadow-xl w-80 p-5" @click.stop>
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Insert Table') }}</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Rows') }}</label>
+                    <input type="number" x-model.number="tableRows" min="1" max="20" value="3"
+                           class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Columns') }}</label>
+                    <input type="number" x-model.number="tableCols" min="1" max="10" value="3"
+                           class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+                </div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" x-model="tableWithHeader"
+                           class="rounded border-slate-300 text-blue-600 shadow-sm focus:ring-blue-500">
+                    <span class="text-sm text-slate-600">{{ __('Include header row') }}</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <button type="button" @click="showTableModal = false"
+                        class="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors">
+                    {{ __('Cancel') }}
+                </button>
+                <button type="button" @click="insertTable()"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                    {{ __('Insert') }}
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Word Count -->
     <div class="flex items-center justify-between mt-2 text-xs text-slate-500">
         <span>{{ __('Characters') }}: <span x-text="charCount">0</span></span>
@@ -297,6 +347,24 @@
     content: 'Huge';
 }
 
+/* Table button styling */
+.ql-table-insert {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    padding: 0;
+    cursor: pointer;
+    color: #444;
+}
+.ql-table-insert:hover {
+    color: #06c;
+}
+.ql-table-insert svg {
+    stroke: currentColor;
+}
+
 /* Editor content styling is defined in app.blade.php to ensure
    consistency between editor and preview/show views */
 </style>
@@ -320,6 +388,12 @@ function richEditor(config) {
         showVariableDropdown: false,
         expandedCategories: ['client', 'contract', 'special'],
         isInitializing: true,
+
+        // Table insertion state
+        showTableModal: false,
+        tableRows: 3,
+        tableCols: 3,
+        tableWithHeader: true,
 
         get groupedVariables() {
             // Transform variables from {category: {key: label}} to {category: [{key, label}]}
@@ -551,6 +625,52 @@ function richEditor(config) {
                 this.content = '';
                 this.$refs.hiddenInput.value = '';
             }
+        },
+
+        insertTable() {
+            const quill = this.getQuillInstance();
+            if (!quill) {
+                console.error('Quill instance not found');
+                return;
+            }
+
+            const rows = Math.max(1, Math.min(20, this.tableRows || 3));
+            const cols = Math.max(1, Math.min(10, this.tableCols || 3));
+            const hasHeader = this.tableWithHeader;
+
+            // Build HTML table with styling for PDF export
+            let html = '<table style="width: 100%; border-collapse: collapse; margin: 16px 0;">';
+
+            for (let r = 0; r < rows; r++) {
+                html += '<tr>';
+                for (let c = 0; c < cols; c++) {
+                    const isHeader = hasHeader && r === 0;
+                    const tag = isHeader ? 'th' : 'td';
+                    const headerStyle = isHeader
+                        ? 'background-color: #f1f5f9; font-weight: 600; text-align: left;'
+                        : '';
+                    const cellStyle = `border: 1px solid #cbd5e1; padding: 8px 12px; ${headerStyle}`;
+                    const content = isHeader ? `{{ __('Header') }} ${c + 1}` : '&nbsp;';
+                    html += `<${tag} style="${cellStyle}">${content}</${tag}>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table><p><br></p>';
+
+            // Focus and insert at cursor position
+            quill.focus();
+            const range = quill.getSelection(true);
+            quill.clipboard.dangerouslyPasteHTML(range.index, html);
+
+            // Update content
+            this.content = quill.root.innerHTML;
+            this.$refs.hiddenInput.value = this.content;
+
+            // Close modal and reset
+            this.showTableModal = false;
+
+            // Dispatch change event
+            this.$dispatch('editor-change', { content: this.content });
         }
     };
 }

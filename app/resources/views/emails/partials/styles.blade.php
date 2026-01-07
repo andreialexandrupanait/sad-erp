@@ -206,25 +206,66 @@
         color: #6b7280;
         text-decoration: none;
     }
+    .section-header {
+        font-size: 14px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 2px solid #e2e8f0;
+    }
     .services-list {
-        margin: 20px 0;
+        margin: 24px 0;
+        background: linear-gradient(to bottom, #f8fafc, #ffffff);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid #e2e8f0;
     }
     .service-item {
         display: flex;
         justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px dashed #e5e7eb;
+        align-items: center;
+        padding: 14px 0;
+        border-bottom: 1px solid #e2e8f0;
         font-size: 14px;
     }
     .service-item:last-child {
         border-bottom: none;
+        padding-bottom: 0;
+    }
+    .service-item:first-child {
+        padding-top: 0;
     }
     .service-name {
-        color: #374151;
+        color: #334155;
+        font-weight: 500;
+        flex: 1;
+        padding-right: 16px;
     }
     .service-price {
         font-weight: 600;
-        color: #111827;
+        color: #059669;
+        white-space: nowrap;
+    }
+    .services-total {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 2px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .services-total-label {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 15px;
+    }
+    .services-total-value {
+        font-weight: 700;
+        color: #059669;
+        font-size: 18px;
     }
     .badge {
         display: inline-block;

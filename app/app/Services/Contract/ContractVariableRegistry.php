@@ -256,10 +256,13 @@ class ContractVariableRegistry
         // IMPORTANT: Only include items where is_selected = true
         if ($items->isEmpty() && $contract->offer) {
             $offerItems = $contract->offer->items ?? collect();
-            // Filter to only selected items
+            // Filter to only selected items and sort: custom first, then card, then by sort_order
             $items = $offerItems->filter(function ($item) {
                 return $item->is_selected === true;
-            });
+            })->sortBy([
+                ['type', 'desc'], // 'custom' comes before 'card' alphabetically reversed
+                ['sort_order', 'asc'],
+            ]);
         }
 
         if ($items->isEmpty()) {
@@ -271,7 +274,7 @@ class ContractVariableRegistry
 
         // Build as bullet list with bold styling (no blue - for clean PDF export)
         // Use inline styling to ensure bullets render correctly in PDF
-        $html = '<ul style="list-style-type: disc; margin-left: 20px; padding-left: 0;">';
+        $html = '<ul style="list-style-type: disc; margin-left: 20px; padding-left: 0; margin-top: 0;">';
         foreach ($items as $item) {
             $name = $item->title ?? $item->name ?? $item->description ?? __('Serviciu');
             $itemTotal = (float) ($item->total_price ?? $item->total ?? 0);

@@ -1,5 +1,6 @@
+@php app()->setLocale($offer->language ?? 'ro'); @endphp
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ $offer->language ?? 'ro' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,6 +19,9 @@
         $items = $offer->items;
         $headerData = $offer->header_data ?? [];
 
+        // Offer is read-only when not in 'sent' or 'viewed' status
+        $isReadOnly = !in_array($offer->status, ['sent', 'viewed']);
+
         // Separate custom services (main list) and card services (extras)
         $customItems = $items->filter(fn($item) => $item->type === 'custom' || $item->type === null);
         $cardItems = $items->filter(fn($item) => $item->type === 'card');
@@ -25,18 +29,17 @@
         // Get initially deselected items (from admin's selection)
         $initiallyDeselectedIds = $customItems->filter(fn($item) => $item->is_selected === false)->pluck('id')->toArray();
 
+        // Get initially selected card items (cards chosen by client)
+        $initiallySelectedCardIds = $cardItems->filter(fn($item) => $item->is_selected === true)->pluck('id')->toArray();
+
         // Calculate FULL subtotal (all custom items) - we'll subtract deselected in JS
         $fullSubtotal = $customItems->sum('total_price');
         // Calculate initial subtotal (only selected custom items)
         $subtotal = $customItems->filter(fn($item) => $item->is_selected !== false)->sum('total_price');
         $discountAmount = $subtotal * ($offer->discount_percent ?? 0) / 100;
 
-        // Get VAT settings from summary block
-        $summaryBlock = collect($blocks)->firstWhere('type', 'summary');
-        $showVAT = $summaryBlock['data']['showVAT'] ?? false;
-        $vatPercent = $summaryBlock['data']['vatPercent'] ?? 19;
-        $vatAmount = $showVAT ? ($subtotal - $discountAmount) * ($vatPercent / 100) : 0;
-        $grandTotal = $subtotal - $discountAmount + $vatAmount;
+        // VAT is disabled - will be enabled from organization settings when needed
+        $grandTotal = $subtotal - $discountAmount;
 
         // Get services block for card heading
         $servicesBlock = collect($blocks)->firstWhere('type', 'services');
@@ -47,36 +50,6 @@
     @endphp
 
     <div class="max-w-4xl mx-auto py-8 px-4" x-data="publicOffer()">
-        {{-- Real-time Update Notification --}}
-        <div x-show="showUpdateNotification"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform -translate-y-4"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-600 text-white rounded-lg shadow-lg px-6 py-4 flex items-center gap-4 max-w-lg">
-            <div class="flex-shrink-0">
-                <svg class="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-            </div>
-            <div class="flex-1">
-                <p class="font-medium">{{ __('Offer Updated') }}</p>
-                <p class="text-sm text-blue-100">{{ __('The offer has been modified. Click to refresh.') }}</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <button @click="applyUpdate()" class="bg-white text-blue-600 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-50 transition-colors">
-                    {{ __('Refresh') }}
-                </button>
-                <button @click="dismissUpdate()" class="text-blue-200 hover:text-white p-1">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
         {{-- Messages --}}
         @if (session('success'))
             <div class="bg-green-50 border border-green-200 text-green-800 rounded-lg p-4 mb-6">
@@ -121,11 +94,12 @@
                                 @if($customItems->count() > 0)
                                     <div class="space-y-3">
                                         @foreach($customItems as $item)
-                                            <div class="rounded-xl border shadow-md cursor-pointer transition-all duration-200"
+                                            <div class="rounded-xl border shadow-md transition-all duration-200 {{ $isReadOnly ? '' : 'cursor-pointer' }}"
                                                  :class="deselectedServices.includes({{ $item->id }}) ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-green-200'"
-                                                 @click="toggleService({{ $item->id }}, {{ $item->total_price }})">
+                                                 @if(!$isReadOnly) @click="toggleService({{ $item->id }}, {{ $item->total_price }})" @endif>
                                                 <div class="flex items-start gap-4 p-5">
-                                                    {{-- Interactive Checkbox --}}
+                                                    {{-- Interactive Checkbox (only in edit mode) --}}
+                                                    @if(!$isReadOnly)
                                                     <div class="pt-0.5">
                                                         <div class="w-6 h-6 rounded-md border-2 flex items-center justify-center transition-all"
                                                              :class="deselectedServices.includes({{ $item->id }}) ? 'border-slate-300 bg-white' : 'border-green-500 bg-green-500'">
@@ -134,6 +108,7 @@
                                                             </svg>
                                                         </div>
                                                     </div>
+                                                    @endif
 
                                                     {{-- Service Info --}}
                                                     <div class="flex-1 min-w-0">
@@ -238,7 +213,8 @@
                                                             </div>
                                                         </div>
 
-                                                        {{-- Add/Remove Button --}}
+                                                        {{-- Add/Remove Button (only in edit mode) --}}
+                                                        @if(!$isReadOnly)
                                                         <button type="button"
                                                                 @click="toggleCard({{ $item->id }}, {{ $item->total_price }})"
                                                                 class="w-full py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2"
@@ -253,6 +229,16 @@
                                                             </svg>
                                                             <span x-text="selectedCards.includes({{ $item->id }}) ? '{{ __('Remove') }}' : '{{ __('Add to offer') }}'"></span>
                                                         </button>
+                                                        @else
+                                                        {{-- Read-only: Show selection status --}}
+                                                        <div class="w-full py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                                                             :class="selectedCards.includes({{ $item->id }}) ? 'bg-green-500/20 text-green-400' : 'bg-slate-700 text-slate-400'">
+                                                            <svg x-show="selectedCards.includes({{ $item->id }})" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                            </svg>
+                                                            <span x-text="selectedCards.includes({{ $item->id }}) ? '{{ __('Selected') }}' : '{{ __('Not selected') }}'"></span>
+                                                        </div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -454,20 +440,6 @@
                                                 </div>
                                             @endif
 
-                                            @if($showVAT)
-                                                <div class="grid grid-cols-12 gap-2 px-4 py-2 items-center border-t border-dashed border-slate-200">
-                                                    <div class="col-span-10 text-right">
-                                                        <span class="text-sm text-slate-600">
-                                                            {{ __('TVA') }}
-                                                            <span class="text-xs text-slate-400 ml-1">({{ $vatPercent }}%)</span>
-                                                        </span>
-                                                    </div>
-                                                    <div class="col-span-2 text-right">
-                                                        <span class="font-medium text-slate-700">+<span x-text="formatCurrency(currentVAT)"></span></span>
-                                                    </div>
-                                                </div>
-                                            @endif
-
                                             @if($block['data']['showGrandTotal'] ?? true)
                                                 <div class="grid grid-cols-12 gap-2 px-4 py-4 items-center border-t-2 border-slate-300 bg-slate-100">
                                                     <div class="col-span-10 text-right">
@@ -615,6 +587,7 @@
                                                 <div class="flex-1">
                                                     {{-- Card Header with Checkbox --}}
                                                     <div class="flex items-start gap-3 mb-3">
+                                                        @if(!$isReadOnly)
                                                         <div class="pt-0.5">
                                                             <input type="checkbox"
                                                                    id="service-{{ $optKey }}"
@@ -623,8 +596,9 @@
                                                                    aria-describedby="service-desc-{{ $optKey }}"
                                                                    class="w-5 h-5 rounded border-slate-300 text-green-600 focus:ring-green-500 cursor-pointer">
                                                         </div>
+                                                        @endif
                                                         <div class="flex-1 min-w-0">
-                                                            <label for="service-{{ $optKey }}" class="font-semibold text-slate-900 text-base leading-tight cursor-pointer">{{ $optTitle }}</label>
+                                                            <label for="service-{{ $optKey }}" class="font-semibold text-slate-900 text-base leading-tight {{ $isReadOnly ? '' : 'cursor-pointer' }}">{{ $optTitle }}</label>
                                                         </div>
                                                     </div>
 
@@ -670,14 +644,21 @@
                                 {{ __('Decline Offer') }}
                             </button>
 
-                            <form action="{{ route('offers.public.accept', $offer->public_token) }}" method="POST" class="flex-1">
+                            <form action="{{ route('offers.public.accept', $offer->public_token) }}" method="POST" class="flex-1" @submit="isAccepting = true">
                                 @csrf
                                 <button type="submit"
-                                        class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
-                                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        :disabled="isAccepting"
+                                        :class="isAccepting ? 'bg-green-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'"
+                                        class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
+                                    <svg x-show="!isAccepting" class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                                     </svg>
-                                    {{ __('Accept Offer') }}
+                                    <svg x-show="isAccepting" class="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span x-show="!isAccepting">{{ __('Accept Offer') }}</span>
+                                    <span x-show="isAccepting">{{ __('Processing...') }}</span>
                                 </button>
                             </form>
                         </div>
@@ -754,7 +735,8 @@
     function publicOffer() {
         return {
             showRejectModal: false,
-            selectedCards: [],
+            isAccepting: false,
+            selectedCards: {!! json_encode($initiallySelectedCardIds) !!},
             selectedOptionalServices: [],
             optionalServicesPrices: {},
             // Initialize with items that admin has deselected
@@ -764,8 +746,6 @@
             // Base values (ALL custom services - we subtract deselected dynamically)
             baseSubtotal: {{ $fullSubtotal }},
             discountPercent: {{ $offer->discount_percent ?? 0 }},
-            vatPercent: {{ $vatPercent }},
-            showVAT: {{ $showVAT ? 'true' : 'false' }},
             currency: '{{ $offer->currency }}',
 
             // Service prices map (for deselection)
@@ -804,13 +784,8 @@
                 return this.currentSubtotal * (this.discountPercent / 100);
             },
 
-            get currentVAT() {
-                if (!this.showVAT) return 0;
-                return (this.currentSubtotal - this.currentDiscount) * (this.vatPercent / 100);
-            },
-
             get currentGrandTotal() {
-                return this.currentSubtotal - this.currentDiscount + this.currentVAT;
+                return this.currentSubtotal - this.currentDiscount;
             },
 
             // Toggle main service selection (deselect/reselect)
@@ -910,60 +885,8 @@
                 }).format(value) + ' ' + this.currency;
             },
 
-            // Real-time sync
-            lastUpdatedAt: {{ $offer->updated_at->timestamp }},
-            syncInterval: null,
-            showUpdateNotification: false,
-            pendingUpdate: null,
-
             init() {
-                // Start polling for updates every 3 seconds
-                this.startSync();
-
-                // Clean up interval on page unload to prevent memory leaks
-                window.addEventListener('beforeunload', () => this.stopSync());
-            },
-
-            startSync() {
-                this.syncInterval = setInterval(() => {
-                    this.checkForUpdates();
-                }, 3000); // Check every 3 seconds
-            },
-
-            stopSync() {
-                if (this.syncInterval) {
-                    clearInterval(this.syncInterval);
-                    this.syncInterval = null;
-                }
-            },
-
-            async checkForUpdates() {
-                try {
-                    const response = await fetch('{{ route('offers.public.state', $offer->public_token) }}');
-                    const data = await response.json();
-
-                    if (data.success && data.updated_at > this.lastUpdatedAt) {
-                        // Offer has been updated - show notification and store pending data
-                        this.pendingUpdate = data;
-                        this.showUpdateNotification = true;
-                    }
-                } catch (error) {
-                    // Silently ignore sync errors - non-critical
-                }
-            },
-
-            applyUpdate() {
-                // Force reload from server (not from cache)
-                window.location.href = window.location.href.split('?')[0] + '?_=' + Date.now();
-            },
-
-            dismissUpdate() {
-                // User dismissed, but update the timestamp so we don't keep showing notification
-                if (this.pendingUpdate) {
-                    this.lastUpdatedAt = this.pendingUpdate.updated_at;
-                }
-                this.showUpdateNotification = false;
-                this.pendingUpdate = null;
+                // Component initialized - selections sync to backend on user interaction
             }
         };
     }

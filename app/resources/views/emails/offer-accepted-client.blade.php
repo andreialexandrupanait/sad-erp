@@ -53,17 +53,22 @@
 
             {{-- Services Summary --}}
             @if($offer->items && $offer->items->count() > 0)
-            <div style="margin-top: 24px;">
-                <h3 style="font-size: 14px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px;">{{ __('Services Included') }}</h3>
-                <div style="background: #f8fafc; border-radius: 8px; padding: 16px;">
-                    @foreach($offer->items->where('is_selected', true) as $item)
-                    <div style="display: flex; justify-content: space-between; padding: 8px 0; {{ !$loop->last ? 'border-bottom: 1px solid #e2e8f0;' : '' }}">
-                        <span style="color: #334155;">{{ $item->name }}</span>
-                        <span style="color: #64748b; font-weight: 500;">{{ number_format($item->total, 2) }} {{ $offer->currency }}</span>
+                @php $selectedItems = $offer->items->where('is_selected', true); @endphp
+                @if($selectedItems->count() > 0)
+                <div class="services-list">
+                    <div class="section-header">{{ __('Services Included') }}</div>
+                    @foreach($selectedItems as $item)
+                    <div class="service-item">
+                        <span class="service-name">{{ $item->title }}</span>
+                        <span class="service-price">{{ number_format($item->total_price, 2) }} {{ $offer->currency }}</span>
                     </div>
                     @endforeach
+                    <div class="services-total">
+                        <span class="services-total-label">{{ __('Total') }}</span>
+                        <span class="services-total-value">{{ number_format($offer->total, 2) }} {{ $offer->currency }}</span>
+                    </div>
                 </div>
-            </div>
+                @endif
             @endif
 
             <div class="info-box success">

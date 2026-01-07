@@ -4,9 +4,8 @@
     $discountPercent = $offer->discount_percent ?? 0;
     $discountAmount = $subtotal * ($discountPercent / 100);
     $netTotal = $subtotal - $discountAmount;
-    $vatPercent = $block['data']['vatPercent'] ?? 19;
-    $vatAmount = $netTotal * ($vatPercent / 100);
-    $grandTotal = $netTotal + $vatAmount;
+    // VAT is disabled - will be enabled from organization settings when needed
+    $grandTotal = $netTotal;
     $currency = $offer->currency ?? 'EUR';
 @endphp
 
@@ -48,20 +47,6 @@
                     <span class="text-sm text-slate-600">{{ __('Net Total') }}</span>
                     <span class="text-base font-medium text-slate-800">
                         {{ number_format($netTotal, 2, ',', '.') }}
-                        <span class="text-xs text-slate-500 ml-1">{{ $currency }}</span>
-                    </span>
-                </div>
-            @endif
-
-            {{-- VAT --}}
-            @if($block['data']['showVAT'] ?? true)
-                <div class="flex items-center justify-between py-2 border-t border-dashed border-slate-200">
-                    <span class="text-sm text-slate-600">
-                        {{ __('VAT') }}
-                        <span class="text-xs text-slate-400 ml-1">({{ $vatPercent }}%)</span>
-                    </span>
-                    <span class="text-base font-medium text-slate-700">
-                        +{{ number_format($vatAmount, 2, ',', '.') }}
                         <span class="text-xs text-slate-500 ml-1">{{ $currency }}</span>
                     </span>
                 </div>

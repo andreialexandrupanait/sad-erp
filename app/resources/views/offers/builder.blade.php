@@ -321,6 +321,13 @@
                             </select>
                         </div>
                         <div class="field-wrapper">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Language') }}</label>
+                            <select x-model="offer.language" class="w-full h-10 border border-slate-300 rounded-md px-3 text-sm focus:border-slate-500 focus:ring-1 focus:ring-slate-500">
+                                <option value="ro">Română</option>
+                                <option value="en">English</option>
+                            </select>
+                        </div>
+                        <div class="field-wrapper">
                             <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Discount') }}</label>
                             <div class="flex items-center gap-1">
                                 <input type="number" x-model="offer.discount_percent" step="0.1" min="0" max="100"
@@ -677,6 +684,7 @@
                 offer_number: existingOffer?.offer_number || '',
                 valid_until: validUntil,
                 currency: existingOffer?.currency || defaultCurrency,
+                language: existingOffer?.language || 'ro',
                 discount_percent: existingOffer?.discount_percent || 0,
                 notes: existingOffer?.notes || '',
             },
@@ -1397,6 +1405,7 @@
                     title: this.offer.title,
                     valid_until: this.offer.valid_until,
                     currency: this.offer.currency,
+                    language: this.offer.language,
                     discount_percent: this.offer.discount_percent,
                     notes: this.offer.notes,
                     blocks: this.blocks,
