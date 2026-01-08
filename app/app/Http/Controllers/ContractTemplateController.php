@@ -48,6 +48,7 @@ class ContractTemplateController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'content' => 'nullable|string|max:500000',
+            'blocks' => 'nullable|array',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
@@ -77,7 +78,7 @@ class ContractTemplateController extends Controller
         // Use ContractVariableRegistry for consistent variables
         $variables = ContractVariableRegistry::getDefinitions();
 
-        return view('settings.contract-templates.edit', [
+        return view('settings.contract-templates.edit-tiptap', [
             'template' => $contractTemplate,
             'categories' => $categories,
             'variables' => $variables,
@@ -93,6 +94,7 @@ class ContractTemplateController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'content' => 'nullable|string|max:500000',
+            'blocks' => 'nullable|array',
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);

@@ -1,11 +1,11 @@
 import './bootstrap';
 
-import Alpine from 'alpinejs';
-
-window.Alpine = Alpine;
-
 // Import components
 import './bulk-selection.js';
 import './clients-page.js';
 
-Alpine.start();
+// Import template editor (conditionally used on template edit pages)
+import { templateEditor } from './editor/templateEditor';
+
+// Make templateEditor globally available
+window.templateEditor = templateEditor;

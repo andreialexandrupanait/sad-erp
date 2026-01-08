@@ -361,6 +361,12 @@
             },
 
             initQuill() {
+                // Set content BEFORE Quill initializes to preserve HTML structure
+                const editorEl = document.getElementById('editor');
+                if (this.content) {
+                    editorEl.innerHTML = this.content;
+                }
+
                 this.quill = new Quill('#editor', {
                     theme: 'snow',
                     modules: {
@@ -369,12 +375,8 @@
                     placeholder: '{{ __("Start writing your contract template...") }}'
                 });
 
-                // Load existing content - decode any escaped HTML first
-                if (this.content) {
-                    const cleanContent = this.decodeHtmlContent(this.content);
-                    this.quill.clipboard.dangerouslyPasteHTML(0, cleanContent);
-                    this.content = this.quill.root.innerHTML;
-                }
+                // Sync content after init
+                this.content = this.quill.root.innerHTML;
 
                 // Update counts and hidden input on change
                 this.quill.on('text-change', () => {
