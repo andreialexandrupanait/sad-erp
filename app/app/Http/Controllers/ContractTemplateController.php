@@ -94,13 +94,45 @@ class ContractTemplateController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'content' => 'nullable|string|max:500000',
-            'blocks' => 'nullable|array',
+            'blocks' => 'nullable|string|max:500000', // JSON string from TipTap
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
         $validated['is_default'] = $validated['is_default'] ?? false;
         $validated['is_active'] = $validated['is_active'] ?? true;
+
+        // Decode blocks JSON string to array for storage
+        if (!empty($validated['blocks']) && is_string($validated['blocks'])) {
+            $decoded = json_decode($validated['blocks'], true);
+            $validated['blocks'] = $decoded ?: null;
+        }
+
+        // CRITICAL: Clear empty blocks to prevent load issues
+        // An empty doc {type:'doc',content:[]} should be treated as null
+        // This ensures content (HTML) is used on reload instead of empty blocks
+        if (!empty($validated['blocks'])) {
+            $blocks = $validated['blocks'];
+            $hasContent = isset($blocks['content'])
+                && is_array($blocks['content'])
+                && count($blocks['content']) > 0;
+
+            if (!$hasContent) {
+                $validated['blocks'] = null;
+                \Log::info('ContractTemplate: Cleared empty blocks for template', [
+                    'template_id' => $contractTemplate->id,
+                    'content_length' => strlen($validated['content'] ?? ''),
+                ]);
+            }
+        }
+
+        // Log for debugging
+        \Log::info('ContractTemplate update', [
+            'template_id' => $contractTemplate->id,
+            'has_blocks' => !empty($validated['blocks']),
+            'content_length' => strlen($validated['content'] ?? ''),
+            'blocks_type' => $validated['blocks']['type'] ?? 'none',
+        ]);
 
         // If setting as default, unset other defaults
         if ($validated['is_default'] && !$contractTemplate->is_default) {

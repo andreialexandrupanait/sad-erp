@@ -1463,13 +1463,12 @@
         }
         </script>
 
-        <!-- Page-specific Scripts (must load before Alpine.js) -->
+        <!-- Load Vite bundle (exports components to window) -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <!-- Page-specific Scripts -->
         @stack('scripts')
 
-        <!-- Alpine Collapse Plugin (must load before Alpine.js) -->
-        <script src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js" defer></script>
-
-        <!-- Alpine.js for interactivity (loads AFTER Livewire) -->
-        <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+        <!-- Alpine.js is bundled with Livewire v3, no CDN needed -->
     </body>
 </html>

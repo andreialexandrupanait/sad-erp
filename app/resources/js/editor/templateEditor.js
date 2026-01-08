@@ -42,18 +42,32 @@ export function templateEditor(initialData = {}) {
 
         init() {
             // Determine initial content - prefer blocks JSON, fall back to HTML
-            if (initialData && initialData.blocks) {
+            // CRITICAL: Check if blocks has ACTUAL content, not just exists
+            // Empty array [] or empty doc {type:'doc',content:[]} should fall through to HTML
+            const hasValidBlocks = initialData?.blocks
+                && typeof initialData.blocks === 'object'
+                && initialData.blocks.type === 'doc'
+                && Array.isArray(initialData.blocks.content)
+                && initialData.blocks.content.length > 0;
+
+            if (hasValidBlocks) {
                 this.content = initialData.blocks
-            } else if (initialData && initialData.html) {
-                // Will be converted by TipTap when loading
+            } else if (initialData?.html && initialData.html.trim()) {
+                // Use HTML content if available and non-empty
                 this.content = initialData.html
-            } else if (typeof initialData === 'string') {
+            } else if (typeof initialData === 'string' && initialData.trim()) {
                 // Legacy: direct HTML string
                 this.content = initialData
-            } else if (initialData && typeof initialData === 'object' && initialData.type === 'doc') {
-                // Legacy: direct JSON object
+            } else if (initialData && typeof initialData === 'object' && initialData.type === 'doc'
+                       && Array.isArray(initialData.content) && initialData.content.length > 0) {
+                // Legacy: direct JSON object with content
                 this.content = initialData
+            } else {
+                // Default to empty - editor will show placeholder
+                this.content = ''
             }
+
+            console.log('Editor init - hasValidBlocks:', hasValidBlocks, 'content type:', typeof this.content);
 
             this.$nextTick(() => {
                 this.initEditor()
@@ -153,7 +167,39 @@ export function templateEditor(initialData = {}) {
         },
 
         getHTML() {
-            return this.editor?.getHTML() || ''
+            // First try TipTap's internal HTML
+            if (this.editor) {
+                return this.editor.getHTML()
+            }
+            // Fallback to DOM content
+            const editorEl = this.$refs?.editor?.querySelector('.ProseMirror')
+                          || document.querySelector('.ProseMirror');
+            return editorEl?.innerHTML || ''
+        },
+
+        /**
+         * Called before form submission to ensure hidden inputs have current values
+         */
+        beforeSubmit(event) {
+            // Get current HTML content
+            const html = this.getHTML();
+            const json = this.getJSON();
+
+            // Manually set hidden input values
+            const contentInput = document.getElementById('content-input');
+            const blocksInput = document.getElementById('blocks-input');
+
+            if (contentInput) {
+                contentInput.value = html;
+            }
+            if (blocksInput) {
+                blocksInput.value = json ? JSON.stringify(json) : '';
+            }
+
+            console.log('Form submit - content length:', html?.length, 'blocks:', !!json);
+
+            // Let form continue submission
+            return true;
         },
 
         setContent(content) {
@@ -306,7 +352,40 @@ export function templateEditor(initialData = {}) {
         // =====================================================================
 
         insertVariable(name, options = {}) {
-            this.editor?.chain().focus().insertVariable(name, options).run()
+            if (!this.editor) {
+                console.error('Editor not initialized');
+                return;
+            }
+
+            // Use the Variable extension command - creates a proper TipTap node
+            // This ensures:
+            // 1. Variable is stored as a node in blocks JSON (survives save/load)
+            // 2. Variable renders as non-editable styled element
+            // 3. Variable serializes to {{name}} in HTML output
+            try {
+                this.editor
+                    .chain()
+                    .focus()
+                    .insertVariable(name, {
+                        required: options.required || false,
+                        fallback: options.fallback || '',
+                    })
+                    .run();
+
+                // Update content reference after insertion
+                this.content = this.editor.getJSON();
+
+                console.log('Variable inserted:', name);
+            } catch (e) {
+                console.error('Error inserting variable:', e);
+
+                // Fallback: insert as plain text with placeholder format
+                this.editor
+                    .chain()
+                    .focus()
+                    .insertContent(`{{${name}}}`)
+                    .run();
+            }
         },
 
         // =====================================================================

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\VariableRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,7 @@ class Template extends Model
         'schema_version',
         'theme',
         'content',
+        'variables_used',
         'editor_type',
         'is_default',
         'is_active',
@@ -46,6 +48,7 @@ class Template extends Model
     protected $casts = [
         'blocks' => 'array',
         'theme' => 'array',
+        'variables_used' => 'array',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
         'current_version' => 'integer',
@@ -93,6 +96,11 @@ class Template extends Model
             if (auth()->check()) {
                 $template->updated_by = auth()->id();
             }
+        });
+
+        // Auto-extract variables on save
+        static::saving(function (self $template) {
+            $template->variables_used = $template->extractVariables();
         });
 
         // Organization scope
@@ -396,10 +404,91 @@ class Template extends Model
             }
         }
 
+        // Also check for {{variable}} in text nodes
+        if (($node['type'] ?? '') === 'text' && isset($node['text'])) {
+            preg_match_all('/\{\{([a-z_]+)\}\}/', $node['text'], $matches);
+            foreach ($matches[1] ?? [] as $var) {
+                if (!in_array($var, $variables)) {
+                    $variables[] = $var;
+                }
+            }
+        }
+
         foreach ($node['content'] ?? [] as $child) {
             if (is_array($child)) {
                 $this->extractVariablesFromBlocks($child, $variables);
             }
         }
+    }
+
+    // =========================================================================
+    // RENDERING WITH VARIABLE REGISTRY
+    // =========================================================================
+
+    /**
+     * Render template content with resolved variables.
+     *
+     * @param Contract|Offer $document The document to resolve variables from
+     * @return string Rendered HTML content with all variables replaced
+     */
+    public function render(Contract|Offer $document): string
+    {
+        $content = $this->content ?? '';
+
+        if (empty($content)) {
+            return '';
+        }
+
+        return VariableRegistry::render($content, $document);
+    }
+
+    /**
+     * Validate template against a document.
+     *
+     * @param Contract|Offer $document The document to validate against
+     * @return \App\Services\ValidationResult
+     */
+    public function validate(Contract|Offer $document): \App\Services\ValidationResult
+    {
+        $content = $this->content ?? '';
+        return VariableRegistry::validate($content, $document);
+    }
+
+    /**
+     * Get available variables for this template type.
+     *
+     * @return array Variables grouped by category
+     */
+    public function getAvailableVariables(): array
+    {
+        return VariableRegistry::getForUI($this->type);
+    }
+
+    /**
+     * Check if a specific variable is used in this template.
+     */
+    public function usesVariable(string $variableKey): bool
+    {
+        return in_array($variableKey, $this->variables_used ?? []);
+    }
+
+    /**
+     * Get list of missing required variables for a document.
+     *
+     * @param Contract|Offer $document
+     * @return array List of missing variable keys
+     */
+    public function getMissingRequiredVariables(Contract|Offer $document): array
+    {
+        $result = $this->validate($document);
+        $missing = [];
+
+        foreach ($result->errors as $error) {
+            if ($error->type === 'required_empty') {
+                $missing[] = $error->variable;
+            }
+        }
+
+        return $missing;
     }
 }

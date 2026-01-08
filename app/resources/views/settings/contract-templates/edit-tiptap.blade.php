@@ -23,7 +23,7 @@
         <div class="flex-1 flex flex-col overflow-hidden">
             {{-- Template Details Bar --}}
             <div class="bg-white border-b border-slate-200 px-6 py-4">
-                <form id="template-form" action="{{ route('settings.contract-templates.update', $template) }}" method="POST" class="flex items-center gap-4">
+                <form id="template-form" action="{{ route('settings.contract-templates.update', $template) }}" method="POST" class="flex items-center gap-4" @submit="beforeSubmit($event)">
                     @csrf
                     @method('PUT')
 
@@ -362,15 +362,20 @@
     </div>
 
     {{-- Load TipTap Editor CSS --}}
+    @push('styles')
     @vite(['resources/css/editor.css'])
+    @endpush
 
-    @push('scripts')
-    {{-- Load TipTap Editor JS before Alpine initializes --}}
-    @vite(['resources/js/app.js'])
+    {{-- Register templateEditor with Alpine - MUST be inline (not pushed) to run before Alpine starts --}}
     <script>
-    // Register templateEditor with Alpine before it starts
+    // Register templateEditor with Alpine before it processes x-data
     document.addEventListener('alpine:init', () => {
-        Alpine.data('templateEditor', window.templateEditor);
+        if (window.templateEditor) {
+            Alpine.data('templateEditor', window.templateEditor);
+            console.log('✓ templateEditor registered with Alpine');
+        } else {
+            console.error('✗ templateEditor not available - app.js may not have loaded yet');
+        }
     });
 
     // Keyboard shortcut for save
@@ -381,5 +386,4 @@
         }
     });
     </script>
-    @endpush
 </x-app-layout>

@@ -9,7 +9,9 @@ use App\Models\ContractItem;
 use App\Models\ContractTemplate;
 use App\Models\Offer;
 use App\Models\Organization;
+use App\Models\Template;
 use App\Services\Contract\ContractVariableRegistry;
+use App\Services\VariableRegistry;
 use App\Services\Notification\NotificationService;
 use App\Services\Notification\Messages\ContractExpiringMessage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -391,9 +393,13 @@ class ContractService
 
     /**
      * Render a template for a contract with variables replaced.
-     * Uses ContractVariableRegistry for consistent {{variable}} format.
+     * Uses the unified VariableRegistry for consistent {{variable}} format.
+     *
+     * @param Contract $contract The contract to render for
+     * @param ContractTemplate|Template $template The template to render
+     * @return string Rendered HTML content
      */
-    public function renderTemplateForContract(Contract $contract, ContractTemplate $template): string
+    public function renderTemplateForContract(Contract $contract, ContractTemplate|Template $template): string
     {
         $content = $template->content ?? '';
 
@@ -401,14 +407,36 @@ class ContractService
             return '';
         }
 
-        // Use centralized registry for variable replacement
-        $content = ContractVariableRegistry::render($content, $contract);
+        // Use the unified VariableRegistry for variable replacement
+        $content = VariableRegistry::render($content, $contract);
 
-        // Handle legacy SERVICES_TABLE placeholder (uppercase)
+        // Handle legacy SERVICES_TABLE placeholder (uppercase - backwards compatibility)
         if (str_contains($content, '{{SERVICES_TABLE}}')) {
-            $servicesTable = ContractVariableRegistry::renderServicesList($contract);
+            $servicesTable = VariableRegistry::renderServicesList($contract);
             $content = str_replace('{{SERVICES_TABLE}}', $servicesTable, $content);
         }
+
+        // Handle SIGNATURES placeholder
+        if (str_contains($content, '{{SIGNATURES}}')) {
+            $signatures = $this->renderSignaturesBlock($contract);
+            $content = str_replace('{{SIGNATURES}}', $signatures, $content);
+        }
+
+        return $content;
+    }
+
+    /**
+     * Render a unified Template for a contract.
+     * Preferred method - uses new Template model.
+     *
+     * @param Contract $contract The contract to render for
+     * @param Template $template The unified template to render
+     * @return string Rendered HTML content
+     */
+    public function renderTemplate(Contract $contract, Template $template): string
+    {
+        // Use Template's built-in render method which uses VariableRegistry
+        $content = $template->render($contract);
 
         // Handle SIGNATURES placeholder
         if (str_contains($content, '{{SIGNATURES}}')) {
