@@ -295,29 +295,65 @@ class DocumentTemplateController extends Controller
 
     /**
      * Bulk delete templates.
+     * Handles both DocumentTemplate (offers) and ContractTemplate records.
      */
     public function bulkDelete(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'ids' => 'required|array',
-            'ids.*' => 'exists:document_templates,id',
+            'ids.*' => 'required|integer',
+            'types' => 'nullable|array',
+            'types.*' => 'nullable|string|in:document_template,contract_template',
         ]);
 
         $deleted = 0;
         $errors = [];
 
-        foreach ($validated['ids'] as $id) {
-            $template = DocumentTemplate::find($id);
-            if (!$template) {
-                continue;
+        $ids = $validated['ids'];
+        $types = $validated['types'] ?? [];
+
+        foreach ($ids as $index => $id) {
+            $modelType = $types[$index] ?? null;
+
+            // Try to find the template in the appropriate table
+            $template = null;
+
+            if ($modelType === 'contract_template') {
+                $template = ContractTemplate::find($id);
+                if ($template) {
+                    // Check if contract template is in use
+                    if ($template->contracts()->count() > 0) {
+                        $errors[] = __('Template ":name" is in use by contracts and cannot be deleted.', ['name' => $template->name]);
+                        continue;
+                    }
+                }
+            } elseif ($modelType === 'document_template') {
+                $template = DocumentTemplate::find($id);
+                if ($template) {
+                    // Check if document template is in use
+                    if ($template->offers()->count() > 0) {
+                        $errors[] = __('Template ":name" is in use by offers and cannot be deleted.', ['name' => $template->name]);
+                        continue;
+                    }
+                }
+            } else {
+                // Try both tables if type not specified
+                $template = DocumentTemplate::find($id);
+                if ($template) {
+                    if ($template->offers()->count() > 0) {
+                        $errors[] = __('Template ":name" is in use by offers and cannot be deleted.', ['name' => $template->name]);
+                        continue;
+                    }
+                } else {
+                    $template = ContractTemplate::find($id);
+                    if ($template && $template->contracts()->count() > 0) {
+                        $errors[] = __('Template ":name" is in use by contracts and cannot be deleted.', ['name' => $template->name]);
+                        continue;
+                    }
+                }
             }
 
-            // Check if template is in use
-            $offersCount = $template->offers()->count();
-            $contractsCount = $template->contracts()->count();
-
-            if ($offersCount > 0 || $contractsCount > 0) {
-                $errors[] = __('Template ":name" is in use and cannot be deleted.', ['name' => $template->name]);
+            if (!$template) {
                 continue;
             }
 

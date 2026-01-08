@@ -117,7 +117,9 @@ class Document extends Model
      */
     public function fileExists(): bool
     {
-        return Storage::exists($this->file_path);
+        // Try Storage facade first, then fallback to direct file_exists
+        return Storage::exists($this->file_path)
+            || file_exists(storage_path('app/' . $this->file_path));
     }
 
     /**

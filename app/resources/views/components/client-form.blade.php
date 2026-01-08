@@ -6,6 +6,8 @@
         @method($method)
     @endif
 
+    <x-unsaved-form-warning />
+
     <x-ui.card>
         <x-ui.card-content>
             <x-client-form-fields :client="$client" :statuses="$statuses" />

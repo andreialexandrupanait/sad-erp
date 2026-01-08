@@ -7,12 +7,15 @@ import collapse from '@alpinejs/collapse';
 import './bulk-selection.js';
 import './clients-page.js';
 
-// Import template editor and export to window
-import { templateEditor } from './editor/templateEditor';
-window.templateEditor = templateEditor;
+// Import Alpine components
+import categoryCombobox from './components/category-combobox.js';
 
-// Register Alpine plugins before Alpine starts
+// Register Alpine plugins and components before Alpine starts
 // NOTE: Alpine is bundled with Livewire v3, we just add plugins
 document.addEventListener('alpine:init', () => {
     Alpine.plugin(collapse);
+
+    // Register categoryCombobox as an Alpine data component
+    // This allows x-data="categoryCombobox({...})" to work
+    Alpine.data('categoryCombobox', categoryCombobox);
 });

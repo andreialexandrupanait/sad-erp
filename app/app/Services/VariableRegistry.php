@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Contract;
 use App\Models\Offer;
 use App\Models\Organization;
+use App\Services\Context\PartyContextFactory;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -374,27 +375,29 @@ class VariableRegistry
     }
 
     /**
-     * Resolve client-related variables.
+     * Resolve client-related variables using PartyContext.
+     *
+     * Uses PartyContextFactory to build a unified context from either:
+     * - Existing Client record
+     * - Contract temp fields (prospect)
+     * - Offer temp fields (prospect)
+     *
+     * This ensures variables resolve correctly regardless of client state.
      */
     protected static function resolveClientVariables($client, ?Contract $contract, ?Offer $offer): array
     {
+        // Build unified context - single source of truth for party data
+        $party = PartyContextFactory::resolve($client, $contract, $offer);
+
         return [
-            'client_company_name' => static::e(
-                $client?->company_name
-                ?? $client?->name
-                ?? $contract?->temp_client_company
-                ?? $contract?->temp_client_name
-                ?? $offer?->temp_client_company
-                ?? $offer?->temp_client_name
-                ?? ''
-            ),
-            'client_address' => static::e($client?->address ?? $offer?->temp_client_address ?? ''),
-            'client_trade_register_number' => static::e($client?->registration_number ?? $offer?->temp_client_registration_number ?? ''),
-            'client_tax_id' => static::e($client?->tax_id ?? $offer?->temp_client_tax_id ?? ''),
-            'client_bank_account' => static::e($client?->bank_account ?? ''),
-            'client_representative' => static::e($client?->contact_person ?? $offer?->temp_client_name ?? ''),
-            'client_email' => static::e($client?->email ?? $contract?->temp_client_email ?? $offer?->temp_client_email ?? ''),
-            'client_phone' => static::e($client?->phone ?? $offer?->temp_client_phone ?? ''),
+            'client_company_name' => static::e($party->companyName ?? ''),
+            'client_address' => static::e($party->address ?? ''),
+            'client_trade_register_number' => static::e($party->registrationNumber ?? ''),
+            'client_tax_id' => static::e($party->taxId ?? ''),
+            'client_bank_account' => static::e($party->bankAccount ?? ''),
+            'client_representative' => static::e($party->representative ?? ''),
+            'client_email' => static::e($party->email ?? ''),
+            'client_phone' => static::e($party->phone ?? ''),
         ];
     }
 
@@ -549,13 +552,55 @@ class VariableRegistry
         }
 
         $values = static::resolve($document);
+        $knownKeys = static::getAllKeys();
 
-        foreach ($values as $key => $value) {
-            $placeholder = static::FORMAT_PREFIX . $key . static::FORMAT_SUFFIX;
-            $content = str_replace($placeholder, (string) $value, $content);
+        // Find all variables in content
+        preg_match_all(static::FORMAT_PATTERN, $content, $matches);
+        $usedVars = array_unique($matches[1] ?? []);
+
+        // Replace known variables, leave unknown ones visible
+        foreach ($usedVars as $varKey) {
+            $placeholder = static::FORMAT_PREFIX . $varKey . static::FORMAT_SUFFIX;
+
+            if (in_array($varKey, $knownKeys)) {
+                // Known variable - replace with value
+                $value = $values[$varKey] ?? '';
+
+                // Log warning for required variables with empty values
+                if ($value === '' && static::isRequiredVariable($varKey)) {
+                    \Log::warning('Variable resolution: required variable is empty', [
+                        'variable' => $varKey,
+                        'document_type' => $document instanceof Contract ? 'contract' : 'offer',
+                        'document_id' => $document->id,
+                    ]);
+                }
+
+                $content = str_replace($placeholder, (string) $value, $content);
+            } else {
+                // Unknown variable - leave as-is and log error
+                \Log::error('Variable resolution: unknown variable', [
+                    'variable' => $varKey,
+                    'document_type' => $document instanceof Contract ? 'contract' : 'offer',
+                    'document_id' => $document->id,
+                ]);
+                // Keep placeholder visible: {{unknown_var}} stays as {{unknown_var}}
+            }
         }
 
         return $content;
+    }
+
+    /**
+     * Check if a variable is required.
+     */
+    protected static function isRequiredVariable(string $key): bool
+    {
+        foreach (static::getDefinitions() as $vars) {
+            if (isset($vars[$key])) {
+                return $vars[$key]['required'] ?? false;
+            }
+        }
+        return false;
     }
 
     /**

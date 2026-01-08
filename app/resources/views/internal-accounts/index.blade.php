@@ -10,7 +10,105 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data>
+    @php
+        $accountsJson = $accounts->getCollection()->map(fn($a) => [
+            'id' => $a->id,
+            'is_owner' => $a->isOwner(),
+        ])->values();
+    @endphp
+
+    <script>
+        window.internalAccountsPage = function(config) {
+            return {
+                accounts: config.accounts || [],
+                selectedIds: [],
+                selectAll: false,
+                isLoading: false,
+                showPasswords: {},
+                selectedCount: 0,
+                hasSelection: false,
+
+                updateSelectionState() {
+                    this.selectedCount = this.selectedIds.length;
+                    this.hasSelection = this.selectedIds.length > 0;
+                },
+
+                toggleItem(id) {
+                    const idx = this.selectedIds.indexOf(id);
+                    if (idx === -1) this.selectedIds.push(id);
+                    else this.selectedIds.splice(idx, 1);
+                    this.updateSelectAllState();
+                    this.updateSelectionState();
+                },
+
+                isSelected(id) {
+                    return this.selectedIds.includes(id);
+                },
+
+                toggleAll() {
+                    if (this.selectAll) {
+                        this.selectedIds = this.accounts.filter(a => a.is_owner).map(a => a.id);
+                    } else {
+                        this.selectedIds = [];
+                    }
+                    this.updateSelectionState();
+                },
+
+                clearSelection() {
+                    this.selectedIds = [];
+                    this.selectAll = false;
+                    this.updateSelectionState();
+                },
+
+                updateSelectAllState() {
+                    const ownedAccounts = this.accounts.filter(a => a.is_owner);
+                    this.selectAll = ownedAccounts.length > 0 && this.selectedIds.length === ownedAccounts.length;
+                },
+
+                async bulkDelete() {
+                    if (this.selectedIds.length === 0) return;
+
+                    if (!confirm('{{ __("Are you sure you want to delete") }} ' + this.selectedIds.length + ' {{ __("account(s)? This action cannot be undone.") }}')) {
+                        return;
+                    }
+
+                    this.isLoading = true;
+
+                    try {
+                        const response = await fetch('/internal-accounts/bulk-delete', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ ids: this.selectedIds })
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            window.dispatchEvent(new CustomEvent('toast', {
+                                detail: { type: 'success', message: result.message }
+                            }));
+                            this.clearSelection();
+                            window.location.reload();
+                        } else {
+                            throw new Error(result.message || '{{ __("Failed to delete accounts") }}');
+                        }
+                    } catch (error) {
+                        window.dispatchEvent(new CustomEvent('toast', {
+                            detail: { type: 'error', message: error.message }
+                        }));
+                    } finally {
+                        this.isLoading = false;
+                    }
+                }
+            };
+        };
+    </script>
+
+    <div class="p-6 space-y-6" x-data="internalAccountsPage({ accounts: {{ Js::from($accountsJson) }} })">
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -125,6 +223,16 @@
             </x-ui.card-content>
         </x-ui.card>
 
+        <!-- Bulk Actions Toolbar -->
+        <x-bulk-toolbar resource="conturi">
+            <x-ui.button variant="destructive" @click="bulkDelete()">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                {{ __('Delete Selected') }}
+            </x-ui.button>
+        </x-bulk-toolbar>
+
         <!-- Accounts Table -->
         <x-ui.card>
             @if ($accounts->count() > 0)
@@ -132,6 +240,12 @@
                     <table class="w-full caption-bottom text-sm">
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
+                                <th class="px-6 py-4 w-10">
+                                    <input type="checkbox"
+                                           x-model="selectAll"
+                                           @change="toggleAll()"
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                </th>
                                 <x-ui.sortable-header column="account_name" label="{{ __('Account Name') }}" />
                                 <x-ui.sortable-header column="url" label="{{ __('URL') }}" />
                                 <x-ui.sortable-header column="username" label="{{ __('Username') }}" />
@@ -143,7 +257,14 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach ($accounts as $account)
-                                <x-ui.table-row x-data="{ showPassword{{ $account->id }}: false }">
+                                <x-ui.table-row>
+                                    <x-ui.table-cell class="w-10">
+                                        @if($account->isOwner())
+                                            <input type="checkbox" :checked="isSelected({{ $account->id }})" @change="toggleItem({{ $account->id }})" class="rounded border-slate-300 text-slate-900 focus:ring-slate-500">
+                                        @else
+                                            <span class="text-slate-300" title="{{ __('Only the owner can delete') }}">—</span>
+                                        @endif
+                                    </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="text-sm font-medium text-slate-900">
                                             {{ $account->account_name }}
@@ -189,24 +310,24 @@
                                         <div class="flex items-center gap-2">
                                             <span
                                                 class="text-sm font-mono"
-                                                :class="showPassword{{ $account->id }} ? 'text-slate-700' : 'text-slate-500'"
-                                                x-text="showPassword{{ $account->id }} ? '{{ $account->password }}' : '{{ $account->masked_password }}'"
+                                                :class="showPasswords[{{ $account->id }}] ? 'text-slate-700' : 'text-slate-500'"
+                                                x-text="showPasswords[{{ $account->id }}] ? '{{ $account->password }}' : '{{ $account->masked_password }}'"
                                             ></span>
                                             <button
-                                                @click="showPassword{{ $account->id }} = !showPassword{{ $account->id }}"
+                                                @click="showPasswords[{{ $account->id }}] = !showPasswords[{{ $account->id }}]"
                                                 class="text-slate-400 hover:text-slate-600 transition-colors"
-                                                :title="showPassword{{ $account->id }} ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'"
+                                                :title="showPasswords[{{ $account->id }}] ? '{{ __('Hide password') }}' : '{{ __('Show password') }}'"
                                             >
-                                                <svg x-show="!showPassword{{ $account->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg x-show="!showPasswords[{{ $account->id }}]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
-                                                <svg x-show="showPassword{{ $account->id }}" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
+                                                <svg x-show="showPasswords[{{ $account->id }}]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: none;">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
                                                 </svg>
                                             </button>
                                             <button
-                                                x-show="showPassword{{ $account->id }}"
+                                                x-show="showPasswords[{{ $account->id }}]"
                                                 onclick="copyToClipboard('{{ $account->password }}', 'Password')"
                                                 class="text-slate-400 hover:text-slate-600 transition-colors"
                                                 title="{{ __('Copy password') }}"

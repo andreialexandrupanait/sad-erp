@@ -194,6 +194,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
     // Internal Accounts Module (Conturi)
     Route::middleware('module:internal_accounts')->group(function () {
+        Route::post('internal-accounts/bulk-delete', [InternalAccountController::class, 'bulkDelete'])->name('internal-accounts.bulk-delete');
         Route::resource('internal-accounts', InternalAccountController::class);
         Route::post('internal-accounts/{internalAccount}/reveal-password', [InternalAccountController::class, 'revealPassword'])->middleware('require.password.confirmation')
             ->middleware('throttle:3,1')  // Stricter limit: 3 requests per minute for sensitive password reveals
@@ -394,6 +395,8 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('offers/{offer}/duplicate', [OfferController::class, 'duplicate'])->name('offers.duplicate');
         Route::post('offers/{offer}/approve', [OfferController::class, 'approve'])->name('offers.approve');
         Route::post('offers/{offer}/convert-to-contract', [OfferController::class, 'convertToContract'])->name('offers.convert-to-contract');
+        Route::post('offers/{offer}/regenerate-contract', [OfferController::class, 'regenerateContract'])->name('offers.regenerate-contract');
+        Route::patch('offers/{offer}/temp-client', [OfferController::class, 'updateTempClient'])->name('offers.update-temp-client');
         Route::post('offers/save-as-template', [OfferController::class, 'saveAsTemplate'])->name('offers.save-as-template');
         Route::post('offers/upload-image', [OfferController::class, 'uploadImage'])->name('offers.upload-image');
     });
@@ -408,8 +411,11 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('contracts/create', [ContractController::class, 'create'])->name('contracts.create');
         Route::post('contracts', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
-        Route::get('contracts/{contract}/builder', [ContractController::class, 'builder'])->name('contracts.builder');
+        Route::get('contracts/{contract}/edit', [ContractController::class, 'edit'])->name('contracts.edit');
+        // Legacy redirect: /builder -> /edit
+        Route::get('contracts/{contract}/builder', fn($contract) => redirect()->route('contracts.edit', $contract));
         Route::put('contracts/{contract}/content', [ContractController::class, 'updateContent'])->name('contracts.update-content');
+        Route::patch('contracts/{contract}/temp-client', [ContractController::class, 'updateTempClient'])->name('contracts.update-temp-client');
         Route::get('contracts/{contract}/content-hash', [ContractController::class, 'getContentHash'])->name('contracts.content-hash');
         Route::get('contracts/{contract}/validate', [ContractController::class, 'validateForPdf'])->name('contracts.validate');
         Route::put('contracts/{contract}/number', [ContractController::class, 'updateNumber'])->name('contracts.update-number');

@@ -152,4 +152,25 @@ class InternalAccount extends Model
         }
         return __('Unknown');
     }
+
+    /**
+     * Get is_owner attribute for JSON serialization
+     */
+    public function getIsOwnerAttribute()
+    {
+        return $this->isOwner();
+    }
+
+    /**
+     * Masked password for display
+     */
+    public function getMaskedPasswordAttribute()
+    {
+        return '••••••••';
+    }
+
+    /**
+     * Append computed attributes to JSON/array output
+     */
+    protected $appends = ['is_owner', 'masked_password'];
 }

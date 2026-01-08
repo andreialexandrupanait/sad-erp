@@ -164,6 +164,46 @@ class InternalAccountController extends Controller
     }
 
     /**
+     * Bulk delete internal accounts
+     */
+    public function bulkDelete(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:internal_accounts,id',
+        ]);
+
+        $deleted = 0;
+        $skipped = 0;
+
+        foreach ($validated['ids'] as $id) {
+            $account = InternalAccount::find($id);
+
+            if (!$account) {
+                $skipped++;
+                continue;
+            }
+
+            // Only owner can delete their accounts
+            if (!$account->isOwner()) {
+                $skipped++;
+                continue;
+            }
+
+            $account->delete();
+            $deleted++;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => __(':deleted account(s) deleted successfully.', ['deleted' => $deleted])
+                . ($skipped > 0 ? ' ' . __(':skipped skipped (not owner).', ['skipped' => $skipped]) : ''),
+            'deleted' => $deleted,
+            'skipped' => $skipped,
+        ]);
+    }
+
+    /**
      * Reveal password (returns JSON for AJAX)
      */
     public function revealPassword(InternalAccount $internalAccount)

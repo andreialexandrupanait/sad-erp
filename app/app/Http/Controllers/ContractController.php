@@ -213,7 +213,7 @@ class ContractController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('contracts.builder', $contract)
+                ->route('contracts.edit', $contract)
                 ->with('success', __('Contract created successfully. You can now edit its content.'));
 
         } catch (\Exception $e) {
@@ -341,11 +341,13 @@ class ContractController extends Controller
     {
         $this->authorize('view', $contract);
 
-        // Generate PDF preview (in-memory, no save)
-        $pdf = $this->contractService->generatePdfPreview($contract);
+        // Generate PDF preview (returns base64-encoded content)
+        $pdfBase64 = $this->contractService->generatePdfPreview($contract);
 
         // Return as inline PDF for browser viewing
-        return $pdf->stream($contract->contract_number . '-preview.pdf');
+        return response(base64_decode($pdfBase64))
+            ->header('Content-Type', 'application/pdf')
+            ->header('Content-Disposition', 'inline; filename="' . $contract->contract_number . '-preview.pdf"');
     }
 
     /**
@@ -387,27 +389,15 @@ class ContractController extends Controller
     }
 
     /**
-     * Show the contract builder/editor.
+     * Show the contract editor.
      */
-    public function builder(Contract $contract): View
+    public function edit(Contract $contract): View
     {
         $this->authorize('update', $contract);
 
-        $contract->load(['client', 'offer.items', 'items', 'contractTemplate', 'organization']);
+        $contract->load(['client', 'organization']);
 
-        // Get available templates
-        $templates = ContractTemplate::where('is_active', true)
-            ->orderBy('is_default', 'desc')
-            ->orderBy('name')
-            ->get(['id', 'name', 'category', 'is_default', 'content']);
-
-        // Get variables from centralized registry (grouped by category)
-        $variables = ContractVariableRegistry::getForUI();
-
-        // Generate services list HTML (bullet list, not table)
-        $servicesHtml = ContractVariableRegistry::renderServicesList($contract);
-
-        return view('contracts.builder', compact('contract', 'templates', 'variables', 'servicesHtml'));
+        return view('contracts.edit', compact('contract'));
     }
 
     /**
@@ -436,6 +426,41 @@ class ContractController extends Controller
             'message' => __('Contract content saved successfully.'),
             'content_hash' => hash('sha256', $contract->content ?? ''),
         ]);
+    }
+
+    /**
+     * Update temporary client details on a contract.
+     */
+    public function updateTempClient(Request $request, Contract $contract): RedirectResponse
+    {
+        $this->authorize('update', $contract);
+
+        $validated = $request->validate([
+            'temp_client_name' => 'required|string|max:255',
+            'temp_client_email' => 'nullable|email|max:255',
+            'temp_client_phone' => 'nullable|string|max:50',
+            'temp_client_company' => 'nullable|string|max:255',
+            'temp_client_address' => 'nullable|string|max:500',
+            'temp_client_tax_id' => 'nullable|string|max:50',
+            'temp_client_registration_number' => 'nullable|string|max:100',
+            'temp_client_bank_account' => 'nullable|string|max:100',
+        ]);
+
+        try {
+            $contract->update($validated);
+
+            // Re-render template content if contract has a template and is still draft
+            if ($contract->isDraft() && $contract->contractTemplate) {
+                $contract->load(['client', 'offer.items', 'items', 'organization', 'contractTemplate']);
+                $contractService = app(\App\Services\Contract\ContractService::class);
+                $content = $contractService->renderTemplateForContract($contract, $contract->contractTemplate);
+                $contract->update(['content' => $content]);
+            }
+
+            return back()->with('success', __('Client details updated successfully.'));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     /**

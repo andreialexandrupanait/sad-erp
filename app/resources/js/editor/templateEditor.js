@@ -144,6 +144,7 @@ export function templateEditor(initialData = {}) {
                 onUpdate: ({ editor }) => {
                     this.content = editor.getJSON()
                     this.updateCounts()
+                    this.updateHiddenInputs()  // Keep form inputs in sync
                     this.$dispatch('content-changed', { content: this.content })
                 },
                 onSelectionUpdate: ({ editor }) => {
@@ -152,10 +153,29 @@ export function templateEditor(initialData = {}) {
             })
 
             this.updateCounts()
+            this.updateHiddenInputs()  // Initialize form inputs
             this.isReady = true
 
             // Expose to window for debugging
             window.templateEditor = this.editor
+        },
+
+        /**
+         * Keep hidden form inputs in sync with editor content.
+         * Called on every content change and before form submission.
+         */
+        updateHiddenInputs() {
+            if (!this.editor) return
+
+            const blocksInput = document.getElementById('blocks-input')
+            const contentInput = document.getElementById('content-input')
+
+            if (blocksInput) {
+                blocksInput.value = JSON.stringify(this.editor.getJSON())
+            }
+            if (contentInput) {
+                contentInput.value = this.editor.getHTML()
+            }
         },
 
         // =====================================================================
@@ -353,17 +373,36 @@ export function templateEditor(initialData = {}) {
 
         insertVariable(name, options = {}) {
             if (!this.editor) {
-                console.error('Editor not initialized');
+                console.error('[Variable] Editor not initialized');
+                alert('Editor not ready. Please wait and try again.');
+                return;
+            }
+
+            if (!name) {
+                console.error('[Variable] No variable name provided');
+                return;
+            }
+
+            console.log('[Variable] Inserting:', name, 'with options:', options);
+
+            // Check if insertVariable command exists
+            if (typeof this.editor.commands.insertVariable !== 'function') {
+                console.error('[Variable] insertVariable command not available. Falling back to insertContent.');
+                // Fallback: insert as text with proper format
+                this.editor
+                    .chain()
+                    .focus()
+                    .insertContent({
+                        type: 'text',
+                        text: `{{${name}}}`
+                    })
+                    .run();
                 return;
             }
 
             // Use the Variable extension command - creates a proper TipTap node
-            // This ensures:
-            // 1. Variable is stored as a node in blocks JSON (survives save/load)
-            // 2. Variable renders as non-editable styled element
-            // 3. Variable serializes to {{name}} in HTML output
             try {
-                this.editor
+                const result = this.editor
                     .chain()
                     .focus()
                     .insertVariable(name, {
@@ -372,12 +411,14 @@ export function templateEditor(initialData = {}) {
                     })
                     .run();
 
+                console.log('[Variable] Insert result:', result);
+
                 // Update content reference after insertion
                 this.content = this.editor.getJSON();
+                this.updateHiddenInputs();
 
-                console.log('Variable inserted:', name);
             } catch (e) {
-                console.error('Error inserting variable:', e);
+                console.error('[Variable] Error inserting:', e);
 
                 // Fallback: insert as plain text with placeholder format
                 this.editor

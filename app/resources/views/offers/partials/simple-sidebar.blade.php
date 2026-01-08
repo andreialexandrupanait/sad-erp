@@ -48,6 +48,8 @@
                 <input type="text" x-model="newClient.tax_id" placeholder="{{ __('CUI / Tax ID') }}"
                        class="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 mb-3">
                 <input type="text" x-model="newClient.registration_number" placeholder="{{ __('Reg. Com. / Registration Number') }}"
+                       class="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2 mb-3">
+                <input type="text" x-model="newClient.bank_account" placeholder="{{ __('Bank Account (IBAN)') }}"
                        class="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
             </div>
         </div>

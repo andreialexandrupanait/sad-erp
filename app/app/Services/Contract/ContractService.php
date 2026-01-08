@@ -14,7 +14,8 @@ use App\Services\Contract\ContractVariableRegistry;
 use App\Services\VariableRegistry;
 use App\Services\Notification\NotificationService;
 use App\Services\Notification\Messages\ContractExpiringMessage;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\Enums\Format;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -147,13 +148,7 @@ class ContractService
             $content = $contract->template->render($this->getTemplateVariables($contract));
         }
 
-        // Generate PDF
-        $pdf = Pdf::loadView('contracts.pdf', [
-            'contract' => $contract,
-            'content' => $content,
-        ]);
-
-        // Save PDF
+        // Save PDF path
         $filename = "contracts/{$contract->organization_id}/{$contract->contract_number}.pdf";
         $path = storage_path("app/{$filename}");
 
@@ -163,7 +158,18 @@ class ContractService
             mkdir($directory, 0755, true);
         }
 
-        $pdf->save($path);
+        // Generate PDF using Spatie Laravel PDF (Chrome-based)
+        Pdf::view('contracts.pdf', [
+            'contract' => $contract,
+            'content' => $content,
+        ])
+        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
+            $browsershot->setChromePath('/usr/bin/chromium')
+                ->noSandbox()
+                ->disableGpu();
+        })
+        ->format(Format::A4)
+        ->save($path);
 
         // Update contract with PDF path
         $contract->update(['pdf_path' => $filename]);
@@ -173,8 +179,9 @@ class ContractService
 
     /**
      * Generate PDF preview (in-memory, no save) for inline viewing.
+     * Returns base64-encoded PDF content.
      */
-    public function generatePdfPreview(Contract $contract): \Barryvdh\DomPDF\PDF
+    public function generatePdfPreview(Contract $contract): string
     {
         $contract->load(['client', 'offer.items', 'template', 'contractTemplate', 'annexes', 'organization', 'items']);
 
@@ -187,11 +194,18 @@ class ContractService
             $content = $contract->template->render($this->getTemplateVariables($contract));
         }
 
-        // Generate PDF in memory (no save)
-        return Pdf::loadView('contracts.pdf', [
+        // Generate PDF in memory using Spatie Laravel PDF (Chrome-based)
+        return Pdf::view('contracts.pdf', [
             'contract' => $contract,
             'content' => $content,
-        ]);
+        ])
+        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
+            $browsershot->setChromePath('/usr/bin/chromium')
+                ->noSandbox()
+                ->disableGpu();
+        })
+        ->format(Format::A4)
+        ->base64();
     }
 
     /**
@@ -201,13 +215,7 @@ class ContractService
     {
         $annex->load(['contract.client', 'offer.items']);
 
-        // Generate PDF
-        $pdf = Pdf::loadView('contracts.annex-pdf', [
-            'annex' => $annex,
-            'contract' => $annex->contract,
-        ]);
-
-        // Save PDF
+        // Save PDF path
         $filename = "contracts/{$annex->contract->organization_id}/annexes/{$annex->annex_code}.pdf";
         $path = storage_path("app/{$filename}");
 
@@ -217,7 +225,18 @@ class ContractService
             mkdir($directory, 0755, true);
         }
 
-        $pdf->save($path);
+        // Generate PDF using Spatie Laravel PDF (Chrome-based)
+        Pdf::view('contracts.annex-pdf', [
+            'annex' => $annex,
+            'contract' => $annex->contract,
+        ])
+        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
+            $browsershot->setChromePath('/usr/bin/chromium')
+                ->noSandbox()
+                ->disableGpu();
+        })
+        ->format(Format::A4)
+        ->save($path);
 
         // Update annex with PDF path
         $annex->update(['pdf_path' => $filename]);
@@ -572,6 +591,9 @@ class ContractService
                 $contractData['temp_client_name'] = $offer->temp_client_name;
                 $contractData['temp_client_email'] = $offer->temp_client_email;
                 $contractData['temp_client_company'] = $offer->temp_client_company;
+                $contractData['temp_client_address'] = $offer->temp_client_address;
+                $contractData['temp_client_tax_id'] = $offer->temp_client_tax_id;
+                $contractData['temp_client_registration_number'] = $offer->temp_client_registration_number;
             }
 
             $contract = Contract::create($contractData);
@@ -635,6 +657,9 @@ class ContractService
             'name' => $offer->temp_client_name,
             'company_name' => $offer->temp_client_company,
             'email' => $offer->temp_client_email,
+            'address' => $offer->temp_client_address,
+            'tax_id' => $offer->temp_client_tax_id,
+            'registration_number' => $offer->temp_client_registration_number,
             'status_id' => $this->getDefaultClientStatusId($offer->organization_id),
         ]);
 

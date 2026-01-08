@@ -188,7 +188,7 @@
                             class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                             x-bind:disabled="bulkLoading"
                         >
-                            {{ __('Clear') }}
+                            {{ __('Deselect') }}
                         </button>
                     </div>
                 </div>
@@ -266,40 +266,46 @@
                                         <span x-show="!contract.end_date" class="text-slate-400">{{ __('Indefinite') }}</span>
                                     </td>
                                     <td class="px-6 py-4 text-right">
-                                        <div class="flex items-center justify-end gap-1">
+                                        <div class="flex items-center justify-end gap-3">
                                             {{-- View --}}
                                             <a :href="'/contracts/' + contract.id"
-                                               class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded inline-flex"
+                                               class="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors"
                                                title="{{ __('View') }}">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
                                             </a>
-                                            {{-- Edit Content (Builder) --}}
-                                            <a :href="'/contracts/' + contract.id + '/builder'"
-                                               class="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded inline-flex"
+                                            {{-- Edit Content --}}
+                                            <a :href="'/contracts/' + contract.id + '/edit'"
+                                               class="inline-flex items-center text-blue-600 hover:text-blue-900 transition-colors"
                                                title="{{ __('Edit Content') }}">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
                                             </a>
-                                            {{-- Download PDF (if available) --}}
-                                            <template x-if="contract.has_pdf">
-                                                <a :href="'/contracts/' + contract.id + '/download'"
-                                                   class="p-1.5 text-green-500 hover:text-green-700 hover:bg-green-50 rounded inline-flex"
-                                                   title="{{ __('Download PDF') }}">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                                                    </svg>
-                                                </a>
-                                            </template>
+                                            {{-- PDF Download --}}
+                                            <a :href="'/contracts/' + contract.id + '/download'"
+                                               class="inline-flex items-center text-green-600 hover:text-green-900 transition-colors"
+                                               title="{{ __('Download PDF') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </a>
+                                            {{-- Print --}}
+                                            <a :href="'/contracts/' + contract.id + '/download?print=1'" target="_blank"
+                                               class="inline-flex items-center text-purple-600 hover:text-purple-900 transition-colors"
+                                               title="{{ __('Print') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                                </svg>
+                                            </a>
                                             {{-- Delete (only for non-active contracts) --}}
                                             <template x-if="contract.status !== 'active'">
                                                 <button @click="deleteContract(contract.id, contract.contract_number)"
-                                                        class="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded inline-flex"
+                                                        class="inline-flex items-center text-red-600 hover:text-red-900 transition-colors"
                                                         title="{{ __('Delete') }}">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                     </svg>
                                                 </button>
@@ -478,7 +484,9 @@
             },
 
             async bulkDelete() {
-                if (this.selectedIds.length === 0) return;
+                if (this.selectedIds.length === 0) {
+                    return;
+                }
 
                 // Check for active contracts
                 const activeContracts = this.contracts.filter(c =>
@@ -497,6 +505,9 @@
                 this.bulkLoading = true;
 
                 try {
+                    // Ensure IDs are integers
+                    const ids = this.selectedIds.map(id => parseInt(id, 10));
+
                     const response = await fetch('/contracts/bulk-delete', {
                         method: 'POST',
                         headers: {
@@ -504,7 +515,7 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ ids: this.selectedIds })
+                        body: JSON.stringify({ ids: ids })
                     });
 
                     const result = await response.json();

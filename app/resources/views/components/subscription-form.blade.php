@@ -39,6 +39,8 @@
         @method($method)
     @endif
 
+    <x-unsaved-form-warning />
+
     <x-ui.card>
         <x-ui.card-content>
             <div class="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-6">

@@ -148,6 +148,7 @@ services:
       LETSENCRYPT_EMAIL: admin@simplead.ro
     networks:
       - erpnet
+      - proxy
     depends_on:
       - erp_app
 
@@ -177,6 +178,8 @@ networks:
   erpnet:
     driver: bridge
     name: erpnet
+  proxy:
+    external: true
 
 # ============================================================================
 # Volumes

@@ -300,6 +300,22 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
                                             </a>
+                                            {{-- PDF Download --}}
+                                            <a :href="'/offers/' + offer.id + '/pdf'"
+                                               class="inline-flex items-center text-green-600 hover:text-green-900 transition-colors"
+                                               title="{{ __('Download PDF') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                </svg>
+                                            </a>
+                                            {{-- Print --}}
+                                            <a :href="'/offers/' + offer.id + '/pdf?print=1'" target="_blank"
+                                               class="inline-flex items-center text-purple-600 hover:text-purple-900 transition-colors"
+                                               title="{{ __('Print') }}">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+                                                </svg>
+                                            </a>
                                             {{-- Send/Resend Email --}}
                                             <button x-show="offer.status !== 'rejected' && offer.status !== 'expired'"
                                                     @click="sendOffer(offer.id)"
@@ -486,9 +502,12 @@
             },
 
             async bulkDelete() {
-                if (this.selectedIds.length === 0) return;
+                if (this.selectedIds.length === 0) {
+                    return;
+                }
 
                 const count = this.selectedIds.length;
+
                 if (!confirm(`{{ __('Are you sure you want to delete') }} ${count} {{ __('offer(s)? This action cannot be undone.') }}`)) {
                     return;
                 }
@@ -496,6 +515,10 @@
                 this.isLoading = true;
 
                 try {
+                    // Ensure IDs are integers
+                    const ids = this.selectedIds.map(id => parseInt(id, 10));
+                    console.log('Sending bulk delete request with IDs:', ids);
+
                     const response = await fetch('/offers/bulk-delete', {
                         method: 'POST',
                         headers: {
@@ -503,16 +526,21 @@
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ ids: this.selectedIds })
+                        body: JSON.stringify({ ids: ids })
                     });
 
                     const result = await response.json();
 
                     if (result.success || response.ok) {
-                        this.$dispatch('notify', {
-                            type: 'success',
-                            message: result.message || `{{ __('Successfully deleted') }} ${count} {{ __('offer(s)') }}`
-                        });
+                        // Check if any were actually deleted
+                        if (result.deleted === 0 && result.skipped > 0) {
+                            alert('{{ __('No offers were deleted. All selected offers have linked contracts and cannot be deleted.') }}');
+                        } else {
+                            this.$dispatch('notify', {
+                                type: 'success',
+                                message: result.message || `{{ __('Successfully deleted') }} ${count} {{ __('offer(s)') }}`
+                            });
+                        }
 
                         this.clearSelection();
                         await this.fetchOffers();

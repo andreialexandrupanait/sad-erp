@@ -27,6 +27,8 @@ class Client extends Model
         'email',
         'phone',
         'address',
+        'bank_account',
+        'bank_name',
         'vat_payer',
         'total_incomes',
         'notes',

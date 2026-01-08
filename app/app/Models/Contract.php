@@ -36,7 +36,12 @@ class Contract extends Model
         // Temp client fields for contracts without a linked client
         'temp_client_name',
         'temp_client_email',
+        'temp_client_phone',
         'temp_client_company',
+        'temp_client_address',
+        'temp_client_tax_id',
+        'temp_client_registration_number',
+        'temp_client_bank_account',
         'is_finalized',
         'finalized_at',
         // Editing lock fields
@@ -113,6 +118,9 @@ class Contract extends Model
                 'temp_client_name',
                 'temp_client_email',
                 'temp_client_company',
+                'temp_client_address',
+                'temp_client_tax_id',
+                'temp_client_registration_number',
             ];
 
             foreach ($tempClientFields as $field) {

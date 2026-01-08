@@ -108,7 +108,8 @@ function simpleOfferBuilder() {
             phone: existingOffer?.temp_client_phone || '',
             address: existingOffer?.temp_client_address || '',
             tax_id: existingOffer?.temp_client_tax_id || '',
-            registration_number: existingOffer?.temp_client_registration_number || ''
+            registration_number: existingOffer?.temp_client_registration_number || '',
+            bank_account: existingOffer?.temp_client_bank_account || ''
         },
 
         // Offer Metadata - use organization defaults for new offers
@@ -557,6 +558,7 @@ function simpleOfferBuilder() {
                         temp_client_address: this.offer.client_id === 'new' ? this.newClient.address : null,
                         temp_client_tax_id: this.offer.client_id === 'new' ? this.newClient.tax_id : null,
                         temp_client_registration_number: this.offer.client_id === 'new' ? this.newClient.registration_number : null,
+                        temp_client_bank_account: this.offer.client_id === 'new' ? this.newClient.bank_account : null,
                         title: this.offer.title,
                         valid_until: this.offer.valid_until,
                         currency: this.offer.currency,

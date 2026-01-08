@@ -398,6 +398,10 @@ class ContractVariableRegistry
 
     /**
      * Replace all variables in content with resolved values.
+     *
+     * Known variables are replaced with their values (or empty string if null).
+     * Unknown variables (not in registry) are left as-is for visibility.
+     * Required variables with empty values are replaced but logged as warnings.
      */
     public static function render(string $content, Contract $contract): string
     {
@@ -406,13 +410,54 @@ class ContractVariableRegistry
         }
 
         $values = static::resolve($contract);
+        $definitions = static::getDefinitions();
+        $knownKeys = static::getAllKeys();
 
-        foreach ($values as $key => $value) {
-            $placeholder = static::FORMAT_PREFIX . $key . static::FORMAT_SUFFIX;
-            $content = str_replace($placeholder, (string) $value, $content);
+        // First, find all variables in content
+        preg_match_all(static::FORMAT_PATTERN, $content, $matches);
+        $usedVars = array_unique($matches[1] ?? []);
+
+        // Replace known variables
+        foreach ($usedVars as $varKey) {
+            $placeholder = static::FORMAT_PREFIX . $varKey . static::FORMAT_SUFFIX;
+
+            if (in_array($varKey, $knownKeys)) {
+                // Known variable - replace with value
+                $value = $values[$varKey] ?? '';
+
+                // Log warning for required variables with empty values
+                if ($value === '' && static::isRequired($varKey)) {
+                    \Log::warning('Contract variable resolution: required variable is empty', [
+                        'variable' => $varKey,
+                        'contract_id' => $contract->id,
+                    ]);
+                }
+
+                $content = str_replace($placeholder, (string) $value, $content);
+            } else {
+                // Unknown variable - leave as-is and log error
+                \Log::error('Contract variable resolution: unknown variable', [
+                    'variable' => $varKey,
+                    'contract_id' => $contract->id,
+                ]);
+                // Keep placeholder visible: {{unknown_var}} stays as {{unknown_var}}
+            }
         }
 
         return $content;
+    }
+
+    /**
+     * Check if a variable is required.
+     */
+    protected static function isRequired(string $key): bool
+    {
+        foreach (static::getDefinitions() as $vars) {
+            if (isset($vars[$key])) {
+                return $vars[$key]['required'] ?? false;
+            }
+        }
+        return false;
     }
 
     /**

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContractTemplate;
-use App\Services\Contract\ContractVariableRegistry;
+use App\Services\VariableRegistry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -34,7 +34,7 @@ class ContractTemplateController extends Controller
     public function create(): View
     {
         $categories = ContractTemplate::getCategories();
-        $variables = ContractVariableRegistry::getDefinitions();
+        $variables = VariableRegistry::getForUI(VariableRegistry::TYPE_CONTRACT);
 
         return view('settings.contract-templates.create', compact('categories', 'variables'));
     }
@@ -74,14 +74,15 @@ class ContractTemplateController extends Controller
      */
     public function edit(ContractTemplate $contractTemplate): View
     {
-        $categories = ContractTemplate::getCategories();
-        // Use ContractVariableRegistry for consistent variables
-        $variables = ContractVariableRegistry::getDefinitions();
+        \Log::info('[ContractTemplate] Loading template', [
+            'id' => $contractTemplate->id,
+            'content_length' => strlen($contractTemplate->content ?? ''),
+        ]);
 
-        return view('settings.contract-templates.edit-tiptap', [
+        return view('settings.contract-templates.edit-simple', [
             'template' => $contractTemplate,
-            'categories' => $categories,
-            'variables' => $variables,
+            'categories' => ContractTemplate::getCategories(),
+            'variables' => VariableRegistry::getForUI(VariableRegistry::TYPE_CONTRACT),
         ]);
     }
 
@@ -94,45 +95,20 @@ class ContractTemplateController extends Controller
             'name' => 'required|string|max:255',
             'category' => 'required|string|max:100',
             'content' => 'nullable|string|max:500000',
-            'blocks' => 'nullable|string|max:500000', // JSON string from TipTap
             'is_default' => 'boolean',
             'is_active' => 'boolean',
         ]);
 
-        $validated['is_default'] = $validated['is_default'] ?? false;
-        $validated['is_active'] = $validated['is_active'] ?? true;
-
-        // Decode blocks JSON string to array for storage
-        if (!empty($validated['blocks']) && is_string($validated['blocks'])) {
-            $decoded = json_decode($validated['blocks'], true);
-            $validated['blocks'] = $decoded ?: null;
-        }
-
-        // CRITICAL: Clear empty blocks to prevent load issues
-        // An empty doc {type:'doc',content:[]} should be treated as null
-        // This ensures content (HTML) is used on reload instead of empty blocks
-        if (!empty($validated['blocks'])) {
-            $blocks = $validated['blocks'];
-            $hasContent = isset($blocks['content'])
-                && is_array($blocks['content'])
-                && count($blocks['content']) > 0;
-
-            if (!$hasContent) {
-                $validated['blocks'] = null;
-                \Log::info('ContractTemplate: Cleared empty blocks for template', [
-                    'template_id' => $contractTemplate->id,
-                    'content_length' => strlen($validated['content'] ?? ''),
-                ]);
-            }
-        }
-
         // Log for debugging
-        \Log::info('ContractTemplate update', [
-            'template_id' => $contractTemplate->id,
-            'has_blocks' => !empty($validated['blocks']),
+        \Log::info('[ContractTemplate] Saving template', [
+            'id' => $contractTemplate->id,
             'content_length' => strlen($validated['content'] ?? ''),
-            'blocks_type' => $validated['blocks']['type'] ?? 'none',
         ]);
+
+        // Handle checkbox values (unchecked = not sent)
+        $validated['is_default'] = $request->boolean('is_default');
+        $validated['is_active'] = $request->boolean('is_active');
+        $validated['blocks'] = null; // Phase 1: Not using blocks
 
         // If setting as default, unset other defaults
         if ($validated['is_default'] && !$contractTemplate->is_default) {
@@ -140,6 +116,13 @@ class ContractTemplateController extends Controller
         }
 
         $contractTemplate->update($validated);
+
+        // Verify save
+        $contractTemplate->refresh();
+        \Log::info('[ContractTemplate] Template saved', [
+            'id' => $contractTemplate->id,
+            'content_length' => strlen($contractTemplate->content ?? ''),
+        ]);
 
         if ($request->wantsJson()) {
             return response()->json([
@@ -156,29 +139,58 @@ class ContractTemplateController extends Controller
      */
     public function destroy(Request $request, ContractTemplate $contractTemplate): JsonResponse|RedirectResponse
     {
-        // Don't allow deleting if contracts are using this template
-        if ($contractTemplate->contracts()->count() > 0) {
+        try {
+            \Log::info('[ContractTemplate] Delete request', [
+                'id' => $contractTemplate->id,
+                'name' => $contractTemplate->name,
+            ]);
+
+            // Don't allow deleting if contracts are using this template
+            $contractsCount = $contractTemplate->contracts()->count();
+            if ($contractsCount > 0) {
+                \Log::warning('[ContractTemplate] Cannot delete - in use by contracts', [
+                    'id' => $contractTemplate->id,
+                    'contracts_count' => $contractsCount,
+                ]);
+
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => __('Cannot delete template that is in use by contracts.'),
+                    ], 422);
+                }
+                return back()->with('error', __('Cannot delete template that is in use by :count contracts.', ['count' => $contractsCount]));
+            }
+
+            $contractTemplate->delete();
+
+            \Log::info('[ContractTemplate] Template deleted', ['id' => $contractTemplate->id]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Contract template deleted successfully.'),
+                ]);
+            }
+
+            return redirect()
+                ->route('settings.contract-templates.index')
+                ->with('success', __('Contract template deleted successfully.'));
+
+        } catch (\Exception $e) {
+            \Log::error('[ContractTemplate] Delete failed', [
+                'id' => $contractTemplate->id,
+                'error' => $e->getMessage(),
+            ]);
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
-                    'error' => __('Cannot delete template that is in use by contracts.'),
-                ], 422);
+                    'error' => __('Failed to delete template: ') . $e->getMessage(),
+                ], 500);
             }
-            return back()->with('error', __('Cannot delete template that is in use by contracts.'));
+            return back()->with('error', __('Failed to delete template: ') . $e->getMessage());
         }
-
-        $contractTemplate->delete();
-
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => __('Contract template deleted successfully.'),
-            ]);
-        }
-
-        return redirect()
-            ->route('settings.contract-templates.index')
-            ->with('success', __('Contract template deleted successfully.'));
     }
 
     /**

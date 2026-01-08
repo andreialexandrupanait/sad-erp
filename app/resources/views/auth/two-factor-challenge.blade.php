@@ -1,5 +1,5 @@
 <x-guest-layout>
-    <div class="mb-4 text-sm text-gray-600 dark:text-gray-400">
+    <div class="mb-4 text-sm text-slate-600">
         {{ __('Please confirm access to your account by entering the authentication code provided by your authenticator application.') }}
     </div>
 
@@ -9,8 +9,8 @@
         <div x-show="!useRecoveryCode">
             <!-- Authentication Code -->
             <div>
-                <x-input-label for="code" :value="__('Code')" />
-                <x-text-input
+                <x-ui.label for="code">{{ __('Code') }}</x-ui.label>
+                <x-ui.input
                     id="code"
                     class="block mt-1 w-full"
                     type="text"
@@ -28,8 +28,8 @@
         <div x-show="useRecoveryCode" x-cloak>
             <!-- Recovery Code -->
             <div>
-                <x-input-label for="recovery_code" :value="__('Recovery Code')" />
-                <x-text-input
+                <x-ui.label for="recovery_code">{{ __('Recovery Code') }}</x-ui.label>
+                <x-ui.input
                     id="recovery_code"
                     class="block mt-1 w-full"
                     type="text"
@@ -43,21 +43,21 @@
         <div class="flex items-center justify-between mt-4">
             <button
                 type="button"
-                class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline cursor-pointer"
+                class="text-sm text-slate-600 hover:text-slate-900 underline cursor-pointer"
                 x-on:click="useRecoveryCode = !useRecoveryCode"
                 x-text="useRecoveryCode ? '{{ __('Use an authentication code') }}' : '{{ __('Use a recovery code') }}'"
             >
             </button>
 
-            <x-primary-button>
+            <x-ui.button type="submit">
                 {{ __('Verify') }}
-            </x-primary-button>
+            </x-ui.button>
         </div>
 
         <div class="mt-4 text-center">
             <form method="POST" action="{{ route('2fa.cancel') }}" class="inline">
                 @csrf
-                <button type="submit" class="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline">
+                <button type="submit" class="text-sm text-slate-600 hover:text-slate-900 underline">
                     {{ __('Cancel and log out') }}
                 </button>
             </form>

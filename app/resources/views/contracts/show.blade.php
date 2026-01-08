@@ -5,7 +5,7 @@
         <div class="flex items-center gap-2">
             {{-- Edit Content (Draft or Active contracts) --}}
             @if(in_array($contract->status, ['draft', 'active']))
-                <x-ui.button variant="primary" onclick="window.location.href='{{ route('contracts.builder', $contract) }}'">
+                <x-ui.button variant="primary" onclick="window.location.href='{{ route('contracts.edit', $contract) }}'">
                     <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                     </svg>
@@ -108,11 +108,11 @@
                                 <p class="mt-4 text-slate-500">{{ __('Contract content not yet generated.') }}</p>
                                 <p class="mt-1 text-sm text-slate-400">{{ __('Use the contract builder to create the content.') }}</p>
                                 @if(in_array($contract->status, ['draft', 'active']))
-                                    <a href="{{ route('contracts.builder', $contract) }}" class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                                    <a href="{{ route('contracts.edit', $contract) }}" class="mt-4 inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
                                         <svg class="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
-                                        {{ __('Open Contract Builder') }}
+                                        {{ __('Edit Contract') }}
                                     </a>
                                 @endif
                             </div>
@@ -120,38 +120,50 @@
                     </x-ui.card-content>
                 </x-ui.card>
 
-                {{-- Original Offer --}}
+                {{-- Contracted Services (from Original Offer) --}}
                 @if($contract->offer)
+                    @php
+                        $selectedItems = $contract->offer->items->where('is_selected', true);
+                        $selectedTotal = $selectedItems->sum('total_price');
+                    @endphp
                     <x-ui.card>
                         <x-ui.card-header>
-                            <h3 class="font-semibold">{{ __('Original Offer') }}</h3>
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-semibold">{{ __('Contracted Services') }}</h3>
+                                <a href="{{ route('offers.show', $contract->offer) }}" class="text-sm text-blue-600 hover:text-blue-800">
+                                    {{ $contract->offer->offer_number }}
+                                </a>
+                            </div>
                         </x-ui.card-header>
                         <x-ui.card-content>
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <a href="{{ route('offers.show', $contract->offer) }}" class="font-medium text-blue-600 hover:text-blue-800">
-                                        {{ $contract->offer->offer_number }}
-                                    </a>
-                                    <p class="text-sm text-slate-500">{{ $contract->offer->title }}</p>
-                                </div>
-                                <div class="text-right">
-                                    <div class="font-medium">{{ number_format($contract->offer->total, 2) }} {{ $contract->offer->currency }}</div>
-                                    <div class="text-sm text-slate-500">{{ __('Accepted') }} {{ $contract->offer->accepted_at->format('d.m.Y') }}</div>
-                                </div>
-                            </div>
-
-                            {{-- Offer Items Summary --}}
-                            <div class="mt-4 pt-4 border-t">
-                                <h4 class="text-sm font-medium text-slate-700 mb-2">{{ __('Items') }}</h4>
-                                <ul class="space-y-1 text-sm">
-                                    @foreach($contract->offer->items as $item)
-                                        <li class="flex justify-between">
-                                            <span class="text-slate-600">{{ $item->title }}</span>
-                                            <span class="font-medium">{{ number_format($item->total_price, 2) }} {{ $contract->offer->currency }}</span>
+                            {{-- Selected Services --}}
+                            @if($selectedItems->count() > 0)
+                                <ul class="space-y-2 text-sm">
+                                    @foreach($selectedItems as $item)
+                                        <li class="flex justify-between items-start">
+                                            <div>
+                                                <span class="text-slate-900">{{ $item->title }}</span>
+                                                @if($item->quantity > 1)
+                                                    <span class="text-slate-500">(x{{ $item->quantity }})</span>
+                                                @endif
+                                            </div>
+                                            <span class="font-medium text-slate-900">{{ number_format($item->total_price, 2) }} {{ $contract->offer->currency }}</span>
                                         </li>
                                     @endforeach
                                 </ul>
-                            </div>
+                                <div class="mt-4 pt-3 border-t flex justify-between items-center">
+                                    <span class="font-medium text-slate-700">{{ __('Total') }}</span>
+                                    <span class="font-semibold text-slate-900">{{ number_format($selectedTotal, 2) }} {{ $contract->offer->currency }}</span>
+                                </div>
+                            @else
+                                <p class="text-sm text-slate-500 italic">{{ __('No services selected') }}</p>
+                            @endif
+
+                            @if($contract->offer->accepted_at)
+                                <div class="mt-3 pt-3 border-t text-xs text-slate-500">
+                                    {{ __('Accepted') }}: {{ $contract->offer->accepted_at->format('d.m.Y H:i') }}
+                                </div>
+                            @endif
                         </x-ui.card-content>
                     </x-ui.card>
                 @endif
@@ -191,47 +203,183 @@
             {{-- Sidebar --}}
             <div class="space-y-6">
                 {{-- Client Info --}}
+                <div x-data="{ editingClient: false }">
                 <x-ui.card>
-                    <x-ui.card-header>
+                    <x-ui.card-header class="flex items-center justify-between">
                         <h3 class="font-semibold">{{ __('Client') }}</h3>
+                        @if(($contract->temp_client_name || $contract->offer?->temp_client_name) && $contract->isDraft())
+                            <button @click="editingClient = true" type="button"
+                                    class="inline-flex items-center justify-center w-7 h-7 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                                    title="{{ __('Edit client details') }}">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </button>
+                        @endif
                     </x-ui.card-header>
                     <x-ui.card-content>
-                        <div class="space-y-3">
+                        <div>
                             @if($contract->client)
-                                <div>
-                                    <a href="{{ route('clients.show', $contract->client) }}" class="font-medium text-slate-900 hover:text-blue-600">
-                                        {{ $contract->client->name }}
-                                    </a>
-                                    @if($contract->client->company_name)
-                                        <div class="text-sm text-slate-500">{{ $contract->client->company_name }}</div>
-                                    @endif
-                                </div>
-                                @if($contract->client->email)
-                                    <div class="text-sm">
-                                        <span class="text-slate-500">{{ __('Email:') }}</span>
-                                        <a href="mailto:{{ $contract->client->email }}" class="text-blue-600 hover:underline">{{ $contract->client->email }}</a>
+                                @php
+                                    // Use temp overrides if they exist, otherwise fall back to client data
+                                    $displayName = $contract->temp_client_name ?: $contract->offer?->temp_client_name ?: $contract->client->name;
+                                    $displayCompany = $contract->temp_client_company ?: $contract->offer?->temp_client_company ?: ($contract->client->company_name ?? null);
+                                    $displayContactPerson = $contract->client->contact_person;
+                                    $displayEmail = $contract->temp_client_email ?: $contract->offer?->temp_client_email ?: $contract->client->email;
+                                    $displayPhone = $contract->temp_client_phone ?: $contract->offer?->temp_client_phone ?: $contract->client->phone;
+                                    $displayAddress = $contract->temp_client_address ?: $contract->offer?->temp_client_address ?: $contract->client->address;
+                                    $displayTaxId = $contract->temp_client_tax_id ?: $contract->offer?->temp_client_tax_id ?: $contract->client->tax_id;
+                                    $displayRegNumber = $contract->temp_client_registration_number ?: $contract->offer?->temp_client_registration_number ?: $contract->client->registration_number;
+                                    $displayBankAccount = $contract->temp_client_bank_account ?: $contract->offer?->temp_client_bank_account ?: ($contract->client->bank_account ?? null);
+                                    $displayBankName = $contract->client->bank_name ?? null;
+                                @endphp
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-semibold">
+                                        {{ strtoupper(substr($displayName, 0, 2)) }}
                                     </div>
-                                @endif
-                            @elseif($contract->temp_client_name || $contract->offer?->temp_client_name)
-                                {{-- Temp client from offer --}}
-                                <div>
-                                    <span class="font-medium text-slate-900">
-                                        {{ $contract->temp_client_name ?? $contract->offer?->temp_client_name }}
-                                    </span>
-                                    @if($contract->temp_client_company ?? $contract->offer?->temp_client_company)
-                                        <div class="text-sm text-slate-500">{{ $contract->temp_client_company ?? $contract->offer?->temp_client_company }}</div>
-                                    @endif
-                                </div>
-                                @if($contract->temp_client_email ?? $contract->offer?->temp_client_email)
-                                    <div class="text-sm">
-                                        <span class="text-slate-500">{{ __('Email:') }}</span>
-                                        <a href="mailto:{{ $contract->temp_client_email ?? $contract->offer?->temp_client_email }}" class="text-blue-600 hover:underline">
-                                            {{ $contract->temp_client_email ?? $contract->offer?->temp_client_email }}
+                                    <div class="flex-1 min-w-0">
+                                        <a href="{{ route('clients.show', $contract->client) }}" class="font-semibold text-slate-900 hover:text-blue-600">
+                                            {{ $displayName }}
                                         </a>
+                                        @if($displayCompany && $displayCompany !== $displayName)
+                                            <p class="text-sm text-slate-500">{{ $displayCompany }}</p>
+                                        @endif
                                     </div>
-                                @endif
-                                <div class="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-                                    {{ __('Temporary client - not yet in client database') }}
+                                </div>
+                                <div class="mt-4 space-y-2">
+                                    @if($displayContactPerson)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                            <span>{{ $displayContactPerson }}</span>
+                                        </div>
+                                    @endif
+                                    @if($displayEmail)
+                                        <a href="mailto:{{ $displayEmail }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ $displayEmail }}
+                                        </a>
+                                    @endif
+                                    @if($displayPhone)
+                                        <a href="tel:{{ $displayPhone }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                            </svg>
+                                            {{ $displayPhone }}
+                                        </a>
+                                    @endif
+                                    @if($displayAddress)
+                                        <div class="flex items-start gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span>{{ $displayAddress }}</span>
+                                        </div>
+                                    @endif
+                                    @if($displayTaxId)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            <span>{{ __('CUI:') }} {{ $displayTaxId }}</span>
+                                        </div>
+                                    @endif
+                                    @if($displayRegNumber)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                            <span>{{ __('Reg. Com.:') }} {{ $displayRegNumber }}</span>
+                                        </div>
+                                    @endif
+                                    @if($displayBankAccount)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                            <span>{{ __('IBAN:') }} {{ $displayBankAccount }}@if($displayBankName) ({{ $displayBankName }})@endif</span>
+                                        </div>
+                                    @endif
+                                </div>
+                            @elseif($contract->temp_client_name || $contract->offer?->temp_client_name)
+                                {{-- Temp client from contract or offer --}}
+                                @php
+                                    $tempName = $contract->temp_client_name ?? $contract->offer?->temp_client_name;
+                                    $tempCompany = $contract->temp_client_company ?? $contract->offer?->temp_client_company;
+                                    $tempEmail = $contract->temp_client_email ?? $contract->offer?->temp_client_email;
+                                    $tempPhone = $contract->temp_client_phone ?? $contract->offer?->temp_client_phone;
+                                    $tempAddress = $contract->temp_client_address ?? $contract->offer?->temp_client_address;
+                                    $tempTaxId = $contract->temp_client_tax_id ?? $contract->offer?->temp_client_tax_id;
+                                    $tempRegNumber = $contract->temp_client_registration_number ?? $contract->offer?->temp_client_registration_number;
+                                    $tempBankAccount = $contract->temp_client_bank_account ?? $contract->offer?->temp_client_bank_account;
+                                @endphp
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="font-semibold text-slate-900">{{ $tempName }}</p>
+                                        @if($tempCompany)
+                                            <p class="text-sm text-slate-500">{{ $tempCompany }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="mt-4 space-y-2">
+                                    @if($tempEmail)
+                                        <a href="mailto:{{ $tempEmail }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            {{ $tempEmail }}
+                                        </a>
+                                    @endif
+                                    @if($tempPhone)
+                                        <a href="tel:{{ $tempPhone }}" class="flex items-center gap-2 text-sm text-slate-600 hover:text-blue-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                            </svg>
+                                            {{ $tempPhone }}
+                                        </a>
+                                    @endif
+                                    @if($tempAddress)
+                                        <div class="flex items-start gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            </svg>
+                                            <span>{{ $tempAddress }}</span>
+                                        </div>
+                                    @endif
+                                    @if($tempTaxId)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                            <span>{{ __('CUI:') }} {{ $tempTaxId }}</span>
+                                        </div>
+                                    @endif
+                                    @if($tempRegNumber)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                            <span>{{ __('Reg. Com.:') }} {{ $tempRegNumber }}</span>
+                                        </div>
+                                    @endif
+                                    @if($tempBankAccount)
+                                        <div class="flex items-center gap-2 text-sm text-slate-600">
+                                            <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                            </svg>
+                                            <span>{{ __('IBAN:') }} {{ $tempBankAccount }}</span>
+                                        </div>
+                                    @endif
                                 </div>
                             @else
                                 <p class="text-slate-500 italic">{{ __('No client assigned') }}</p>
@@ -239,6 +387,106 @@
                         </div>
                     </x-ui.card-content>
                 </x-ui.card>
+
+                {{-- Edit Temp Client Modal --}}
+                @if(($contract->temp_client_name || $contract->offer?->temp_client_name) && $contract->isDraft())
+                    @php
+                        $tempName = $contract->temp_client_name ?? $contract->offer?->temp_client_name;
+                        $tempCompany = $contract->temp_client_company ?? $contract->offer?->temp_client_company;
+                        $tempEmail = $contract->temp_client_email ?? $contract->offer?->temp_client_email;
+                        $tempPhone = $contract->temp_client_phone ?? $contract->offer?->temp_client_phone;
+                        $tempAddress = $contract->temp_client_address ?? $contract->offer?->temp_client_address;
+                        $tempTaxId = $contract->temp_client_tax_id ?? $contract->offer?->temp_client_tax_id;
+                        $tempRegNumber = $contract->temp_client_registration_number ?? $contract->offer?->temp_client_registration_number;
+                        $tempBankAccount = $contract->temp_client_bank_account ?? $contract->offer?->temp_client_bank_account;
+                    @endphp
+                    <div x-show="editingClient" x-cloak
+                         class="fixed inset-0 z-50 overflow-y-auto"
+                         x-transition:enter="ease-out duration-300"
+                         x-transition:enter-start="opacity-0"
+                         x-transition:enter-end="opacity-100"
+                         x-transition:leave="ease-in duration-200"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0">
+                        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+                            <div class="fixed inset-0 bg-slate-500 bg-opacity-75 transition-opacity" @click="editingClient = false"></div>
+
+                            <div class="relative bg-white rounded-xl shadow-xl transform transition-all sm:max-w-lg sm:w-full mx-auto"
+                                 x-transition:enter="ease-out duration-300"
+                                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave="ease-in duration-200"
+                                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                                 @click.stop>
+                                <form action="{{ route('contracts.update-temp-client', $contract) }}" method="POST">
+                                    @csrf
+                                    @method('PATCH')
+                                    <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 rounded-t-xl">
+                                        <h3 class="text-lg font-semibold text-slate-900">{{ __('Edit Client Details') }}</h3>
+                                    </div>
+                                    <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Name') }} <span class="text-red-500">*</span></label>
+                                            <input type="text" name="temp_client_name" value="{{ $tempName }}" required
+                                                   class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Company') }}</label>
+                                            <input type="text" name="temp_client_company" value="{{ $tempCompany }}"
+                                                   class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Email') }}</label>
+                                                <input type="email" name="temp_client_email" value="{{ $tempEmail }}"
+                                                       class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Phone') }}</label>
+                                                <input type="text" name="temp_client_phone" value="{{ $tempPhone }}"
+                                                       class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Address') }}</label>
+                                            <textarea name="temp_client_address" rows="2"
+                                                      class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ $tempAddress }}</textarea>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('CUI') }}</label>
+                                                <input type="text" name="temp_client_tax_id" value="{{ $tempTaxId }}"
+                                                       class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Reg. Com.') }}</label>
+                                                <input type="text" name="temp_client_registration_number" value="{{ $tempRegNumber }}"
+                                                       class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Bank Account (IBAN)') }}</label>
+                                            <input type="text" name="temp_client_bank_account" value="{{ $tempBankAccount }}"
+                                                   class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        </div>
+                                    </div>
+                                    <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end gap-3">
+                                        <button type="button" @click="editingClient = false"
+                                                class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                                            {{ __('Cancel') }}
+                                        </button>
+                                        <button type="submit"
+                                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                                            {{ __('Save Changes') }}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+                </div>
 
                 {{-- Contract Info --}}
                 <x-ui.card>
@@ -384,11 +632,11 @@
                 @endif
 
                 {{-- Version History --}}
-                <x-ui.card x-data="versionHistory({{ $contract->id }})">
+                <x-ui.card x-data="versionHistory({{ $contract->id }})" x-init="loadVersions()">
                     <x-ui.card-header>
                         <div class="flex items-center justify-between">
                             <h3 class="font-semibold text-slate-900">{{ __('Version History') }}</h3>
-                            <button @click="loadVersions()" class="text-xs text-blue-600 hover:text-blue-800">
+                            <button @click="loadVersions()" class="text-xs text-blue-600 hover:text-blue-800" title="{{ __('Refresh') }}">
                                 <svg class="w-4 h-4" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                 </svg>
@@ -396,10 +644,8 @@
                         </div>
                     </x-ui.card-header>
                     <x-ui.card-content>
-                        <div x-show="!loaded" class="text-center py-4">
-                            <button @click="loadVersions()" class="text-sm text-blue-600 hover:text-blue-800">
-                                {{ __('Load versions') }}
-                            </button>
+                        <div x-show="loading && !loaded" class="text-center py-4">
+                            <x-ui.spinner size="sm" />
                         </div>
                         <div x-show="loaded">
                             <template x-if="versions.length === 0">

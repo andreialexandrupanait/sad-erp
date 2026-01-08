@@ -379,6 +379,77 @@ class OfferController extends Controller
     }
 
     /**
+     * Regenerate contract from updated offer.
+     */
+    public function regenerateContract(Offer $offer): RedirectResponse
+    {
+        if (!$offer->contract_id || !$offer->contract) {
+            return back()->with('error', __('This offer does not have a linked contract.'));
+        }
+
+        $contract = $offer->contract;
+
+        if (!$contract->isDraft()) {
+            return back()->with('error', __('Only draft contracts can be regenerated.'));
+        }
+
+        try {
+            // Update contract with current offer data
+            $contract->update([
+                'total_value' => $offer->total,
+                'currency' => $offer->currency,
+                'temp_client_name' => $offer->temp_client_name,
+                'temp_client_email' => $offer->temp_client_email,
+                'temp_client_phone' => $offer->temp_client_phone,
+                'temp_client_company' => $offer->temp_client_company,
+                'temp_client_address' => $offer->temp_client_address,
+                'temp_client_tax_id' => $offer->temp_client_tax_id,
+                'temp_client_registration_number' => $offer->temp_client_registration_number,
+                'temp_client_bank_account' => $offer->temp_client_bank_account,
+            ]);
+
+            // Re-render template content if contract has a template
+            $contract->load(['client', 'offer.items', 'items', 'organization', 'contractTemplate']);
+            if ($contract->contractTemplate) {
+                $contractService = app(\App\Services\Contract\ContractService::class);
+                $content = $contractService->renderTemplateForContract($contract, $contract->contractTemplate);
+                $contract->update(['content' => $content]);
+            }
+
+            return redirect()
+                ->route('contracts.show', $contract)
+                ->with('success', __('Contract regenerated with updated offer data.'));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Update temporary client details on an offer.
+     */
+    public function updateTempClient(Request $request, Offer $offer): RedirectResponse
+    {
+        $validated = $request->validate([
+            'temp_client_name' => 'required|string|max:255',
+            'temp_client_email' => 'nullable|email|max:255',
+            'temp_client_phone' => 'nullable|string|max:50',
+            'temp_client_company' => 'nullable|string|max:255',
+            'temp_client_address' => 'nullable|string|max:500',
+            'temp_client_tax_id' => 'nullable|string|max:50',
+            'temp_client_registration_number' => 'nullable|string|max:100',
+            'temp_client_bank_account' => 'nullable|string|max:100',
+        ]);
+
+        try {
+            $offer->update($validated);
+
+            return back()->with('success', __('Client details updated successfully.'));
+        } catch (\Exception $e) {
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
      * Public view for client.
      */
     public function publicView(string $token): View
@@ -719,6 +790,10 @@ class OfferController extends Controller
             'temp_client_email' => 'nullable|email|max:255',
             'temp_client_phone' => 'nullable|string|max:50',
             'temp_client_company' => 'nullable|string|max:255',
+            'temp_client_address' => 'nullable|string|max:500',
+            'temp_client_tax_id' => 'nullable|string|max:50',
+            'temp_client_registration_number' => 'nullable|string|max:50',
+            'temp_client_bank_account' => 'nullable|string|max:100',
             'title' => 'nullable|string|max:255',
             'valid_until' => 'nullable|date',
             'currency' => 'required|string|max:10',
@@ -752,6 +827,10 @@ class OfferController extends Controller
             'temp_client_email' => $validated['temp_client_email'] ?? null,
             'temp_client_phone' => $validated['temp_client_phone'] ?? null,
             'temp_client_company' => $validated['temp_client_company'] ?? null,
+            'temp_client_address' => $validated['temp_client_address'] ?? null,
+            'temp_client_tax_id' => $validated['temp_client_tax_id'] ?? null,
+            'temp_client_registration_number' => $validated['temp_client_registration_number'] ?? null,
+            'temp_client_bank_account' => $validated['temp_client_bank_account'] ?? null,
             'title' => $validated['title'],
             'valid_until' => $validated['valid_until'],
             'currency' => $validated['currency'],
@@ -824,6 +903,10 @@ class OfferController extends Controller
             'temp_client_email' => 'nullable|email|max:255',
             'temp_client_phone' => 'nullable|string|max:50',
             'temp_client_company' => 'nullable|string|max:255',
+            'temp_client_address' => 'nullable|string|max:500',
+            'temp_client_tax_id' => 'nullable|string|max:50',
+            'temp_client_registration_number' => 'nullable|string|max:50',
+            'temp_client_bank_account' => 'nullable|string|max:100',
             'title' => 'nullable|string|max:255',
             'valid_until' => 'nullable|date',
             'currency' => 'required|string|max:10',
@@ -857,6 +940,10 @@ class OfferController extends Controller
             'temp_client_email' => $validated['temp_client_email'] ?? null,
             'temp_client_phone' => $validated['temp_client_phone'] ?? null,
             'temp_client_company' => $validated['temp_client_company'] ?? null,
+            'temp_client_address' => $validated['temp_client_address'] ?? null,
+            'temp_client_tax_id' => $validated['temp_client_tax_id'] ?? null,
+            'temp_client_registration_number' => $validated['temp_client_registration_number'] ?? null,
+            'temp_client_bank_account' => $validated['temp_client_bank_account'] ?? null,
             'title' => $validated['title'],
             'valid_until' => $validated['valid_until'],
             'currency' => $validated['currency'],

@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Mews\Purifier\Facades\Purifier;
+use HTMLPurifier;
+use HTMLPurifier_Config;
 
 class HtmlSanitizerService
 {
@@ -19,56 +20,59 @@ class HtmlSanitizerService
             return $html;
         }
 
-        // Configuration for HTMLPurifier
-        $config = [
-            'HTML.Allowed' => implode(',', [
-                // Headings
-                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        // Pre-process: Remove legacy TipTap data-* attributes that HTMLPurifier doesn't understand
+        // These were used by the old editor but are no longer needed
+        $html = preg_replace('/\s+data-(?:variable|required|fallback|type|label|node-type|id)="[^"]*"/i', '', $html);
+        $html = preg_replace('/\s+contenteditable="[^"]*"/i', '', $html);
 
-                // Paragraphs and breaks
-                'p', 'br', 'hr',
+        // Create HTMLPurifier config directly for better control
+        $config = HTMLPurifier_Config::createDefault();
 
-                // Text formatting
-                'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'sub', 'sup', 'small',
+        // Basic settings
+        $config->set('Core.Encoding', 'UTF-8');
+        $config->set('HTML.Doctype', 'HTML 4.01 Transitional');
 
-                // Lists
-                'ul', 'ol', 'li', 'dl', 'dt', 'dd',
+        // Allow specific elements and attributes
+        $config->set('HTML.Allowed', implode(',', [
+            // Headings
+            'h1[style|class]', 'h2[style|class]', 'h3[style|class]', 'h4[style|class]', 'h5[style|class]', 'h6[style|class]',
 
-                // Links
-                'a[href|title|target]',
+            // Paragraphs and breaks
+            'p[style|class]', 'br', 'hr',
 
-                // Tables
-                'table[border|cellpadding|cellspacing|width]',
-                'thead', 'tbody', 'tfoot', 'tr', 'th[colspan|rowspan]', 'td[colspan|rowspan]',
+            // Text formatting
+            'b', 'strong', 'i', 'em', 'u', 's', 'strike', 'sub', 'sup', 'small',
 
-                // Block elements
-                'div[class|id]', 'span[class|id]', 'blockquote', 'pre', 'code',
+            // Lists
+            'ul[style|class]', 'ol[style|class]', 'li[style|class]', 'dl', 'dt', 'dd',
 
-                // Images (for company logos in offers/contracts)
-                'img[src|alt|title|width|height]',
-            ]),
+            // Links
+            'a[href|title|target]',
 
-            // Allow specific attributes
-            'HTML.AllowedAttributes' => 'href,title,target,src,alt,width,height,class,id,colspan,rowspan,border,cellpadding,cellspacing',
+            // Tables
+            'table[border|cellpadding|cellspacing|width|style|class]',
+            'thead', 'tbody', 'tfoot',
+            'tr[style|class]',
+            'th[colspan|rowspan|style|class]',
+            'td[colspan|rowspan|style|class]',
 
-            // Allow safe protocols for links
-            'URI.AllowedSchemes' => ['http' => true, 'https' => true, 'mailto' => true],
+            // Block elements
+            'div[style|class|id]', 'span[style|class|id]', 'blockquote', 'pre', 'code',
 
-            // Disable links to javascript
-            'URI.DisableExternalResources' => false,
-            'URI.DisableResources' => false,
+            // Images (for company logos in offers/contracts)
+            'img[src|alt|title|width|height|style|class]',
+        ]));
 
-            // Convert relative URLs to absolute (optional)
-            'URI.MakeAbsolute' => false,
+        // Allow safe protocols for links
+        $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
 
-            // Character encoding
-            'Core.Encoding' => 'UTF-8',
+        // Allow safe CSS properties
+        $config->set('CSS.AllowedProperties', 'color,background-color,font-size,font-weight,font-family,text-align,text-decoration,margin,margin-top,margin-bottom,margin-left,margin-right,padding,padding-top,padding-bottom,padding-left,padding-right,border,border-collapse,width,height,line-height');
 
-            // Allow safe CSS for styling
-            'CSS.AllowedProperties' => 'color,background-color,font-size,font-weight,text-align,margin,padding',
-        ];
+        // Create purifier and clean
+        $purifier = new HTMLPurifier($config);
 
-        return Purifier::clean($html, $config);
+        return $purifier->purify($html);
     }
 
     /**
@@ -85,22 +89,21 @@ class HtmlSanitizerService
         }
 
         // More restrictive configuration for public views
-        $config = [
-            'HTML.Allowed' => implode(',', [
-                'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-                'p', 'br', 'hr',
-                'b', 'strong', 'i', 'em', 'u',
-                'ul', 'ol', 'li',
-                'table', 'thead', 'tbody', 'tr', 'th', 'td',
-                'div', 'span',
-            ]),
+        $config = HTMLPurifier_Config::createDefault();
+        $config->set('Core.Encoding', 'UTF-8');
+        $config->set('HTML.Doctype', 'HTML 4.01 Transitional');
+        $config->set('HTML.Allowed', implode(',', [
+            'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+            'p', 'br', 'hr',
+            'b', 'strong', 'i', 'em', 'u',
+            'ul', 'ol', 'li',
+            'table', 'thead', 'tbody', 'tr', 'th', 'td',
+            'div', 'span',
+        ]));
 
-            'HTML.AllowedAttributes' => '',  // No attributes allowed in public view
-            'URI.AllowedSchemes' => [],      // No links allowed
-            'Core.Encoding' => 'UTF-8',
-        ];
+        $purifier = new HTMLPurifier($config);
 
-        return Purifier::clean($html, $config);
+        return $purifier->purify($html);
     }
 
     /**

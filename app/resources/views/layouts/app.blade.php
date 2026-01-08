@@ -1,9 +1,28 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+@php
+    $userTheme = auth()->check() ? auth()->user()->getSetting('theme', 'light') : 'light';
+@endphp
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $userTheme === 'dark' ? 'dark' : '' }}" data-theme="{{ $userTheme }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+
+        <!-- Theme Detection Script (must run early to prevent flash) -->
+        <script>
+            (function() {
+                const theme = document.documentElement.dataset.theme;
+                if (theme === 'auto') {
+                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        document.documentElement.classList.add('dark');
+                    }
+                    // Listen for system theme changes
+                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                        document.documentElement.classList.toggle('dark', e.matches);
+                    });
+                }
+            })();
+        </script>
 
         <title>{{ $globalAppSettings['app_name'] ?? config('app.name', 'Laravel') }}</title>
 
@@ -967,12 +986,17 @@
         </style>
         @stack('styles')
     </head>
-    <body class="font-sans antialiased bg-slate-50" x-data="{
+    <body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200" x-data="{
         sidebarOpen: true,
         touchStartX: 0,
         touchCurrentX: 0,
         isDragging: false
     }">
+        <!-- Skip to main content link for accessibility -->
+        <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+            Skip to main content
+        </a>
+
         <div class="flex h-screen overflow-hidden">
             <!-- Sidebar - toggleable on mobile, always visible on desktop -->
             <x-sidebar
@@ -1025,17 +1049,17 @@
             <!-- Main Content Area -->
             <div class="flex-1 flex flex-col overflow-hidden">
                 <!-- Global Header -->
-                <header class="bg-white border-b border-slate-200 sticky top-0 z-30 flex-shrink-0 h-16">
+                <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 flex-shrink-0 h-16">
                     <div class="flex items-center justify-between h-full px-4 md:px-6 gap-4">
                         <!-- Left: Toggle + Breadcrumb/Title -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <!-- Sidebar Toggle -->
                             <button
                                 @click="sidebarOpen = !sidebarOpen"
-                                class="p-2 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0"
+                                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
                                 aria-label="Toggle sidebar"
                             >
-                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                                 </svg>
                             </button>
@@ -1044,7 +1068,7 @@
                             <div class="min-w-0 flex-1">
                                 @isset($pageTitle)
                                     <div class="flex flex-col">
-                                        <h1 class="text-sm font-bold text-slate-900 truncate uppercase tracking-wide">{{ $pageTitle }}</h1>
+                                        <h1 class="text-sm font-bold text-slate-900 dark:text-white truncate uppercase tracking-wide">{{ $pageTitle }}</h1>
                                         @if(!isset($hideBreadcrumb) || !$hideBreadcrumb)
                                             @isset($breadcrumb)
                                                 <div class="mt-0.5">
@@ -1081,7 +1105,7 @@
                 </header>
 
                 <!-- Page Content -->
-                <main class="flex-1 overflow-y-auto bg-slate-50">
+                <main id="main-content" class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900" role="main" tabindex="-1">
                     {{ $slot }}
                 </main>
             </div>
@@ -1093,8 +1117,14 @@
         <!-- Global Confirm Dialog -->
         <x-ui.confirm-dialog />
 
-        <!-- Livewire Scripts (MUST load before Alpine.js) -->
+        <!-- Command Palette (Cmd+K) -->
+        <x-command-palette />
+
+        <!-- Livewire Scripts (includes Alpine.js) -->
         @livewireScripts
+
+        <!-- Load Vite bundle (registers Alpine components via alpine:init) -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- File Uploader Component for financial forms -->
         <script>
@@ -1183,288 +1213,7 @@
         };
         </script>
 
-        <!-- Clients Page Component -->
-        <script>
-        function clientsPage(initialData = {}) {
-            return {
-                filters: {
-                    status: initialData.filters?.status || [],
-                    q: initialData.filters?.q || '',
-                    sort: initialData.filters?.sort || 'name:asc',
-                    page: initialData.filters?.page || 1
-                },
-                ui: { viewMode: 'table', grouped: false, perPage: 25, collapsedGroups: {} },
-                clients: initialData.initialClients || [],
-                statuses: initialData.statuses || [],
-                statusCounts: initialData.initialStatusCounts || { total: 0, by_status: {} },
-                pagination: initialData.initialPagination || { total: 0, per_page: 25, current_page: 1, last_page: 1, from: 0, to: 0 },
-                loading: false,
-                initialLoad: false,
-                selectedIds: [],
-                selectAll: false,
-                savingStatus: {},
-                openStatusDropdown: null,
-
-                get selectedCount() { return this.selectedIds.length; },
-                get hasSelection() { return this.selectedIds.length > 0; },
-                get sortColumn() { return this.filters.sort.split(':')[0]; },
-                get sortDirection() { return this.filters.sort.split(':')[1] || 'asc'; },
-                get pages() {
-                    const pages = [], current = this.pagination.current_page, last = this.pagination.last_page;
-                    if (last <= 7) { for (let i = 1; i <= last; i++) pages.push(i); }
-                    else {
-                        pages.push(1);
-                        if (current > 3) pages.push('...');
-                        for (let i = Math.max(2, current - 1); i <= Math.min(last - 1, current + 1); i++) pages.push(i);
-                        if (current < last - 2) pages.push('...');
-                        pages.push(last);
-                    }
-                    return pages;
-                },
-
-                init() {
-                    this.loadUiPreferences();
-                    this.parseUrlFilters();
-                    // Skip initial load if we already have server-rendered data
-                    if (this.clients.length === 0) {
-                        this.loadClients();
-                    }
-                    window.addEventListener('popstate', () => { this.parseUrlFilters(); this.loadClients(); });
-                },
-
-                loadUiPreferences() {
-                    const stored = localStorage.getItem('clients_ui_prefs');
-                    if (stored) {
-                        try {
-                            const prefs = JSON.parse(stored);
-                            this.ui.viewMode = prefs.viewMode || 'table';
-                            this.ui.grouped = prefs.grouped || false;
-                            this.ui.perPage = prefs.perPage || 25;
-                            this.ui.collapsedGroups = prefs.collapsedGroups || {};
-                        } catch (e) { console.error('Failed to parse UI preferences:', e); }
-                    }
-                },
-
-                saveUiPreferences() { localStorage.setItem('clients_ui_prefs', JSON.stringify(this.ui)); },
-
-                parseUrlFilters() {
-                    const params = new URLSearchParams(window.location.search);
-                    if (params.has('status')) this.filters.status = params.get('status').split(',').filter(Boolean);
-                    if (params.has('q')) this.filters.q = params.get('q');
-                    if (params.has('sort')) this.filters.sort = params.get('sort');
-                    if (params.has('page')) this.filters.page = parseInt(params.get('page')) || 1;
-                },
-
-                async loadClients() {
-                    this.loading = true;
-                    try {
-                        const params = new URLSearchParams();
-                        if (this.filters.status.length) params.set('status', this.filters.status.join(','));
-                        if (this.filters.q) params.set('q', this.filters.q);
-                        if (this.filters.sort && this.filters.sort !== 'name:asc') params.set('sort', this.filters.sort);
-                        if (this.filters.page > 1) params.set('page', this.filters.page);
-                        params.set('limit', this.ui.perPage);
-
-                        const response = await fetch(`/clients${params.toString() ? '?' + params.toString() : ''}`, {
-                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
-                        });
-                        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                        const data = await response.json();
-                        this.clients = data.clients || [];
-                        this.pagination = data.pagination || this.pagination;
-                        this.statusCounts = data.status_counts || this.statusCounts;
-                        this.clearSelection();
-                    } catch (error) {
-                        console.error('Failed to load clients:', error);
-                        this.showToast('Failed to load clients', 'error');
-                    } finally {
-                        this.loading = false;
-                        this.initialLoad = false;
-                    }
-                },
-
-                updateUrl() {
-                    const params = new URLSearchParams();
-                    if (this.filters.status.length) params.set('status', this.filters.status.join(','));
-                    if (this.filters.q) params.set('q', this.filters.q);
-                    if (this.filters.sort && this.filters.sort !== 'name:asc') params.set('sort', this.filters.sort);
-                    if (this.filters.page > 1) params.set('page', this.filters.page);
-                    history.pushState({}, '', params.toString() ? `?${params.toString()}` : window.location.pathname);
-                },
-
-                toggleStatus(slug) {
-                    const idx = this.filters.status.indexOf(slug);
-                    if (idx === -1) this.filters.status.push(slug);
-                    else this.filters.status.splice(idx, 1);
-                    this.filters.page = 1;
-                    this.updateUrl();
-                    this.loadClients();
-                },
-
-                clearStatusFilter() { this.filters.status = []; this.filters.page = 1; this.updateUrl(); this.loadClients(); },
-
-                setSort(column) {
-                    const [currentCol, currentDir] = this.filters.sort.split(':');
-                    if (currentCol === column) {
-                        this.filters.sort = `${column}:${currentDir === 'asc' ? 'desc' : 'asc'}`;
-                    } else {
-                        const defaultDesc = ['revenue', 'total_incomes', 'created', 'created_at'];
-                        this.filters.sort = `${column}:${defaultDesc.includes(column) ? 'desc' : 'asc'}`;
-                    }
-                    this.filters.page = 1;
-                    this.updateUrl();
-                    this.loadClients();
-                },
-
-                search(query) { this.filters.q = query; this.filters.page = 1; this.updateUrl(); this.loadClients(); },
-
-                goToPage(page) {
-                    if (page < 1 || page > this.pagination.last_page || page === '...') return;
-                    this.filters.page = page;
-                    this.updateUrl();
-                    this.loadClients();
-                },
-
-                setViewMode(mode) { this.ui.viewMode = mode; this.saveUiPreferences(); },
-                toggleGrouped() { this.ui.grouped = !this.ui.grouped; this.saveUiPreferences(); },
-                setPerPage(perPage) { this.ui.perPage = parseInt(perPage); this.filters.page = 1; this.saveUiPreferences(); this.loadClients(); },
-                toggleGroupCollapse(statusId) { const key = statusId || 'null'; this.ui.collapsedGroups[key] = !this.ui.collapsedGroups[key]; this.saveUiPreferences(); },
-                isGroupCollapsed(statusId) { return this.ui.collapsedGroups[statusId || 'null'] || false; },
-
-                toggleItem(id) {
-                    const idx = this.selectedIds.indexOf(id);
-                    if (idx === -1) this.selectedIds.push(id);
-                    else this.selectedIds.splice(idx, 1);
-                    this.updateSelectAllState();
-                },
-                isSelected(id) { return this.selectedIds.includes(id); },
-                toggleSelectAll() { this.selectedIds = this.selectAll ? this.clients.map(c => c.id) : []; },
-                clearSelection() { this.selectedIds = []; this.selectAll = false; },
-                updateSelectAllState() { this.selectAll = this.clients.length > 0 && this.selectedIds.length === this.clients.length; },
-
-                async updateClientStatus(client, newStatusId) {
-                    if (this.savingStatus[client.id]) return;
-                    this.savingStatus[client.id] = true;
-                    try {
-                        const response = await fetch(`/clients/${client.slug || client.id}/status`, {
-                            method: 'PATCH',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
-                            body: JSON.stringify({ status_id: newStatusId })
-                        });
-                        const data = await response.json();
-                        if (data.success) {
-                            const clientIndex = this.clients.findIndex(c => c.id === client.id);
-                            if (clientIndex !== -1) {
-                                const newStatus = this.statuses.find(s => s.id === newStatusId);
-                                this.clients[clientIndex].status_id = newStatusId;
-                                this.clients[clientIndex].status = newStatus ? { id: newStatus.id, name: newStatus.name, slug: newStatus.slug, color_background: newStatus.color_background, color_text: newStatus.color_text } : null;
-                            }
-                            this.showToast(`Status changed to "${this.statuses.find(s => s.id === newStatusId)?.name || 'Updated'}"`, 'success');
-                        } else throw new Error(data.message || 'Failed');
-                    } catch (error) { console.error('Error updating status:', error); this.showToast('Error updating status', 'error'); }
-                    finally { this.savingStatus[client.id] = false; }
-                },
-
-                getStatusCount(statusId) { return this.statusCounts.by_status[statusId] || 0; },
-                getClientsForStatus(statusId) { return this.clients.filter(c => c.status_id === statusId); },
-                getClientsWithoutStatus() { return this.clients.filter(c => !c.status_id); },
-
-                async bulkUpdateStatus(newStatusId) {
-                    if (!this.hasSelection || !confirm(`Update status for ${this.selectedCount} client(s)?`)) return;
-                    this.loading = true;
-                    try {
-                        const response = await fetch('/clients/bulk-update', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
-                            body: JSON.stringify({ ids: this.selectedIds, action: 'update_status', status_id: newStatusId })
-                        });
-                        if (response.ok) { this.showToast('Status updated successfully', 'success'); this.clearSelection(); await this.loadClients(); }
-                        else throw new Error('Failed');
-                    } catch (error) { this.showToast('An error occurred', 'error'); }
-                    finally { this.loading = false; }
-                },
-
-                async bulkExport() {
-                    if (!this.hasSelection || !confirm(`Export ${this.selectedCount} client(s) to CSV?`)) return;
-                    try {
-                        const response = await fetch('/clients/bulk-export', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-                            body: JSON.stringify({ ids: this.selectedIds, action: 'export' })
-                        });
-                        if (response.ok) {
-                            const blob = await response.blob();
-                            const url = window.URL.createObjectURL(blob);
-                            const a = document.createElement('a'); a.href = url; a.download = 'clients_export.csv';
-                            document.body.appendChild(a); a.click(); window.URL.revokeObjectURL(url); document.body.removeChild(a);
-                            this.showToast('Export completed', 'success'); this.clearSelection();
-                        }
-                    } catch (error) { this.showToast('Export failed', 'error'); }
-                },
-
-                async bulkDelete() {
-                    if (!this.hasSelection || !confirm(`Delete ${this.selectedCount} client(s)? This cannot be undone.`)) return;
-                    this.loading = true;
-                    try {
-                        const response = await fetch('/clients/bulk-update', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
-                            body: JSON.stringify({ ids: this.selectedIds, action: 'delete' })
-                        });
-                        if (response.ok) { this.showToast('Clients deleted', 'success'); this.clearSelection(); await this.loadClients(); }
-                        else throw new Error('Failed');
-                    } catch (error) { this.showToast('An error occurred', 'error'); }
-                    finally { this.loading = false; }
-                },
-
-                // Status Dropdown Management
-                toggleStatusDropdown(clientId) {
-                    this.openStatusDropdown = this.openStatusDropdown === clientId ? null : clientId;
-                },
-
-                closeStatusDropdown() {
-                    this.openStatusDropdown = null;
-                },
-
-                isStatusDropdownOpen(clientId) {
-                    return this.openStatusDropdown === clientId;
-                },
-
-                showToast(message, type = 'info') {
-                    let container = document.getElementById('toast-container');
-                    if (!container) { container = document.createElement('div'); container.id = 'toast-container'; container.className = 'fixed top-4 right-4 z-50 space-y-2'; document.body.appendChild(container); }
-                    const toast = document.createElement('div');
-                    toast.className = `px-4 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-blue-600'}`;
-                    // Use DOM methods instead of innerHTML to prevent XSS
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'flex items-center gap-2';
-                    const icon = document.createElement('span');
-                    icon.innerHTML = type === 'success' ? '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>' : '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>';
-                    const text = document.createElement('span');
-                    text.textContent = message;
-                    wrapper.appendChild(icon);
-                    wrapper.appendChild(text);
-                    toast.appendChild(wrapper);
-                    container.appendChild(toast);
-                    setTimeout(() => { toast.style.opacity = '0'; setTimeout(() => toast.remove(), 300); }, 3000);
-                },
-
-                formatCurrency(value) { return new Intl.NumberFormat('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value || 0) + ' RON'; },
-
-                copyToClipboard(text, event) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        const el = event.currentTarget;
-                        const orig = el.innerHTML;
-                        el.innerHTML = '<span class="flex items-center gap-1 text-green-600"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Copied!</span>';
-                        setTimeout(() => { el.innerHTML = orig; }, 2000);
-                    });
-                }
-            };
-        }
-        </script>
-
-        <!-- Load Vite bundle (exports components to window) -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Clients Page Component is loaded via Vite from resources/js/clients-page.js -->
 
         <!-- Page-specific Scripts -->
         @stack('scripts')

@@ -113,10 +113,22 @@ return new class extends Migration
 
     /**
      * Check if an index exists using raw SQL.
+     * Supports both MySQL and SQLite.
      */
     private function indexExists(string $table, string $indexName): bool
     {
-        $result = DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$indexName]);
+        $driver = DB::connection()->getDriverName();
+
+        if ($driver === 'sqlite') {
+            $result = DB::select(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = ?",
+                [$indexName]
+            );
+        } else {
+            // MySQL/MariaDB
+            $result = DB::select("SHOW INDEX FROM `{$table}` WHERE Key_name = ?", [$indexName]);
+        }
+
         return count($result) > 0;
     }
 };

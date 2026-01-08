@@ -433,14 +433,26 @@
             },
 
             async bulkDelete() {
-                if (this.selectedIds.length === 0) return;
+                if (this.selectedIds.length === 0) {
+                    return;
+                }
 
                 const count = this.selectedIds.length;
+
                 if (!confirm(`{{ __('Are you sure you want to delete') }} ${count} {{ __('template(s)? This action cannot be undone.') }}`)) {
                     return;
                 }
 
                 this.isLoading = true;
+
+                // Get the model types for each selected ID
+                const types = this.selectedIds.map(id => {
+                    const template = this.templates.find(t => t.id === id);
+                    return template ? template.model_type : null;
+                });
+
+                // Ensure IDs are integers
+                const ids = this.selectedIds.map(id => parseInt(id, 10));
 
                 try {
                     const response = await fetch('/settings/document-templates/bulk-delete', {
@@ -450,15 +462,20 @@
                             'X-CSRF-TOKEN': '{{ csrf_token() }}',
                             'Accept': 'application/json'
                         },
-                        body: JSON.stringify({ ids: this.selectedIds })
+                        body: JSON.stringify({ ids: ids, types: types })
                     });
 
                     const result = await response.json();
 
                     if (result.success || response.ok) {
+                        let message = result.message || `{{ __('Successfully deleted') }} ${count} {{ __('template(s)') }}`;
+                        if (result.errors && result.errors.length > 0) {
+                            message += '\n' + result.errors.join('\n');
+                        }
+
                         this.$dispatch('notify', {
                             type: 'success',
-                            message: result.message || `{{ __('Successfully deleted') }} ${count} {{ __('template(s)') }}`
+                            message: message
                         });
 
                         this.clearSelection();

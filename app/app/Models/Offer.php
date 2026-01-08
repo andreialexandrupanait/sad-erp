@@ -25,6 +25,7 @@ class Offer extends Model
         'temp_client_address',
         'temp_client_tax_id',
         'temp_client_registration_number',
+        'temp_client_bank_account',
         'created_by_user_id',
         'template_id',
         'contract_id',
