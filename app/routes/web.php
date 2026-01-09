@@ -22,6 +22,7 @@ use App\Http\Controllers\Financial\ExpenseImportController;
 use App\Http\Controllers\OfferController;
 use App\Http\Controllers\ContractController;
 use App\Http\Controllers\ContractTemplateController;
+use App\Http\Controllers\DocumentFileController;
 use App\Http\Controllers\DocumentTemplateController;
 use App\Http\Controllers\ClientNoteController;
 use App\Http\Controllers\ShareController;
@@ -296,14 +297,6 @@ Route::middleware(['auth', '2fa'])->group(function () {
         // Email Integration Settings - redirect to unified notifications page
         Route::get('settings/email', fn() => redirect()->route('settings.notifications'))->name('settings.email.index');
 
-        // ClickUp Integration Settings
-        Route::prefix('settings/clickup')->name('settings.clickup.')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'index'])->name('index');
-            Route::post('/', [\App\Http\Controllers\Settings\ClickUpController::class, 'update'])->name('update');
-            Route::post('/test', [\App\Http\Controllers\Settings\ClickUpController::class, 'test'])->name('test');
-            Route::post('/disconnect', [\App\Http\Controllers\Settings\ClickUpController::class, 'disconnect'])->name('disconnect');
-        });
-
         // Anthropic (Claude AI) Integration Settings
         Route::prefix('settings/anthropic')->name('settings.anthropic.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Settings\AnthropicController::class, 'index'])->name('index');
@@ -312,6 +305,14 @@ Route::middleware(['auth', '2fa'])->group(function () {
             Route::post('/disconnect', [\App\Http\Controllers\Settings\AnthropicController::class, 'disconnect'])->name('disconnect');
         });
 
+
+        // R2 Storage Integration Settings
+        Route::prefix('settings/r2')->name('settings.r2.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Settings\R2StorageController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Settings\R2StorageController::class, 'update'])->name('update');
+            Route::post('/test', [\App\Http\Controllers\Settings\R2StorageController::class, 'test'])->name('test');
+            Route::post('/disconnect', [\App\Http\Controllers\Settings\R2StorageController::class, 'disconnect'])->name('disconnect');
+        });
         // Smartbill Integration Settings
         Route::prefix('settings/smartbill')->name('settings.smartbill.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Settings\SmartbillController::class, 'index'])->name('index');
@@ -396,6 +397,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('offers/{offer}/approve', [OfferController::class, 'approve'])->name('offers.approve');
         Route::post('offers/{offer}/convert-to-contract', [OfferController::class, 'convertToContract'])->name('offers.convert-to-contract');
         Route::post('offers/{offer}/regenerate-contract', [OfferController::class, 'regenerateContract'])->name('offers.regenerate-contract');
+        Route::post('offers/{offer}/regenerate-annex', [OfferController::class, 'regenerateAnnex'])->name('offers.regenerate-annex');
         Route::patch('offers/{offer}/temp-client', [OfferController::class, 'updateTempClient'])->name('offers.update-temp-client');
         Route::post('offers/save-as-template', [OfferController::class, 'saveAsTemplate'])->name('offers.save-as-template');
         Route::post('offers/upload-image', [OfferController::class, 'uploadImage'])->name('offers.upload-image');
@@ -408,6 +410,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('contracts/bulk-export', [ContractController::class, 'bulkExport'])
             ->middleware('throttle:10,1')
             ->name('contracts.bulk-export');
+        Route::post('contracts/bulk-terminate', [ContractController::class, 'bulkTerminate'])->name('contracts.bulk-terminate');
         Route::get('contracts/create', [ContractController::class, 'create'])->name('contracts.create');
         Route::post('contracts', [ContractController::class, 'store'])->name('contracts.store');
         Route::get('contracts/{contract}', [ContractController::class, 'show'])->name('contracts.show');
@@ -432,6 +435,9 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('contracts/{contract}/preview', [ContractController::class, 'previewPdf'])->name('contracts.preview');
         Route::get('contracts/{contract}/download', [ContractController::class, 'downloadPdf'])->name('contracts.download');
         Route::get('contracts/{contract}/annexes/{annex}/download', [ContractController::class, 'downloadAnnexPdf'])->name('contracts.annex.download');
+        Route::get('contracts/{contract}/annexes/{annex}', [ContractController::class, 'showAnnex'])->name('contracts.annex.show');
+        Route::get('contracts/{contract}/annexes/{annex}/edit', [ContractController::class, 'editAnnex'])->name('contracts.annex.edit');
+        Route::put('contracts/{contract}/annexes/{annex}', [ContractController::class, 'updateAnnex'])->name('contracts.annex.update');
         Route::get('api/clients/{client}/contracts', [ContractController::class, 'forClient'])->name('api.clients.contracts');
 
         // Contract Audit Trail & Versioning (Phase 4)
@@ -445,6 +451,26 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('contracts/{contract}/lock', [ContractController::class, 'acquireLock'])->name('contracts.lock');
         Route::post('contracts/{contract}/unlock', [ContractController::class, 'releaseLock'])->name('contracts.unlock');
         Route::post('contracts/{contract}/refresh-lock', [ContractController::class, 'refreshLock'])->name('contracts.refresh-lock');
+
+        // Document Files (versioned document storage)
+        Route::prefix('documents')->name('documents.')->group(function () {
+            Route::get('{documentFile}/download', [DocumentFileController::class, 'download'])->name('download');
+            Route::get('{documentFile}/view', [DocumentFileController::class, 'view'])->name('view');
+        });
+
+        // Contract Document Management
+        Route::post('contracts/{contract}/upload-signed', [DocumentFileController::class, 'uploadSignedContract'])
+            ->name('contracts.upload-signed');
+        Route::post('contracts/{contract}/regenerate-draft', [ContractController::class, 'generatePdf'])
+            ->name('contracts.regenerate-draft');
+        Route::get('contracts/{contract}/document-versions', [DocumentFileController::class, 'contractVersions'])
+            ->name('contracts.document-versions');
+
+        // Annex Document Management
+        Route::post('contracts/{contract}/annexes/{annex}/upload-signed', [DocumentFileController::class, 'uploadSignedAnnex'])
+            ->name('contracts.annexes.upload-signed');
+        Route::get('contracts/{contract}/annexes/{annex}/document-versions', [DocumentFileController::class, 'annexVersions'])
+            ->name('contracts.annexes.document-versions');
     });
 
     // Document Templates (Settings)
@@ -464,6 +490,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::post('contract-templates/{contractTemplate}/duplicate', [ContractTemplateController::class, 'duplicate'])->name('contract-templates.duplicate');
         Route::post('contract-templates/{contractTemplate}/set-default', [ContractTemplateController::class, 'setDefault'])->name('contract-templates.set-default');
         Route::post('contract-templates/{contractTemplate}/toggle-active', [ContractTemplateController::class, 'toggleActive'])->name('contract-templates.toggle-active');
+        Route::post('contract-templates/{contractTemplate}/preview', [ContractTemplateController::class, 'preview'])->name('contract-templates.preview');
     });
 
     // Financial Module
@@ -534,6 +561,14 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('files/{file}/import-transactions', [FinancialFileController::class, 'importTransactions'])->name('files.import-transactions');
         Route::post('files/{file}/import-transactions', [FinancialFileController::class, 'processImportTransactions'])->name('files.process-import-transactions');
     });
+});
+
+// Push Notification Subscription Routes
+Route::middleware('auth')->prefix('push')->name('push.')->group(function () {
+    Route::get('vapid-key', [App\Http\Controllers\PushSubscriptionController::class, 'vapidPublicKey'])->name('vapid-key');
+    Route::post('subscribe', [App\Http\Controllers\PushSubscriptionController::class, 'subscribe'])->name('subscribe');
+    Route::post('unsubscribe', [App\Http\Controllers\PushSubscriptionController::class, 'unsubscribe'])->name('unsubscribe');
+    Route::get('status', [App\Http\Controllers\PushSubscriptionController::class, 'status'])->name('status');
 });
 
 require __DIR__.'/auth.php';

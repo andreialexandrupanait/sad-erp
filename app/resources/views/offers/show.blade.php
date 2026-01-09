@@ -45,18 +45,31 @@
                 @endif
 
                 @if($offer->isAccepted() && !$offer->contract_id)
-                    <form action="{{ route('offers.convert-to-contract', $offer) }}" method="POST" class="inline">
-                        @csrf
-                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                            </svg>
-                            {{ __('Convert to Contract') }}
-                        </button>
-                    </form>
+                    <button type="button"
+                            id="convertToContractBtn"
+                            data-url="{{ route('offers.convert-to-contract', $offer) }}"
+                            class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        {{ $offer->parent_contract_id ? __('Generate Annex') : __('Generate Contract') }}
+                    </button>
                 @endif
 
-                @if($offer->contract_id && $offer->contract && $offer->contract->isDraft())
+                @if($offer->hasGeneratedAnnex())
+                    {{-- Offer created an annex - show regenerate annex button --}}
+                    <form action="{{ route('offers.regenerate-annex', $offer) }}" method="POST" class="inline"
+                          onsubmit="return confirm('{{ __('This will regenerate the annex PDF with the current offer data. Continue?') }}')">
+                        @csrf
+                        <button type="submit" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded-lg hover:bg-purple-100 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            {{ __('Regenerate Annex') }}
+                        </button>
+                    </form>
+                @elseif($offer->contract_id && $offer->contract && !$offer->isForAnnex() && $offer->contract->isDraft())
+                    {{-- Offer created a contract directly - show regenerate contract button --}}
                     <form action="{{ route('offers.regenerate-contract', $offer) }}" method="POST" class="inline"
                           onsubmit="return confirm('{{ __('This will regenerate the contract draft with the current offer data. Continue?') }}')">
                         @csrf
@@ -769,4 +782,165 @@
             </div>
         </div>
     </div>
+
+    {{-- Contract Choice Modal --}}
+    <div id="contractChoiceModal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg">
+                    <div class="bg-white px-4 pb-4 pt-5 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left flex-1">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900" id="modal-title">{{ __("Client has active contracts") }}</h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500">{{ __("This client has existing active contracts. What would you like to do?") }}</p>
+                                </div>
+                                <div class="mt-4 space-y-3" id="contractChoiceOptions">
+                                    {{-- Options will be inserted here by JS --}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
+                        <button type="button" id="modalCancelBtn" class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto">
+                            {{ __("Cancel") }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push("scripts")
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const convertBtn = document.getElementById("convertToContractBtn");
+        const modal = document.getElementById("contractChoiceModal");
+        const optionsContainer = document.getElementById("contractChoiceOptions");
+        const cancelBtn = document.getElementById("modalCancelBtn");
+
+        if (!convertBtn) return;
+
+        const url = convertBtn.dataset.url;
+
+        convertBtn.addEventListener("click", async function() {
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = "<svg class=\"animate-spin h-4 w-4 mr-2\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\"><circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle><path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path></svg>" + "{{ __("Processing...") }}";
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").content
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.needs_choice) {
+                    // Show modal with options
+                    showContractChoiceModal(data.active_contracts);
+                } else if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else if (!data.success) {
+                    alert(data.message || "An error occurred");
+                    resetButton();
+                }
+            } catch (error) {
+                console.error(error);
+                alert("An error occurred while processing the request.");
+                resetButton();
+            }
+        });
+
+        function resetButton() {
+            convertBtn.disabled = false;
+            convertBtn.innerHTML = "<svg class=\"w-4 h-4\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z\"/></svg> {{ __("Generate Contract") }}";
+        }
+
+        function showContractChoiceModal(contracts) {
+            optionsContainer.innerHTML = "";
+
+            // New Contract Option
+            const newContractBtn = document.createElement("button");
+            newContractBtn.type = "button";
+            newContractBtn.className = "w-full p-4 border-2 border-green-500 bg-green-50 rounded-lg text-left hover:bg-green-100 transition-colors";
+            newContractBtn.innerHTML = "<div class=\"font-semibold text-green-800\">{{ __("Create New Contract") }}</div><div class=\"text-sm text-green-600 mt-1\">{{ __("Start a fresh contract for this offer") }}</div>";
+            newContractBtn.addEventListener("click", () => submitChoice("new_contract", null));
+            optionsContainer.appendChild(newContractBtn);
+
+            // Divider
+            const divider = document.createElement("div");
+            divider.className = "text-center text-sm text-gray-500 py-2";
+            divider.textContent = "{{ __("or add as annex to:") }}";
+            optionsContainer.appendChild(divider);
+
+            // Contract options
+            contracts.forEach(contract => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "w-full p-4 border border-slate-200 rounded-lg text-left hover:bg-slate-50 transition-colors";
+                btn.innerHTML = "<div class=\"font-semibold text-slate-900\">" + contract.contract_number + "</div>" +
+                    "<div class=\"text-sm text-slate-500\">" + (contract.title || "") + "</div>" +
+                    "<div class=\"text-xs text-slate-400 mt-1\">" + contract.total_value + " • {{ __("Started") }}: " + (contract.start_date || "N/A") + "</div>";
+                btn.addEventListener("click", () => submitChoice("add_annex", contract.id));
+                optionsContainer.appendChild(btn);
+            });
+
+            modal.classList.remove("hidden");
+            resetButton();
+        }
+
+        async function submitChoice(action, contractId) {
+            modal.classList.add("hidden");
+            convertBtn.disabled = true;
+            convertBtn.innerHTML = "<svg class=\"animate-spin h-4 w-4 mr-2\" xmlns=\"http://www.w3.org/2000/svg\" fill=\"none\" viewBox=\"0 0 24 24\"><circle class=\"opacity-25\" cx=\"12\" cy=\"12\" r=\"10\" stroke=\"currentColor\" stroke-width=\"4\"></circle><path class=\"opacity-75\" fill=\"currentColor\" d=\"M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z\"></path></svg>" + "{{ __("Creating...") }}";
+
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").content
+                    },
+                    body: JSON.stringify({ action: action, contract_id: contractId })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert(data.message || "An error occurred");
+                    resetButton();
+                }
+            } catch (error) {
+                console.error(error);
+                alert("An error occurred.");
+                resetButton();
+            }
+        }
+
+        cancelBtn.addEventListener("click", function() {
+            modal.classList.add("hidden");
+        });
+
+        modal.addEventListener("click", function(e) {
+            if (e.target === modal || e.target.classList.contains("bg-opacity-75")) {
+                modal.classList.add("hidden");
+            }
+        });
+    });
+    </script>
+    @endpush
+
 </x-app-layout>

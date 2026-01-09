@@ -30,8 +30,23 @@ class DocumentTemplateController extends Controller
             ->get();
 
         $types = DocumentTemplate::getTypes();
+        
+        // Pre-load templates for initial render with filtering
+        $initialTemplates = $this->indexJson($request)->getData()->templates ?? [];
 
-        return view('document-templates.index', compact('templates', 'types'));
+        // Calculate stats
+        $offerCount = DocumentTemplate::count();
+        $contractCount = ContractTemplate::where('category', '!=', 'annex')->orWhereNull('category')->count();
+        $annexCount = ContractTemplate::where('category', 'annex')->count();
+
+        $stats = [
+            'total' => $offerCount + $contractCount + $annexCount,
+            'offers' => $offerCount,
+            'contracts' => $contractCount,
+            'annexes' => $annexCount,
+        ];
+
+        return view('document-templates.index', compact('templates', 'types', 'initialTemplates', 'stats'));
     }
 
     /**
@@ -89,8 +104,8 @@ class DocumentTemplateController extends Controller
                 return [
                     'id' => $template->id,
                     'name' => $template->name,
-                    'type' => 'contract',
-                    'type_label' => __('Contract'),
+                    'type' => $template->category === 'annex' ? 'annex' : 'contract',
+                    'type_label' => $template->category === 'annex' ? __('Annex') : __('Contract'),
                     'model_type' => 'contract_template',
                     'category' => $template->category,
                     'is_default' => $template->is_default,

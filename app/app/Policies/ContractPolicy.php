@@ -129,8 +129,9 @@ class ContractPolicy
             return false;
         }
 
-        // Can only add annexes to active contracts
-        return $contract->status === 'active';
+        // Allow access to the add annex page for active contracts
+        // The controller will check canAcceptAnnex() before actually creating
+        return $contract->isActive();
     }
 
     /**

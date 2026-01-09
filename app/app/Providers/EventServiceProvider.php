@@ -17,6 +17,7 @@ use App\Listeners\Notification\SendDomainExpiryNotification;
 use App\Listeners\Notification\SendRevenueNotification;
 use App\Listeners\Notification\SendSubscriptionNotification;
 use App\Listeners\Notification\SendSystemErrorNotification;
+use App\Listeners\SendOfferPushNotification;
 use App\Listeners\UpdateLastLogin;
 
 use Illuminate\Auth\Events\Login;
@@ -66,6 +67,15 @@ class EventServiceProvider extends ServiceProvider
         SystemErrorOccurred::class => [
             SendSystemErrorNotification::class,
         ],
+    ];
+
+    /**
+     * The subscriber classes to register.
+     *
+     * @var array
+     */
+    protected $subscribe = [
+        SendOfferPushNotification::class,
     ];
 
     /**

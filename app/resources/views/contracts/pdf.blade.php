@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-    <title>{{ __('Contract') }} {{ $contract->contract_number }}</title>
+    <title>{{ __('Contract') }} {{ $contract->document_number }}</title>
     <style>
         @page {
             size: A4;
-            margin: 25mm 25mm 25mm 25mm;
+            margin: 15mm 15mm 15mm 15mm;
         }
 
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 11pt;
-            line-height: 1.6;
+            line-height: 1.4;
             color: #000000;
             background: #ffffff;
             margin: 0;
@@ -39,7 +39,7 @@
         h2 {
             font-size: 12pt;
             font-weight: bold;
-            margin: 24px 0 12px 0;
+            margin: 24px 0 4px 0;
             color: #000000;
             page-break-after: avoid;
         }
@@ -47,15 +47,15 @@
         h3 {
             font-size: 11pt;
             font-weight: bold;
-            margin: 20px 0 10px 0;
+            margin: 20px 0 4px 0;
             color: #000000;
             page-break-after: avoid;
         }
 
         h4 {
             font-size: 11pt;
-            font-weight: bold;
-            margin: 16px 0 8px 0;
+            font-weight: 400;
+            margin: 10px 0 2px 0;
             color: #000000;
             page-break-after: avoid;
         }
@@ -89,18 +89,30 @@
 
         /* Lists */
         ul, ol {
-            margin: 12px 0 12px 0;
+            margin-top: 2px;
+            margin-bottom: 2px;
             padding-left: 30px;
         }
 
         li {
-            margin: 6px 0;
+            margin-top: 2px !important;
+            margin-bottom: 2px !important;
             text-align: left;
-            line-height: 1.6;
+            line-height: 1.4;
+        }
+
+        li:last-child {
+            margin-bottom: 12px !important;
+        }
+
+        li p {
+            margin: 0 !important;
+            padding: 0;
         }
 
         li ul, li ol {
-            margin: 6px 0;
+            margin-top: 2px;
+            margin-bottom: 2px;
         }
 
         /* Tables */
@@ -113,7 +125,7 @@
 
         table th,
         table td {
-            border: 1px solid #000000;
+            border: 1px solid rgba(0, 0, 0, 0);
             padding: 8px 10px;
             font-size: 10pt;
             text-align: left;
@@ -222,6 +234,7 @@
     </style>
 </head>
 <body>
+    <!-- PDF v2 -->
     <div class="page-wrapper">
         <div class="contract-content">
             @if($contract->content)
@@ -235,7 +248,7 @@
     </div>
 
     <div class="footer">
-        {{ $contract->contract_number }} - {{ __('Page') }} <span class="page-number"></span>
+        {{ __('Page') }} <span class="page-number"></span>
     </div>
 </body>
 </html>

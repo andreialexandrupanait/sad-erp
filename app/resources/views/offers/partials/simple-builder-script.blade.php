@@ -123,7 +123,8 @@ function simpleOfferBuilder() {
             title: existingOffer?.title || '',
             valid_until: existingOffer?.valid_until?.split('T')[0] || '{{ $defaultValidUntil }}',
             currency: existingOffer?.currency || defaultCurrency,
-            discount_percent: existingOffer?.discount_percent || 0
+            discount_percent: existingOffer?.discount_percent || 0,
+            parent_contract_id: existingOffer?.parent_contract_id || "{{ $parentContractId ?? "" }}"
         },
 
         // Services - TWO TYPES: 'custom' (checkbox list) and 'card' (Plutio cards)
@@ -563,6 +564,7 @@ function simpleOfferBuilder() {
                         valid_until: this.offer.valid_until,
                         currency: this.offer.currency,
                         discount_percent: this.offer.discount_percent,
+                        parent_contract_id: this.offer.parent_contract_id || null,
                         header_data: this.headerData,
                         blocks: this.blocks,
                         items: this.items.map(item => ({

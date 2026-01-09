@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $offer->offer_number }} - {{ $offer->title }}</title>
+    {{-- Load Alpine.js directly since this page doesn't use Livewire --}}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         [x-cloak] { display: none !important; }
@@ -48,6 +50,167 @@
         // Bank accounts (stored in organization settings)
         $bankAccounts = collect($organization->settings['bank_accounts'] ?? []);
     @endphp
+
+    <script>
+    window.publicOffer = function() {
+        return {
+            showRejectModal: false,
+            isAccepting: false,
+            selectedCards: {!! json_encode($initiallySelectedCardIds) !!},
+            selectedOptionalServices: [],
+            optionalServicesPrices: {},
+            // Initialize with items that admin has deselected
+            deselectedServices: {!! json_encode($initiallyDeselectedIds) !!},
+            deselectedServicesPrices: {},
+
+            // Base values (ALL custom services - we subtract deselected dynamically)
+            baseSubtotal: {{ $fullSubtotal }},
+            discountPercent: {{ $offer->discount_percent ?? 0 }},
+            currency: '{{ $offer->currency }}',
+
+            // Service prices map (for deselection)
+            servicePrices: {
+                @foreach($customItems as $item)
+                {{ $item->id }}: {{ $item->total_price }},
+                @endforeach
+            },
+
+            // Card prices map
+            cardPrices: {
+                @foreach($cardItems as $item)
+                {{ $item->id }}: {{ $item->total_price }},
+                @endforeach
+            },
+
+            // Computed totals
+            get deselectedServicesTotal() {
+                return this.deselectedServices.reduce((sum, id) => sum + (this.servicePrices[id] || 0), 0);
+            },
+
+            get selectedCardsTotal() {
+                return this.selectedCards.reduce((sum, id) => sum + (this.cardPrices[id] || 0), 0);
+            },
+
+            get selectedOptionalServicesTotal() {
+                return this.selectedOptionalServices.reduce((sum, key) => sum + (this.optionalServicesPrices[key] || 0), 0);
+            },
+
+            get currentSubtotal() {
+                // Base minus deselected, plus extras selected
+                return this.baseSubtotal - this.deselectedServicesTotal + this.selectedCardsTotal + this.selectedOptionalServicesTotal;
+            },
+
+            get currentDiscount() {
+                return this.currentSubtotal * (this.discountPercent / 100);
+            },
+
+            get currentGrandTotal() {
+                return this.currentSubtotal - this.currentDiscount;
+            },
+
+            // Toggle main service selection (deselect/reselect)
+            toggleService(serviceId, price) {
+                const index = this.deselectedServices.indexOf(serviceId);
+                if (index > -1) {
+                    // Re-select (remove from deselected)
+                    this.deselectedServices.splice(index, 1);
+                } else {
+                    // Deselect (add to deselected)
+                    this.deselectedServices.push(serviceId);
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Toggle card selection
+            toggleCard(cardId, price) {
+                const index = this.selectedCards.indexOf(cardId);
+                if (index > -1) {
+                    this.selectedCards.splice(index, 1);
+                } else {
+                    this.selectedCards.push(cardId);
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Toggle optional service selection
+            toggleOptionalService(key, price, title, description, quantity, unit, unitPrice, currency) {
+                const index = this.selectedOptionalServices.indexOf(key);
+                if (index > -1) {
+                    // Remove from selection
+                    this.selectedOptionalServices.splice(index, 1);
+                    delete this.optionalServicesPrices[key];
+                } else {
+                    // Add to selection
+                    this.selectedOptionalServices.push(key);
+                    this.optionalServicesPrices[key] = price;
+                }
+                // Sync with backend
+                this.syncSelectionsToBackend();
+            },
+
+            // Debounce timer for syncing
+            syncTimer: null,
+            isSyncing: false,
+
+            // Sync customer selections to backend (debounced)
+            syncSelectionsToBackend() {
+                // Debounce - wait 500ms after last change before syncing
+                if (this.syncTimer) {
+                    clearTimeout(this.syncTimer);
+                }
+                this.syncTimer = setTimeout(() => {
+                    this.doSyncSelections();
+                }, 500);
+            },
+
+            async doSyncSelections() {
+                if (this.isSyncing) return;
+                this.isSyncing = true;
+
+                try {
+                    const response = await fetch('{{ route('offers.public.selections', $offer->public_token) }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            deselected_services: this.deselectedServices,
+                            selected_cards: this.selectedCards,
+                            selected_optional_services: this.selectedOptionalServices
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.success) {
+                        // Update our local timestamp to avoid triggering notification for our own change
+                        this.lastUpdatedAt = data.updated_at;
+                    }
+                } catch (error) {
+                    // Silently ignore sync errors - non-critical
+                } finally {
+                    this.isSyncing = false;
+                }
+            },
+
+            // Format currency - use browser locale for international support
+            formatCurrency(value) {
+                const locale = document.documentElement.lang || navigator.language || 'en';
+                return new Intl.NumberFormat(locale, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(value) + ' ' + this.currency;
+            },
+
+            init() {
+                // Component initialized - selections sync to backend on user interaction
+            }
+        };
+    }
+    </script>
 
     <div class="max-w-4xl mx-auto py-8 px-4" x-data="publicOffer()">
         {{-- Messages --}}
@@ -96,7 +259,7 @@
                                         @foreach($customItems as $item)
                                             <div class="rounded-xl border shadow-md transition-all duration-200 {{ $isReadOnly ? '' : 'cursor-pointer' }}"
                                                  :class="deselectedServices.includes({{ $item->id }}) ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-green-200'"
-                                                 @if(!$isReadOnly) @click="toggleService({{ $item->id }}, {{ $item->total_price }})" @endif>
+                                                 {!! !$isReadOnly ? '@click="toggleService(' . $item->id . ', ' . $item->total_price . ')"' : '' !!}>
                                                 <div class="flex items-start gap-4 p-5">
                                                     {{-- Interactive Checkbox (only in edit mode) --}}
                                                     @if(!$isReadOnly)
@@ -731,165 +894,6 @@
         </div>
     </div>
 
-    <script>
-    function publicOffer() {
-        return {
-            showRejectModal: false,
-            isAccepting: false,
-            selectedCards: {!! json_encode($initiallySelectedCardIds) !!},
-            selectedOptionalServices: [],
-            optionalServicesPrices: {},
-            // Initialize with items that admin has deselected
-            deselectedServices: {!! json_encode($initiallyDeselectedIds) !!},
-            deselectedServicesPrices: {},
 
-            // Base values (ALL custom services - we subtract deselected dynamically)
-            baseSubtotal: {{ $fullSubtotal }},
-            discountPercent: {{ $offer->discount_percent ?? 0 }},
-            currency: '{{ $offer->currency }}',
-
-            // Service prices map (for deselection)
-            servicePrices: {
-                @foreach($customItems as $item)
-                {{ $item->id }}: {{ $item->total_price }},
-                @endforeach
-            },
-
-            // Card prices map
-            cardPrices: {
-                @foreach($cardItems as $item)
-                {{ $item->id }}: {{ $item->total_price }},
-                @endforeach
-            },
-
-            // Computed totals
-            get deselectedServicesTotal() {
-                return this.deselectedServices.reduce((sum, id) => sum + (this.servicePrices[id] || 0), 0);
-            },
-
-            get selectedCardsTotal() {
-                return this.selectedCards.reduce((sum, id) => sum + (this.cardPrices[id] || 0), 0);
-            },
-
-            get selectedOptionalServicesTotal() {
-                return this.selectedOptionalServices.reduce((sum, key) => sum + (this.optionalServicesPrices[key] || 0), 0);
-            },
-
-            get currentSubtotal() {
-                // Base minus deselected, plus extras selected
-                return this.baseSubtotal - this.deselectedServicesTotal + this.selectedCardsTotal + this.selectedOptionalServicesTotal;
-            },
-
-            get currentDiscount() {
-                return this.currentSubtotal * (this.discountPercent / 100);
-            },
-
-            get currentGrandTotal() {
-                return this.currentSubtotal - this.currentDiscount;
-            },
-
-            // Toggle main service selection (deselect/reselect)
-            toggleService(serviceId, price) {
-                const index = this.deselectedServices.indexOf(serviceId);
-                if (index > -1) {
-                    // Re-select (remove from deselected)
-                    this.deselectedServices.splice(index, 1);
-                } else {
-                    // Deselect (add to deselected)
-                    this.deselectedServices.push(serviceId);
-                }
-                // Sync with backend
-                this.syncSelectionsToBackend();
-            },
-
-            // Toggle card selection
-            toggleCard(cardId, price) {
-                const index = this.selectedCards.indexOf(cardId);
-                if (index > -1) {
-                    this.selectedCards.splice(index, 1);
-                } else {
-                    this.selectedCards.push(cardId);
-                }
-                // Sync with backend
-                this.syncSelectionsToBackend();
-            },
-
-            // Toggle optional service selection
-            toggleOptionalService(key, price, title, description, quantity, unit, unitPrice, currency) {
-                const index = this.selectedOptionalServices.indexOf(key);
-                if (index > -1) {
-                    // Remove from selection
-                    this.selectedOptionalServices.splice(index, 1);
-                    delete this.optionalServicesPrices[key];
-                } else {
-                    // Add to selection
-                    this.selectedOptionalServices.push(key);
-                    this.optionalServicesPrices[key] = price;
-                }
-                // Sync with backend
-                this.syncSelectionsToBackend();
-            },
-
-            // Debounce timer for syncing
-            syncTimer: null,
-            isSyncing: false,
-
-            // Sync customer selections to backend (debounced)
-            syncSelectionsToBackend() {
-                // Debounce - wait 500ms after last change before syncing
-                if (this.syncTimer) {
-                    clearTimeout(this.syncTimer);
-                }
-                this.syncTimer = setTimeout(() => {
-                    this.doSyncSelections();
-                }, 500);
-            },
-
-            async doSyncSelections() {
-                if (this.isSyncing) return;
-                this.isSyncing = true;
-
-                try {
-                    const response = await fetch('{{ route('offers.public.selections', $offer->public_token) }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            deselected_services: this.deselectedServices,
-                            selected_cards: this.selectedCards,
-                            selected_optional_services: this.selectedOptionalServices
-                        })
-                    });
-
-                    const data = await response.json();
-                    if (data.success) {
-                        // Update our local timestamp to avoid triggering notification for our own change
-                        this.lastUpdatedAt = data.updated_at;
-                    }
-                } catch (error) {
-                    // Silently ignore sync errors - non-critical
-                } finally {
-                    this.isSyncing = false;
-                }
-            },
-
-            // Format currency - use browser locale for international support
-            formatCurrency(value) {
-                const locale = document.documentElement.lang || navigator.language || 'en';
-                return new Intl.NumberFormat(locale, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                }).format(value) + ' ' + this.currency;
-            },
-
-            init() {
-                // Component initialized - selections sync to backend on user interaction
-            }
-        };
-    }
-    </script>
 </body>
 </html>

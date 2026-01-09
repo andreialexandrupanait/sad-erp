@@ -108,7 +108,10 @@ class ClientController extends Controller
             },
             'domains',
             'accessCredentials',
-            'clientNotes.user'
+            'clientNotes.user',
+            'contracts' => function($query) {
+                $query->with('annexes')->orderBy('created_at', 'desc');
+            }
         ]);
 
         // Get active tab from request (default: overview)
@@ -120,6 +123,8 @@ class ClientController extends Controller
             'active_domains' => $client->active_domains_count,
             'credentials_count' => $client->credentials_count,
             'invoices_count' => $client->revenues->count(),
+            'contracts_count' => $client->contracts->count(),
+            'active_contracts_count' => $client->contracts->where('status', 'active')->count(),
         ];
 
         return view('clients.show', compact('client', 'stats', 'activeTab'));

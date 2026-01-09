@@ -15,6 +15,7 @@ class Client extends Model
 
     protected $fillable = [
         'organization_id',
+        'created_from_temp',
         'user_id',
         'created_by',
         'status_id',
@@ -37,6 +38,7 @@ class Client extends Model
 
     protected $casts = [
         'vat_payer' => 'boolean',
+        'created_from_temp' => 'boolean',
         'total_incomes' => 'decimal:2',
         'order_index' => 'integer',
     ];
@@ -171,6 +173,27 @@ class Client extends Model
     public function clientNotes()
     {
         return $this->hasMany(ClientNote::class)->latest();
+    }
+
+    /**
+     * Get all contracts for this client.
+     */
+    public function contracts()
+    {
+        return $this->hasMany(Contract::class);
+    }
+
+    /**
+     * Get the active finalized contract for this client.
+     * Returns the most recent active, finalized contract.
+     */
+    public function getActiveContract(): ?Contract
+    {
+        return $this->contracts()
+            ->where('status', 'active')
+            ->where('is_finalized', true)
+            ->orderByDesc('created_at')
+            ->first();
     }
 
     /**

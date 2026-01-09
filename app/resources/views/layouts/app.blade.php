@@ -24,6 +24,14 @@
             })();
         </script>
 
+        <!-- User/Organization data for JS -->
+        @auth
+        <script>
+            window.userId = {{ auth()->id() }};
+            window.organizationId = {{ auth()->user()->organization_id ?? "null" }};
+        </script>
+        @endauth
+
         <title>{{ $globalAppSettings['app_name'] ?? config('app.name', 'Laravel') }}</title>
 
         <!-- Favicon -->
@@ -1214,6 +1222,178 @@
         </script>
 
         <!-- Clients Page Component is loaded via Vite from resources/js/clients-page.js -->
+
+
+        <!-- Real-time Notification Toast -->
+        <div id="notification-toast" 
+             class="fixed bottom-4 right-4 z-50 max-w-sm transform transition-all duration-300 translate-y-full opacity-0"
+             style="display: none;">
+            <div class="bg-white rounded-lg shadow-xl border border-slate-200 overflow-hidden">
+                <div class="p-4">
+                    <div class="flex items-start gap-3">
+                        <div id="toast-icon" class="flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center">
+                            <!-- Icon inserted by JS -->
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p id="toast-title" class="text-sm font-semibold text-slate-900"></p>
+                            <p id="toast-message" class="text-sm text-slate-600 mt-1"></p>
+                            <a id="toast-link" href="#" class="text-sm text-blue-600 hover:text-blue-800 mt-2 inline-block">{{ __("View Details") }} →</a>
+                        </div>
+                        <button onclick="hideNotificationToast()" class="text-slate-400 hover:text-slate-600">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        // Real-time notification listener
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof window.Echo !== "undefined" && window.organizationId) {
+                console.log("Setting up Echo listener for organization:", window.organizationId);
+                
+                window.Echo.private("organization." + window.organizationId)
+                    .listen(".offer.accepted", (e) => {
+                        console.log("Offer accepted:", e);
+                        showNotificationToast("success", e.message, e.client_name + " - " + e.total, "/offers/" + e.offer_id);
+                        playNotificationSound();
+                    })
+                    .listen(".offer.rejected", (e) => {
+                        console.log("Offer rejected:", e);
+                        showNotificationToast("warning", e.message, e.client_name + (e.rejection_reason ? ": " + e.rejection_reason : ""), "/offers/" + e.offer_id);
+                        playNotificationSound();
+                    });
+            }
+        });
+
+        function showNotificationToast(type, title, message, link) {
+            const toast = document.getElementById("notification-toast");
+            const iconEl = document.getElementById("toast-icon");
+            const titleEl = document.getElementById("toast-title");
+            const messageEl = document.getElementById("toast-message");
+            const linkEl = document.getElementById("toast-link");
+
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            linkEl.href = link;
+
+            if (type === "success") {
+                iconEl.className = "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-green-100";
+                iconEl.innerHTML = "<svg class=\"w-5 h-5 text-green-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M5 13l4 4L19 7\"/></svg>";
+            } else {
+                iconEl.className = "flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center bg-amber-100";
+                iconEl.innerHTML = "<svg class=\"w-5 h-5 text-amber-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z\"/></svg>";
+            }
+
+            toast.style.display = "block";
+            setTimeout(() => {
+                toast.classList.remove("translate-y-full", "opacity-0");
+            }, 10);
+
+            // Auto-hide after 10 seconds
+            setTimeout(hideNotificationToast, 10000);
+        }
+
+        function hideNotificationToast() {
+            const toast = document.getElementById("notification-toast");
+            toast.classList.add("translate-y-full", "opacity-0");
+            setTimeout(() => {
+                toast.style.display = "none";
+            }, 300);
+        }
+
+        function playNotificationSound() {
+            // Create a simple beep sound
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                oscillator.frequency.value = 800;
+                oscillator.type = "sine";
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.3);
+            } catch (e) {
+                console.log("Could not play notification sound");
+            }
+
+        // Push Notification Registration
+        async function initPushNotifications() {
+            if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+                console.log("Push notifications not supported");
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.register("/sw.js");
+                console.log("Service Worker registered");
+
+                // Check if already subscribed
+                const subscription = await registration.pushManager.getSubscription();
+                if (subscription) {
+                    console.log("Already subscribed to push");
+                    return;
+                }
+
+                // Request permission
+                const permission = await Notification.requestPermission();
+                if (permission !== "granted") {
+                    console.log("Push notification permission denied");
+                    return;
+                }
+
+                // Get VAPID public key
+                const response = await fetch("/push/vapid-key");
+                const { publicKey } = await response.json();
+                if (!publicKey) {
+                    console.log("VAPID key not configured");
+                    return;
+                }
+
+                // Subscribe to push
+                const newSubscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(publicKey)
+                });
+
+                // Send subscription to server
+                await fetch("/push/subscribe", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-CSRF-TOKEN": document.querySelector("meta[name=csrf-token]").content
+                    },
+                    body: JSON.stringify(newSubscription.toJSON())
+                });
+
+                console.log("Push notifications enabled");
+            } catch (error) {
+                console.error("Failed to setup push notifications:", error);
+            }
+        }
+
+        function urlBase64ToUint8Array(base64String) {
+            const padding = "=".repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Initialize push notifications after page load
+        if (window.userId) {
+            document.addEventListener("DOMContentLoaded", initPushNotifications);
+        }
+        </script>
 
         <!-- Page-specific Scripts -->
         @stack('scripts')

@@ -23,7 +23,7 @@ class ContractFactory extends Factory
             'organization_id' => Organization::factory(),
             'client_id' => Client::factory(),
             'offer_id' => Offer::factory(),
-            'contract_number' => fn() => sprintf('CTR-%d-%02d', $year, fake()->unique()->numberBetween(1, 999)),
+            'contract_number' => fn() => sprintf('%02d', fake()->unique()->numberBetween(1, 99)),
             'title' => fake()->sentence(4),
             'content' => fake()->paragraphs(3, true),
             'status' => 'draft',

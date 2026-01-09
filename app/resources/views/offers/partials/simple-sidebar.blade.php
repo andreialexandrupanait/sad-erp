@@ -24,7 +24,7 @@
                 <option value="">{{ __('Select client...') }}</option>
                 <option value="new">+ {{ __('New Client') }}</option>
                 @foreach($clients as $client)
-                    <option value="{{ $client->id }}">{{ $client->company_name ?: $client->name }}</option>
+                    <option value="{{ $client->id }}" {{ $client->created_from_temp ? ' style="background-color: #fef3c7;"' : '' }}>{{ $client->company_name ?: $client->name }}{{ $client->created_from_temp ? ' (temp)' : '' }}</option>
                 @endforeach
             </select>
         </div>
@@ -55,6 +55,23 @@
         </div>
 
         {{-- Template Selection (only for new offers) --}}
+
+        {{-- For Annex of Contract (optional) --}}
+        @if(isset($activeContracts) && count($activeContracts) > 0)
+        <div>
+            <label class="text-sm font-medium leading-none mb-2 block">{{ __('For Annex of Contract') }}</label>
+            <select x-model="offer.parent_contract_id"
+                    class="h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
+                <option value="">{{ __('New Contract (no link)') }}</option>
+                @foreach($activeContracts as $contract)
+                    <option value="{{ $contract->id }}"{{ isset($parentContractId) && $parentContractId == $contract->id ? ' selected' : '' }}>
+                        {{ $contract->contract_number }} - {{ $contract->client?->display_name }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="text-xs text-slate-500 mt-1">{{ __('If selected, accepting this offer will create an annex instead of a new contract') }}</p>
+        </div>
+        @endif
         @if(isset($templates) && count($templates) > 0)
         <div x-show="!offer.id">
             <label class="text-sm font-medium leading-none mb-2 block">{{ __('Load from Template') }}</label>

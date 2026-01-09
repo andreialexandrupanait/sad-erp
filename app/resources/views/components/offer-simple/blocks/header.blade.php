@@ -158,6 +158,18 @@
                         @if($client->email)
                             <p class="text-sm text-slate-500">{{ $client->email }}</p>
                         @endif
+                        @if($client->phone)
+                            <p class="text-sm text-slate-500">{{ __('Tel') }}: {{ $client->phone }}</p>
+                        @endif
+                        @if($client->address)
+                            <p class="text-sm text-slate-500">{{ $client->address }}</p>
+                        @endif
+                        @if($client->tax_id)
+                            <p class="text-sm text-slate-500">CUI: {{ $client->tax_id }}</p>
+                        @endif
+                        @if($client->registration_number)
+                            <p class="text-sm text-slate-500">{{ $client->registration_number }}</p>
+                        @endif
                     @elseif($offer->temp_client_name || $offer->temp_client_company)
                         <p class="text-lg font-semibold text-slate-900">{{ $offer->temp_client_company ?: $offer->temp_client_name }}</p>
                         @if($offer->temp_client_company && $offer->temp_client_name)
@@ -165,6 +177,18 @@
                         @endif
                         @if($offer->temp_client_email)
                             <p class="text-sm text-slate-500">{{ $offer->temp_client_email }}</p>
+                        @endif
+                        @if($offer->temp_client_phone)
+                            <p class="text-sm text-slate-500">{{ __('Tel') }}: {{ $offer->temp_client_phone }}</p>
+                        @endif
+                        @if($offer->temp_client_address)
+                            <p class="text-sm text-slate-500">{{ $offer->temp_client_address }}</p>
+                        @endif
+                        @if($offer->temp_client_tax_id)
+                            <p class="text-sm text-slate-500">CUI: {{ $offer->temp_client_tax_id }}</p>
+                        @endif
+                        @if($offer->temp_client_registration_number)
+                            <p class="text-sm text-slate-500">{{ $offer->temp_client_registration_number }}</p>
                         @endif
                     @else
                         <p class="text-slate-400 italic">{{ __('Customer') }}</p>

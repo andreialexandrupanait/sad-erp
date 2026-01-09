@@ -130,7 +130,7 @@ class GenerateDocumentPdfJob implements ShouldQueue
     protected function savePdf($pdf): string
     {
         $documentable = $this->documentable;
-        $year = $documentable->created_at?->year ?? date('Y');
+        $year = $documentable->created_at?->year ?? date("Y");
 
         $number = match (true) {
             $documentable instanceof Offer => $documentable->offer_number,
@@ -139,18 +139,16 @@ class GenerateDocumentPdfJob implements ShouldQueue
         };
 
         // Sanitize the number for use in filename
-        $safeNumber = preg_replace('/[^a-zA-Z0-9_-]/', '_', $number);
+        $safeNumber = preg_replace("/[^a-zA-Z0-9_-]/", "_", $number);
 
         $path = Document::generatePath($this->type, $documentable->organization_id, $safeNumber, $year);
 
-        // Ensure directory exists
-        $directory = dirname(storage_path('app/' . $path));
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
+        // Get the documents disk (R2 when enabled, local otherwise)
+        $disk = config("filesystems.documents_disk", "documents");
 
-        // Save the PDF
-        $pdf->save(storage_path('app/' . $path));
+        // Save the PDF using Storage facade
+        $pdfContent = $pdf->output();
+        Storage::disk($disk)->put($path, $pdfContent);
 
         return $path;
     }
@@ -175,9 +173,7 @@ class GenerateDocumentPdfJob implements ShouldQueue
             'type' => $this->type,
             'file_path' => $path,
             'file_name' => $number . '.pdf',
-            'file_size' => file_exists(storage_path('app/' . $path))
-                ? filesize(storage_path('app/' . $path))
-                : null,
+            'file_size' => Storage::disk(config('filesystems.documents_disk', 'documents'))->size($path),
             'generated_at' => now(),
         ]);
     }

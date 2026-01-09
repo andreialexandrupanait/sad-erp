@@ -11,13 +11,14 @@ use App\Models\Offer;
 use App\Models\Organization;
 use App\Models\Template;
 use App\Services\Contract\ContractVariableRegistry;
+use App\Services\Document\DocumentFileService;
 use App\Services\VariableRegistry;
 use App\Services\Notification\NotificationService;
 use App\Services\Notification\Messages\ContractExpiringMessage;
-use Spatie\LaravelPdf\Facades\Pdf;
-use Spatie\LaravelPdf\Enums\Format;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Contract Service - Business logic for contract management.
@@ -45,8 +46,12 @@ use Illuminate\Support\Facades\Log;
 class ContractService
 {
     public function __construct(
-        protected ?NotificationService $notificationService = null
-    ) {}
+        protected ?NotificationService $notificationService = null,
+        protected ?DocumentFileService $documentFileService = null
+    ) {
+        // Auto-resolve DocumentFileService if not provided
+        $this->documentFileService ??= app(DocumentFileService::class);
+    }
 
     /**
      * Create a contract from an accepted offer.
@@ -58,12 +63,32 @@ class ContractService
         }
 
         return DB::transaction(function () use ($offer) {
+            // Get next available number
+            $contractNumber = Contract::generateContractNumber();
+
+            // Hard delete any soft-deleted contract with the same number to avoid unique constraint violation
+            $oldContracts = Contract::onlyTrashed()
+                ->where('organization_id', $offer->organization_id)
+                ->where('contract_number', $contractNumber)
+                ->get();
+
+            foreach ($oldContracts as $old) {
+                // Delete PDF file if exists
+                if ($old->pdf_path && Storage::exists($old->pdf_path)) {
+                    Storage::delete($old->pdf_path);
+                }
+                // Delete related items
+                $old->items()->forceDelete();
+                // Force delete the contract
+                $old->forceDelete();
+            }
+
             $contract = Contract::create([
                 'organization_id' => $offer->organization_id,
                 'client_id' => $offer->client_id,
                 'offer_id' => $offer->id,
                 'template_id' => $offer->template_id,
-                'contract_number' => Contract::generateContractNumber(),
+                'contract_number' => $contractNumber,
                 'title' => $offer->title,
                 'content' => $offer->introduction ?? '<p>Contract generated from offer ' . $offer->offer_number . '</p>',
                 'total_value' => $offer->total,
@@ -88,52 +113,8 @@ class ContractService
     }
 
     /**
-     * Add an annex to a contract from an accepted offer.
-     */
-    public function addAnnexFromOffer(Contract $contract, Offer $offer): ContractAnnex
-    {
-        if (!$offer->isAccepted()) {
-            throw new \RuntimeException(__('Only accepted offers can be added as annexes.'));
-        }
-
-        return DB::transaction(function () use ($contract, $offer) {
-            $annexNumber = $contract->annexes()->count() + 1;
-
-            $annex = ContractAnnex::create([
-                'contract_id' => $contract->id,
-                'offer_id' => $offer->id,
-                'annex_number' => $annexNumber,
-                'annex_code' => $contract->contract_number . '-A' . $annexNumber,
-                'title' => $offer->title,
-                'content' => $offer->introduction ?? '<p>Annex to contract ' . $contract->contract_number . '</p>',
-                'additional_value' => $offer->total,
-                'currency' => $offer->currency,
-                'effective_date' => now(),
-            ]);
-
-            // Update contract total value
-            $contract->update([
-                'total_value' => $contract->total_value + $offer->total,
-            ]);
-
-            // Link offer to contract
-            $offer->update(['contract_id' => $contract->id]);
-
-            // Generate PDF for annex
-            $this->generateAnnexPdf($annex);
-
-            Log::info("Contract annex added", [
-                'contract_id' => $contract->id,
-                'annex_id' => $annex->id,
-                'offer_id' => $offer->id,
-            ]);
-
-            return $annex;
-        });
-    }
-
-    /**
      * Generate PDF for a contract.
+     * Uses DocumentFileService for versioned storage.
      */
     public function generatePdf(Contract $contract): string
     {
@@ -148,33 +129,25 @@ class ContractService
             $content = $contract->template->render($this->getTemplateVariables($contract));
         }
 
-        // Save PDF path
-        $filename = "contracts/{$contract->organization_id}/{$contract->contract_number}.pdf";
-        $path = storage_path("app/{$filename}");
-
-        // Ensure directory exists
-        $directory = dirname($path);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        // Generate PDF using Spatie Laravel PDF (Chrome-based)
-        Pdf::view('contracts.pdf', [
+        // Generate PDF using Dompdf
+        $pdf = Pdf::loadView('contracts.pdf', [
             'contract' => $contract,
             'content' => $content,
-        ])
-        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
-            $browsershot->setChromePath('/usr/bin/chromium')
-                ->noSandbox()
-                ->disableGpu();
-        })
-        ->format(Format::A4)
-        ->save($path);
+        ]);
+        $pdf->setPaper('A4', 'portrait');
+        $pdfOutput = $pdf->output();
 
-        // Update contract with PDF path
-        $contract->update(['pdf_path' => $filename]);
+        // Store using DocumentFileService (versioned, with proper path structure)
+        $documentFile = $this->documentFileService->storeDraft(
+            $contract,
+            $pdfOutput,
+            $contract->contract_number . '.pdf'
+        );
 
-        return $filename;
+        // Also update legacy pdf_path for backward compatibility
+        $contract->update(['pdf_path' => $documentFile->file_path]);
+
+        return $documentFile->file_path;
     }
 
     /**
@@ -194,54 +167,53 @@ class ContractService
             $content = $contract->template->render($this->getTemplateVariables($contract));
         }
 
-        // Generate PDF in memory using Spatie Laravel PDF (Chrome-based)
-        return Pdf::view('contracts.pdf', [
+        // Generate PDF in memory using Dompdf
+        $pdf = Pdf::loadView('contracts.pdf', [
             'contract' => $contract,
             'content' => $content,
-        ])
-        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
-            $browsershot->setChromePath('/usr/bin/chromium')
-                ->noSandbox()
-                ->disableGpu();
-        })
-        ->format(Format::A4)
-        ->base64();
+        ]);
+        $pdf->setPaper('A4', 'portrait');
+        $pdf->setOption('isHtml5ParserEnabled', true);
+        $pdf->setOption('isRemoteEnabled', true);
+        $pdf->setOption('defaultFont', 'DejaVu Sans');
+        $pdf->setOption('margin_top', 15);
+        $pdf->setOption('margin_bottom', 15);
+        $pdf->setOption('margin_left', 15);
+        $pdf->setOption('margin_right', 15);
+        return base64_encode($pdf->output());
     }
 
     /**
      * Generate PDF for a contract annex.
+     * Uses DocumentFileService for versioned storage.
      */
     public function generateAnnexPdf(ContractAnnex $annex): string
     {
-        $annex->load(['contract.client', 'offer.items']);
+        $annex->load(['contract.client', 'contract.organization', 'offer.items']);
 
-        // Save PDF path
-        $filename = "contracts/{$annex->contract->organization_id}/annexes/{$annex->annex_code}.pdf";
-        $path = storage_path("app/{$filename}");
+        // Render annex content with variables replaced
+        $renderedContent = $this->renderAnnexContent($annex);
 
-        // Ensure directory exists
-        $directory = dirname($path);
-        if (!is_dir($directory)) {
-            mkdir($directory, 0755, true);
-        }
-
-        // Generate PDF using Spatie Laravel PDF (Chrome-based)
-        Pdf::view('contracts.annex-pdf', [
+        // Generate PDF using Dompdf
+        $pdf = Pdf::loadView('contracts.annex-pdf', [
             'annex' => $annex,
             'contract' => $annex->contract,
-        ])
-        ->withBrowsershot(function (\Spatie\Browsershot\Browsershot $browsershot) {
-            $browsershot->setChromePath('/usr/bin/chromium')
-                ->noSandbox()
-                ->disableGpu();
-        })
-        ->format(Format::A4)
-        ->save($path);
+            'content' => $renderedContent,
+        ]);
+        $pdf->setPaper('A4', 'portrait');
+        $pdfOutput = $pdf->output();
 
-        // Update annex with PDF path
-        $annex->update(['pdf_path' => $filename]);
+        // Store using DocumentFileService (versioned, with proper path structure)
+        $documentFile = $this->documentFileService->storeDraft(
+            $annex,
+            $pdfOutput,
+            $annex->annex_code . '.pdf'
+        );
 
-        return $filename;
+        // Also update legacy pdf_path for backward compatibility
+        $annex->update(['pdf_path' => $documentFile->file_path]);
+
+        return $documentFile->file_path;
     }
 
     /**
@@ -562,12 +534,36 @@ class ContractService
                 $offer->update(['client_id' => $clientId]);
             }
 
-            // Get default template if not provided
+            // Get default template if not provided (exclude annex templates)
             if (!$template) {
                 $template = ContractTemplate::where('organization_id', $offer->organization_id)
                     ->where('is_default', true)
                     ->where('is_active', true)
+                    ->where(function($q) {
+                        $q->where('category', '!=', 'annex')
+                           ->orWhereNull('category');
+                    })
                     ->first();
+            }
+
+            // Get next available number
+            $contractNumber = Contract::generateContractNumber();
+
+            // Hard delete any soft-deleted contract with the same number to avoid unique constraint violation
+            $oldContracts = Contract::onlyTrashed()
+                ->where('organization_id', $offer->organization_id)
+                ->where('contract_number', $contractNumber)
+                ->get();
+
+            foreach ($oldContracts as $old) {
+                // Delete PDF file if exists
+                if ($old->pdf_path && Storage::exists($old->pdf_path)) {
+                    Storage::delete($old->pdf_path);
+                }
+                // Delete related items
+                $old->items()->forceDelete();
+                // Force delete the contract
+                $old->forceDelete();
             }
 
             $contractData = [
@@ -576,7 +572,7 @@ class ContractService
                 'offer_id' => $offer->id,
                 'template_id' => $offer->template_id,
                 'contract_template_id' => $template?->id,
-                'contract_number' => Contract::generateContractNumber(),
+                'contract_number' => $contractNumber,
                 'title' => $offer->title ?: __('Contract from Offer :number', ['number' => $offer->offer_number]),
                 'content' => $offer->introduction ?? '<p>Contract generated from offer ' . $offer->offer_number . '</p>',
                 'total_value' => $offer->total,
@@ -648,12 +644,306 @@ class ContractService
     }
 
     /**
+     * Get all active finalized contracts for the offer's client.
+     * Used to present choices when converting offer to contract.
+     *
+     * @param Offer $offer The offer to check
+     * @return \Illuminate\Database\Eloquent\Collection Active contracts collection
+     */
+    public function getActiveContractsForOfferClient(Offer $offer): \Illuminate\Database\Eloquent\Collection
+    {
+        $clientId = $offer->client_id;
+
+        if (!$clientId) {
+            return collect();
+        }
+
+        return Contract::withoutGlobalScopes()
+            ->where('organization_id', $offer->organization_id)
+            ->where('client_id', $clientId)
+            ->where('status', 'active')
+            ->where('is_finalized', true)
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    /**
+     * Process an accepted offer - creates contract or annex based on parameters.
+     *
+     * If offer has explicit parent_contract_id → create annex for that contract
+     * If forceNewContract is true → always create new contract
+     * If addToContractId is specified → add as annex to that contract
+     * Else → create new contract (no longer auto-detects)
+     *
+     * @param Offer $offer The accepted offer to process
+     * @param bool $forceNewContract If true, always create a new contract
+     * @param int|null $addToContractId If set, add as annex to this contract
+     * @return Contract|ContractAnnex The created contract or annex
+     */
+    public function processAcceptedOffer(Offer $offer, bool $forceNewContract = false, ?int $addToContractId = null): Contract|ContractAnnex
+    {
+        if (!$offer->isAccepted()) {
+            throw new \RuntimeException(__('Only accepted offers can be processed.'));
+        }
+
+        return DB::transaction(function () use ($offer, $forceNewContract, $addToContractId) {
+            // 1. EXPLICIT CHECK FIRST: If offer is linked to a parent contract (from UI)
+            if ($offer->parent_contract_id && !$forceNewContract) {
+                $parentContract = Contract::find($offer->parent_contract_id);
+                if ($parentContract && $parentContract->canAcceptAnnex()) {
+                    Log::info("Creating annex for explicitly linked contract", [
+                        'offer_id' => $offer->id,
+                        'parent_contract_id' => $offer->parent_contract_id,
+                    ]);
+                    return $this->createAnnexFromOffer($parentContract, $offer);
+                }
+                // If parent contract can't accept annex, log warning and proceed to create new contract
+                Log::warning("Parent contract cannot accept annexes, creating new contract instead", [
+                    'offer_id' => $offer->id,
+                    'parent_contract_id' => $offer->parent_contract_id,
+                    'parent_exists' => $parentContract !== null,
+                    'can_accept' => $parentContract?->canAcceptAnnex() ?? false,
+                ]);
+                // Fall through to create new contract
+            }
+
+            // 2. If specific contract ID provided for annex
+            if ($addToContractId && !$forceNewContract) {
+                $targetContract = Contract::find($addToContractId);
+                if (!$targetContract) {
+                    throw new \RuntimeException(__('The specified contract was not found.'));
+                }
+                if (!$targetContract->canAcceptAnnex()) {
+                    throw new \RuntimeException(__('The specified contract cannot accept annexes. It must be active and finalized.'));
+                }
+                Log::info("Creating annex for user-selected contract", [
+                    'offer_id' => $offer->id,
+                    'contract_id' => $addToContractId,
+                ]);
+                return $this->createAnnexFromOffer($targetContract, $offer);
+            }
+
+            // 3. Resolve client ID (create from temp data if needed)
+            $clientId = $offer->client_id;
+            if (!$clientId && $offer->temp_client_name) {
+                $client = $this->createClientFromTempData($offer);
+                $clientId = $client->id;
+                $offer->update(['client_id' => $clientId]);
+            }
+
+            // 4. Create new draft contract (no longer auto-detecting active contracts)
+            Log::info("Creating new contract", [
+                'offer_id' => $offer->id,
+                'client_id' => $clientId,
+                'force_new' => $forceNewContract,
+            ]);
+            return $this->createDraftFromOffer($offer);
+        });
+    }
+
+    /**
+     * Find the active finalized contract for a client.
+     *
+     * @param int|null $clientId The client ID to search for
+     * @param int $organizationId The organization ID
+     * @return Contract|null The active contract or null
+     */
+    public function findActiveContractForClient(?int $clientId, int $organizationId): ?Contract
+    {
+        if (!$clientId) {
+            return null;
+        }
+
+        return Contract::withoutGlobalScopes()
+            ->where('organization_id', $organizationId)
+            ->where('client_id', $clientId)
+            ->where('status', 'active')
+            ->where('is_finalized', true)
+            ->orderByDesc('created_at')
+            ->first();
+    }
+
+    /**
+     * Create a contract annex from an accepted offer with template rendering.
+     *
+     * @param Contract $contract The parent contract
+     * @param Offer $offer The accepted offer
+     * @param ContractTemplate|null $template Optional annex template
+     * @return ContractAnnex The created annex
+     */
+    public function createAnnexFromOffer(Contract $contract, Offer $offer, ?ContractTemplate $template = null): ContractAnnex
+    {
+        if (!$offer->isAccepted()) {
+            throw new \RuntimeException(__('Only accepted offers can be added as annexes.'));
+        }
+
+        if (!$contract->canAcceptAnnex()) {
+            throw new \RuntimeException(__('This contract cannot accept annexes. Only active, finalized contracts can have annexes.'));
+        }
+
+        return DB::transaction(function () use ($contract, $offer, $template) {
+            $annexNumber = $contract->annexes()->count() + 1;
+            // Format for UI: ANX XX la PREFIX XX din DD.MM.YYYY (e.g., ANX 05 la CTR SAD 11 din 09.01.2026)
+            $contractDate = $contract->created_at ? $contract->created_at->format('d.m.Y') : now()->format('d.m.Y');
+
+            // Get organization prefix for annex code
+            $org = $contract->organization ?? Organization::find($contract->organization_id);
+            $prefix = trim($org?->settings['contract_prefix'] ?? 'CTR');
+
+            // If empty, default to CTR
+            if (empty($prefix)) {
+                $prefix = 'CTR';
+            }
+
+            $annexCode = sprintf('ANX %02d la %s %s din %s', $annexNumber, $prefix, $contract->sequential_number, $contractDate);
+
+            // Try to get an annex template if not provided
+            if (!$template) {
+                $template = ContractTemplate::where('organization_id', $offer->organization_id)
+                    ->where('category', 'annex')
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            // Build annex content
+            $content = $offer->introduction ?? '';
+            if ($template) {
+                $content = $template->content ?? '';
+            }
+
+            $annex = ContractAnnex::create([
+                'contract_id' => $contract->id,
+                'offer_id' => $offer->id,
+                'template_id' => $template?->id,
+                'annex_number' => $annexNumber,
+                'annex_code' => $annexCode,
+                'title' => $offer->title ?: __('Annex :number to contract :contract dated :date', [
+                    'number' => str_pad($annexNumber, 2, '0', STR_PAD_LEFT),
+                    'contract' => $contract->contract_number,
+                    'date' => $contract->created_at->format('d.m.Y'),
+                ]),
+                'content' => $content,
+                'additional_value' => $offer->total,
+                'currency' => $offer->currency,
+                'effective_date' => now(),
+            ]);
+
+            // Render template content with annex variables
+            if ($template || !empty($content)) {
+                $annex->load(['contract.client', 'contract.organization', 'offer.items']);
+                $renderedContent = $this->renderAnnexContent($annex);
+                $annex->update(['content' => $renderedContent]);
+            }
+
+            // Update contract total value
+            $contract->update([
+                'total_value' => $contract->total_value + $offer->total,
+            ]);
+
+            // Link offer to contract
+            $offer->update(['contract_id' => $contract->id]);
+
+            // Generate PDF for annex
+            $this->generateAnnexPdf($annex);
+
+            Log::info("Contract annex created from offer", [
+                'contract_id' => $contract->id,
+                'annex_id' => $annex->id,
+                'annex_number' => $annexNumber,
+                'offer_id' => $offer->id,
+            ]);
+
+            return $annex;
+        });
+    }
+
+    /**
+     * Render annex content with all variables replaced.
+     *
+     * @param ContractAnnex $annex The annex to render
+     * @return string Rendered HTML content
+     */
+    public function renderAnnexContent(ContractAnnex $annex): string
+    {
+        $content = $annex->content ?? '';
+        if (empty($content)) {
+            return '';
+        }
+
+        // Ensure contract has all necessary relationships loaded including organization
+        $annex->load(['contract.client', 'contract.organization', 'offer.items']);
+
+        // Get contract-level variables first (includes client and org representatives)
+        $variables = ContractVariableRegistry::resolve($annex->contract);
+
+        // Add/override annex-specific variables
+        $variables['annex_number'] = $annex->annex_number;
+        $variables['annex_code'] = $annex->annex_code;
+        $variables['annex_date'] = $annex->effective_date?->format('d.m.Y') ?? now()->format('d.m.Y');
+        $variables['annex_title'] = $annex->title ?? '';
+        $variables['annex_value'] = number_format($annex->additional_value ?? 0, 2, ',', '.');
+        // Use document-friendly format for parent contract
+        $variables['parent_contract_number'] = $annex->contract->document_number ?? $annex->contract->contract_number;
+        $variables['parent_contract_date'] = $annex->contract->created_at?->format('d.m.Y');
+        $variables['new_contract_total'] = number_format(
+            ($annex->contract->total_value ?? 0) + ($annex->additional_value ?? 0), 
+            2, ',', '.'
+        );
+
+        // Render services list from offer items
+        if ($annex->offer) {
+            $variables['annex_services_list'] = $this->renderAnnexServicesList($annex);
+        }
+
+        // Replace all variables in content
+        foreach ($variables as $key => $value) {
+            $content = str_replace('{{' . $key . '}}', (string) $value, $content);
+        }
+
+        return $content;
+    }
+
+    /**
+     * Render services list for an annex from its offer items.
+     */
+    protected function renderAnnexServicesList(ContractAnnex $annex): string
+    {
+        $offer = $annex->offer;
+        if (!$offer || $offer->items->isEmpty()) {
+            return '<p><em>' . __('Nu sunt specificate servicii') . '</em></p>';
+        }
+
+        $items = $offer->items->filter(fn($item) => $item->is_selected === true);
+        if ($items->isEmpty()) {
+            return '<p><em>' . __('Nu sunt specificate servicii') . '</em></p>';
+        }
+
+        $currency = e($annex->currency ?? 'EUR');
+        $total = 0;
+
+        $html = '';
+        foreach ($items as $item) {
+            $name = $item->title ?? $item->name ?? $item->description ?? __('Serviciu');
+            $itemTotal = (float) ($item->total_price ?? $item->total ?? 0);
+            $total += $itemTotal;
+            $price = number_format($itemTotal, 2, ',', '.');
+            $html .= '<p style="margin: 0 0 4px 20px;">&bull; <strong>' . e($name) . '</strong> - ' . $price . ' ' . $currency . '</p>';
+        }
+
+        if ($items->count() > 1) {
+            $html .= '<p style="margin-top: 10px;"><strong>' . __('Total') . ': ' . number_format($total, 2, ',', '.') . ' ' . $currency . '</strong></p>';
+        }
+
+        return $html;
+    }
+    /**
      * Create a real client from offer's temporary client data.
      */
     protected function createClientFromTempData(Offer $offer): Client
     {
         $client = Client::create([
             'organization_id' => $offer->organization_id,
+            'created_from_temp' => true,
             'name' => $offer->temp_client_name,
             'company_name' => $offer->temp_client_company,
             'email' => $offer->temp_client_email,

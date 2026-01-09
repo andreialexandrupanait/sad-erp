@@ -162,10 +162,64 @@ class ContractVariableRegistry
                     'required' => false,
                     'type' => 'block',
                 ],
+                'services_list' => [
+                    'label' => 'Lista servicii',
+                    'label_en' => 'Services List',
+                    'required' => false,
+                    'type' => 'block',
+                ],
                 'current_date' => [
                     'label' => 'Data curentă',
                     'label_en' => 'Current Date',
                     'required' => false,
+                ],
+            ],
+            'annex' => [
+                'annex_number' => [
+                    'label' => 'Număr act adițional',
+                    'label_en' => 'Annex Number',
+                    'required' => true,
+                ],
+                'annex_code' => [
+                    'label' => 'Cod act adițional',
+                    'label_en' => 'Annex Code',
+                    'required' => true,
+                ],
+                'annex_date' => [
+                    'label' => 'Data act adițional',
+                    'label_en' => 'Annex Date',
+                    'required' => true,
+                ],
+                'annex_title' => [
+                    'label' => 'Titlu act adițional',
+                    'label_en' => 'Annex Title',
+                    'required' => false,
+                ],
+                'annex_value' => [
+                    'label' => 'Valoare act adițional',
+                    'label_en' => 'Annex Value',
+                    'required' => true,
+                ],
+                'parent_contract_number' => [
+                    'label' => 'Număr contract părinte',
+                    'label_en' => 'Parent Contract Number',
+                    'required' => true,
+                ],
+                'parent_contract_date' => [
+                    'label' => 'Data contract părinte',
+                    'label_en' => 'Parent Contract Date',
+                    'required' => false,
+                ],
+                'new_contract_total' => [
+                    'label' => 'Total nou contract',
+                    'label_en' => 'New Contract Total',
+                    'required' => false,
+                ],
+                'annex_services_list' => [
+                    'label' => 'Lista servicii act adițional',
+                    'label_en' => 'Annex Services List',
+                    'required' => false,
+                    'type' => 'block',
                 ],
             ],
         ];
@@ -217,7 +271,8 @@ class ContractVariableRegistry
             'client_phone' => $e($client?->phone ?? $offer?->temp_client_phone ?? ''),
 
             // Contract variables (all escaped for XSS prevention)
-            'contract_number' => $e($contract->contract_number ?? ''),
+            // Use document-friendly format: Contract XX dated DD.MM.YYYY
+            'contract_number' => $e($contract->document_number ?? $contract->contract_number ?? ''),
             'contract_date' => $e($contract->created_at?->format('d.m.Y') ?? ''),
             'contract_start_date' => $e($contract->start_date?->format('d.m.Y') ?? ''),
             'contract_end_date' => $e($contract->end_date?->format('d.m.Y') ?? __('Nedeterminat')),
@@ -236,8 +291,9 @@ class ContractVariableRegistry
             'org_phone' => $e($org?->phone ?? ''),
 
             // Special variables
-            // NOTE: offer_services_list contains pre-sanitized HTML (uses e() internally)
+            // NOTE: services lists contain pre-sanitized HTML (uses e() internally)
             'offer_services_list' => static::renderServicesList($contract),
+            'services_list' => static::renderServicesList($contract), // Alias for backwards compatibility
             'current_date' => $e(now()->format('d.m.Y')),
         ];
     }
@@ -272,17 +328,15 @@ class ContractVariableRegistry
         $currency = e($contract->currency ?? 'EUR');
         $total = 0;
 
-        // Build as bullet list with bold styling (no blue - for clean PDF export)
-        // Use inline styling to ensure bullets render correctly in PDF
-        $html = '<ul style="list-style-type: disc; margin-left: 20px; padding-left: 0; margin-top: 0;">';
+        // Build as bullet list with manual bullet character (Dompdf doesn't render list-style correctly)
+        $html = '';
         foreach ($items as $item) {
             $name = $item->title ?? $item->name ?? $item->description ?? __('Serviciu');
             $itemTotal = (float) ($item->total_price ?? $item->total ?? 0);
             $total += $itemTotal;
             $price = number_format($itemTotal, 2, ',', '.');
-            $html .= '<li style="margin-bottom: 4px;"><strong>' . e($name) . '</strong> - ' . $price . ' ' . $currency . '</li>';
+            $html .= '<p style="margin: 0 0 4px 20px;">&bull; <strong>' . e($name) . '</strong> - ' . $price . ' ' . $currency . '</p>';
         }
-        $html .= '</ul>';
 
         // Add total if there are multiple items
         if ($items->count() > 1) {

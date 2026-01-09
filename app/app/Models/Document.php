@@ -105,7 +105,15 @@ class Document extends Model
     }
 
     /**
-     * Get the full storage path.
+     * Get the storage disk.
+     */
+    protected function getDisk(): string
+    {
+        return config('filesystems.documents_disk', 'documents');
+    }
+
+    /**
+     * Get the full storage path (for local disk only - deprecated).
      */
     public function getFullPathAttribute(): string
     {
@@ -117,9 +125,7 @@ class Document extends Model
      */
     public function fileExists(): bool
     {
-        // Try Storage facade first, then fallback to direct file_exists
-        return Storage::exists($this->file_path)
-            || file_exists(storage_path('app/' . $this->file_path));
+        return Storage::disk($this->getDisk())->exists($this->file_path);
     }
 
     /**
@@ -131,7 +137,7 @@ class Document extends Model
             return null;
         }
 
-        return Storage::get($this->file_path);
+        return Storage::disk($this->getDisk())->get($this->file_path);
     }
 
     /**
@@ -203,7 +209,7 @@ class Document extends Model
     public function deleteWithFile(): bool
     {
         if ($this->fileExists()) {
-            Storage::delete($this->file_path);
+            Storage::disk($this->getDisk())->delete($this->file_path);
         }
 
         return $this->delete();

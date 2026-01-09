@@ -445,6 +445,11 @@ class SettingsController extends Controller
             'smtp_encryption' => 'nullable|string|in:tls,ssl,none',
             'smtp_from_email' => 'nullable|required_if:smtp_enabled,1|email|max:255',
             'smtp_from_name' => 'nullable|string|max:255',
+            'push_notifications_enabled' => 'nullable|boolean',
+            'push_notify_offer_accepted' => 'nullable|boolean',
+            'push_notify_offer_rejected' => 'nullable|boolean',
+            'push_notify_new_client' => 'nullable|boolean',
+            'push_notify_payment_received' => 'nullable|boolean',
         ]);
 
         $this->settingsService->updateSettings(

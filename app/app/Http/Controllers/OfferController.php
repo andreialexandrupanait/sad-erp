@@ -10,6 +10,8 @@ use App\Models\Client;
 use App\Models\DocumentTemplate;
 use App\Models\Offer;
 use App\Models\Service;
+use App\Models\ContractAnnex;
+use App\Services\Contract\ContractService;
 use App\Services\Offer\OfferBulkActionService;
 use App\Services\Offer\OfferPublicService;
 use App\Services\Offer\OfferService;
@@ -26,7 +28,8 @@ class OfferController extends Controller
     public function __construct(
         protected OfferService $offerService,
         protected OfferPublicService $offerPublicService,
-        protected OfferBulkActionService $bulkActionService
+        protected OfferBulkActionService $bulkActionService,
+        protected ContractService $contractService
     ) {
         $this->middleware('auth')->except(['publicView', 'publicAccept', 'publicReject']);
     }
@@ -257,7 +260,7 @@ class OfferController extends Controller
                 ]);
             }
 
-            return back()->with('success', __('Offer sent successfully.'));
+            return redirect()->route('offers.index')->with('success', __('Offer sent successfully.'));
         } catch (\Exception $e) {
             if (request()->expectsJson()) {
                 return response()->json(['error' => $e->getMessage()], 500);
@@ -355,25 +358,108 @@ class OfferController extends Controller
     }
 
     /**
-     * Convert accepted offer to contract.
+     * Convert accepted offer to contract or add as annex to existing contract.
+     *
+     * If client has active contracts, user must choose action:
+     * - action: 'new_contract' → create new contract
+     * - action: 'add_annex' with contract_id → add as annex to specified contract
      */
-    public function convertToContract(Offer $offer): RedirectResponse
+    public function convertToContract(Request $request, Offer $offer): RedirectResponse|JsonResponse
     {
         if (!$offer->isAccepted()) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => __('Only accepted offers can be converted to contracts.')], 400);
+            }
             return back()->with('error', __('Only accepted offers can be converted to contracts.'));
         }
 
         if ($offer->contract_id) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => __('This offer is already linked to a contract.')], 400);
+            }
             return back()->with('error', __('This offer is already linked to a contract.'));
         }
 
-        try {
-            $contract = $this->offerService->convertToContract($offer);
+        // Get action from request (null if not specified)
+        $action = $request->input('action');
+        $targetContractId = $request->input('contract_id');
 
-            return redirect()
-                ->route('contracts.show', $contract)
-                ->with('success', __('Contract created successfully.'));
+        // If offer has explicit parent_contract_id, check if it's valid for annex
+        if ($offer->parent_contract_id && !$action) {
+            $parentContract = \App\Models\Contract::find($offer->parent_contract_id);
+            // Only force annex if parent contract exists and can accept annexes
+            if ($parentContract && $parentContract->canAcceptAnnex()) {
+                $action = 'add_annex';
+                $targetContractId = $offer->parent_contract_id;
+            }
+            // If parent contract is invalid/can't accept annexes, ignore it and proceed normally
+            // This allows creating a new contract when the linked contract isn't ready
+        }
+
+        // Check if client has active contracts (only if no action specified yet)
+        if (!$action) {
+            $activeContracts = $this->contractService->getActiveContractsForOfferClient($offer);
+
+            // If active contracts exist, ask user to choose
+            if ($activeContracts->isNotEmpty()) {
+                if ($request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'needs_choice' => true,
+                        'message' => __('This client has existing active contracts. Please choose an action.'),
+                        'active_contracts' => $activeContracts->map(fn($c) => [
+                            'id' => $c->id,
+                            'contract_number' => $c->contract_number,
+                            'title' => $c->title,
+                            'total_value' => number_format($c->total_value, 2) . ' ' . $c->currency,
+                            'start_date' => $c->start_date?->format('d.m.Y'),
+                        ]),
+                    ]);
+                }
+
+                // For non-AJAX: redirect to show page with choice flag
+                return redirect()
+                    ->route('offers.show', $offer)
+                    ->with('needs_contract_choice', true)
+                    ->with('active_contracts', $activeContracts);
+            }
+        }
+
+        try {
+            // Process based on action
+            $forceNewContract = ($action === 'new_contract');
+            $addToContractId = ($action === 'add_annex') ? $targetContractId : null;
+
+            $result = $this->contractService->processAcceptedOffer($offer, $forceNewContract, $addToContractId);
+
+            // Determine what was created
+            $isAnnex = $result instanceof ContractAnnex;
+            $contractId = $isAnnex ? $result->contract_id : $result->id;
+            $message = $isAnnex
+                ? __('Annex :code added to existing contract.', ['code' => $result->annex_code])
+                : __('Contract created successfully.');
+
+            // Determine redirect URL - go to annex page if annex was created
+            $redirectUrl = $isAnnex
+                ? route('contracts.annex.show', [$contractId, $result->id])
+                : route('contracts.show', $contractId);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'type' => $isAnnex ? 'annex' : 'contract',
+                    'message' => $message,
+                    'contract_id' => $contractId,
+                    'annex_id' => $isAnnex ? $result->id : null,
+                    'redirect_url' => $redirectUrl,
+                ]);
+            }
+
+            return redirect($redirectUrl)->with('success', $message);
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
             return back()->with('error', $e->getMessage());
         }
     }
@@ -381,16 +467,27 @@ class OfferController extends Controller
     /**
      * Regenerate contract from updated offer.
      */
-    public function regenerateContract(Offer $offer): RedirectResponse
+    public function regenerateContract(Request $request, Offer $offer): RedirectResponse|JsonResponse
     {
         if (!$offer->contract_id || !$offer->contract) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => __('This offer does not have a linked contract.')], 400);
+            }
             return back()->with('error', __('This offer does not have a linked contract.'));
         }
 
         $contract = $offer->contract;
 
-        if (!$contract->isDraft()) {
-            return back()->with('error', __('Only draft contracts can be regenerated.'));
+        // Check if contract can be regenerated (immutability check)
+        if (!$contract->canBeRegenerated()) {
+            $message = $contract->isImmutable()
+                ? __('Cannot regenerate a signed contract. Create an annex instead.')
+                : __('Only draft contracts can be regenerated.');
+
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 400);
+            }
+            return back()->with('error', $message);
         }
 
         try {
@@ -411,22 +508,93 @@ class OfferController extends Controller
             // Re-render template content if contract has a template
             $contract->load(['client', 'offer.items', 'items', 'organization', 'contractTemplate']);
             if ($contract->contractTemplate) {
-                $contractService = app(\App\Services\Contract\ContractService::class);
-                $content = $contractService->renderTemplateForContract($contract, $contract->contractTemplate);
+                $content = $this->contractService->renderTemplateForContract($contract, $contract->contractTemplate);
                 $contract->update(['content' => $content]);
+            }
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Contract regenerated with updated offer data.'),
+                    'contract_id' => $contract->id,
+                ]);
             }
 
             return redirect()
                 ->route('contracts.show', $contract)
                 ->with('success', __('Contract regenerated with updated offer data.'));
         } catch (\Exception $e) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
             return back()->with('error', $e->getMessage());
         }
     }
 
     /**
-     * Update temporary client details on an offer.
+     * Regenerate annex from updated offer.
      */
+    public function regenerateAnnex(Request $request, Offer $offer): RedirectResponse|JsonResponse
+    {
+        $annex = $offer->annex;
+        
+        if (!$annex) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => __('This offer does not have a linked annex.')], 400);
+            }
+            return back()->with('error', __('This offer does not have a linked annex.'));
+        }
+
+        try {
+            // Load relationships
+            $annex->load(['contract.client', 'contract.organization', 'offer.items']);
+            
+            // Get template if the annex has one
+            $template = $annex->template;
+            if ($template) {
+                // Re-render template content with current data
+                $annex->update(['content' => $template->content]);
+            }
+            
+            // Update annex values from offer
+            $annex->update([
+                'additional_value' => $offer->total,
+                'currency' => $offer->currency,
+                'title' => $offer->title ?: $annex->title,
+            ]);
+            
+            // Re-render content with variables
+            $renderedContent = $this->contractService->renderAnnexContent($annex);
+            $annex->update(['content' => $renderedContent]);
+            
+            // Regenerate PDF
+            $this->contractService->generateAnnexPdf($annex);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => __('Annex regenerated with updated offer data.'),
+                    'annex_id' => $annex->id,
+                ]);
+            }
+
+            return redirect()
+                ->route('contracts.show', $annex->contract)
+                ->with('success', __('Annex regenerated with updated offer data.'));
+        } catch (\Exception $e) {
+            \Log::error('Failed to regenerate annex', [
+                'offer_id' => $offer->id,
+                'annex_id' => $annex->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
     public function updateTempClient(Request $request, Offer $offer): RedirectResponse
     {
         $validated = $request->validate([
@@ -668,6 +836,8 @@ class OfferController extends Controller
             'defaultBlocks' => $blockRenderer->getDefaultBlocks(),
             'existingItems' => [],
             'selectedClientId' => $request->client_id,
+            'parentContractId' => $request->parent_contract_id,
+            'activeContracts' => \App\Models\Contract::where('status', 'active')->where('is_finalized', true)->with('client:id,name,company_name')->orderByDesc('created_at')->get(['id', 'contract_number', 'title', 'client_id']),
             'organization' => $organization,
             'bankAccounts' => collect($organization->settings['bank_accounts'] ?? []),
             'offerDefaults' => $offerDefaults,
@@ -769,6 +939,8 @@ class OfferController extends Controller
             'defaultBlocks' => $blocks,
             'existingItems' => $existingItems,
             'selectedClientId' => $offer->client_id,
+            'parentContractId' => $offer->parent_contract_id,
+            'activeContracts' => \App\Models\Contract::where('status', 'active')->where('is_finalized', true)->with('client:id,name,company_name')->orderByDesc('created_at')->get(['id', 'contract_number', 'title', 'client_id']),
             'organization' => $organization,
             'bankAccounts' => collect($organization->settings['bank_accounts'] ?? []),
             'offerDefaults' => $offerDefaults,
@@ -786,6 +958,7 @@ class OfferController extends Controller
     {
         $validated = $request->validate([
             'client_id' => 'nullable|exists:clients,id',
+            'parent_contract_id' => 'nullable|exists:contracts,id',
             'temp_client_name' => 'nullable|string|max:255',
             'temp_client_email' => 'nullable|email|max:255',
             'temp_client_phone' => 'nullable|string|max:50',
@@ -831,6 +1004,7 @@ class OfferController extends Controller
             'temp_client_tax_id' => $validated['temp_client_tax_id'] ?? null,
             'temp_client_registration_number' => $validated['temp_client_registration_number'] ?? null,
             'temp_client_bank_account' => $validated['temp_client_bank_account'] ?? null,
+            'parent_contract_id' => $validated['parent_contract_id'] ?? null,
             'title' => $validated['title'],
             'valid_until' => $validated['valid_until'],
             'currency' => $validated['currency'],
@@ -899,6 +1073,7 @@ class OfferController extends Controller
 
         $validated = $request->validate([
             'client_id' => 'nullable|exists:clients,id',
+            'parent_contract_id' => 'nullable|exists:contracts,id',
             'temp_client_name' => 'nullable|string|max:255',
             'temp_client_email' => 'nullable|email|max:255',
             'temp_client_phone' => 'nullable|string|max:50',
@@ -944,6 +1119,7 @@ class OfferController extends Controller
             'temp_client_tax_id' => $validated['temp_client_tax_id'] ?? null,
             'temp_client_registration_number' => $validated['temp_client_registration_number'] ?? null,
             'temp_client_bank_account' => $validated['temp_client_bank_account'] ?? null,
+            'parent_contract_id' => $validated['parent_contract_id'] ?? null,
             'title' => $validated['title'],
             'valid_until' => $validated['valid_until'],
             'currency' => $validated['currency'],

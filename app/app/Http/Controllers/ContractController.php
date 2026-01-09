@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ContractController extends Controller
 {
@@ -46,7 +47,7 @@ class ContractController extends Controller
      */
     private function indexJson(Request $request): JsonResponse
     {
-        $query = Contract::with(['client', 'offer']);
+        $query = Contract::with(['client', 'offer', 'annexes']);
 
         // Status filter
         if ($request->filled('status')) {
@@ -79,7 +80,8 @@ class ContractController extends Controller
             'contracts' => $contracts->map(function ($contract) {
                 return [
                     'id' => $contract->id,
-                    'contract_number' => $contract->contract_number,
+                    'contract_number' => $contract->formatted_number,
+                    'contract_number_raw' => $contract->contract_number,
                     'title' => $contract->title,
                     'status' => $contract->status,
                     'status_label' => $contract->status_label,
@@ -97,6 +99,17 @@ class ContractController extends Controller
                         'slug' => $contract->client->slug,
                     ] : null,
                     'has_pdf' => !empty($contract->pdf_path),
+                    'annexes' => $contract->annexes->map(function ($annex) {
+                        return [
+                            'id' => $annex->id,
+                            'annex_code' => $annex->annex_code,
+                            'annex_number' => $annex->annex_number,
+                            'title' => $annex->title,
+                            'additional_value' => $annex->additional_value,
+                            'currency' => $annex->currency,
+                            'effective_date' => $annex->effective_date?->format('Y-m-d'),
+                        ];
+                    }),
                     'created_at' => $contract->created_at?->toISOString(),
                 ];
             }),
@@ -240,7 +253,14 @@ class ContractController extends Controller
             })
             ->get();
 
-        return view('contracts.add-annex', compact('contract', 'availableOffers'));
+        // Get available annex templates
+        $annexTemplates = ContractTemplate::where('category', 'annex')
+            ->where('is_active', true)
+            ->orderBy('is_default', 'desc')
+            ->orderBy('name')
+            ->get();
+
+        return view('contracts.add-annex', compact('contract', 'availableOffers', 'annexTemplates'));
     }
 
     /**
@@ -252,6 +272,7 @@ class ContractController extends Controller
 
         $validated = $request->validate([
             'offer_id' => 'required|exists:offers,id',
+            'template_id' => 'nullable|exists:contract_templates,id',
         ]);
 
         $offer = Offer::findOrFail($validated['offer_id']);
@@ -260,12 +281,22 @@ class ContractController extends Controller
             return back()->with('error', __('Only accepted offers can be added as annexes.'));
         }
 
+        // Check if contract can accept annexes
+        if (!$contract->canAcceptAnnex()) {
+            return back()->with('error', __('This contract cannot accept annexes. Only active, finalized contracts can have annexes.'));
+        }
+
+        // Get the selected template if provided
+        $template = isset($validated['template_id'])
+            ? ContractTemplate::find($validated['template_id'])
+            : null;
+
         try {
-            $annex = $contract->addAnnexFromOffer($offer);
+            $annex = $this->contractService->createAnnexFromOffer($contract, $offer, $template);
 
             return redirect()
-                ->route('contracts.show', $contract)
-                ->with('success', __('Annex added successfully.'));
+                ->route('contracts.annex.show', [$contract, $annex])
+                ->with('success', __('Annex :code added successfully.', ['code' => $annex->annex_code]));
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -323,14 +354,13 @@ class ContractController extends Controller
     {
         $this->authorize('download', $contract);
 
-        if (!$contract->pdf_path || !file_exists(storage_path('app/' . $contract->pdf_path))) {
+        $disk = Storage::disk(config('filesystems.contracts_disk', 'local'));
+        
+        if (!$contract->pdf_path || !$disk->exists($contract->pdf_path)) {
             return back()->with('error', __('PDF not available.'));
         }
 
-        return response()->download(
-            storage_path('app/' . $contract->pdf_path),
-            $contract->contract_number . '.pdf'
-        );
+        return $disk->download($contract->pdf_path, $contract->filename_number . '.pdf');
     }
 
     /**
@@ -344,10 +374,13 @@ class ContractController extends Controller
         // Generate PDF preview (returns base64-encoded content)
         $pdfBase64 = $this->contractService->generatePdfPreview($contract);
 
-        // Return as inline PDF for browser viewing
+        // Return as inline PDF for browser viewing (with no-cache headers)
         return response(base64_decode($pdfBase64))
             ->header('Content-Type', 'application/pdf')
-            ->header('Content-Disposition', 'inline; filename="' . $contract->contract_number . '-preview.pdf"');
+            ->header('Content-Disposition', 'inline; filename="' . $contract->contract_number . '-preview.pdf"')
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     /**
@@ -361,15 +394,79 @@ class ContractController extends Controller
             abort(404);
         }
 
-        if (!$annex->pdf_path || !file_exists(storage_path('app/' . $annex->pdf_path))) {
+        $disk = Storage::disk(config('filesystems.contracts_disk', 'local'));
+        
+        if (!$annex->pdf_path || !$disk->exists($annex->pdf_path)) {
             return back()->with('error', __('PDF not available.'));
         }
 
-        return response()->download(
-            storage_path('app/' . $annex->pdf_path),
-            $annex->annex_code . '.pdf'
-        );
+        return $disk->download($annex->pdf_path, $annex->filename_code . '.pdf');
     }
+    /**
+     * Show annex details.
+     */
+    public function showAnnex(Contract $contract, ContractAnnex $annex): View
+    {
+        $this->authorize("view", $contract);
+
+        if ($annex->contract_id !== $contract->id) {
+            abort(404);
+        }
+
+        $annex->load(["offer", "template"]);
+
+        return view("contracts.annex-show", compact("contract", "annex"));
+    }
+
+    /**
+     * Edit annex content.
+     */
+    public function editAnnex(Contract $contract, ContractAnnex $annex): View
+    {
+        $this->authorize("update", $contract);
+
+        if ($annex->contract_id !== $contract->id) {
+            abort(404);
+        }
+
+        $annex->load(["offer", "template"]);
+
+        return view("contracts.annex-edit", compact("contract", "annex"));
+    }
+
+    /**
+     * Update annex content.
+     */
+    public function updateAnnex(Request $request, Contract $contract, ContractAnnex $annex): RedirectResponse
+    {
+        $this->authorize("update", $contract);
+
+        if ($annex->contract_id !== $contract->id) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            "title" => "nullable|string|max:255",
+            "content" => "nullable|string|max:500000",
+            "effective_date" => "nullable|date",
+        ]);
+
+        // Sanitize HTML content
+        if (isset($validated["content"])) {
+            $validated["content"] = $contract->sanitizeHtml($validated["content"]);
+        }
+
+        $annex->update($validated);
+
+        // Regenerate PDF
+        $this->contractService->generateAnnexPdf($annex);
+
+        return redirect()
+            ->route("contracts.annex.show", [$contract, $annex])
+            ->with("success", __("Annex updated successfully."));
+    }
+
+
 
     /**
      * Get contracts for a specific client (API).
@@ -752,12 +849,9 @@ class ContractController extends Controller
         $contract->refresh();
 
         // Download the PDF
-        if ($contract->pdf_path && file_exists(storage_path('app/' . $contract->pdf_path))) {
-            return response()->download(
-                storage_path('app/' . $contract->pdf_path),
-                $contract->contract_number . '.pdf',
-                ['Content-Type' => 'application/pdf']
-            );
+        $disk = Storage::disk(config('filesystems.contracts_disk', 'local'));
+        if ($contract->pdf_path && $disk->exists($contract->pdf_path)) {
+            return $disk->download($contract->pdf_path, $contract->filename_number . '.pdf');
         }
 
         return redirect()->route('contracts.show', $contract)
@@ -1020,8 +1114,9 @@ class ContractController extends Controller
 
             foreach ($contracts as $contract) {
                 // Delete associated PDF file if exists
-                if ($contract->pdf_path && file_exists(storage_path('app/' . $contract->pdf_path))) {
-                    unlink(storage_path('app/' . $contract->pdf_path));
+                $disk = Storage::disk(config('filesystems.contracts_disk', 'local'));
+                if ($contract->pdf_path && $disk->exists($contract->pdf_path)) {
+                    $disk->delete($contract->pdf_path);
                 }
 
                 // Unlink any associated offers
@@ -1057,6 +1152,83 @@ class ContractController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => __('An error occurred while deleting contracts. Please try again.'),
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk terminate contracts.
+     */
+    public function bulkTerminate(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1|max:100',
+            'ids.*' => 'required|integer',
+        ]);
+
+        $contracts = Contract::whereIn('id', $validated['ids'])->get();
+
+        if ($contracts->count() !== count($validated['ids'])) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Some contracts were not found or you do not have access.'),
+            ], 403);
+        }
+
+        // Check authorization and status for each contract
+        $nonActiveContracts = [];
+        foreach ($contracts as $contract) {
+            $this->authorize('terminate', $contract);
+            
+            if ($contract->status !== 'active') {
+                $nonActiveContracts[] = $contract->contract_number;
+            }
+        }
+
+        // If any contracts are not active, return error with details
+        if (!empty($nonActiveContracts)) {
+            $list = implode(', ', array_slice($nonActiveContracts, 0, 5));
+            $more = count($nonActiveContracts) > 5 ? ' ...' : '';
+            
+            return response()->json([
+                'success' => false,
+                'message' => __('Only active contracts can be closed. Non-active contracts: :list', [
+                    'list' => $list . $more
+                ]),
+                'non_active_contracts' => $nonActiveContracts,
+            ], 422);
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $terminatedCount = 0;
+
+            foreach ($contracts as $contract) {
+                $contract->terminate();
+                $terminatedCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => trans_choice(':count contract closed|:count contracts closed', $terminatedCount, ['count' => $terminatedCount]),
+                'count' => $terminatedCount,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            \Log::error('Bulk terminate contracts failed', [
+                'ids' => $validated['ids'],
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => __('An error occurred while closing contracts. Please try again.'),
             ], 500);
         }
     }

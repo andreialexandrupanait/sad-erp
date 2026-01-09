@@ -17,12 +17,15 @@ use App\Services\Notification\NotificationService;
 use App\Services\Notification\Messages\OfferSentMessage;
 use App\Services\Notification\Messages\OfferAcceptedMessage;
 use App\Services\Notification\Messages\OfferRejectedMessage;
+use App\Events\OfferAccepted;
+use App\Events\OfferRejected;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -204,17 +207,10 @@ class OfferService implements OfferServiceInterface
                 'content' => $content,
             ]);
 
-            // Save PDF
-            $filename = "offers/{$offer->organization_id}/{$offer->offer_number}.pdf";
-            $path = storage_path("app/{$filename}");
-
-            // Ensure directory exists
-            $directory = dirname($path);
-            if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-            }
-
-            $pdf->save($path);
+            // Save PDF using Storage facade
+            $filename = "documents/offers/" . now()->year . "/OFR SAD {$offer->offer_number}.pdf";
+            $disk = config("filesystems.documents_disk", "documents");
+            Storage::disk($disk)->put($filename, $pdf->output());
 
             // Update offer with PDF path
             $offer->update(['pdf_path' => $filename]);
@@ -307,11 +303,13 @@ class OfferService implements OfferServiceInterface
                         ]));
 
                     // Attach PDF if exists
-                    if ($pdfDocument && $pdfDocument->file_path && file_exists(storage_path('app/' . $pdfDocument->file_path))) {
-                        $mail->attach(storage_path('app/' . $pdfDocument->file_path), [
-                            'as' => $offer->offer_number . '.pdf',
-                            'mime' => 'application/pdf',
-                        ]);
+                    if ($pdfDocument && $pdfDocument->file_path && $pdfDocument->fileExists()) {
+                        $pdfContent = $pdfDocument->getContents();
+                        if ($pdfContent) {
+                            $mail->attachData($pdfContent, $offer->offer_number . '.pdf', [
+                                'mime' => 'application/pdf',
+                            ]);
+                        }
                     }
                 });
             });
@@ -511,6 +509,9 @@ class OfferService implements OfferServiceInterface
             $this->notificationService->send($message);
         }
 
+        // Broadcast real-time notification
+        event(new OfferAccepted($offer));
+
         return $contract;
     }
 
@@ -537,6 +538,9 @@ class OfferService implements OfferServiceInterface
             $message = new OfferRejectedMessage($offer);
             $this->notificationService->send($message);
         }
+
+        // Broadcast real-time notification
+        event(new OfferRejected($offer));
     }
 
     /**
@@ -636,7 +640,7 @@ class OfferService implements OfferServiceInterface
      */
     public function getOffersJson(Request $request): JsonResponse
     {
-        $query = Offer::with(['client', 'creator']);
+        $query = Offer::with(['client', 'creator', 'parentContract']);
 
         // Filter by status
         if ($request->filled('status')) {
@@ -686,7 +690,7 @@ class OfferService implements OfferServiceInterface
     {
         $organization = auth()->user()->organization;
 
-        $clients = Client::orderBy('name')->get(['id', 'name', 'company_name', 'slug']);
+        $clients = Client::orderBy('name')->get(['id', 'name', 'company_name', 'slug', 'created_from_temp']);
         $templates = DocumentTemplate::active()->ofType('offer')->get();
         $services = Service::where('is_active', true)->orderBy('sort_order')->get();
 
@@ -925,6 +929,9 @@ class OfferService implements OfferServiceInterface
             'sent_at' => $offer->sent_at?->format('d.m.Y'),
             'accepted_at' => $offer->accepted_at?->format('d.m.Y'),
             'client_modified_at' => $offer->client_modified_at?->format('d.m.Y H:i'),
+            'contract_id' => $offer->contract_id,
+            'parent_contract_id' => $offer->parent_contract_id,
+            'parent_contract_number' => $offer->parentContract?->contract_number,
         ];
     }
 

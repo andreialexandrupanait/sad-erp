@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
+use App\Models\ContractAnnex;
 
 class Offer extends Model
 {
@@ -29,6 +30,7 @@ class Offer extends Model
         'created_by_user_id',
         'template_id',
         'contract_id',
+        'parent_contract_id',
         'offer_number',
         'title',
         'introduction',
@@ -290,6 +292,38 @@ class Offer extends Model
     public function contract()
     {
         return $this->belongsTo(Contract::class);
+    }
+
+    /**
+     * Get the parent contract this offer is an annex for.
+     */
+    public function parentContract()
+    {
+        return $this->belongsTo(Contract::class, 'parent_contract_id');
+    }
+
+    /**
+     * Check if this offer is meant to become an annex.
+     */
+    public function isForAnnex(): bool
+    {
+        return !is_null($this->parent_contract_id);
+    }
+
+    /**
+     * Get the annex created from this offer (if any).
+     */
+    public function annex()
+    {
+        return $this->hasOne(ContractAnnex::class);
+    }
+
+    /**
+     * Check if this offer has generated an annex.
+     */
+    public function hasGeneratedAnnex(): bool
+    {
+        return $this->annex()->exists();
     }
 
     public function items()
@@ -654,18 +688,11 @@ class Offer extends Model
      *             template handling and client conversion. This method is kept
      *             for backwards compatibility but delegates to the service.
      */
-    public function convertToContract(array $options = []): Contract
+    public function convertToContract(array $options = []): Contract|ContractAnnex
     {
-        // Delegate to ContractService for consistent behavior
+        // Delegate to ContractService which handles the contract vs annex decision
         $contractService = app(\App\Services\Contract\ContractService::class);
-
-        // Get template if specified
-        $template = null;
-        if (!empty($options['template_id'])) {
-            $template = \App\Models\ContractTemplate::find($options['template_id']);
-        }
-
-        return $contractService->createDraftFromOffer($this, $template);
+        return $contractService->processAcceptedOffer($this);
     }
 
     /**

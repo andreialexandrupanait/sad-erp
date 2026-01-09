@@ -66,7 +66,12 @@ class ApplicationSettingsService
                 'notification_email_cc' => ApplicationSetting::get('notification_email_cc', ''),
 
                 // SMTP
-                'smtp_enabled' => ApplicationSetting::get('smtp_enabled', false),
+                'smtp_enabled' => ApplicationSetting::get('smtp_enabled',
+            'push_notifications_enabled',
+            'push_notify_offer_accepted',
+            'push_notify_offer_rejected',
+            'push_notify_new_client',
+            'push_notify_payment_received', false),
                 'smtp_host' => ApplicationSetting::get('smtp_host', ''),
                 'smtp_port' => ApplicationSetting::get('smtp_port', 587),
                 'smtp_username' => ApplicationSetting::get('smtp_username', ''),
@@ -74,6 +79,13 @@ class ApplicationSettingsService
                 'smtp_encryption' => ApplicationSetting::get('smtp_encryption', 'tls'),
                 'smtp_from_email' => ApplicationSetting::get('smtp_from_email', ''),
                 'smtp_from_name' => ApplicationSetting::get('smtp_from_name', ApplicationSetting::get('app_name', 'ERP System')),
+
+                // Push Notifications
+                'push_notifications_enabled' => ApplicationSetting::get('push_notifications_enabled', true),
+                'push_notify_offer_accepted' => ApplicationSetting::get('push_notify_offer_accepted', true),
+                'push_notify_offer_rejected' => ApplicationSetting::get('push_notify_offer_rejected', true),
+                'push_notify_new_client' => ApplicationSetting::get('push_notify_new_client', false),
+                'push_notify_payment_received' => ApplicationSetting::get('push_notify_payment_received', false),
             ];
         });
     }
@@ -261,6 +273,11 @@ class ApplicationSettingsService
             'notify_payment_received',
             'notify_monthly_summary',
             'smtp_enabled',
+            'push_notifications_enabled',
+            'push_notify_offer_accepted',
+            'push_notify_offer_rejected',
+            'push_notify_new_client',
+            'push_notify_payment_received',
         ];
     }
 

@@ -325,6 +325,16 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                                 </svg>
                                             </button>
+                                            {{-- Generate/Regenerate Contract --}}
+                                            <template x-if="offer.status === 'accepted'">
+                                                <button @click="generateContract(offer.id, offer.contract_id, offer.parent_contract_id)"
+                                                        class="inline-flex items-center text-indigo-600 hover:text-indigo-900 transition-colors"
+                                                        :title="getGenerateButtonTitle(offer)">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                </button>
+                                            </template>
                                             {{-- Delete --}}
                                             <button @click="deleteOffer(offer.id, offer.offer_number)"
                                                     class="inline-flex items-center text-red-600 hover:text-red-900 transition-colors"
@@ -681,6 +691,59 @@
                 } catch (error) {
                     console.error('Error deleting offer:', error);
                     alert(error.message || '{{ __('Failed to delete offer. Please try again.') }}');
+                }
+            },
+
+            getGenerateButtonTitle(offer) {
+                if (offer.contract_id) return '{{ __("Regenerate") }}';
+                if (offer.parent_contract_id) return '{{ __("Generate Annex") }}';
+                return '{{ __("Generate Contract") }}';
+            },
+
+            async generateContract(offerId, contractId, parentContractId) {
+                const isRegenerate = !!contractId;
+                const isAnnex = !!parentContractId;
+                const actionText = isRegenerate ? '{{ __('regenerate') }}' : '{{ __('generate') }}';
+                const documentType = isAnnex ? '{{ __('annex') }}' : '{{ __('contract') }}';
+
+                if (!confirm(`{{ __('Are you sure you want to') }} ${actionText} {{ __('the') }} ${documentType} {{ __('for this offer?') }}`)) {
+                    return;
+                }
+
+                try {
+                    const url = isRegenerate
+                        ? `/offers/${offerId}/regenerate-contract`
+                        : `/offers/${offerId}/convert-to-contract`;
+
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success || response.ok) {
+                        this.$dispatch('notify', {
+                            type: 'success',
+                            message: result.message || '{{ __('Contract generated successfully!') }}'
+                        });
+
+                        // Redirect to the contract
+                        if (result.contract_id) {
+                            window.location.href = `/contracts/${result.contract_id}`;
+                        } else {
+                            await this.fetchOffers();
+                        }
+                    } else {
+                        throw new Error(result.error || result.message || '{{ __('Failed to generate contract') }}');
+                    }
+                } catch (error) {
+                    console.error('Error generating contract:', error);
+                    alert(error.message || '{{ __('Failed to generate contract. Please try again.') }}');
                 }
             }
         };

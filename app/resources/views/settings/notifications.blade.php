@@ -365,6 +365,116 @@
                         </div>
                     </div>
 
+                                        <!-- Push Notifications -->
+                    <div class="bg-white rounded-lg shadow-sm border border-slate-200 mb-6">
+                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
+                            <h3 class="text-lg font-semibold text-slate-900">{{ __('Push Notifications') }}</h3>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <!-- Push Enable Toggle -->
+                            <div class="pb-6 border-b border-slate-200">
+                                <label class="flex items-center cursor-pointer">
+                                    <input type="checkbox"
+                                           name="push_notifications_enabled"
+                                           value="1"
+                                           id="pushToggle"
+                                           {{ old('push_notifications_enabled', $notificationSettings['push_notifications_enabled'] ?? true) ? 'checked' : '' }}
+                                           class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-slate-300 rounded">
+                                    <span class="ml-3">
+                                        <span class="text-sm font-medium text-slate-900">{{ __('Enable Push Notifications') }}</span>
+                                        <span class="block text-xs text-slate-500 mt-1">{{ __('Receive real-time browser notifications for important events') }}</span>
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Push Notification Types -->
+                            <div id="pushFields" class="space-y-4" style="display: {{ old('push_notifications_enabled', $notificationSettings['push_notifications_enabled'] ?? true) ? 'block' : 'none' }}">
+                                <p class="text-sm text-slate-600 mb-4">{{ __('Choose which events trigger push notifications:') }}</p>
+                                
+                                <!-- Offer Accepted -->
+                                <div class="flex items-start">
+                                    <label class="flex items-start cursor-pointer">
+                                        <input type="checkbox"
+                                               name="push_notify_offer_accepted"
+                                               value="1"
+                                               {{ old('push_notify_offer_accepted', $notificationSettings['push_notify_offer_accepted'] ?? true) ? 'checked' : '' }}
+                                               class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mt-0.5">
+                                        <span class="ml-3">
+                                            <span class="text-sm font-medium text-slate-900">{{ __('Offer Accepted') }}</span>
+                                            <span class="block text-xs text-slate-500 mt-1">{{ __('When a client accepts an offer') }}</span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <!-- Offer Rejected -->
+                                <div class="flex items-start">
+                                    <label class="flex items-start cursor-pointer">
+                                        <input type="checkbox"
+                                               name="push_notify_offer_rejected"
+                                               value="1"
+                                               {{ old('push_notify_offer_rejected', $notificationSettings['push_notify_offer_rejected'] ?? true) ? 'checked' : '' }}
+                                               class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mt-0.5">
+                                        <span class="ml-3">
+                                            <span class="text-sm font-medium text-slate-900">{{ __('Offer Rejected') }}</span>
+                                            <span class="block text-xs text-slate-500 mt-1">{{ __('When a client rejects an offer') }}</span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <!-- New Client (Push) -->
+                                <div class="flex items-start">
+                                    <label class="flex items-start cursor-pointer">
+                                        <input type="checkbox"
+                                               name="push_notify_new_client"
+                                               value="1"
+                                               {{ old('push_notify_new_client', $notificationSettings['push_notify_new_client'] ?? false) ? 'checked' : '' }}
+                                               class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mt-0.5">
+                                        <span class="ml-3">
+                                            <span class="text-sm font-medium text-slate-900">{{ __('New Client') }}</span>
+                                            <span class="block text-xs text-slate-500 mt-1">{{ __('When a new client is added') }}</span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <!-- Payment Received (Push) -->
+                                <div class="flex items-start">
+                                    <label class="flex items-start cursor-pointer">
+                                        <input type="checkbox"
+                                               name="push_notify_payment_received"
+                                               value="1"
+                                               {{ old('push_notify_payment_received', $notificationSettings['push_notify_payment_received'] ?? false) ? 'checked' : '' }}
+                                               class="h-5 w-5 text-primary-600 focus:ring-primary-500 border-slate-300 rounded mt-0.5">
+                                        <span class="ml-3">
+                                            <span class="text-sm font-medium text-slate-900">{{ __('Payment Received') }}</span>
+                                            <span class="block text-xs text-slate-500 mt-1">{{ __('When a payment is recorded') }}</span>
+                                        </span>
+                                    </label>
+                                </div>
+
+                                <!-- Browser Subscription Status -->
+                                <div class="mt-6 pt-6 border-t border-slate-200">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <span class="text-sm font-medium text-slate-900">{{ __('Browser Subscription') }}</span>
+                                            <span class="block text-xs text-slate-500 mt-1" id="pushStatusText">{{ __('Checking status...') }}</span>
+                                        </div>
+                                        <button type="button"
+                                                id="subscribePushBtn"
+                                                class="px-4 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors hidden">
+                                            {{ __('Enable Browser Notifications') }}
+                                        </button>
+                                        <button type="button"
+                                                id="unsubscribePushBtn"
+                                                class="px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors hidden">
+                                            {{ __('Disable Browser Notifications') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+
                     <!-- Save Button -->
                     <div class="flex justify-end gap-3">
                         <a href="{{ route('dashboard') }}"
@@ -455,6 +565,123 @@
                 alertBox.classList.add('hidden');
             }, 5000);
         }
+        // Toggle Push Notification fields visibility
+        const pushToggle = document.getElementById('pushToggle');
+        if (pushToggle) {
+            pushToggle.addEventListener('change', function() {
+                const pushFields = document.getElementById('pushFields');
+                pushFields.style.display = this.checked ? 'block' : 'none';
+            });
+        }
+
+        // Check push notification subscription status
+        async function checkPushStatus() {
+            const statusText = document.getElementById('pushStatusText');
+            const subscribeBtn = document.getElementById('subscribePushBtn');
+            const unsubscribeBtn = document.getElementById('unsubscribePushBtn');
+            
+            if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+                statusText.textContent = '{{ __("Push notifications not supported in this browser") }}';
+                return;
+            }
+
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    statusText.textContent = '{{ __("Notifications are enabled for this browser") }}';
+                    statusText.classList.add('text-green-600');
+                    unsubscribeBtn.classList.remove('hidden');
+                } else {
+                    statusText.textContent = '{{ __("Notifications are not enabled for this browser") }}';
+                    subscribeBtn.classList.remove('hidden');
+                }
+            } catch (error) {
+                statusText.textContent = '{{ __("Unable to check notification status") }}';
+            }
+        }
+
+        // Subscribe to push notifications
+        document.getElementById('subscribePushBtn')?.addEventListener('click', async function() {
+            try {
+                const permission = await Notification.requestPermission();
+                if (permission !== 'granted') {
+                    alert('{{ __("Please allow notifications in your browser settings") }}');
+                    return;
+                }
+
+                const registration = await navigator.serviceWorker.ready;
+                
+                // Get VAPID public key
+                const response = await fetch('/push/vapid-key');
+                const data = await response.json();
+                
+                const subscription = await registration.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array(data.key)
+                });
+
+                // Send subscription to server
+                await fetch('/push/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(subscription)
+                });
+
+                location.reload();
+            } catch (error) {
+                console.error('Push subscription error:', error);
+                alert('{{ __("Failed to enable notifications") }}');
+            }
+        });
+
+        // Unsubscribe from push notifications
+        document.getElementById('unsubscribePushBtn')?.addEventListener('click', async function() {
+            try {
+                const registration = await navigator.serviceWorker.ready;
+                const subscription = await registration.pushManager.getSubscription();
+                
+                if (subscription) {
+                    await subscription.unsubscribe();
+                    
+                    await fetch('/push/unsubscribe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ endpoint: subscription.endpoint })
+                    });
+                }
+
+                location.reload();
+            } catch (error) {
+                console.error('Push unsubscription error:', error);
+                alert('{{ __("Failed to disable notifications") }}');
+            }
+        });
+
+        // Helper function to convert VAPID key
+        function urlBase64ToUint8Array(base64String) {
+            const padding = '='.repeat((4 - base64String.length % 4) % 4);
+            const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+            const rawData = window.atob(base64);
+            const outputArray = new Uint8Array(rawData.length);
+            for (let i = 0; i < rawData.length; ++i) {
+                outputArray[i] = rawData.charCodeAt(i);
+            }
+            return outputArray;
+        }
+
+        // Check status on page load
+        if ('serviceWorker' in navigator) {
+            checkPushStatus();
+        }
+
     </script>
     @endpush
 </x-app-layout>

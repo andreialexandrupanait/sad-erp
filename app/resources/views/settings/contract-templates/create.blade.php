@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __('Create Contract Template') }}</x-slot>
+    <x-slot name="pageTitle">{{ request('category') === 'annex' ? __('Create Annex Template') : __('Create Contract Template') }}</x-slot>
 
     <x-slot name="headerActions">
         <x-ui.button variant="outline" onclick="window.location.href='{{ route('settings.document-templates.index') }}'">
@@ -41,7 +41,7 @@
                         <select name="category" id="category" required
                                 class="w-full rounded-lg border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @foreach($categories as $key => $label)
-                                <option value="{{ $key }}" {{ old('category') === $key ? 'selected' : '' }}>{{ $label }}</option>
+                                <option value="{{ $key }}" {{ old('category', request('category')) === $key ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>

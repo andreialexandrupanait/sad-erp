@@ -211,6 +211,15 @@
                             </span>
                         @endif
                     </a>
+                    <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'contracts']) }}"
+                        class="border-transparent {{ $activeTab === 'contracts' ? 'border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:border-slate-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
+                        {{ __("Contracts") }}
+                        @if($client->contracts && $client->contracts->count() > 0)
+                            <span class="ml-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold rounded-full bg-indigo-200 text-indigo-700">
+                                {{ $client->contracts->count() }}
+                            </span>
+                        @endif
+                    </a>
                 </nav>
             </div>
 
@@ -274,6 +283,37 @@
                                     </div>
                                 </div>
                             </a>
+                        </div>
+
+                        <!-- Contracts Stats Row -->
+                        <div class="grid grid-cols-2 md:grid-cols-2 gap-4">
+                            <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'contracts']) }}" class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg border border-indigo-200 transition-colors group">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">
+                                        <svg class="h-5 w-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-indigo-600 font-medium">{{ __('Contracts') }}</p>
+                                        <p class="text-lg font-bold text-indigo-700">{{ $stats['contracts_count'] }}</p>
+                                    </div>
+                                </div>
+                            </a>
+
+                            <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-emerald-100 rounded-lg">
+                                        <svg class="h-5 w-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-emerald-600 font-medium">{{ __('Active Contracts') }}</p>
+                                        <p class="text-lg font-bold text-emerald-700">{{ $stats['active_contracts_count'] }}</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Recent Invoices -->
@@ -656,6 +696,134 @@
                                 </a>
                             </div>
                         @endif
+                    @endif
+                @elseif($activeTab === 'contracts')
+                    @if($client->contracts->isEmpty())
+                        <div class="text-center py-12">
+                            <svg class="mx-auto h-12 w-12 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No contracts yet') }}</h3>
+                            <p class="mt-1 text-sm text-slate-500">{{ __('No contracts are associated with this client') }}</p>
+                        </div>
+                    @else
+                        <!-- Contracts Summary -->
+                        <div class="mb-4 p-4 bg-indigo-50 border border-indigo-200 rounded-lg flex items-center justify-between">
+                            <p class="text-sm text-indigo-900">
+                                <span class="font-semibold">{{ $stats['contracts_count'] }}</span> {{ $stats['contracts_count'] === 1 ? __('contract') : __('contracts') }} ·
+                                <span class="font-semibold">{{ $stats['active_contracts_count'] }}</span> {{ __('active') }}
+                            </p>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full caption-bottom text-sm">
+                                <thead class="bg-slate-100">
+                                    <tr class="border-b border-slate-200">
+                                        <x-ui.table-head>{{ __('Contract Number') }}</x-ui.table-head>
+                                        <x-ui.table-head>{{ __('Title') }}</x-ui.table-head>
+                                        <x-ui.table-head>{{ __('Status') }}</x-ui.table-head>
+                                        <x-ui.table-head>{{ __('Period') }}</x-ui.table-head>
+                                        <x-ui.table-head class="text-right">{{ __('Value') }}</x-ui.table-head>
+                                        <x-ui.table-head>{{ __('Annexes') }}</x-ui.table-head>
+                                        <x-ui.table-head class="text-right">{{ __('Actions') }}</x-ui.table-head>
+                                    </tr>
+                                </thead>
+                                <tbody class="[&_tr:last-child]:border-0">
+                                    @foreach($client->contracts as $contract)
+                                        <x-ui.table-row>
+                                            <x-ui.table-cell>
+                                                <a href="{{ route('contracts.show', $contract) }}" class="text-slate-900 hover:text-indigo-600 font-medium transition-colors">
+                                                    {{ $contract->contract_number }}
+                                                </a>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                <div class="text-sm text-slate-700 max-w-xs truncate" title="{{ $contract->title }}">
+                                                    {{ $contract->title }}
+                                                </div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                @php
+                                                    $statusColors = [
+                                                        'draft' => 'bg-slate-100 text-slate-700',
+                                                        'active' => 'bg-green-100 text-green-700',
+                                                        'completed' => 'bg-blue-100 text-blue-700',
+                                                        'terminated' => 'bg-red-100 text-red-700',
+                                                        'expired' => 'bg-amber-100 text-amber-700',
+                                                    ];
+                                                @endphp
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $statusColors[$contract->status] ?? 'bg-slate-100 text-slate-700' }}">
+                                                    {{ $contract->status_label ?? ucfirst($contract->status) }}
+                                                </span>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                <div class="text-sm text-slate-600">
+                                                    {{ $contract->start_date?->format('d M Y') ?? '-' }}
+                                                    @if($contract->end_date)
+                                                        <span class="text-slate-400">→</span>
+                                                        {{ $contract->end_date->format('d M Y') }}
+                                                    @endif
+                                                </div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell class="text-right">
+                                                <div class="text-sm font-semibold text-slate-900">{{ number_format($contract->total_value, 2) }} {{ $contract->currency }}</div>
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell>
+                                                @if($contract->annexes->count() > 0)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                                        {{ $contract->annexes->count() }} {{ __('annexes') }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-slate-400">-</span>
+                                                @endif
+                                            </x-ui.table-cell>
+                                            <x-ui.table-cell class="text-right">
+                                                <a href="{{ route('contracts.show', $contract) }}" class="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors inline-flex" title="{{ __('View') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                </a>
+                                            </x-ui.table-cell>
+                                        </x-ui.table-row>
+                                        @if($contract->annexes->count() > 0)
+                                            @foreach($contract->annexes as $annex)
+                                                <x-ui.table-row class="bg-slate-50">
+                                                    <x-ui.table-cell class="pl-8">
+                                                        <span class="text-slate-500">↳</span>
+                                                        <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}" class="text-slate-700 hover:text-purple-600 font-medium transition-colors ml-1">
+                                                            {{ $annex->annex_code }}
+                                                        </a>
+                                                    </x-ui.table-cell>
+                                                    <x-ui.table-cell>
+                                                        <div class="text-sm text-slate-600">{{ $annex->title }}</div>
+                                                    </x-ui.table-cell>
+                                                    <x-ui.table-cell>
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                                                            {{ __('Annex') }}
+                                                        </span>
+                                                    </x-ui.table-cell>
+                                                    <x-ui.table-cell>
+                                                        <div class="text-sm text-slate-600">{{ $annex->effective_date?->format('d M Y') ?? '-' }}</div>
+                                                    </x-ui.table-cell>
+                                                    <x-ui.table-cell class="text-right">
+                                                        <div class="text-sm font-semibold text-purple-700">+{{ number_format($annex->additional_value, 2) }} {{ $annex->currency }}</div>
+                                                    </x-ui.table-cell>
+                                                    <x-ui.table-cell></x-ui.table-cell>
+                                                    <x-ui.table-cell class="text-right">
+                                                        <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}" class="p-1.5 text-slate-500 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors inline-flex" title="{{ __('View') }}">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                            </svg>
+                                                        </a>
+                                                    </x-ui.table-cell>
+                                                </x-ui.table-row>
+                                            @endforeach
+                                        @endif
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
                     @endif
                 @endif
             </x-ui.card-content>

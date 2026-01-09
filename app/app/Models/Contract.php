@@ -49,6 +49,8 @@ class Contract extends Model
         'locked_at',
         'lock_version',
         'current_version',
+        'active_draft_file_id',
+        'active_signed_file_id',
     ];
 
     protected $casts = [
@@ -143,38 +145,49 @@ class Contract extends Model
      *
      * Uses SELECT ... FOR UPDATE to lock the row during number generation,
      * ensuring no two concurrent requests can generate the same number.
+     *
+     * Format: PREFIX-YEAR-NN (e.g., CTR-2026-01) using organization settings.
      */
     public static function generateContractNumber($organizationId = null)
     {
-        $organizationId = $organizationId ?? (auth()->check() ? auth()->user()->organization_id : 1);
-        $year = date('Y');
-        $prefix = 'CTR';
+        return \DB::transaction(function () use ($organizationId) {
+            $organizationId = $organizationId ?? (auth()->check() ? auth()->user()->organization_id : 1);
+            $prefix = 'CTR'; // Default prefix
 
-        // Get organization prefix if available
-        $org = Organization::find($organizationId);
-        if ($org && $org->code) {
-            $prefix = 'CTR-' . $org->code;
-        }
-
-        // Use database lock to prevent race condition
-        // lockForUpdate() acquires an exclusive lock until the transaction commits
-        // Get all contracts and find the max number in PHP (database-agnostic)
-        $contracts = static::withoutGlobalScopes()
-            ->where('organization_id', $organizationId)
-            ->whereYear('created_at', $year)
-            ->lockForUpdate()
-            ->pluck('contract_number');
-
-        $maxNumber = 0;
-        foreach ($contracts as $contractNumber) {
-            if (preg_match('/-(\d+)$/', $contractNumber, $matches)) {
-                $number = intval($matches[1]);
-                $maxNumber = max($maxNumber, $number);
+            // Get prefix from organization settings
+            $org = Organization::find($organizationId);
+            if ($org && isset($org->settings['contract_prefix']) && !empty($org->settings['contract_prefix'])) {
+                $prefix = $org->settings['contract_prefix'];
             }
-        }
-        $nextNumber = $maxNumber + 1;
 
-        return sprintf('%s-%d-%02d', $prefix, $year, $nextNumber);
+            $year = date('Y');
+
+            // Use database lock to prevent race condition
+            // lockForUpdate() acquires an exclusive lock until the transaction commits
+            $contracts = static::withoutGlobalScopes()
+                ->where('organization_id', $organizationId)
+                ->whereYear('created_at', $year)
+                ->lockForUpdate()
+                ->pluck('contract_number');
+
+            // Collect all used numbers
+            $usedNumbers = [];
+            foreach ($contracts as $contractNumber) {
+                // Handle both old format (CTR-2026-16) and new format (16)
+                if (preg_match('/(\d+)$/', $contractNumber, $matches)) {
+                    $usedNumbers[] = intval($matches[1]);
+                }
+            }
+
+            // Find the first available number starting from 1
+            $nextNumber = 1;
+            while (in_array($nextNumber, $usedNumbers)) {
+                $nextNumber++;
+            }
+
+            // Return just the sequential number (formatted display is handled by accessors)
+            return sprintf('%02d', $nextNumber);
+        });
     }
 
     /**
@@ -257,6 +270,68 @@ class Contract extends Model
     {
         return $this->hasMany(ContractVersion::class)->orderBy('version_number', 'desc');
     }
+    /**
+     * Document files (versioned PDFs) relationship.
+     */
+    public function documentFiles()
+    {
+        return $this->morphMany(DocumentFile::class, "documentable");
+    }
+
+    /**
+     * Active draft file relationship.
+     */
+    public function activeDraftFile()
+    {
+        return $this->belongsTo(DocumentFile::class, "active_draft_file_id");
+    }
+
+    /**
+     * Active signed file relationship.
+     */
+    public function activeSignedFile()
+    {
+        return $this->belongsTo(DocumentFile::class, "active_signed_file_id");
+    }
+
+    /**
+     * Get all draft document versions.
+     */
+    public function getDraftVersions()
+    {
+        return $this->documentFiles()
+            ->where("document_type", DocumentFile::TYPE_DRAFT)
+            ->orderBy("version", "desc")
+            ->get();
+    }
+
+    /**
+     * Get all signed document versions.
+     */
+    public function getSignedVersions()
+    {
+        return $this->documentFiles()
+            ->where("document_type", DocumentFile::TYPE_SIGNED)
+            ->orderBy("version", "desc")
+            ->get();
+    }
+
+    /**
+     * Check if contract has an active draft document.
+     */
+    public function hasActiveDraft(): bool
+    {
+        return $this->active_draft_file_id !== null;
+    }
+
+    /**
+     * Check if contract has an active signed document.
+     */
+    public function hasActiveSigned(): bool
+    {
+        return $this->active_signed_file_id !== null;
+    }
+
 
     /**
      * User who has the editing lock.
@@ -545,6 +620,35 @@ class Contract extends Model
                ($this->end_date && $this->end_date < now());
     }
 
+    /**
+     * Check if contract is immutable (cannot be modified).
+     * A contract is immutable after signing, PDF generation, or termination.
+     */
+    public function isImmutable(): bool
+    {
+        return $this->is_finalized
+            || !empty($this->pdf_path)
+            || in_array($this->status, ['terminated', 'completed']);
+    }
+
+    /**
+     * Check if contract can be regenerated from its offer.
+     * Only draft, non-finalized contracts can be regenerated.
+     */
+    public function canBeRegenerated(): bool
+    {
+        return $this->isDraft() && !$this->is_finalized && empty($this->pdf_path);
+    }
+
+    /**
+     * Check if contract can accept new annexes.
+     * Only active, finalized contracts can have annexes added.
+     */
+    public function canAcceptAnnex(): bool
+    {
+        return $this->isActive() && $this->is_finalized;
+    }
+
     public function isIndefinite()
     {
         return is_null($this->end_date);
@@ -654,6 +758,73 @@ class Contract extends Model
 
         return $colors[$this->status] ?? 'gray';
     }
+    /**
+     * Get just the sequential number part (handles both old and new formats).
+     */
+    public function getSequentialNumberAttribute(): string
+    {
+        // Extract number if stored in old format (CTR-2026-09), otherwise return as-is
+        if (preg_match('/(\d+)$/', $this->contract_number, $matches)) {
+            return sprintf('%02d', intval($matches[1]));
+        }
+        return $this->contract_number;
+    }
+
+    /**
+     * Get the formatted contract number for UI display.
+     * Format: PREFIX XX din DD.MM.YYYY (e.g., CTR SAD 11 din 09.01.2026)
+     */
+    public function getFormattedNumberAttribute(): string
+    {
+        $number = $this->sequential_number;
+        $date = $this->created_at ? $this->created_at->format('d.m.Y') : now()->format('d.m.Y');
+
+        // Get organization prefix from settings
+        $org = $this->organization ?? Organization::find($this->organization_id);
+        $prefix = trim($org?->settings['contract_prefix'] ?? 'CTR');
+
+        // If empty, default to CTR
+        if (empty($prefix)) {
+            $prefix = 'CTR';
+        }
+
+        return "{$prefix} {$number} din {$date}";
+    }
+
+    /**
+     * Get the formatted contract number for filenames.
+     * Format: PREFIX-XX-din-DD.MM.YYYY (e.g., CTR-SAD-11-din-09.01.2026)
+     */
+    public function getFilenameNumberAttribute(): string
+    {
+        $number = $this->sequential_number;
+        $date = $this->created_at ? $this->created_at->format('d.m.Y') : now()->format('d.m.Y');
+
+        // Get organization prefix from settings
+        $org = $this->organization ?? Organization::find($this->organization_id);
+        $prefix = trim($org?->settings['contract_prefix'] ?? 'CTR');
+
+        // Clean prefix: replace spaces with dashes
+        $prefix = str_replace(' ', '-', $prefix);
+
+        // If empty, default to CTR
+        if (empty($prefix)) {
+            $prefix = 'CTR';
+        }
+
+        return "{$prefix}-{$number}-din-{$date}";
+    }
+
+    /**
+     * Get the contract number for use in documents (Contract XX dated DD.MM.YYYY).
+     */
+    public function getDocumentNumberAttribute(): string
+    {
+        $number = $this->sequential_number;
+        $date = $this->created_at ? $this->created_at->format('d.m.Y') : now()->format('d.m.Y');
+        return __("Contract :number dated :date", ['number' => $number, 'date' => $date]);
+    }
+
 
     /**
      * Get days until expiry

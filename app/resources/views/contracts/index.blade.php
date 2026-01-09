@@ -170,6 +170,19 @@
                             {{ __('Export CSV') }}
                         </x-ui.button>
 
+                        {{-- Close/Terminate Selected --}}
+                        <x-ui.button
+                            variant="outline"
+                            class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700"
+                            @click="bulkTerminate()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            {{ __('Close Contracts') }}
+                        </x-ui.button>
+
                         {{-- Delete Selected --}}
                         <x-ui.button
                             variant="destructive"
@@ -219,7 +232,24 @@
                                 <th class="px-6 py-4 text-left font-medium text-slate-600 w-12">
                                     <x-bulk-checkbox x-model="selectAll" @change="toggleSelectAll()" />
                                 </th>
-                                <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Contract') }}</th>
+                                <th class="px-6 py-4 text-left font-medium text-slate-600">
+                                    <div class="flex items-center justify-between">
+                                        <span>{{ __('Contract') }}</span>
+                                        <template x-if="hasAnyAnnexes()">
+                                            <div class="flex items-center gap-2 text-xs font-normal">
+                                                <button @click="expandAllAnnexes()"
+                                                        class="text-indigo-600 hover:text-indigo-800 hover:underline">
+                                                    {{ __('Expand all') }}
+                                                </button>
+                                                <span class="text-slate-300">|</span>
+                                                <button @click="collapseAllAnnexes()"
+                                                        class="text-indigo-600 hover:text-indigo-800 hover:underline">
+                                                    {{ __('Collapse all') }}
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Client') }}</th>
                                 <th class="px-6 py-4 text-left font-medium text-slate-600">{{ __('Status') }}</th>
                                 <th class="px-6 py-4 text-right font-medium text-slate-600">{{ __('Value') }}</th>
@@ -241,6 +271,64 @@
                                             <span x-text="contract.contract_number"></span>
                                         </a>
                                         <div class="text-sm text-slate-500" x-text="contract.title"></div>
+
+                                        {{-- Collapsible Annexes Badge --}}
+                                        <template x-if="contract.annexes && contract.annexes.length > 0">
+                                            <div class="mt-2">
+                                                {{-- Toggle Badge --}}
+                                                <button @click="toggleAnnexExpand(contract.id)"
+                                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 rounded-full hover:bg-indigo-100 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1">
+                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                    </svg>
+                                                    <span x-text="contract.annexes.length + ' ' + (contract.annexes.length === 1 ? '{{ __('annex') }}' : '{{ __('annexes') }}')"></span>
+                                                    <svg class="w-3 h-3 transition-transform duration-200"
+                                                         :class="{ 'rotate-180': isAnnexExpanded(contract.id) }"
+                                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                    </svg>
+                                                </button>
+
+                                                {{-- Collapsible Panel --}}
+                                                <div x-show="isAnnexExpanded(contract.id)"
+                                                     x-transition:enter="transition ease-out duration-150"
+                                                     x-transition:enter-start="opacity-0 -translate-y-1"
+                                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                                     x-transition:leave="transition ease-in duration-100"
+                                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                                     x-transition:leave-end="opacity-0 -translate-y-1"
+                                                     class="mt-2 ml-1 p-2 bg-slate-50 rounded-lg border border-slate-200"
+                                                     x-cloak>
+                                                    <template x-for="annex in contract.annexes" :key="'annex-' + annex.id">
+                                                        <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                                                            <div class="flex items-center gap-2 min-w-0">
+                                                                <span class="text-indigo-400 flex-shrink-0">
+                                                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                                    </svg>
+                                                                </span>
+                                                                <a :href="'/contracts/' + contract.id + '#annex-' + annex.id"
+                                                                   class="font-mono text-xs text-indigo-600 hover:text-indigo-800 font-medium flex-shrink-0"
+                                                                   x-text="annex.annex_code"></a>
+                                                                <span class="text-xs text-slate-500 truncate" x-text="annex.title"></span>
+                                                            </div>
+                                                            <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                                                                <span class="text-xs text-green-600 font-medium whitespace-nowrap">
+                                                                    +<span x-text="formatCurrency(annex.additional_value, annex.currency)"></span>
+                                                                </span>
+                                                                <a :href="'/contracts/' + contract.id + '/annexes/' + annex.id + '/download'"
+                                                                   class="text-slate-400 hover:text-indigo-600 transition-colors"
+                                                                   title="{{ __('Download') }}">
+                                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                                                                    </svg>
+                                                                </a>
+                                                            </div>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
+                                        </template>
                                     </td>
                                     <td class="px-6 py-4">
                                         <a x-show="contract.client" :href="'/clients/' + contract.client?.slug" class="text-slate-900 hover:text-blue-600" x-text="contract.client?.name"></a>
@@ -267,7 +355,6 @@
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <div class="flex items-center justify-end gap-3">
-                                            {{-- View --}}
                                             <a :href="'/contracts/' + contract.id"
                                                class="inline-flex items-center text-slate-600 hover:text-slate-900 transition-colors"
                                                title="{{ __('View') }}">
@@ -276,7 +363,6 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                 </svg>
                                             </a>
-                                            {{-- Edit Content --}}
                                             <a :href="'/contracts/' + contract.id + '/edit'"
                                                class="inline-flex items-center text-blue-600 hover:text-blue-900 transition-colors"
                                                title="{{ __('Edit Content') }}">
@@ -284,7 +370,6 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                                 </svg>
                                             </a>
-                                            {{-- PDF Download --}}
                                             <a :href="'/contracts/' + contract.id + '/download'"
                                                class="inline-flex items-center text-green-600 hover:text-green-900 transition-colors"
                                                title="{{ __('Download PDF') }}">
@@ -292,7 +377,6 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                                 </svg>
                                             </a>
-                                            {{-- Print --}}
                                             <a :href="'/contracts/' + contract.id + '/download?print=1'" target="_blank"
                                                class="inline-flex items-center text-purple-600 hover:text-purple-900 transition-colors"
                                                title="{{ __('Print') }}">
@@ -300,7 +384,15 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                                                 </svg>
                                             </a>
-                                            {{-- Delete (only for non-active contracts) --}}
+                                            <template x-if="contract.status === 'active'">
+                                                <button @click="terminateContract(contract.id, contract.contract_number)"
+                                                        class="inline-flex items-center text-orange-600 hover:text-orange-900 transition-colors"
+                                                        title="{{ __('Close Contract') }}">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                    </svg>
+                                                </button>
+                                            </template>
                                             <template x-if="contract.status !== 'active'">
                                                 <button @click="deleteContract(contract.id, contract.contract_number)"
                                                         class="inline-flex items-center text-red-600 hover:text-red-900 transition-colors"
@@ -369,6 +461,9 @@
             selectAll: false,
             bulkLoading: false,
 
+            // Annex expand/collapse state
+            expandedContracts: [],
+
             init() {
                 this.fetchContracts();
             },
@@ -422,6 +517,34 @@
                     style: 'currency',
                     currency: currency
                 }).format(amount || 0);
+            },
+
+            // Annex expand/collapse methods
+            toggleAnnexExpand(contractId) {
+                const index = this.expandedContracts.indexOf(contractId);
+                if (index > -1) {
+                    this.expandedContracts.splice(index, 1);
+                } else {
+                    this.expandedContracts.push(contractId);
+                }
+            },
+
+            isAnnexExpanded(contractId) {
+                return this.expandedContracts.includes(contractId);
+            },
+
+            hasAnyAnnexes() {
+                return this.contracts.some(c => c.annexes && c.annexes.length > 0);
+            },
+
+            expandAllAnnexes() {
+                this.expandedContracts = this.contracts
+                    .filter(c => c.annexes && c.annexes.length > 0)
+                    .map(c => c.id);
+            },
+
+            collapseAllAnnexes() {
+                this.expandedContracts = [];
             },
 
             async deleteContract(contractId, contractNumber) {
@@ -574,7 +697,91 @@
                 } finally {
                     this.bulkLoading = false;
                 }
+            },
+
+            async terminateContract(contractId, contractNumber) {
+                this.$dispatch('confirm-dialog', {
+                    title: '{{ __('Close Contract') }}',
+                    message: `{{ __('Are you sure you want to close contract') }} ${contractNumber}? {{ __('This will set the contract status to Terminated.') }}`,
+                    confirmText: '{{ __('Close Contract') }}',
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`/contracts/${contractId}/terminate`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                }
+                            });
+
+                            if (response.ok) {
+                                await this.fetchContracts();
+                                this.$dispatch('toast', { message: '{{ __('Contract closed successfully.') }}', type: 'success' });
+                            } else {
+                                const result = await response.json();
+                                throw new Error(result.message || '{{ __('Failed to close contract') }}');
+                            }
+                        } catch (error) {
+                            console.error('Error closing contract:', error);
+                            alert(error.message || '{{ __('Failed to close contract. Please try again.') }}');
+                        }
+                    }
+                });
+            },
+
+            async bulkTerminate() {
+                if (this.selectedIds.length === 0) return;
+
+                // Check for non-active contracts
+                const nonActiveContracts = this.contracts.filter(c =>
+                    this.selectedIds.includes(c.id) && c.status !== 'active'
+                );
+
+                if (nonActiveContracts.length > 0) {
+                    alert('{{ __('Only active contracts can be closed. Please deselect non-active contracts first.') }}');
+                    return;
+                }
+
+                this.$dispatch('confirm-dialog', {
+                    title: '{{ __('Close Contracts') }}',
+                    message: `{{ __('Are you sure you want to close') }} ${this.selectedIds.length} {{ __('contracts? This will set their status to Terminated.') }}`,
+                    confirmText: '{{ __('Close Contracts') }}',
+                    onConfirm: async () => {
+                        this.bulkLoading = true;
+
+                        try {
+                            const ids = this.selectedIds.map(id => parseInt(id, 10));
+
+                            const response = await fetch('/contracts/bulk-terminate', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'Accept': 'application/json'
+                                },
+                                body: JSON.stringify({ ids: ids })
+                            });
+
+                            const result = await response.json();
+
+                            if (result.success) {
+                                this.clearSelection();
+                                await this.fetchContracts();
+                                this.$dispatch('toast', { message: result.message, type: 'success' });
+                            } else {
+                                throw new Error(result.message || '{{ __('Failed to close contracts') }}');
+                            }
+                        } catch (error) {
+                            console.error('Error closing contracts:', error);
+                            alert(error.message || '{{ __('Failed to close contracts. Please try again.') }}');
+                        } finally {
+                            this.bulkLoading = false;
+                        }
+                    }
+                });
             }
+
         };
     }
     </script>

@@ -28,6 +28,7 @@
             'label' => $client->name ?? $client['name'] ?? '',
             'company_name' => $client->company_name ?? $client['company_name'] ?? '',
             'email' => $client->email ?? $client['email'] ?? '',
+            'created_from_temp' => $client->created_from_temp ?? $client['created_from_temp'] ?? false,
         ];
     })->values()->all();
 
@@ -150,12 +151,13 @@
                     :class="{
                         'bg-slate-100': highlightedIndex === index,
                         'bg-slate-50': isSelected(client),
-                        'hover:bg-slate-50': highlightedIndex !== index && !isSelected(client)
+                        'hover:bg-slate-50': highlightedIndex !== index && !isSelected(client),
+                        'bg-amber-50': client.created_from_temp && highlightedIndex !== index && !isSelected(client)
                     }"
                 >
                     <div class="flex items-center justify-between">
                         <div>
-                            <span class="text-sm text-slate-700 font-medium" x-text="client.label"></span>
+                            <span class="text-sm font-medium" :class="client.created_from_temp ? 'text-amber-800' : 'text-slate-700'" x-text="client.label + (client.created_from_temp ? ' (temp)' : '')"></span>
                             <span x-show="client.company_name" class="text-xs text-slate-500 ml-1" x-text="'(' + client.company_name + ')'"></span>
                         </div>
                         <svg x-show="isSelected(client)" class="w-4 h-4 text-slate-900 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">

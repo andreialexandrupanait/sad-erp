@@ -48,8 +48,43 @@ return [
         ],
 
         'financial' => [
-            'driver' => 'local',
+            'driver' => env('FINANCIAL_DISK_DRIVER', 'local'),
             'root' => storage_path('app/financial_files'),
+            // R2 config (used when FINANCIAL_DISK_DRIVER=s3)
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'documents' => [
+            'driver' => env('DOCUMENTS_DISK_DRIVER', 'local'),
+            'root' => storage_path('app/documents'),
+            // R2/S3 config (used when DOCUMENTS_DISK_DRIVER=s3)
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
             'throw' => false,
             'report' => false,
         ],
@@ -68,6 +103,19 @@ return [
         ],
 
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Disk Selection
+    |--------------------------------------------------------------------------
+    |
+    | Configure which disk to use for specific file types.
+    | Set to 'r2' in production to use Cloudflare R2.
+    |
+    */
+
+    'contracts_disk' => env('CONTRACTS_DISK', 'local'),
+    'documents_disk' => env('DOCUMENTS_DISK', 'documents'),
 
     /*
     |--------------------------------------------------------------------------

@@ -1,8 +1,19 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ $contract->contract_number }}</x-slot>
+    <x-slot name="pageTitle">{{ $contract->formatted_number }}</x-slot>
 
     <x-slot name="headerActions">
         <div class="flex items-center gap-2">
+            {{-- Navigation --}}
+            <x-ui.button variant="outline" onclick="window.location.href='{{ route('contracts.index') }}'">
+                <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                {{ __('Back to Contracts') }}
+            </x-ui.button>
+
+            <div class="h-6 w-px bg-slate-200"></div>
+
+            {{-- Primary Actions --}}
             {{-- Edit Content (Draft or Active contracts) --}}
             @if(in_array($contract->status, ['draft', 'active']))
                 <x-ui.button variant="primary" onclick="window.location.href='{{ route('contracts.edit', $contract) }}'">
@@ -13,6 +24,19 @@
                 </x-ui.button>
             @endif
 
+            {{-- Add Annex moved up for active contracts --}}
+            @if($contract->isActive())
+                <x-ui.button variant="default" onclick="window.location.href='{{ route('contracts.add-annex', $contract) }}'">
+                    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    {{ __('Add Annex') }}
+                </x-ui.button>
+            @endif
+
+            <div class="h-6 w-px bg-slate-200"></div>
+
+            {{-- PDF Actions --}}
             {{-- Preview PDF button for draft contracts with content --}}
             @if($contract->isDraft() && $contract->content && !$contract->is_finalized)
                 <x-ui.button variant="outline" onclick="window.open('{{ route('contracts.preview', $contract) }}', '_blank')">
@@ -23,16 +47,47 @@
                     {{ __('Preview PDF') }}
                 </x-ui.button>
 
-                <form action="{{ route('contracts.finalize-and-download', $contract) }}" method="POST" class="inline"
-                      onsubmit="return confirm('{{ __('Are you sure you want to finalize this contract? Once finalized, the contract cannot be edited.') }}')">
-                    @csrf
-                    <x-ui.button variant="default" type="submit">
+                <x-ui.button variant="default" type="button" onclick="finalizeAndRedirect()">
                         <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         {{ __('Finalize & Download PDF') }}
                     </x-ui.button>
-                </form>
+
+                    <script>
+                    function finalizeAndRedirect() {
+                        if (!confirm('{{ __('Are you sure you want to finalize this contract? Once finalized, the contract cannot be edited.') }}')) {
+                            return;
+                        }
+
+                        // Create hidden iframe for download
+                        const iframe = document.createElement('iframe');
+                        iframe.name = 'download_frame_' + Date.now();
+                        iframe.style.display = 'none';
+                        document.body.appendChild(iframe);
+
+                        // Create form targeting the iframe
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ route("contracts.finalize-and-download", $contract) }}';
+                        form.target = iframe.name;
+
+                        // Add CSRF token
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = '{{ csrf_token() }}';
+                        form.appendChild(csrfInput);
+
+                        document.body.appendChild(form);
+                        form.submit();
+
+                        // Redirect after delay to allow download to start
+                        setTimeout(function() {
+                            window.location.href = '{{ route("contracts.index") }}';
+                        }, 1500);
+                    }
+                    </script>
             @endif
 
             @if($contract->pdf_path)
@@ -44,24 +99,20 @@
                 </x-ui.button>
             @endif
 
+            {{-- Destructive Actions --}}
             @if($contract->isActive())
-                <x-ui.button variant="default" onclick="window.location.href='{{ route('contracts.add-annex', $contract) }}'">
-                    <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    {{ __('Add Annex') }}
-                </x-ui.button>
-
-                <form action="{{ route('contracts.terminate', $contract) }}" method="POST" class="inline"
+                <div class="ml-2">
+                    <form action="{{ route('contracts.terminate', $contract) }}" method="POST" class="inline"
                       onsubmit="return confirm('{{ __('Are you sure you want to terminate this contract?') }}')">
                     @csrf
                     <x-ui.button variant="destructive-outline" type="submit">
-                        <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                        {{ __('Terminate') }}
-                    </x-ui.button>
-                </form>
+                            <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            {{ __('Terminate') }}
+                        </x-ui.button>
+                    </form>
+                </div>
             @endif
         </div>
     </x-slot>
@@ -174,27 +225,59 @@
                         <x-ui.card-header>
                             <h3 class="font-semibold">{{ __('Annexes') }}</h3>
                         </x-ui.card-header>
-                        <x-ui.card-content>
-                            <div class="space-y-4">
-                                @foreach($contract->annexes as $annex)
-                                    <div class="flex items-center justify-between p-4 border rounded-lg">
-                                        <div>
-                                            <div class="font-medium text-slate-900">{{ $annex->annex_code }}</div>
-                                            <div class="text-sm text-slate-500">{{ $annex->title }}</div>
-                                            <div class="text-xs text-slate-400">{{ __('Effective') }}: {{ $annex->effective_date->format('d.m.Y') }}</div>
-                                        </div>
-                                        <div class="text-right">
-                                            <div class="font-medium text-slate-900">+{{ number_format($annex->additional_value, 2) }} {{ $annex->currency }}</div>
-                                            @if($annex->pdf_path)
-                                                <a href="{{ route('contracts.annex.download', [$contract, $annex]) }}"
-                                                   class="text-sm text-blue-600 hover:text-blue-800">
-                                                    {{ __('Download PDF') }}
+                        <x-ui.card-content class="p-0">
+                            <table class="w-full text-sm">
+                                <thead class="text-xs text-slate-500 uppercase bg-slate-50 border-b">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Code') }}</th>
+                                        <th class="px-4 py-3 text-left font-medium">{{ __('Title') }}</th>
+                                        <th class="px-4 py-3 text-right font-medium">{{ __('Value') }}</th>
+                                        <th class="px-4 py-3 text-center font-medium">{{ __('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach($contract->annexes as $annex)
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="px-4 py-3">
+                                            <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}" class="font-medium text-blue-600 hover:text-blue-800">
+                                                {{ $annex->annex_code }}
+                                            </a>
+                                            <div class="text-xs text-slate-400 mt-0.5">{{ $annex->effective_date->format('d.m.Y') }}</div>
+                                        </td>
+                                        <td class="px-4 py-3 text-slate-600">{{ $annex->title }}</td>
+                                        <td class="px-4 py-3 text-right">
+                                            <span class="font-medium text-green-600">+{{ number_format($annex->additional_value, 2) }}</span>
+                                            <span class="text-slate-400 text-xs">{{ $annex->currency }}</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center justify-center gap-1">
+                                                <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}"
+                                                   class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="{{ __('View') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
                                                 </a>
-                                            @endif
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
+                                                <a href="{{ route('contracts.annex.edit', [$contract, $annex]) }}"
+                                                   class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="{{ __('Edit') }}">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </a>
+                                                @if($annex->pdf_path)
+                                                    <a href="{{ route('contracts.annex.download', [$contract, $annex]) }}"
+                                                       class="p-1.5 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded" title="{{ __('Download PDF') }}">
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        </svg>
+                                                    </a>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </x-ui.card-content>
                     </x-ui.card>
                 @endif
@@ -473,7 +556,7 @@
                                     </div>
                                     <div class="px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-end gap-3">
                                         <button type="button" @click="editingClient = false"
-                                                class="px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors">
+                                                class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
                                             {{ __('Cancel') }}
                                         </button>
                                         <button type="submit"
@@ -487,6 +570,9 @@
                     </div>
                 @endif
                 </div>
+
+                {{-- Document Files --}}
+                <x-document-section :documentable="$contract" type="contract" />
 
                 {{-- Contract Info --}}
                 <x-ui.card>
@@ -604,7 +690,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16l-4-4m0 0l4-4m-4 4h18"/>
                                                     </svg>
                                                     <a href="{{ route('contracts.show', $contract->parentContract) }}" class="text-blue-600 hover:text-blue-800">
-                                                        {{ $contract->parentContract->contract_number }}
+                                                        {{ $contract->parentContract->formatted_number }}
                                                     </a>
                                                     <span class="text-slate-400">{{ __('(previous)') }}</span>
                                                 </div>
@@ -615,7 +701,7 @@
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                                                     </svg>
                                                     <a href="{{ route('contracts.show', $renewal) }}" class="text-blue-600 hover:text-blue-800">
-                                                        {{ $renewal->contract_number }}
+                                                        {{ $renewal->formatted_number }}
                                                     </a>
                                                     <span class="text-slate-400">{{ __('(renewal)') }}</span>
                                                 </div>

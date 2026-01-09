@@ -92,6 +92,7 @@ class ContractTemplate extends Model
             'dezvoltare' => __('Development'),
             'mentenanta' => __('Maintenance'),
             'marketing' => __('Marketing'),
+            'annex' => __('Contract Annex'),
             'altele' => __('Other'),
         ];
     }

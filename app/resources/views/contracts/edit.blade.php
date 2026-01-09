@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-slot name="pageTitle">{{ __('Edit Contract') }}: {{ $contract->contract_number }}</x-slot>
+    <x-slot name="pageTitle">{{ __('Edit Contract') }}: {{ $contract->formatted_number }}</x-slot>
 
     <x-slot name="headerActions">
         <div class="flex items-center gap-2">
@@ -28,7 +28,7 @@
                 <div class="flex items-center gap-4">
                     <div>
                         <span class="text-sm text-slate-500">{{ __('Contract') }}:</span>
-                        <span class="font-medium text-slate-900">{{ $contract->contract_number }}</span>
+                        <span class="font-medium text-slate-900">{{ $contract->formatted_number }}</span>
                     </div>
                     @if($contract->client)
                         <div>
