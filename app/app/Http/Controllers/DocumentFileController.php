@@ -52,9 +52,8 @@ class DocumentFileController extends Controller
             $request->file('signed_document')
         );
 
-        // Redirect to contracts list after successful upload
-        return redirect()->route('contracts.index')
-            ->with('success', __('Signed document uploaded successfully.'));
+        // Redirect back with success message
+        return back()->with('success', __('Documentul semnat a fost încărcat cu succes.'));
     }
 
     /**
@@ -78,9 +77,8 @@ class DocumentFileController extends Controller
             $request->file('signed_document')
         );
 
-        // Redirect to contracts list after successful upload
-        return redirect()->route('contracts.index')
-            ->with('success', __('Signed document uploaded successfully.'));
+        // Redirect back with success message
+        return back()->with('success', __('Documentul semnat a fost încărcat cu succes.'));
     }
 
     /**

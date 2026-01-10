@@ -195,7 +195,7 @@
                             </svg>
                             {{ __('Create Contract') }}
                         </x-ui.button>
-                        <x-ui.button variant="outline" type="button" onclick="window.location.href='{{ route('contracts.index') }}'">
+                        <x-ui.button variant="destructive-outline" type="button" onclick="window.location.href='{{ route('contracts.index') }}'">
                             {{ __('Cancel') }}
                         </x-ui.button>
                     </div>

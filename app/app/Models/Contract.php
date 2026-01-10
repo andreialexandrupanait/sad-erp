@@ -853,11 +853,39 @@ class Contract extends Model
     }
 
     /**
-     * Get total contract value including annexes
+     * Get total contract value including same-currency annexes only.
+     * For accurate totals when currencies match.
      */
     public function getTotalValueWithAnnexesAttribute()
     {
-        return $this->total_value + $this->annexes()->sum('additional_value');
+        return $this->total_value + $this->annexes()
+            ->where('currency', $this->currency)
+            ->sum('additional_value');
+    }
+
+    /**
+     * Check if contract has annexes with different currencies.
+     */
+    public function hasMixedCurrencyAnnexes(): bool
+    {
+        if (!$this->relationLoaded('annexes')) {
+            return $this->annexes()->where('currency', '!=', $this->currency)->exists();
+        }
+        return $this->annexes->contains(fn($annex) => $annex->currency !== $this->currency);
+    }
+
+    /**
+     * Get annexes grouped by currency with their totals.
+     */
+    public function getAnnexValuesByCurrency(): array
+    {
+        return $this->annexes()
+            ->selectRaw('currency, SUM(additional_value) as total_value')
+            ->groupBy('currency')
+            ->get()
+            ->keyBy('currency')
+            ->map(fn($item) => (float) $item->total_value)
+            ->toArray();
     }
 
     /**
@@ -913,9 +941,14 @@ class Contract extends Model
             SUM(CASE WHEN status = 'expired' THEN 1 ELSE 0 END) as expired_count
         ")->first();
 
-        $values = self::where('status', 'active')
-            ->selectRaw('SUM(total_value) as total_active_value')
-            ->first();
+        // Get active values grouped by currency
+        $valuesByCurrency = self::where('status', 'active')
+            ->selectRaw('currency, SUM(total_value) as total_value')
+            ->groupBy('currency')
+            ->get()
+            ->keyBy('currency')
+            ->map(fn($item) => (float) $item->total_value)
+            ->toArray();
 
         $expiringSoon = self::expiringBetween(now(), now()->addDays(30))->count();
 
@@ -925,7 +958,7 @@ class Contract extends Model
             'completed' => (int) ($counts->completed_count ?? 0),
             'terminated' => (int) ($counts->terminated_count ?? 0),
             'expired' => (int) ($counts->expired_count ?? 0),
-            'total_active_value' => (float) ($values->total_active_value ?? 0),
+            'total_active_value' => $valuesByCurrency, // Now returns array keyed by currency
             'expiring_soon' => $expiringSoon,
         ];
     }

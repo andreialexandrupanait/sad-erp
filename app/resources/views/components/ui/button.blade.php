@@ -12,6 +12,7 @@
     $variants = [
         'default' => 'bg-slate-900 text-slate-50 hover:bg-slate-900/90 shadow',
         'destructive' => 'bg-red-500 text-slate-50 hover:bg-red-500/90 shadow-sm',
+        'destructive-outline' => 'border border-red-300 bg-white text-red-600 hover:bg-red-50 shadow-sm',
         'outline' => 'border border-slate-200 bg-white text-slate-900 hover:bg-slate-100 hover:text-slate-900 shadow-sm',
         'secondary' => 'bg-slate-100 text-slate-900 hover:bg-slate-100/80 shadow-sm',
         'ghost' => 'hover:bg-slate-100 hover:text-slate-900',

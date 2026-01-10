@@ -241,7 +241,7 @@
                             </div>
                         </div>
                         <div class="p-6 space-y-4">
-                            <div class="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors"
+                            <div class="relative border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors"
                                  x-data="{ fileName: '' }"
                                  @dragover.prevent="$el.classList.add('border-blue-500', 'bg-blue-50')"
                                  @dragleave.prevent="$el.classList.remove('border-blue-500', 'bg-blue-50')"

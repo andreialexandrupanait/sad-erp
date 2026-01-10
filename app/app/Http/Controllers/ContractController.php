@@ -67,6 +67,11 @@ class ContractController extends Controller
             $query->search($request->q);
         }
 
+        // Has annexes filter
+        if ($request->boolean('has_annexes')) {
+            $query->has('annexes');
+        }
+
         // Sort
         $sort = $request->get('sort', 'created_at:desc');
         [$column, $direction] = $this->parseSort($sort);
@@ -90,6 +95,7 @@ class ContractController extends Controller
                     'currency' => $contract->currency,
                     'start_date' => $contract->start_date?->format('Y-m-d'),
                     'end_date' => $contract->end_date?->format('Y-m-d'),
+                    'end_date_raw' => $contract->end_date?->toISOString(),
                     'days_until_expiry' => $contract->days_until_expiry,
                     'expiry_urgency' => $contract->expiry_urgency,
                     'auto_renew' => $contract->auto_renew,
@@ -118,6 +124,8 @@ class ContractController extends Controller
                 'per_page' => $contracts->perPage(),
                 'current_page' => $contracts->currentPage(),
                 'last_page' => $contracts->lastPage(),
+                'from' => $contracts->firstItem(),
+                'to' => $contracts->lastItem(),
             ],
             'stats' => Contract::getStatistics(),
         ]);

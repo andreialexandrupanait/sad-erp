@@ -10,12 +10,9 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data="{
-        ...bulkSelection({
-            idAttribute: 'data-subscription-id',
-            rowSelector: '[data-selectable]'
-        })
-    }">
+    <div class="p-6 space-y-6"
+         x-data="subscriptionsPage()"
+         @keydown.escape.window="clearSelection()">
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -187,48 +184,89 @@
             </x-ui.card-content>
         </x-ui.card>
 
-        <!-- Bulk Actions Toolbar -->
-        <x-bulk-toolbar>
-            <x-ui.button
-                variant="outline"
-                @click="performBulkAction('renew', '{{ route('subscriptions.bulk-renew') }}', {
-                    confirmTitle: '{{ __('Renew Subscriptions') }}',
-                    confirmMessage: '{{ __('Renew selected subscriptions? The next renewal dates will be advanced according to their billing cycles.') }}',
-                    successMessage: '{{ __('Subscriptions renewed successfully!') }}'
-                })"
-            >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                </svg>
-                {{ __('Renew Selected') }}
-            </x-ui.button>
-            <x-ui.button
-                variant="outline"
-                @click="performBulkAction('export', '{{ route('subscriptions.bulk-export') }}', {
-                    confirmTitle: '{{ __('Export Subscriptions') }}',
-                    confirmMessage: '{{ __('Export selected subscriptions to CSV?') }}',
-                    successMessage: '{{ __('Subscriptions exported successfully!') }}'
-                })"
-            >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                </svg>
-                {{ __('Export to CSV') }}
-            </x-ui.button>
-            <x-ui.button
-                variant="destructive"
-                @click="performBulkAction('delete', '{{ route('subscriptions.bulk-update') }}', {
-                    confirmTitle: '{{ __('Delete Subscriptions') }}',
-                    confirmMessage: '{{ __('Are you sure you want to delete the selected subscriptions? This action cannot be undone.') }}',
-                    successMessage: '{{ __('Subscriptions deleted successfully!') }}'
-                })"
-            >
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                {{ __('Delete Selected') }}
-            </x-ui.button>
-        </x-bulk-toolbar>
+        {{-- Bulk Actions Toolbar --}}
+        <div x-show="selectedIds.length > 0"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 -translate-y-2"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             class="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] max-w-4xl w-full mx-auto px-4"
+             x-cloak>
+            <div class="bg-slate-900 text-white rounded-xl shadow-2xl border border-slate-700 px-6 py-4">
+                <div class="flex items-center justify-between gap-4 flex-wrap">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center justify-center h-8 w-8 rounded-full bg-blue-600 text-sm font-bold">
+                            <span x-text="selectedIds.length"></span>
+                        </div>
+                        <span class="text-sm font-medium">
+                            <span x-text="selectedIds.length"></span>
+                            <span x-text="selectedIds.length === 1 ? '{{ __('subscription') }}' : '{{ __('subscriptions') }}'"></span>
+                            {{ __('selected') }}
+                        </span>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-wrap">
+                        {{-- Renew Selected --}}
+                        <x-ui.button
+                            variant="outline"
+                            class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700"
+                            @click="bulkRenew()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            {{ __('Renew Selected') }}
+                        </x-ui.button>
+
+                        {{-- Export to CSV --}}
+                        <x-ui.button
+                            variant="outline"
+                            class="!bg-slate-800 !border-slate-600 !text-white hover:!bg-slate-700"
+                            @click="bulkExport()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            {{ __('Export CSV') }}
+                        </x-ui.button>
+
+                        {{-- Delete Selected --}}
+                        <x-ui.button
+                            variant="destructive"
+                            @click="bulkDelete()"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            {{ __('Delete') }}
+                        </x-ui.button>
+
+                        {{-- Clear Selection --}}
+                        <button
+                            @click="clearSelection()"
+                            class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                            x-bind:disabled="bulkLoading"
+                        >
+                            {{ __('Deselect') }}
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Loading overlay --}}
+                <div x-show="bulkLoading"
+                     class="absolute inset-0 bg-slate-900/80 rounded-xl flex items-center justify-center">
+                    <svg class="animate-spin h-6 w-6 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+            </div>
+        </div>
 
         <!-- Subscriptions Table -->
         <x-ui.card>
@@ -254,7 +292,7 @@
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
                                 <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
-                                    <x-bulk-checkbox x-model="selectAll" @change="toggleAll" />
+                                    <x-bulk-checkbox x-model="selectAll" @change="toggleSelectAll()" />
                                 </th>
                                 <x-ui.sortable-header column="vendor_name" label="{{ __('Vendor Name') }}" />
                                 <x-ui.sortable-header column="price" label="{{ __('Price') }}" class="text-right" />
@@ -265,13 +303,17 @@
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             @foreach($subscriptions as $subscription)
-                                <x-ui.table-row data-selectable data-subscription-id="{{ $subscription->id }}" class="{{ !$subscription->auto_renew ? 'bg-slate-100/70 opacity-75' : '' }}">
+                                <x-ui.table-row
+                                    data-selectable
+                                    data-subscription-id="{{ $subscription->id }}"
+                                    class="{{ !$subscription->auto_renew ? 'bg-slate-100/70 opacity-75' : '' }}"
+                                    x-bind:class="{ 'bg-blue-50': selectedIds.includes({{ $subscription->id }}) }"
+                                >
                                     <x-ui.table-cell>
-                                        <x-bulk-checkbox
-                                            
-                                            @change="toggleItem({{ $subscription->id }})"
-                                            x-bind:checked="selectedIds.includes({{ $subscription->id }})"
-                                        />
+                                        <input type="checkbox"
+                                               :checked="selectedIds.includes({{ $subscription->id }})"
+                                               @change="toggleItem({{ $subscription->id }})"
+                                               class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="font-medium text-slate-900">
@@ -369,6 +411,167 @@
     <x-toast />
 
     <script>
+        function subscriptionsPage() {
+            return {
+                // Bulk selection state
+                selectedIds: [],
+                selectAll: false,
+                bulkLoading: false,
+
+                // Selection methods
+                toggleItem(id) {
+                    const index = this.selectedIds.indexOf(id);
+                    if (index > -1) {
+                        this.selectedIds.splice(index, 1);
+                    } else {
+                        this.selectedIds.push(id);
+                    }
+                    this.updateSelectAll();
+                },
+
+                toggleSelectAll() {
+                    if (this.selectAll) {
+                        // Select all visible subscriptions
+                        const rows = document.querySelectorAll('[data-selectable]');
+                        this.selectedIds = Array.from(rows).map(row =>
+                            parseInt(row.getAttribute('data-subscription-id'))
+                        );
+                    } else {
+                        this.selectedIds = [];
+                    }
+                },
+
+                updateSelectAll() {
+                    const rows = document.querySelectorAll('[data-selectable]');
+                    this.selectAll = rows.length > 0 && this.selectedIds.length === rows.length;
+                },
+
+                clearSelection() {
+                    this.selectedIds = [];
+                    this.selectAll = false;
+                },
+
+                // Bulk action methods
+                async bulkRenew() {
+                    if (this.selectedIds.length === 0) return;
+
+                    if (!confirm(`{{ __('Renew selected subscriptions? The next renewal dates will be advanced according to their billing cycles.') }}`)) {
+                        return;
+                    }
+
+                    this.bulkLoading = true;
+
+                    try {
+                        const response = await fetch('{{ route('subscriptions.bulk-renew') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({ ids: this.selectedIds })
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            this.$dispatch('toast', { message: result.message || '{{ __('Subscriptions renewed successfully!') }}', type: 'success' });
+                            this.clearSelection();
+                            window.location.reload();
+                        } else {
+                            throw new Error(result.message || '{{ __('Failed to renew subscriptions') }}');
+                        }
+                    } catch (error) {
+                        console.error('Error renewing subscriptions:', error);
+                        alert(error.message || '{{ __('Failed to renew subscriptions. Please try again.') }}');
+                    } finally {
+                        this.bulkLoading = false;
+                    }
+                },
+
+                async bulkExport() {
+                    if (this.selectedIds.length === 0) return;
+
+                    this.bulkLoading = true;
+
+                    try {
+                        const response = await fetch('{{ route('subscriptions.bulk-export') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            },
+                            body: JSON.stringify({ ids: this.selectedIds })
+                        });
+
+                        if (!response.ok) {
+                            const error = await response.json();
+                            throw new Error(error.message || '{{ __('Failed to export subscriptions') }}');
+                        }
+
+                        // Download the CSV
+                        const blob = await response.blob();
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `subscriptions-export-${new Date().toISOString().slice(0, 10)}.csv`;
+                        document.body.appendChild(a);
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                        a.remove();
+
+                        this.$dispatch('toast', { message: '{{ __('Subscriptions exported successfully!') }}', type: 'success' });
+                        this.clearSelection();
+                    } catch (error) {
+                        console.error('Error exporting subscriptions:', error);
+                        alert(error.message || '{{ __('Failed to export subscriptions. Please try again.') }}');
+                    } finally {
+                        this.bulkLoading = false;
+                    }
+                },
+
+                async bulkDelete() {
+                    if (this.selectedIds.length === 0) return;
+
+                    if (!confirm(`{{ __('Are you sure you want to delete') }} ${this.selectedIds.length} {{ __('subscriptions? This action cannot be undone.') }}`)) {
+                        return;
+                    }
+
+                    this.bulkLoading = true;
+
+                    try {
+                        const response = await fetch('{{ route('subscriptions.bulk-update') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                ids: this.selectedIds,
+                                action: 'delete'
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (response.ok && result.success) {
+                            this.$dispatch('toast', { message: result.message || '{{ __('Subscriptions deleted successfully!') }}', type: 'success' });
+                            this.clearSelection();
+                            window.location.reload();
+                        } else {
+                            throw new Error(result.message || '{{ __('Failed to delete subscriptions') }}');
+                        }
+                    } catch (error) {
+                        console.error('Error deleting subscriptions:', error);
+                        alert(error.message || '{{ __('Failed to delete subscriptions. Please try again.') }}');
+                    } finally {
+                        this.bulkLoading = false;
+                    }
+                }
+            };
+        }
+
         function renewSubscription(subscriptionId, vendorName) {
             const confirmMsg = `{{ __('Confirm renewal of subscription') }} "${vendorName}"?\n\n{{ __('The next renewal date will be advanced according to the billing cycle.') }}`;
             if (!confirm(confirmMsg)) {

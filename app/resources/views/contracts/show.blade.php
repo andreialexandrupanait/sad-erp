@@ -586,10 +586,30 @@
                                 <dd class="font-medium text-slate-900">{{ number_format($contract->total_value, 2) }} {{ $contract->currency }}</dd>
                             </div>
                             @if($contract->annexes->count() > 0)
-                                <div class="flex justify-between">
-                                    <dt class="text-slate-500">{{ __('With Annexes') }}</dt>
-                                    <dd class="font-medium text-slate-900">{{ number_format($contract->total_value_with_annexes, 2) }} {{ $contract->currency }}</dd>
-                                </div>
+                                @if($contract->hasMixedCurrencyAnnexes())
+                                    <div class="flex justify-between items-start">
+                                        <dt class="text-slate-500">{{ __('With Annexes') }}</dt>
+                                        <dd class="text-right">
+                                            <div class="font-medium text-slate-900">{{ number_format($contract->total_value_with_annexes, 2) }} {{ $contract->currency }}</div>
+                                            @foreach($contract->getAnnexValuesByCurrency() as $currency => $value)
+                                                @if($currency !== $contract->currency)
+                                                    <div class="text-sm text-purple-600">+ {{ number_format($value, 2) }} {{ $currency }}</div>
+                                                @endif
+                                            @endforeach
+                                            <div class="text-xs text-amber-600 mt-1">
+                                                <svg class="w-3 h-3 inline mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                                </svg>
+                                                {{ __('Multi-monedă') }}
+                                            </div>
+                                        </dd>
+                                    </div>
+                                @else
+                                    <div class="flex justify-between">
+                                        <dt class="text-slate-500">{{ __('With Annexes') }}</dt>
+                                        <dd class="font-medium text-slate-900">{{ number_format($contract->total_value_with_annexes, 2) }} {{ $contract->currency }}</dd>
+                                    </div>
+                                @endif
                             @endif
                             <div class="flex justify-between">
                                 <dt class="text-slate-500">{{ __('Start Date') }}</dt>
