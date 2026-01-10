@@ -995,7 +995,7 @@
         @stack('styles')
     </head>
     <body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200" x-data="{
-        sidebarOpen: true,
+        sidebarOpen: window.innerWidth >= 768,
         touchStartX: 0,
         touchCurrentX: 0,
         isDragging: false
