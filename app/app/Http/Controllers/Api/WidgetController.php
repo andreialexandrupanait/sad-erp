@@ -18,6 +18,19 @@ class WidgetController extends Controller
     ) {}
 
     /**
+     * Apply filter to include only records with RON amounts
+     * Includes: RON records + converted EUR records (amount_eur is set)
+     * Excludes: Legacy EUR records pending migration
+     */
+    private function applyRonFilter($query)
+    {
+        return $query->where(function($q) {
+            $q->where('currency', 'RON')
+              ->orWhereNotNull('amount_eur');
+        });
+    }
+
+    /**
      * Get top clients data with period filtering
      */
     public function topClients(Request $request): JsonResponse
@@ -69,11 +82,12 @@ class WidgetController extends Controller
         $from = $dateRange['from'];
         $to = $dateRange['to'];
 
-        $revenue = FinancialRevenue::where('currency', 'RON')
+        // Include RON records and converted EUR records
+        $revenue = $this->applyRonFilter(FinancialRevenue::query())
             ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->sum('amount');
 
-        $expenses = FinancialExpense::where('currency', 'RON')
+        $expenses = $this->applyRonFilter(FinancialExpense::query())
             ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->sum('amount');
 
@@ -111,7 +125,8 @@ class WidgetController extends Controller
         $from = $dateRange['from'];
         $to = $dateRange['to'];
 
-        $categories = FinancialExpense::where('currency', 'RON')
+        // Include RON records and converted EUR records
+        $categories = $this->applyRonFilter(FinancialExpense::query())
             ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
             ->whereNotNull('category_option_id')
             ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))

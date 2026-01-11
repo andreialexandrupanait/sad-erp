@@ -27,9 +27,12 @@ class SmartBillDataMapper
         'Valoare (RON)' => 'amount_ron',
         'Total(RON)' => 'amount_ron',
         'Total (RON)' => 'amount_ron',
+        'Valoare Totala(RON)' => 'amount_ron',
+        'Valoare Totala (RON)' => 'amount_ron',
 
         // Original currency amount (for EUR reference)
         'Total Value' => 'amount_original',
+        'Valoare Totala' => 'amount_original',
 
         // Legacy amount mappings (when no dual columns exist)
         'Total' => 'amount', 'Valoare' => 'amount', 'Suma' => 'amount',

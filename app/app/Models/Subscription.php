@@ -152,15 +152,15 @@ class Subscription extends Model
     {
         switch ($this->renewal_urgency) {
             case 'overdue':
-                return '🚨';
+                return '';
             case 'urgent':
-                return '🔴';
+                return '';
             case 'warning':
-                return '🟡';
+                return '';
             case 'normal':
-                return '🟢';
+                return '';
             case 'paused':
-                return '⏸️';
+                return '';
             default:
                 return '';
         }
@@ -310,6 +310,11 @@ class Subscription extends Model
     /**
      * Statistics for user's subscriptions
      * Optimized to use database-level aggregations instead of loading all records
+     *
+     * Shows separate totals for RON and EUR subscriptions.
+     * - RON subscriptions: price is in RON
+     * - EUR subscriptions with price_eur: converted to RON (price is RON)
+     * - EUR subscriptions without price_eur: legacy, shown as EUR total
      */
     public static function getStatistics()
     {
@@ -320,8 +325,36 @@ class Subscription extends Model
             SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count
         ")->first();
 
-        // Single query for cost calculations (active subscriptions only)
-        $costs = self::where('status', 'active')
+        // Cost calculations for RON subscriptions (includes converted EUR)
+        // RON subscriptions: currency = 'RON'
+        // Converted EUR subscriptions: currency = 'EUR' AND price_eur IS NOT NULL (price is in RON)
+        $ronCosts = self::where('status', 'active')
+            ->where(function($q) {
+                $q->where('currency', 'RON')
+                  ->orWhereNotNull('price_eur');
+            })
+            ->selectRaw("
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 4.33
+                    WHEN billing_cycle = 'monthly' THEN price
+                    WHEN billing_cycle = 'annual' THEN price / 12
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 30
+                    ELSE 0
+                END) as monthly_cost,
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 52
+                    WHEN billing_cycle = 'monthly' THEN price * 12
+                    WHEN billing_cycle = 'annual' THEN price
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 365
+                    ELSE 0
+                END) as annual_cost
+            ")->first();
+
+        // Cost calculations for legacy EUR subscriptions (not converted)
+        // These are EUR subscriptions without price_eur set (price is in EUR)
+        $eurCosts = self::where('status', 'active')
+            ->where('currency', 'EUR')
+            ->whereNull('price_eur')
             ->selectRaw("
                 SUM(CASE
                     WHEN billing_cycle = 'weekly' THEN price * 4.33
@@ -351,8 +384,10 @@ class Subscription extends Model
             'active' => (int) ($counts->active_count ?? 0),
             'paused' => (int) ($counts->paused_count ?? 0),
             'cancelled' => (int) ($counts->cancelled_count ?? 0),
-            'monthly_cost' => round($costs->monthly_cost ?? 0, 2),
-            'annual_cost' => round($costs->annual_cost ?? 0, 2),
+            'monthly_cost' => round($ronCosts->monthly_cost ?? 0, 2),
+            'annual_cost' => round($ronCosts->annual_cost ?? 0, 2),
+            'monthly_cost_eur' => round($eurCosts->monthly_cost ?? 0, 2),
+            'annual_cost_eur' => round($eurCosts->annual_cost ?? 0, 2),
             'upcoming_renewals' => $upcomingRenewals,
         ];
     }

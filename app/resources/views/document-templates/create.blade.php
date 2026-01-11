@@ -8,7 +8,7 @@
             <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-6">
-                    <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                    <div class="flex items-center gap-2 text-sm text-slate-500 mb-2 overflow-x-auto whitespace-nowrap pb-1">
                         <a href="{{ route('settings.index') }}" class="hover:text-slate-700">{{ __('Settings') }}</a>
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

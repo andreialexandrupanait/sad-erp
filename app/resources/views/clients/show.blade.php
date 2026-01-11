@@ -10,14 +10,14 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6">
 
         <!-- Client Info Card -->
         <x-ui.card x-data="{ statusDropdownOpen: false, savingStatus: false }" class="overflow-hidden">
                 <!-- Header: Client Name + Status + Total Revenue -->
-                <div class="flex items-center justify-between px-6 py-3 bg-slate-50 border-b border-slate-200">
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-lg font-bold text-slate-900">{{ $client->name }}</h2>
+                <div class="flex flex-col md:flex-row md:items-center justify-between px-4 md:px-6 py-3 bg-slate-50 border-b border-slate-200 gap-2 md:gap-0">
+                    <div class="flex flex-wrap items-center gap-2 md:gap-3">
+                        <h2 class="text-base md:text-lg font-bold text-slate-900">{{ $client->name }}</h2>
                         <!-- Status Dropdown -->
                         <div class="relative">
                             <button type="button"
@@ -66,16 +66,16 @@
                             </svg>
                         </template>
                     </div>
-                    <div class="text-right">
+                    <div class="text-left md:text-right">
                         <p class="text-xs text-slate-500">{{ __('Total Revenue') }}</p>
-                        <p class="text-xl font-bold text-green-600">{{ number_format($stats['total_revenue'], 2) }} RON</p>
+                        <p class="text-lg md:text-xl font-bold text-green-600">{{ number_format($stats['total_revenue'], 2) }} RON</p>
                     </div>
                 </div>
 
                 <!-- Contact & Company Info -->
                 <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
                     <!-- Contact Information -->
-                    <div class="px-6 py-4">
+                    <div class="px-4 md:px-6 py-4">
                         <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -112,7 +112,7 @@
                     </div>
 
                     <!-- Company Information -->
-                    <div class="px-6 py-4">
+                    <div class="px-4 md:px-6 py-4">
                         <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-2">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
@@ -154,7 +154,7 @@
 
                 <!-- Address -->
                 @if($client->address)
-                    <div class="px-6 py-3 border-t border-slate-200 bg-slate-50/50">
+                    <div class="px-4 md:px-6 py-3 border-t border-slate-200 bg-slate-50/50">
                         <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-2">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -168,7 +168,7 @@
 
                 <!-- Internal Notes -->
                 @if($client->notes)
-                    <div class="px-6 py-3 border-t border-slate-200">
+                    <div class="px-4 md:px-6 py-3 border-t border-slate-200">
                         <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1 flex items-center gap-2">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -184,8 +184,8 @@
 
         <!-- Tabs -->
         <x-ui.card>
-            <div class="border-b border-slate-200">
-                <nav class="-mb-px flex space-x-8 px-6" aria-label="Tabs">
+            <div class="border-b border-slate-200 overflow-x-auto">
+                <nav class="-mb-px flex space-x-4 md:space-x-8 px-4 md:px-6" aria-label="Tabs">
                     <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'overview']) }}"
                         class="border-transparent {{ $activeTab === 'overview' ? 'border-slate-900 text-slate-900' : 'text-slate-500 hover:text-slate-700 hover:border-slate-300' }} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors">
                         {{ __('Overview') }}

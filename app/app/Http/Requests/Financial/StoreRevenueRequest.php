@@ -27,6 +27,8 @@ class StoreRevenueRequest extends FormRequest
         return [
             'document_name' => 'required|string|max:255',
             'amount' => 'required|numeric|min:0',
+            'amount_eur' => 'nullable|numeric|min:0',
+            'exchange_rate' => 'nullable|numeric|min:0',
             'currency' => ['required', Rule::in($validCurrencies)],
             'occurred_at' => 'required|date',
             'client_id' => 'nullable|exists:clients,id',

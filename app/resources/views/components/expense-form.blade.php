@@ -1,6 +1,68 @@
 @props(['expense' => null, 'categories' => [], 'currencies' => [], 'action', 'method' => 'POST'])
 
-<form method="POST" action="{{ $action }}" class="space-y-6" enctype="multipart/form-data" x-data="fileUploader(@js($expense?->files ?? []))">
+<form method="POST" action="{{ $action }}" class="space-y-6" enctype="multipart/form-data"
+    x-data="{
+        ...fileUploader(@js($expense?->files ?? [])),
+        currency: '{{ old('currency', $expense->currency ?? 'RON') }}',
+        amountEur: '{{ old('amount_eur', $expense->amount_eur ?? '') }}',
+        amountRon: '{{ old('amount', $expense->amount ?? '') }}',
+        exchangeRate: '{{ old('exchange_rate', $expense->exchange_rate ?? '') }}',
+        occurredAt: '{{ old('occurred_at', $expense ? $expense->occurred_at?->format('Y-m-d') : (request('month') && request('year') ? request('year') . '-' . str_pad(request('month'), 2, '0', STR_PAD_LEFT) . '-01' : now()->format('Y-m-d'))) }}',
+        loadingRate: false,
+        rateError: null,
+
+        async fetchRate() {
+            if (this.currency !== 'EUR' || !this.occurredAt) return;
+
+            this.loadingRate = true;
+            this.rateError = null;
+
+            try {
+                const response = await fetch(`/api/exchange-rate?from=EUR&to=RON&date=${this.occurredAt}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.rate) {
+                        this.exchangeRate = data.rate.toFixed(4);
+                        this.calculateRon();
+                    }
+                } else {
+                    this.rateError = 'Nu s-a putut obține cursul BNR';
+                }
+            } catch (e) {
+                this.rateError = 'Eroare la obținerea cursului';
+            } finally {
+                this.loadingRate = false;
+            }
+        },
+
+        calculateRon() {
+            if (this.amountEur && this.exchangeRate) {
+                this.amountRon = (parseFloat(this.amountEur) * parseFloat(this.exchangeRate)).toFixed(2);
+            }
+        },
+
+        onCurrencyChange() {
+            if (this.currency === 'EUR') {
+                this.fetchRate();
+            } else {
+                this.amountEur = '';
+                this.exchangeRate = '';
+            }
+        },
+
+        init() {
+            if (this.currency === 'EUR' && !this.exchangeRate) {
+                this.fetchRate();
+            }
+        }
+    }">
     @csrf
     <x-unsaved-form-warning />
     @if($method !== 'POST')
@@ -27,45 +89,68 @@
                     </div>
                 </div>
 
-                <!-- Amount -->
-                <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="amount">
-                        {{ __('Sumă') }} <span class="text-red-500">*</span>
+                <!-- Currency -->
+                <div class="sm:col-span-2 field-wrapper">
+                    <x-ui.label for="currency">
+                        {{ __('Valută') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.input
-                            type="number"
-                            step="0.01"
-                            name="amount"
-                            id="amount"
-                            required
-                            placeholder="{{ __('0.00') }}"
-                            value="{{ old('amount', $expense->amount ?? '') }}"
-                        />
+                        <select name="currency" id="currency" required x-model="currency" @change="onCurrencyChange()"
+                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                            @foreach($currencies as $curr)
+                                <option value="{{ $curr->value }}">{{ $curr->label }}</option>
+                            @endforeach
+                        </select>
                     </div>
                 </div>
 
-                <!-- Currency -->
-                <div class="sm:col-span-3 field-wrapper">
-                    <x-ui.label for="currency">
-                        {{ __('Valută') }}
+                <!-- EUR Amount (shown only when currency is EUR) -->
+                <template x-if="currency === 'EUR'">
+                    <div class="sm:col-span-2 field-wrapper">
+                        <x-ui.label for="amount_eur">
+                            {{ __('Sumă EUR') }} <span class="text-red-500">*</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <input type="number" step="0.01" name="amount_eur" id="amount_eur"
+                                x-model="amountEur" @input="calculateRon()"
+                                placeholder="0.00" required
+                                class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Exchange Rate (shown only when currency is EUR) -->
+                <template x-if="currency === 'EUR'">
+                    <div class="sm:col-span-2 field-wrapper">
+                        <x-ui.label for="exchange_rate">
+                            {{ __('Curs BNR') }}
+                            <span x-show="loadingRate" class="text-slate-400 text-xs">(se încarcă...)</span>
+                        </x-ui.label>
+                        <div class="mt-2">
+                            <input type="number" step="0.0001" name="exchange_rate" id="exchange_rate"
+                                x-model="exchangeRate" @input="calculateRon()"
+                                placeholder="0.0000"
+                                class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                            <p x-show="rateError" x-text="rateError" class="mt-1 text-xs text-red-500"></p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Amount RON (primary amount - always shown) -->
+                <div class="field-wrapper" :class="currency === 'EUR' ? 'sm:col-span-2' : 'sm:col-span-4'">
+                    <x-ui.label for="amount">
+                        <span x-text="currency === 'EUR' ? 'Sumă RON (calculată)' : 'Sumă'"></span>
+                        <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        @php
-                            $currentCurrency = old('currency', $expense->currency ?? null);
-                            // Default to RON if no currency is set
-                            if (empty($currentCurrency)) {
-                                $currentCurrency = 'RON';
-                            }
-                        @endphp
-                        <x-ui.select name="currency" id="currency">
-                            @foreach($currencies as $currency)
-                                <option value="{{ $currency->value }}" {{ $currentCurrency == $currency->value ? 'selected' : '' }}>
-                                    {{ $currency->label }}
-                                </option>
-                            @endforeach
-                        </x-ui.select>
+                        <input type="number" step="0.01" name="amount" id="amount"
+                            x-model="amountRon"
+                            placeholder="0.00" required
+                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
                     </div>
+                    <p x-show="currency === 'EUR' && amountEur && exchangeRate" class="mt-1 text-xs text-slate-500">
+                        <span x-text="amountEur"></span> EUR × <span x-text="exchangeRate"></span> = <span x-text="amountRon"></span> RON
+                    </p>
                 </div>
 
                 <!-- Date -->
@@ -74,14 +159,9 @@
                         {{ __('Dată') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.input
-                            type="date"
-                            name="occurred_at"
-                            id="occurred_at"
-                            required
-                            placeholder="{{ __('YYYY-MM-DD') }}"
-                            value="{{ old('occurred_at', $expense ? $expense->occurred_at?->format('Y-m-d') : (request('month') && request('year') ? request('year') . '-' . str_pad(request('month'), 2, '0', STR_PAD_LEFT) . '-01' : now()->format('Y-m-d'))) }}"
-                        />
+                        <input type="date" name="occurred_at" id="occurred_at" required
+                            x-model="occurredAt" @change="currency === 'EUR' && fetchRate()"
+                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
                     </div>
                 </div>
 
@@ -203,4 +283,3 @@
         </div>
     </x-ui.card>
 </form>
-

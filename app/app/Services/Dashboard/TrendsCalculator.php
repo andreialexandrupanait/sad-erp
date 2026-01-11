@@ -16,6 +16,10 @@ use Illuminate\Support\Facades\DB;
  *
  * Handles calculation of financial trends, growth rates, and analytics
  * including monthly/yearly trends and top client rankings.
+ *
+ * Note: All amount fields are in RON. Records with currency='EUR' that have
+ * amount_eur set have been properly converted. Records without amount_eur
+ * are legacy records pending migration.
  */
 class TrendsCalculator
 {
@@ -28,6 +32,19 @@ class TrendsCalculator
     {
         $orgId = auth()->user()->organization_id ?? 'default';
         return "org.{$orgId}.{$key}";
+    }
+
+    /**
+     * Apply filter to include only records with RON amounts
+     * Includes: RON records + converted EUR records (amount_eur is set)
+     * Excludes: Legacy EUR records pending migration
+     */
+    private function applyRonFilter($query)
+    {
+        return $query->where(function($q) {
+            $q->where('currency', 'RON')
+              ->orWhereNotNull('amount_eur');
+        });
     }
 
     /**
@@ -85,24 +102,26 @@ class TrendsCalculator
     {
         $previousMonth = now()->subMonth();
 
-        // Month-over-month growth
-        $previousMonthRevenue = FinancialRevenue::where('year', $previousMonth->year)
-            ->where('month', $previousMonth->month)
-            ->where('currency', 'RON')
-            ->sum('amount');
-        $previousMonthExpenses = FinancialExpense::where('year', $previousMonth->year)
-            ->where('month', $previousMonth->month)
-            ->where('currency', 'RON')
-            ->sum('amount');
+        // Month-over-month growth - include all RON-valued records
+        $previousMonthRevenue = $this->applyRonFilter(
+            FinancialRevenue::where('year', $previousMonth->year)
+                ->where('month', $previousMonth->month)
+        )->sum('amount');
 
-        $currentMonthRevenue = FinancialRevenue::where('year', now()->year)
-            ->where('month', now()->month)
-            ->where('currency', 'RON')
-            ->sum('amount');
-        $currentMonthExpenses = FinancialExpense::where('year', now()->year)
-            ->where('month', now()->month)
-            ->where('currency', 'RON')
-            ->sum('amount');
+        $previousMonthExpenses = $this->applyRonFilter(
+            FinancialExpense::where('year', $previousMonth->year)
+                ->where('month', $previousMonth->month)
+        )->sum('amount');
+
+        $currentMonthRevenue = $this->applyRonFilter(
+            FinancialRevenue::where('year', now()->year)
+                ->where('month', now()->month)
+        )->sum('amount');
+
+        $currentMonthExpenses = $this->applyRonFilter(
+            FinancialExpense::where('year', now()->year)
+                ->where('month', now()->month)
+        )->sum('amount');
 
         // Client growth
         $newClientsThisMonth = Client::whereYear('created_at', now()->year)
@@ -123,7 +142,9 @@ class TrendsCalculator
         // Revenue concentration
         $topClients = $this->getTopClientsByRevenue(3);
         $topClientsRevenue = $topClients->sum('total_revenue');
-        $yearlyRevenue = FinancialRevenue::where('year', now()->year)->where('currency', 'RON')->sum('amount');
+        $yearlyRevenue = $this->applyRonFilter(
+            FinancialRevenue::where('year', now()->year)
+        )->sum('amount');
 
         // Expense categories - use SQL ordering
         $categoryBreakdown = FinancialExpense::where('year', now()->year)
@@ -216,8 +237,10 @@ class TrendsCalculator
 
         $romanianMonths = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Noi', 'Dec'];
 
-        $monthlyData = $model::where('year', $currentYear)
-            ->where('currency', 'RON')
+        // Include RON records and converted EUR records
+        $monthlyData = $this->applyRonFilter(
+            $model::where('year', $currentYear)
+        )
             ->select('month', DB::raw('SUM(amount) as total'))
             ->groupBy('month')
             ->orderBy('month')
@@ -250,9 +273,12 @@ class TrendsCalculator
     {
         $userId = auth()->id();
 
-        // Build revenue subquery with proper Eloquent scopes applied
+        // Build revenue subquery - include RON and converted EUR records
         $revenueQuery = FinancialRevenue::select('client_id', DB::raw('SUM(amount) as total_revenue'))
-            ->where('currency', 'RON')
+            ->where(function($q) {
+                $q->where('currency', 'RON')
+                  ->orWhereNotNull('amount_eur');
+            })
             ->when($userId, function ($query) use ($userId) {
                 $query->where('user_id', $userId);
             })

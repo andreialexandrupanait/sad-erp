@@ -131,11 +131,11 @@
             </div>
         </x-ui.card-content>
 
-        <div class="flex items-center justify-end gap-x-6 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">
-            <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 sm:gap-x-4 border-t border-slate-200 px-4 py-4 sm:px-8 bg-slate-50">
+            <x-ui.button type="button" variant="ghost" class="w-full sm:w-auto" onclick="window.location.href='{{ route('internal-accounts.index') }}'">
                 {{ __('Cancel') }}
             </x-ui.button>
-            <x-ui.button type="submit" variant="default">
+            <x-ui.button type="submit" variant="default" class="w-full sm:w-auto">
                 {{ $account ? __('Update Account') : __('Create Account') }}
             </x-ui.button>
         </div>

@@ -48,17 +48,19 @@ class RevenueImportController extends Controller
 
         $request->validate([
             'csv_file' => 'required|file|mimes:csv,txt,xls,xlsx|max:5120',
+            'update_mode' => 'nullable|boolean',
         ]);
 
         try {
             $file = $request->file('csv_file');
             $extension = strtolower($file->getClientOriginalExtension());
+            $updateMode = $request->boolean('update_mode', false);
 
             // Parse file using service
             $csvData = $this->revenueImportService->parseFile($file->getRealPath(), $extension);
 
             // Get preview data using service
-            $previewData = $this->revenueImportService->preview($csvData);
+            $previewData = $this->revenueImportService->preview($csvData, 50, $updateMode);
 
             return response()->json([
                 'success' => true,
@@ -66,6 +68,7 @@ class RevenueImportController extends Controller
                 'summary' => $previewData['summary'],
                 'preview_rows' => $previewData['preview_rows'],
                 'has_more' => $previewData['has_more'],
+                'update_mode' => $previewData['update_mode'],
             ]);
         } catch (\Exception $e) {
             return $this->safeJsonError($e, 'Revenue preview');
@@ -83,6 +86,7 @@ class RevenueImportController extends Controller
             'csv_file' => 'required|file|mimes:csv,txt,xls,xlsx|max:5120',
             'download_smartbill_pdfs' => 'nullable|boolean',
             'dry_run' => 'nullable|boolean',
+            'update_mode' => 'nullable|boolean',
         ]);
 
         $file = $request->file('csv_file');
@@ -113,10 +117,11 @@ class RevenueImportController extends Controller
 
         $downloadPdfs = $request->boolean('download_smartbill_pdfs', false);
         $dryRun = $request->boolean('dry_run', false);
+        $updateMode = $request->boolean('update_mode', false);
 
         // For small files (< 50 rows) without PDF download, process synchronously
         if ($totalRows < 50 && !$downloadPdfs) {
-            return $this->importSynchronously($csvData, $downloadPdfs, $dryRun);
+            return $this->importSynchronously($csvData, $downloadPdfs, $dryRun, $updateMode);
         }
 
         // For larger files or when downloading PDFs, use background job
@@ -137,6 +142,7 @@ class RevenueImportController extends Controller
             'options' => [
                 'download_pdfs' => $downloadPdfs,
                 'dry_run' => $dryRun,
+                'update_mode' => $updateMode,
             ],
             'total_rows' => $totalRows - 1, // Subtract header row
             'processed_rows' => 0,
@@ -153,7 +159,7 @@ class RevenueImportController extends Controller
     /**
      * Process small imports synchronously
      */
-    protected function importSynchronously(array $csvData, bool $downloadPdfs, bool $dryRun)
+    protected function importSynchronously(array $csvData, bool $downloadPdfs, bool $dryRun, bool $updateMode = false)
     {
         // Get Smartbill settings if PDF download is requested
         $smartbillSettings = null;
@@ -169,16 +175,27 @@ class RevenueImportController extends Controller
             auth()->id(),
             $downloadPdfs,
             $dryRun,
-            $smartbillSettings
+            $smartbillSettings,
+            null, // progressCallback
+            $updateMode
         );
 
-        $message = "Import completed: {$stats['imported']} revenues imported, {$stats['skipped']} skipped";
+        $message = "Import completed: {$stats['imported']} revenues imported";
+        if (($stats['updated'] ?? 0) > 0) {
+            $message .= ", {$stats['updated']} EUR records updated with RON values";
+        }
+        $message .= ", {$stats['skipped']} skipped";
         if ($stats['pdfs_downloaded'] > 0) {
             $message .= ", {$stats['pdfs_downloaded']} PDFs downloaded from Smartbill";
         }
 
         if ($dryRun) {
-            $message = "DRY RUN: Would import {$stats['imported']} revenues, {$stats['duplicates']} duplicates would be skipped";
+            $dryRunMsg = "DRY RUN: Would import {$stats['imported']} revenues";
+            if (($stats['updated'] ?? 0) > 0) {
+                $dryRunMsg .= ", would update {$stats['updated']} EUR records";
+            }
+            $dryRunMsg .= ", {$stats['duplicates']} duplicates would be skipped";
+            $message = $dryRunMsg;
         }
 
         $flashData = [
@@ -188,6 +205,10 @@ class RevenueImportController extends Controller
 
         if (!empty($stats['duplicates_found'])) {
             $flashData['duplicates_found'] = $stats['duplicates_found'];
+        }
+
+        if (!empty($stats['updated_revenues'])) {
+            $flashData['updated_revenues'] = $stats['updated_revenues'];
         }
 
         return redirect()

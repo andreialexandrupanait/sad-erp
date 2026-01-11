@@ -16,7 +16,31 @@
                 <x-ui.card-header title="{{ __('Activity Log') }}" description="{{ __('Complete history of your account activity.') }}" />
                 <x-ui.card-content class="pt-0">
                     @if($activities->count() > 0)
-                        <div class="overflow-x-auto">
+                        <div class="md:hidden divide-y divide-slate-200">
+                            @foreach($activities as $activity)
+                                <div class="py-3 first:pt-0">
+                                    <div class="flex items-start gap-3">
+                                        <div class="flex-shrink-0 mt-0.5 text-slate-500">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm font-medium text-slate-900">{{ $activity->action_label }}</p>
+                                            @if($activity->description)
+                                                <p class="text-sm text-slate-500 truncate">{{ $activity->description }}</p>
+                                            @endif
+                                            <div class="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                                                <span class="font-mono">{{ $activity->ip_address ?? '-' }}</span>
+                                                <span>-</span>
+                                                <span>{{ $activity->created_at->diffForHumans() }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <div class="hidden md:block overflow-x-auto">
                             <x-ui.table>
                                 <x-ui.table-head>
                                     <x-ui.table-row>

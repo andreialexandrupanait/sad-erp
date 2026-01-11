@@ -23,7 +23,7 @@
 
                         <div class="mt-6 space-y-4">
                             @foreach($sessions as $session)
-                                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border {{ $session->is_current ? 'border-blue-300' : 'border-gray-200' }}">
+                                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-lg border {{ $session->is_current ? 'border-blue-300' : 'border-gray-200' }}">
                                     <div class="flex items-center gap-4">
                                         <div class="flex-shrink-0">
                                             @if($session->is_desktop)

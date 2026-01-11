@@ -397,7 +397,7 @@ class FinancialDashboardService
 
         // PERFORMANCE: Load all years in single query instead of N queries
         $allExpenses = FinancialExpense::whereIn('year', $availableYears->toArray())
-            ->where('currency', 'RON')
+            ->where(function($q) { $q->where('currency', 'RON')->orWhereNotNull('amount_eur'); })
             ->select('year', 'month', DB::raw('SUM(amount) as total'))
             ->groupBy('year', 'month')
             ->get()

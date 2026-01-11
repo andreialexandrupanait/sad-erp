@@ -41,7 +41,7 @@
                         <div class="flex-1">
                             <p class="text-xs md:text-sm font-medium text-slate-300">{{ __('Monthly Cost') }}</p>
                             <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold">{{ number_format($stats['monthly_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-400 hidden md:block">RON {{ __('per month') }}</p>
+                            <p class="mt-1 text-xs text-slate-400 hidden md:block">RON {{ __("per month") }}@if(($stats['monthly_cost_eur'] ?? 0) > 0) + {{ number_format($stats['monthly_cost_eur'], 2) }} EUR @endif</p>
                         </div>
                         <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-white/10">
                             <svg class="h-4 w-4 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -59,7 +59,7 @@
                         <div class="flex-1">
                             <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('Annual Cost') }}</p>
                             <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ number_format($stats['annual_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-500 hidden md:block">RON {{ __('per year') }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">RON {{ __("per year") }}@if(($stats['annual_cost_eur'] ?? 0) > 0) + {{ number_format($stats['annual_cost_eur'], 2) }} EUR @endif</p>
                         </div>
                         <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-purple-50">
                             <svg class="h-4 w-4 md:h-6 md:w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

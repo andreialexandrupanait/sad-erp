@@ -28,6 +28,8 @@ class RevenueAggregator
 
     /**
      * Get yearly revenue totals by currency
+     * RON = sum of all amounts (including EUR converted to RON)
+     * EUR = sum of amount_eur for EUR records (original EUR values)
      *
      * @param int $year
      * @return Collection
@@ -37,30 +39,39 @@ class RevenueAggregator
         return Cache::remember(
             $this->cacheKey("financial.revenues.totals.{$year}"),
             self::CACHE_TTL,
-            fn() => FinancialRevenue::forYear($year)
-                ->select('currency', DB::raw('SUM(amount) as total'))
-                ->groupBy('currency')
-                ->pluck('total', 'currency')
+            function() use ($year) {
+                // Total RON = sum of all amount fields (EUR records have RON in amount)
+                $totalRon = FinancialRevenue::forYear($year)->sum("amount");
+                
+                // Total EUR = sum of amount_eur for EUR currency records
+                $totalEur = FinancialRevenue::forYear($year)
+                    ->where("currency", "EUR")
+                    ->whereNotNull("amount_eur")
+                    ->sum("amount_eur");
+                
+                return collect([
+                    "RON" => $totalRon,
+                    "EUR" => $totalEur,
+                ]);
+            }
         );
     }
 
     /**
-     * Get monthly revenue data for a year (specific currency)
+     * Get monthly revenue data for a year (all currencies, amounts in RON)
      *
      * @param int $year
-     * @param string $currency
      * @return Collection
      */
-    public function getMonthlyData(int $year, string $currency = 'RON'): Collection
+    public function getMonthlyData(int $year): Collection
     {
         return Cache::remember(
-            $this->cacheKey("financial.revenues.monthly.{$year}.{$currency}"),
+            $this->cacheKey("financial.revenues.monthly.{$year}.all"),
             self::CACHE_TTL,
             fn() => FinancialRevenue::forYear($year)
-                ->where('currency', $currency)
-                ->select('month', DB::raw('SUM(amount) as total'))
-                ->groupBy('month')
-                ->orderBy('month')
+                ->select("month", DB::raw("SUM(amount) as total"))
+                ->groupBy("month")
+                ->orderBy("month")
                 ->get()
                 ->mapWithKeys(fn($item) => [$item->month => $item->total])
         );

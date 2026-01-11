@@ -143,7 +143,7 @@
                     <!-- Step 2: Preview Results -->
                     <div x-show="step === 2" x-cloak>
                         <!-- Summary Cards -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                             <div class="bg-slate-50 rounded-lg p-4 text-center">
                                 <div class="text-2xl font-bold text-slate-900" x-text="previewData?.summary?.total || 0"></div>
                                 <div class="text-sm text-slate-600">Total Rows</div>
@@ -151,6 +151,10 @@
                             <div class="bg-green-50 rounded-lg p-4 text-center">
                                 <div class="text-2xl font-bold text-green-600" x-text="previewData?.summary?.new || 0"></div>
                                 <div class="text-sm text-slate-600">New Entries</div>
+                            </div>
+                            <div class="bg-blue-50 rounded-lg p-4 text-center" x-show="updateMode && (previewData?.summary?.will_update || 0) > 0">
+                                <div class="text-2xl font-bold text-blue-600" x-text="previewData?.summary?.will_update || 0"></div>
+                                <div class="text-sm text-slate-600">Will Update</div>
                             </div>
                             <div class="bg-yellow-50 rounded-lg p-4 text-center">
                                 <div class="text-2xl font-bold text-yellow-600" x-text="previewData?.summary?.duplicates || 0"></div>
@@ -216,17 +220,24 @@
                                         <template x-for="row in previewData?.preview_rows || []" :key="row.row">
                                             <tr :class="{
                                                 'bg-red-50': row.has_error,
-                                                'bg-yellow-50': row.is_duplicate && !row.has_error
+                                                'bg-blue-50': row.will_update && !row.has_error,
+                                                'bg-yellow-50': row.is_duplicate && !row.has_error && !row.will_update
                                             }">
                                                 <td class="px-3 py-2 text-xs text-slate-500" x-text="row.row"></td>
                                                 <td class="px-3 py-2">
                                                     <template x-if="row.has_error">
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" x-text="row.error_msg"></span>
                                                     </template>
-                                                    <template x-if="row.is_duplicate && !row.has_error">
+                                                    <template x-if="row.will_update && !row.has_error">
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                                            Update EUR
+                                                            <span class="ml-1 text-blue-600" x-text="'(' + formatNumber(row.existing_amount) + ' EUR)'"></span>
+                                                        </span>
+                                                    </template>
+                                                    <template x-if="row.is_duplicate && !row.has_error && !row.will_update">
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">Duplicate</span>
                                                     </template>
-                                                    <template x-if="!row.has_error && !row.is_duplicate">
+                                                    <template x-if="!row.has_error && !row.is_duplicate && !row.will_update">
                                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">New</span>
                                                     </template>
                                                 </td>
@@ -259,7 +270,7 @@
                             <input type="file" name="csv_file" x-ref="hiddenFileInput" class="hidden">
 
                             <!-- Smartbill PDF Download Option -->
-                            <div class="flex items-start mb-6" x-show="previewData?.is_smartbill">
+                            <div class="flex items-start mb-4" x-show="previewData?.is_smartbill">
                                 <div class="flex h-6 items-center">
                                     <input
                                         type="checkbox"
@@ -275,6 +286,25 @@
                                 </div>
                             </div>
 
+                            <!-- Update Mode Option (for SmartBill re-imports) -->
+                            <div class="flex items-start mb-6" x-show="previewData?.is_smartbill">
+                                <div class="flex h-6 items-center">
+                                    <input
+                                        type="checkbox"
+                                        name="update_mode"
+                                        id="update_mode"
+                                        value="1"
+                                        x-model="updateMode"
+                                        @change="if (updateMode) { previewFile(); }"
+                                        class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-600"
+                                    >
+                                </div>
+                                <div class="ml-3 text-sm leading-6">
+                                    <label for="update_mode" class="font-medium text-slate-900">Update existing EUR invoices with RON values</label>
+                                    <p class="text-slate-500">Re-import SmartBill data to add RON amounts to existing EUR invoices. No duplicates will be created.</p>
+                                </div>
+                            </div>
+
                             <div class="flex items-center justify-between pt-4 border-t border-slate-200">
                                 <x-ui.button type="button" variant="ghost" @click="step = 1; previewData = null">
                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -286,13 +316,18 @@
                                     <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('financial.revenues.index') }}'">
                                         Cancel
                                     </x-ui.button>
-                                    <x-ui.button type="button" variant="default" @click="submitImport" :disabled="importing || (previewData?.summary?.new || 0) === 0">
+                                    <x-ui.button type="button" variant="default" @click="submitImport" :disabled="importing || ((previewData?.summary?.new || 0) + (previewData?.summary?.will_update || 0)) === 0">
                                         <template x-if="!importing">
                                             <span class="flex items-center">
                                                 <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                                 </svg>
-                                                Import <span x-text="previewData?.summary?.new || 0" class="ml-1"></span> Revenues
+                                                <template x-if="(previewData?.summary?.will_update || 0) > 0">
+                                                    <span>Import <span x-text="previewData?.summary?.new || 0"></span> / Update <span x-text="previewData?.summary?.will_update || 0"></span></span>
+                                                </template>
+                                                <template x-if="(previewData?.summary?.will_update || 0) === 0">
+                                                    <span>Import <span x-text="previewData?.summary?.new || 0"></span> Revenues</span>
+                                                </template>
                                             </span>
                                         </template>
                                         <template x-if="importing">
@@ -445,6 +480,7 @@ function importPreview() {
         loading: false,
         importing: false,
         error: null,
+        updateMode: false,
 
         async previewFile() {
             if (!this.selectedFile) return;
@@ -454,6 +490,7 @@ function importPreview() {
 
             const formData = new FormData();
             formData.append('csv_file', this.selectedFile);
+            formData.append('update_mode', this.updateMode ? '1' : '0');
 
             try {
                 const response = await fetch('{{ route('financial.revenues.import.preview') }}', {
@@ -489,6 +526,15 @@ function importPreview() {
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(this.selectedFile);
             this.$refs.hiddenFileInput.files = dataTransfer.files;
+
+            // Add hidden input for update_mode if checked
+            if (this.updateMode) {
+                const updateModeInput = document.createElement('input');
+                updateModeInput.type = 'hidden';
+                updateModeInput.name = 'update_mode';
+                updateModeInput.value = '1';
+                this.$refs.importForm.appendChild(updateModeInput);
+            }
 
             // Submit the form
             this.$refs.importForm.submit();

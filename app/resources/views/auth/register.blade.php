@@ -30,12 +30,12 @@
             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <a class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" href="{{ route('login') }}">
+        <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-3 mt-6">
+            <a class="text-center underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500" href="{{ route('login') }}">
                 {{ __('Already registered?') }}
             </a>
 
-            <x-ui.button type="submit" class="ms-4">
+            <x-ui.button type="submit" class="w-full sm:w-auto">
                 {{ __('Register') }}
             </x-ui.button>
         </div>

@@ -57,7 +57,7 @@
             <!-- Main Content -->
             <div class="relative w-full max-w-md">
                 <!-- Auth Card with integrated logo -->
-                <div class="glass shadow-2xl rounded-2xl p-8">
+                <div class="glass shadow-2xl rounded-2xl p-6 sm:p-8">
                     <!-- Logo inside card -->
                     <div class="text-center mb-6">
                         @if(isset($globalAppSettings['app_logo']) && $globalAppSettings['app_logo'])

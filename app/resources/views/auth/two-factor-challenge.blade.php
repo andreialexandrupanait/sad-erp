@@ -23,8 +23,8 @@
             <x-input-error :messages="$errors->get('code')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            <x-ui.button type="submit">
+        <div class="mt-6">
+            <x-ui.button type="submit" class="w-full">
                 {{ __('Verify') }}
             </x-ui.button>
         </div>

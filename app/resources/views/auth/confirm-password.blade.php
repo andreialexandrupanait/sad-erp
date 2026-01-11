@@ -13,8 +13,8 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <div class="flex justify-end mt-4">
-            <x-ui.button type="submit">
+        <div class="mt-6">
+            <x-ui.button type="submit" class="w-full">
                 {{ __('Confirm') }}
             </x-ui.button>
         </div>

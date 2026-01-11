@@ -49,7 +49,13 @@ class RevenueController extends Controller
 
         // Get filter values from validated request or session, with defaults
         $year = $validated['year'] ?? session('financial.filters.year', now()->year);
-        $month = $validated['month'] ?? session('financial.filters.month', now()->month);
+        // Handle clear_month parameter to show all months
+        if ($request->has('clear_month')) {
+            $month = null;
+            session()->forget('financial.filters.month');
+        } else {
+            $month = $validated['month'] ?? session('financial.filters.month');
+        }
         $currency = $validated['currency'] ?? session('financial.filters.currency');
         $clientId = $validated['client_id'] ?? session('financial.filters.client_id');
         $search = $validated['search'] ?? '';
@@ -94,12 +100,20 @@ class RevenueController extends Controller
         $this->queryBuilder->applyFilters($filteredQuery, $filters);
         $filteredTotals = $this->queryBuilder->calculateFilteredTotals($filteredQuery);
 
+        // Total RON for filtered results (sum of all amounts)
+        $filteredTotalRon = (clone $filteredQuery)->sum('amount');
+
         // Widget 2: Calculate YEARLY totals (all currencies, always full year)
         $yearTotals = $this->queryBuilder->calculateYearlyTotals(
             FinancialRevenue::class,
             $year,
             $clientId ? ['client_id' => $clientId] : []
         );
+
+        // Total RON (sum of all amounts - for display widget)
+        $yearTotalRon = FinancialRevenue::forYear($year)
+            ->when($clientId, fn($q) => $q->where('client_id', $clientId))
+            ->sum('amount');
 
         // Count total records
         $recordCount = $this->queryBuilder->countFiltered(FinancialRevenue::class, $filters);
@@ -122,7 +136,7 @@ class RevenueController extends Controller
 
         return view('financial.revenues.index', compact(
             'revenues',
-            'filteredTotals',
+            'filteredTotals', 'filteredTotalRon',
             'yearTotals',
             'recordCount',
             'year',
@@ -133,7 +147,7 @@ class RevenueController extends Controller
             'clients',
             'currencies',
             'availableYears',
-            'monthsWithTransactions'
+            'monthsWithTransactions', 'yearTotalRon'
         ));
     }
 

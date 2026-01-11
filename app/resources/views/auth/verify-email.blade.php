@@ -9,20 +9,16 @@
         </div>
     @endif
 
-    <div class="mt-4 flex items-center justify-between">
-        <form method="POST" action="{{ route('verification.send') }}">
+    <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-between gap-4">
+        <form method="POST" action="{{ route('verification.send') }}" class="w-full sm:w-auto">
             @csrf
-
-            <div>
-                <x-ui.button type="submit">
-                    {{ __('Resend Verification Email') }}
-                </x-ui.button>
-            </div>
+            <x-ui.button type="submit" class="w-full sm:w-auto">
+                {{ __('Resend Verification Email') }}
+            </x-ui.button>
         </form>
 
-        <form method="POST" action="{{ route('logout') }}">
+        <form method="POST" action="{{ route('logout') }}" class="text-center sm:text-left">
             @csrf
-
             <button type="submit" class="underline text-sm text-slate-600 hover:text-slate-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500">
                 {{ __('Log Out') }}
             </button>

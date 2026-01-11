@@ -33,6 +33,7 @@ class RevenueImportService
      */
     protected array $stats = [
         'imported' => 0,
+        'updated' => 0,
         'skipped' => 0,
         'duplicates' => 0,
         'clients_created' => 0,
@@ -347,30 +348,45 @@ class RevenueImportService
      *
      * @param array $data Revenue data
      * @param bool $isSmartbill Whether this is a Smartbill import
+     * @param bool $updateMode If true, match by series+number+date only (ignore amount)
+     *                         This allows finding EUR records that need updating with RON values
      * @return FinancialRevenue|null Existing revenue if duplicate
      */
-    public function findDuplicate(array $data, bool $isSmartbill): ?FinancialRevenue
+    public function findDuplicate(array $data, bool $isSmartbill, bool $updateMode = false): ?FinancialRevenue
     {
         $series = trim($data['serie'] ?? $data['Serie'] ?? '');
         $number = trim($data['numar'] ?? $data['Numar'] ?? '');
 
-        // For Smartbill: check by series + invoice number + date + amount
+        // For Smartbill: check by series + invoice number + date (+ amount unless update mode)
         // Same invoice can have multiple payments on different dates or amounts
         if ($isSmartbill && !empty($series) && !empty($number)) {
+            // Normalize invoice number - try both with and without leading zeros
+            // CSV might have '557' while DB has '0557'
+            $numberPadded = str_pad($number, 4, '0', STR_PAD_LEFT);
+            $numberNumeric = ltrim($number, '0') ?: '0';
+
             $query = FinancialRevenue::where('smartbill_series', $series)
-                ->where('smartbill_invoice_number', $number);
-            
-            // Also check date and amount to allow multiple payments for same invoice
+                ->where(function($q) use ($number, $numberPadded, $numberNumeric) {
+                    $q->where('smartbill_invoice_number', $number)
+                      ->orWhere('smartbill_invoice_number', $numberPadded)
+                      ->orWhere('smartbill_invoice_number', $numberNumeric);
+                });
+
+            // Also check date to allow multiple payments for same invoice
             $occurredAt = $data['occurred_at'] ?? null;
             if ($occurredAt) {
                 $query->whereDate('occurred_at', $occurredAt);
             }
-            
-            $amount = $data['amount'] ?? null;
-            if ($amount) {
-                $query->where('amount', (float) $amount);
+
+            // In update mode, skip amount check to find EUR records that need updating
+            // (existing EUR amount won't match new RON amount from re-import)
+            if (!$updateMode) {
+                $amount = $data['amount'] ?? null;
+                if ($amount) {
+                    $query->where('amount', (float) $amount);
+                }
             }
-            
+
             return $query->first();
         }
 
@@ -469,6 +485,8 @@ class RevenueImportService
      * @param bool $downloadPdfs Whether to download PDFs for Smartbill imports
      * @param bool $dryRun Whether to skip actual database operations
      * @param array|null $smartbillSettings Smartbill API settings
+     * @param \Closure|null $progressCallback Progress callback
+     * @param bool $updateMode If true, update existing EUR records with RON values instead of skipping
      * @return array Import statistics
      */
     public function import(
@@ -478,13 +496,15 @@ class RevenueImportService
         bool $downloadPdfs = false,
         bool $dryRun = false,
         ?array $smartbillSettings = null,
-        ?\Closure $progressCallback = null
+        ?\Closure $progressCallback = null,
+        bool $updateMode = false
     ): array {
         $this->progressCallback = $progressCallback;
         $this->organizationId = $organizationId;
         $this->userId = $userId;
         $this->stats = [
             'imported' => 0,
+            'updated' => 0,
             'skipped' => 0,
             'duplicates' => 0,
             'clients_created' => 0,
@@ -492,6 +512,7 @@ class RevenueImportService
             'pdfs_downloaded' => 0,
             'errors' => [],
             'duplicates_found' => [],
+            'updated_revenues' => [],
         ];
 
         // Find header row
@@ -507,6 +528,10 @@ class RevenueImportService
 
         if ($dryRun) {
             Log::info('DRY RUN MODE - No data will be saved');
+        }
+
+        if ($updateMode) {
+            Log::info('UPDATE MODE - Will update existing EUR records with RON values');
         }
 
         // Pre-load clients for fast lookup
@@ -553,10 +578,59 @@ class RevenueImportService
                 }
 
                 try {
-                    // Check for duplicates
-                    $existingRevenue = $this->findDuplicate($data, $isSmartbill);
+                    // Check for duplicates (in update mode, match by series+number+date only)
+                    $existingRevenue = $this->findDuplicate($data, $isSmartbill, $updateMode);
 
                     if ($existingRevenue) {
+                        // In update mode: update existing EUR record with RON values
+                        if ($updateMode && $isSmartbill) {
+                            $shouldUpdate = false;
+                            $updateData = [];
+
+                            // Update if the existing record is EUR and missing amount_eur
+                            // This means it's an old EUR record that needs RON values
+                            if ($existingRevenue->currency === 'EUR' && $existingRevenue->amount_eur === null) {
+                                // New import has RON in amount field
+                                $updateData['amount'] = (float) $data['amount'];
+                                $updateData['amount_eur'] = (float) ($data['amount_eur'] ?? $existingRevenue->amount);
+                                if (!empty($data['exchange_rate'])) {
+                                    $updateData['exchange_rate'] = (float) $data['exchange_rate'];
+                                }
+                                $shouldUpdate = true;
+                            }
+
+                            if ($shouldUpdate) {
+                                if (!$dryRun) {
+                                    $existingRevenue->update($updateData);
+
+                                    Log::info('Updated EUR revenue with RON values', [
+                                        'id' => $existingRevenue->id,
+                                        'invoice' => ($data['serie'] ?? '') . '-' . ($data['numar'] ?? ''),
+                                        'old_amount' => $existingRevenue->getOriginal('amount'),
+                                        'new_amount_ron' => $updateData['amount'],
+                                        'amount_eur' => $updateData['amount_eur'],
+                                    ]);
+                                }
+
+                                $this->stats['updated']++;
+                                $this->stats['updated_revenues'][] = [
+                                    'id' => $existingRevenue->id,
+                                    'invoice' => ($data['serie'] ?? '') . '-' . ($data['numar'] ?? ''),
+                                    'date' => $data['occurred_at'],
+                                    'old_amount' => $existingRevenue->amount,
+                                    'new_amount_ron' => $updateData['amount'],
+                                    'amount_eur' => $updateData['amount_eur'] ?? null,
+                                ];
+
+                                // Report progress
+                                if ($this->progressCallback) {
+                                    ($this->progressCallback)($processedCount, $totalRows, $this->stats);
+                                }
+                                continue;
+                            }
+                        }
+
+                        // Regular duplicate handling (no update mode or already has RON values)
                         $this->stats['duplicates']++;
                         $this->stats['duplicates_found'][] = [
                             'invoice' => ($data['serie'] ?? $data['document_name']) . '-' . ($data['numar'] ?? ''),
@@ -729,9 +803,10 @@ class RevenueImportService
      *
      * @param array $csvData Parsed CSV rows
      * @param int $limit Maximum rows to preview
+     * @param bool $updateMode If true, show which EUR records will be updated
      * @return array Preview data
      */
-    public function preview(array $csvData, int $limit = 50): array
+    public function preview(array $csvData, int $limit = 50, bool $updateMode = false): array
     {
         [$headerRowIndex, $header] = $this->findHeaderRow($csvData);
         $dataRows = array_slice($csvData, $headerRowIndex + 1);
@@ -745,6 +820,7 @@ class RevenueImportService
         $summary = [
             'total' => 0,
             'new' => 0,
+            'will_update' => 0,
             'duplicates' => 0,
             'errors' => 0,
             'new_clients' => 0,
@@ -772,10 +848,23 @@ class RevenueImportService
             $hasError = !$isValid;
             $errorMsg = $hasError ? implode(', ', $errors) : '';
 
-            // Check duplicates
+            // Check duplicates (in update mode, match by series+number+date only)
             $isDuplicate = false;
+            $willUpdate = false;
+            $existingRevenue = null;
+
             if (!$hasError) {
-                $isDuplicate = $this->findDuplicate($data, $isSmartbill) !== null;
+                $existingRevenue = $this->findDuplicate($data, $isSmartbill, $updateMode);
+                if ($existingRevenue) {
+                    // In update mode, check if this is an EUR record that needs updating
+                    if ($updateMode && $isSmartbill &&
+                        $existingRevenue->currency === 'EUR' &&
+                        $existingRevenue->amount_eur === null) {
+                        $willUpdate = true;
+                    } else {
+                        $isDuplicate = true;
+                    }
+                }
             }
 
             // Check client status
@@ -797,6 +886,8 @@ class RevenueImportService
             // Update summary
             if ($hasError) {
                 $summary['errors']++;
+            } elseif ($willUpdate) {
+                $summary['will_update']++;
             } elseif ($isDuplicate) {
                 $summary['duplicates']++;
             } else {
@@ -821,6 +912,8 @@ class RevenueImportService
                     'client_name' => $clientName,
                     'client_status' => $clientStatus,
                     'is_duplicate' => $isDuplicate,
+                    'will_update' => $willUpdate,
+                    'existing_amount' => $existingRevenue?->amount,
                     'has_error' => $hasError,
                     'error_msg' => $errorMsg,
                 ];
@@ -832,6 +925,7 @@ class RevenueImportService
             'summary' => $summary,
             'preview_rows' => $previewRows,
             'has_more' => $summary['total'] > $limit,
+            'update_mode' => $updateMode,
         ];
     }
 }

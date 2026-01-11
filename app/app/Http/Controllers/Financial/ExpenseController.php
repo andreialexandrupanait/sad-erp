@@ -37,7 +37,13 @@ class ExpenseController extends Controller
     {
         // Get filter values from request or session, with defaults
         $year = $request->get('year', session('financial.filters.year', now()->year));
-        $month = $request->get('month', session('financial.filters.month', now()->month));
+        // Handle clear_month parameter to show all months
+        if ($request->has('clear_month')) {
+            $month = null;
+            session()->forget('financial.filters.month');
+        } else {
+            $month = $request->get('month', session('financial.filters.month'));
+        }
         $currency = $request->get('currency', session('financial.filters.currency'));
         $categoryId = $request->get('category_id', session('financial.filters.category_id'));
         $search = $request->get('search', '');
@@ -89,8 +95,16 @@ class ExpenseController extends Controller
         $yearTotals = $this->queryBuilder->calculateYearlyTotals(
             FinancialExpense::class,
             $year,
-            $categoryId ? ['category_option_id' => $categoryId] : []
+            $categoryId ? ["category_option_id" => $categoryId] : []
         );
+
+        // Total RON for filtered results (sum of all amounts)
+        $filteredTotalRon = (clone $filteredQuery)->sum("amount");
+
+        // Total RON (sum of all amounts - for display widget)
+        $yearTotalRon = FinancialExpense::forYear($year)
+            ->when($categoryId, fn($q) => $q->where("category_option_id", $categoryId))
+            ->sum("amount");
 
         // Count total records
         $recordCount = $this->queryBuilder->countFiltered(FinancialExpense::class, $filters);
@@ -123,8 +137,8 @@ class ExpenseController extends Controller
 
         return view('financial.expenses.index', compact(
             'expenses',
-            'filteredTotals',
-            'yearTotals',
+            'filteredTotals', 'filteredTotalRon',
+            'yearTotals', 'yearTotalRon',
             'recordCount',
             'categoryBreakdown',
             'year',

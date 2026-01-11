@@ -50,7 +50,7 @@
                        class="block p-5 flex-1">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-lg font-semibold text-slate-900">{{ $monthNames[$m] }}</h3>
-                            <span class="inline-flex items-center justify-center min-w-[2rem] h-7 px-2 rounded-full bg-primary-100 text-primary-700 text-sm font-bold tabular-nums">
+                            <span class="inline-flex items-center justify-end min-w-[2rem] h-7 pl-2.5 pr-0 rounded-full bg-primary-100 text-primary-700 text-sm font-bold tabular-nums">
                                 {{ $monthData['total'] ?? 0 }}
                             </span>
                         </div>
@@ -59,7 +59,7 @@
                             <!-- Incasari -->
                             <div class="flex items-center justify-between text-sm">
                                 <span class="text-slate-600">Incasari:</span>
-                                <span class="font-medium {{ ($monthData['incasare'] ?? 0) > 0 ? 'text-green-700' : 'text-slate-400' }} tabular-nums">
+                                <span class="font-medium {{ ($monthData['incasare'] ?? 0) > 0 ? 'text-green-700' : 'text-slate-400' }} tabular-nums text-right min-w-[2rem]">
                                     {{ $monthData['incasare'] ?? 0 }}
                                 </span>
                             </div>
@@ -67,7 +67,7 @@
                             <!-- Plati -->
                             <div class="flex items-center justify-between text-sm">
                                 <span class="text-slate-600">Plati:</span>
-                                <span class="font-medium {{ ($monthData['plata'] ?? 0) > 0 ? 'text-red-700' : 'text-slate-400' }} tabular-nums">
+                                <span class="font-medium {{ ($monthData['plata'] ?? 0) > 0 ? 'text-red-700' : 'text-slate-400' }} tabular-nums text-right min-w-[2rem]">
                                     {{ $monthData['plata'] ?? 0 }}
                                 </span>
                             </div>
@@ -75,7 +75,7 @@
                             <!-- Extrase -->
                             <div class="flex items-center justify-between text-sm">
                                 <span class="text-slate-600">Extrase:</span>
-                                <span class="font-medium {{ ($monthData['extrase'] ?? 0) > 0 ? 'text-blue-700' : 'text-slate-400' }} tabular-nums">
+                                <span class="font-medium {{ ($monthData['extrase'] ?? 0) > 0 ? 'text-blue-700' : 'text-slate-400' }} tabular-nums text-right min-w-[2rem]">
                                     {{ $monthData['extrase'] ?? 0 }}
                                 </span>
                             </div>

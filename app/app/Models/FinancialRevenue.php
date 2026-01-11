@@ -129,6 +129,12 @@ class FinancialRevenue extends Model
     // Helper methods
     public function getFormattedAmountAttribute()
     {
+        // For EUR records with RON conversion, show both values
+        if ($this->currency === 'EUR' && $this->amount_eur !== null) {
+            return number_format($this->amount_eur, 2) . ' EUR / ' .
+                   number_format($this->amount, 2) . ' RON';
+        }
+
         return number_format($this->amount, 2) . ' ' . $this->currency;
     }
 

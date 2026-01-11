@@ -83,19 +83,13 @@
                             @endif
                         </p>
                         <div class="mt-2">
-                            @if($filteredTotals->count() > 0)
-                                <p class="text-lg font-bold text-red-700">
-                                    @foreach($filteredTotals as $curr => $total)
-                                        {{ number_format($total, 2) }} {{ $curr }}@if(!$loop->last) / @endif
-                                    @endforeach
-                                </p>
-                            @else
-                                <p class="text-lg font-bold text-slate-400">0.00</p>
-                            @endif
+                            <p class="text-lg font-bold">
+                                <span class="text-red-600">{{ number_format($filteredTotalRon, 0, ',', ' ') }} Lei</span>
+                                @if(isset($filteredTotals['EUR']) && $filteredTotals['EUR'] > 0)
+                                    <span class="text-slate-900">(din care {{ number_format($filteredTotals['EUR'], 2, ',', ' ') }} EUR)</span>
+                                @endif
+                            </p>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">
-                            {{ $currency ?: __('Toate valutele') }}
-                        </p>
                     </div>
                     <div class="p-3 bg-red-50 rounded-full">
                         <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -111,17 +105,13 @@
                     <div class="flex-1">
                         <p class="text-xs font-medium text-slate-500 uppercase">{{ __('Total pe an') }} {{ $year }}</p>
                         <div class="mt-2">
-                            @if($yearTotals->count() > 0)
-                                <p class="text-lg font-bold text-blue-700">
-                                    @foreach($yearTotals as $curr => $total)
-                                        {{ number_format($total, 2) }} {{ $curr }}@if(!$loop->last) / @endif
-                                    @endforeach
-                                </p>
-                            @else
-                                <p class="text-lg font-bold text-slate-400">0.00</p>
-                            @endif
+                            <p class="text-lg font-bold">
+                                <span class="text-red-600">{{ number_format($yearTotalRon, 0, ',', ' ') }} Lei</span>
+                                @if(isset($yearTotals['EUR']) && $yearTotals['EUR'] > 0)
+                                    <span class="text-slate-900">(din care {{ number_format($yearTotals['EUR'], 2, ',', ' ') }} EUR)</span>
+                                @endif
+                            </p>
                         </div>
-                        <p class="text-xs text-slate-500 mt-1">{{ __('Toate valutele') }}</p>
                     </div>
                     <div class="p-3 bg-blue-50 rounded-full">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -141,11 +131,9 @@
 
                 <div class="flex items-center justify-between mb-3">
                     <h3 class="text-sm font-medium text-slate-700">{{ __('Selectează luna') }}</h3>
-                    @if($month)
-                        <button type="button" onclick="document.getElementById('month-input').value = ''; document.getElementById('monthForm').submit();" class="text-xs text-slate-500 hover:text-slate-700">
-                            {{ __('Toate lunile') }}
-                        </button>
-                    @endif
+                    <a href="{{ route('financial.expenses.index', ['year' => $year, 'clear_month' => 1]) }}" class="text-xs {{ $month ? 'text-blue-600 hover:text-blue-800 hover:underline' : 'text-red-600 font-semibold' }}">
+                        {{ __("Toate lunile") }}{{ !$month ? ' ✓' : '' }}
+                    </a>
                 </div>
                 <input type="hidden" name="month" id="month-input" value="{{ $month }}">
 
@@ -168,7 +156,7 @@
                             @php
                                 $monthNum = $index + 1;
                                 $hasTransactions = isset($monthsWithTransactions[$monthNum]);
-                                $isSelected = $month == $monthNum;
+                                $isSelected = $month === null || $month == $monthNum;
                                 $transactionCount = $hasTransactions ? $monthsWithTransactions[$monthNum]['count'] : 0;
                                 $monthTotal = $hasTransactions ? $monthsWithTransactions[$monthNum]['total'] : 0;
                             @endphp
@@ -291,7 +279,11 @@
                                     @endif
                                 </x-ui.table-cell>
                                 <x-ui.table-cell class="text-right">
-                                    <div class="text-sm font-bold text-red-600">{{ number_format($expense->amount, 2) }} {{ $expense->currency }}</div>
+                                    @if($expense->currency === 'EUR' && $expense->amount_eur)
+                                        <div class="text-sm font-bold"><span class="text-slate-900">{{ number_format($expense->amount_eur, 2, ',', ' ') }} EUR</span> / <span class="text-red-600">{{ number_format($expense->amount, 2, ',', ' ') }} RON</span></div>
+                                    @else
+                                        <div class="text-sm font-bold text-red-600">{{ number_format($expense->amount, 2, ',', ' ') }} {{ $expense->currency }}</div>
+                                    @endif
                                 </x-ui.table-cell>
 
                                 <!-- Files Column -->

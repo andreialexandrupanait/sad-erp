@@ -24,6 +24,8 @@ class StoreSubscriptionRequest extends FormRequest
         return [
             'vendor_name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0', 'max:999999.99'],
+            'price_eur' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
+            'exchange_rate' => ['nullable', 'numeric', 'min:0'],
             'currency' => ['required', Rule::in($this->getValidCurrencies())],
             'billing_cycle' => ['required', Rule::in($this->getValidBillingCycles())],
             'custom_days' => ['nullable', 'integer', 'min:1', 'max:3650', 'required_if:billing_cycle,custom'],
@@ -31,6 +33,7 @@ class StoreSubscriptionRequest extends FormRequest
             'next_renewal_date' => ['required', 'date', 'after_or_equal:start_date'],
             'status' => ['required', Rule::in($this->getValidStatuses())],
             'notes' => ['nullable', 'string'],
+            'convert_to_ron' => ['nullable', 'boolean'],
         ];
     }
 
@@ -42,6 +45,8 @@ class StoreSubscriptionRequest extends FormRequest
         return [
             'vendor_name' => __('vendor name'),
             'price' => __('price'),
+            'price_eur' => __('EUR price'),
+            'exchange_rate' => __('exchange rate'),
             'currency' => __('currency'),
             'billing_cycle' => __('billing cycle'),
             'custom_days' => __('custom days'),

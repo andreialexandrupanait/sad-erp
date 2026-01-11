@@ -62,13 +62,20 @@ class QueryBuilderService
     /**
      * Calculate currency-grouped totals for filtered results
      *
+     * For EUR records with RON conversion (amount_eur field set):
+     * - EUR total uses amount_eur (original EUR value)
+     * - RON statistics use amount (converted RON value)
+     *
      * @param Builder $query Base query with filters already applied
      * @return \Illuminate\Support\Collection
      */
     public function calculateFilteredTotals(Builder $query): \Illuminate\Support\Collection
     {
         return $query
-            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->select(
+                'currency',
+                DB::raw("SUM(CASE WHEN currency = 'EUR' THEN COALESCE(amount_eur, 0) ELSE amount END) as total")
+            )
             ->groupBy('currency')
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);
@@ -76,6 +83,10 @@ class QueryBuilderService
 
     /**
      * Calculate yearly totals by currency
+     *
+     * For EUR records with RON conversion (amount_eur field set):
+     * - EUR total uses amount_eur (original EUR value)
+     * - RON statistics use amount (converted RON value)
      *
      * @param string $modelClass The model class name
      * @param int $year The year to calculate for
@@ -93,7 +104,10 @@ class QueryBuilderService
         }
 
         return $query
-            ->select('currency', DB::raw('SUM(amount) as total'))
+            ->select(
+                'currency',
+                DB::raw("SUM(CASE WHEN currency = 'EUR' THEN COALESCE(amount_eur, 0) ELSE amount END) as total")
+            )
             ->groupBy('currency')
             ->get()
             ->mapWithKeys(fn($item) => [$item->currency => $item->total]);

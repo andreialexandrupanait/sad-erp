@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\Cache;
  *
  * Handles aggregation of key metrics including counts for clients, domains,
  * subscriptions, credentials, and basic financial overview data.
+ *
+ * Note: All amount fields are in RON. Records with currency='EUR' that have
+ * amount_eur set have been properly converted. Records without amount_eur
+ * are legacy records pending migration.
  */
 class MetricsAggregator
 {
@@ -33,6 +37,19 @@ class MetricsAggregator
     {
         $orgId = auth()->user()->organization_id ?? 'default';
         return "org.{$orgId}.{$key}";
+    }
+
+    /**
+     * Apply filter to include only records with RON amounts
+     * Includes: RON records + converted EUR records (amount_eur is set)
+     * Excludes: Legacy EUR records pending migration
+     */
+    private function applyRonFilter($query)
+    {
+        return $query->where(function($q) {
+            $q->where('currency', 'RON')
+              ->orWhereNotNull('amount_eur');
+        });
     }
 
     /**
@@ -93,23 +110,24 @@ class MetricsAggregator
         $cacheKey = $this->cacheKey("dashboard.financial.{$currentYear}.{$currentMonth}");
 
         return Cache::remember($cacheKey, $this->getCacheTtl(), function () use ($currentYear, $currentMonth) {
-            $currentMonthRevenue = FinancialRevenue::where('year', $currentYear)
-                ->where('month', $currentMonth)
-                ->where('currency', 'RON')
-                ->sum('amount');
+            // Include RON records and converted EUR records
+            $currentMonthRevenue = $this->applyRonFilter(
+                FinancialRevenue::where('year', $currentYear)
+                    ->where('month', $currentMonth)
+            )->sum('amount');
 
-            $currentMonthExpenses = FinancialExpense::where('year', $currentYear)
-                ->where('month', $currentMonth)
-                ->where('currency', 'RON')
-                ->sum('amount');
+            $currentMonthExpenses = $this->applyRonFilter(
+                FinancialExpense::where('year', $currentYear)
+                    ->where('month', $currentMonth)
+            )->sum('amount');
 
-            $yearlyRevenue = FinancialRevenue::where('year', $currentYear)
-                ->where('currency', 'RON')
-                ->sum('amount');
+            $yearlyRevenue = $this->applyRonFilter(
+                FinancialRevenue::where('year', $currentYear)
+            )->sum('amount');
 
-            $yearlyExpenses = FinancialExpense::where('year', $currentYear)
-                ->where('currency', 'RON')
-                ->sum('amount');
+            $yearlyExpenses = $this->applyRonFilter(
+                FinancialExpense::where('year', $currentYear)
+            )->sum('amount');
 
             $currentMonthProfit = $currentMonthRevenue - $currentMonthExpenses;
             $yearlyProfit = $yearlyRevenue - $yearlyExpenses;

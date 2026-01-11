@@ -40,7 +40,7 @@
                             <!-- Amount -->
                             <div>
                                 <label class="text-sm font-medium text-slate-500">{{ __('Amount') }}</label>
-                                <p class="mt-1 text-2xl font-bold text-green-600">{{ number_format($revenue->amount, 2) }} {{ $revenue->currency }}</p>
+                                <p class="mt-1 text-2xl font-bold text-green-600">{{ $revenue->formatted_amount }}</p>
                             </div>
 
                             <!-- Date -->

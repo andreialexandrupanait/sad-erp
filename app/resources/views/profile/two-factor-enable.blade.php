@@ -37,7 +37,7 @@
                                 <x-input-error :messages="$errors->get('code')" class="mt-2" />
                             </div>
 
-                            <div class="mt-6 flex items-center gap-4">
+                            <div class="mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                                 <x-ui.button type="submit" variant="default">{{ __("Confirm & Enable") }}</x-ui.button>
                                 <a href="{{ route('profile.two-factor') }}" class="text-sm text-gray-600 hover:underline">{{ __("Cancel") }}</a>
                             </div>
