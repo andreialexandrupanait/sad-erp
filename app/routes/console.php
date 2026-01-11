@@ -63,3 +63,13 @@ Schedule::command('subscriptions:process-renewals')
 // Sync bank transactions every 12 hours (configurable)
 Schedule::command('banking:sync-transactions --all')
     ->cron('0 */' . config('banking.sync.frequency_hours', 12) . ' * * *');
+
+// ============================================
+// EXCHANGE RATE SCHEDULES
+// ============================================
+
+// Fetch BNR exchange rates daily at 13:00 (BNR publishes rates around 13:00)
+Schedule::command('bnr:fetch-rates')
+    ->dailyAt('13:00')
+    ->onSuccess(fn() => Log::info('BNR exchange rates fetched successfully'))
+    ->onFailure(fn() => Log::warning('Failed to fetch BNR exchange rates'));

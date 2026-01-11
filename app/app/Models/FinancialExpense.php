@@ -18,7 +18,9 @@ class FinancialExpense extends Model
         'created_by',
         'document_name',
         'amount',
+        'amount_eur',
         'currency',
+        'exchange_rate',
         'occurred_at',
         'category_option_id',
         'year',
@@ -29,6 +31,8 @@ class FinancialExpense extends Model
 
     protected $casts = [
         'amount' => 'decimal:2',
+        'amount_eur' => 'decimal:2',
+        'exchange_rate' => 'decimal:6',
         'occurred_at' => 'date',
         'year' => 'integer',
         'month' => 'integer',
@@ -112,7 +116,8 @@ class FinancialExpense extends Model
 
     public function scopeByCurrency($query, $currency)
     {
-        return $query->where('currency', $currency);
+        return $query->where('currency',
+        'exchange_rate', $currency);
     }
 
     public function scopeByCategory($query, $categoryId)

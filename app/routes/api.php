@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\ExchangeRateController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -13,4 +14,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// API routes can be added here as needed
+// Exchange Rate API (authenticated)
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/exchange-rate', [ExchangeRateController::class, 'getRate']);
+    Route::get('/exchange-rate/convert', [ExchangeRateController::class, 'convert']);
+    Route::post('/exchange-rate/fetch', [ExchangeRateController::class, 'fetchRates']);
+});

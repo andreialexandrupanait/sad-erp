@@ -19,7 +19,9 @@ class Subscription extends Model
         'created_by',
         'vendor_name',
         'price',
+        'price_eur',
         'currency',
+        'exchange_rate',
         'billing_cycle',
         'custom_days',
         'start_date',
@@ -31,6 +33,8 @@ class Subscription extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'price_eur' => 'decimal:2',
+        'exchange_rate' => 'decimal:6',
         'start_date' => 'date',
         'next_renewal_date' => 'date',
         'custom_days' => 'integer',

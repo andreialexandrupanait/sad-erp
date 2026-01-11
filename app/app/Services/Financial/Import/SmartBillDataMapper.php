@@ -6,6 +6,7 @@ namespace App\Services\Financial\Import;
  * SmartBill Data Mapper Service
  *
  * Handles SmartBill column mapping and data transformation.
+ * Updated to support dual currency columns (EUR + RON).
  */
 class SmartBillDataMapper
 {
@@ -19,7 +20,18 @@ class SmartBillDataMapper
         'Data facturii' => 'occurred_at', 'Data emiterii' => 'occurred_at',
         'Dată' => 'occurred_at',
 
-        // Amount variations - SmartBill can use different column names
+        // RON amount (primary) - SmartBill provides converted RON values
+        'Total Value(RON)' => 'amount_ron',
+        'Total Value (RON)' => 'amount_ron',
+        'Valoare(RON)' => 'amount_ron',
+        'Valoare (RON)' => 'amount_ron',
+        'Total(RON)' => 'amount_ron',
+        'Total (RON)' => 'amount_ron',
+
+        // Original currency amount (for EUR reference)
+        'Total Value' => 'amount_original',
+
+        // Legacy amount mappings (when no dual columns exist)
         'Total' => 'amount', 'Valoare' => 'amount', 'Suma' => 'amount',
         'Total factura' => 'amount', 'Valoare totala' => 'amount',
         'Total factură' => 'amount', 'Valoare totală' => 'amount',
@@ -29,7 +41,11 @@ class SmartBillDataMapper
         'Total cu TVA' => 'amount',
 
         // Currency
-        'Moneda' => 'currency', 'Monedă' => 'currency',
+        'Moneda' => 'currency', 'Monedă' => 'currency', 'Currency' => 'currency',
+
+        // Exchange rate (if provided by SmartBill)
+        'Curs' => 'exchange_rate', 'Curs valutar' => 'exchange_rate',
+        'Exchange Rate' => 'exchange_rate',
 
         // Client info
         'Client' => 'client_name', 'Denumire client' => 'client_name',
@@ -44,7 +60,7 @@ class SmartBillDataMapper
 
     public function isSmartBillExport(array $header): bool
     {
-        $indicators = ['Serie', 'Factura', 'CIF', 'Data incasarii'];
+        $indicators = ['Serie', 'Factura', 'CIF', 'Data incasarii', 'Total Value(RON)'];
         foreach ($indicators as $col) {
             if (in_array($col, $header)) return true;
         }
@@ -80,10 +96,8 @@ class SmartBillDataMapper
         }
 
         // If we have document_name but no serie/numar, try to extract them
-        // SmartBill format: "SAD0568" where "SAD" is serie and "0568" is numar
         if (!empty($mapped['document_name']) && (empty($mapped['serie']) || empty($mapped['numar']))) {
             $docName = trim($mapped['document_name']);
-            // Pattern: letters followed by digits (e.g., SAD0568, PROF123, AB12345)
             if (preg_match('/^([A-Za-z]+)(\d+)$/', $docName, $matches)) {
                 if (empty($mapped['serie'])) {
                     $mapped['serie'] = $matches[1];
@@ -101,6 +115,24 @@ class SmartBillDataMapper
         if (!empty($mapped['occurred_at']) && preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', trim($mapped['occurred_at']), $m)) {
             $mapped['occurred_at'] = $m[3] . '-' . $m[2] . '-' . $m[1];
         }
+
+        // Handle dual currency columns from SmartBill
+        // If we have both amount_ron and amount_original, use them appropriately
+        if (!empty($mapped['amount_ron']) && !empty($mapped['amount_original'])) {
+            // SmartBill provides both - use RON as primary amount
+            $mapped['amount'] = $mapped['amount_ron'];
+            
+            // If currency is EUR, store original as amount_eur
+            if (strtoupper($mapped['currency'] ?? 'RON') === 'EUR') {
+                $mapped['amount_eur'] = $mapped['amount_original'];
+            }
+        } elseif (!empty($mapped['amount_ron']) && empty($mapped['amount'])) {
+            // Only RON value provided
+            $mapped['amount'] = $mapped['amount_ron'];
+        }
+
+        // Clean up temporary mapping keys
+        unset($mapped['amount_ron'], $mapped['amount_original']);
 
         return $mapped;
     }

@@ -444,6 +444,14 @@ class RevenueImportService
             $revenueData['smartbill_imported_at'] = now();
         }
 
+        // Add EUR reference fields if provided
+        if (!empty($data['amount_eur'])) {
+            $revenueData['amount_eur'] = (float) $data['amount_eur'];
+        }
+        if (!empty($data['exchange_rate'])) {
+            $revenueData['exchange_rate'] = (float) $data['exchange_rate'];
+        }
+
         if ($dryRun) {
             Log::info('DRY RUN: Would create revenue', $revenueData);
             return null;
