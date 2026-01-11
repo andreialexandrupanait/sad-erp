@@ -30,7 +30,7 @@
 @endphp
 
 <div
-    class="{{ $colors }} text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-5"
+    class="{{ $colors }} text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-4 md:p-5"
     @if($href)
         onclick="window.location.href='{{ $href }}'"
     @endif
@@ -38,7 +38,7 @@
     <div class="flex items-start justify-between mb-3">
         <div>
             <p class="text-xs font-medium {{ $iconColor }} uppercase tracking-wide mb-1">{{ $title }}</p>
-            <p class="text-2xl font-bold">{{ $amount }}</p>
+            <p class="text-xl md:text-2xl font-bold">{{ $amount }}</p>
         </div>
         <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
             {!! $icon !!}

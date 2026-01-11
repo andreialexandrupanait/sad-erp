@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ $offer->offer_number }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         {{-- Top Navigation Bar --}}
         <div class="flex items-center justify-between mb-6">
             {{-- Back Button & Title --}}

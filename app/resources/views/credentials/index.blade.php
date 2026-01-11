@@ -10,7 +10,7 @@
         </a>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data="{
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6" x-data="{
         ...credentialsSearch(),
         ...bulkSelection({
             idAttribute: 'data-credential-id',
@@ -31,10 +31,9 @@
         <x-ui.card>
             <x-ui.card-content>
                 <form method="GET" action="{{ route('credentials.index') }}" x-ref="filterForm">
-                    <div class="flex flex-col lg:flex-row gap-4">
+                    <div class="flex flex-col lg:flex-row gap-3 md:gap-4">
                         <!-- Search -->
                         <div class="flex-1">
-                            <x-ui.label for="search">{{ __('Search') }}</x-ui.label>
                             <x-ui.input
                                 type="text"
                                 name="search"
@@ -48,7 +47,6 @@
 
                         <!-- Client Filter -->
                         <div class="w-full lg:w-64">
-                            <x-ui.label for="client_id">{{ __('Client') }}</x-ui.label>
                             <x-ui.searchable-select
                                 name="client_id"
                                 :options="$clients"

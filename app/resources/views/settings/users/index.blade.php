@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
             <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                 <div class="bg-white rounded-lg border border-slate-200 p-4">
@@ -63,7 +63,7 @@
             </div>
 
             <div class="bg-white rounded-lg border border-slate-200">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
                             <h2 class="text-lg font-medium text-slate-900">

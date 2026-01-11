@@ -5,7 +5,7 @@
         $clientStatuses = \App\Models\SettingOption::clientStatuses()->get();
     @endphp
 
-    <div class="p-6 space-y-6" x-data="notesPage" @client-created.window="handleClientCreated($event.detail)">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6" x-data="notesPage" @client-created.window="handleClientCreated($event.detail)">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">

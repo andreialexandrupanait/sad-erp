@@ -9,9 +9,9 @@
         $hideBreadcrumb = true;
     @endphp
 
-    <div class="p-6 space-y-6" x-data>
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6" x-data>
         {{-- Key Metrics Row --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <x-widgets.metrics.stat-card
                 :title="__('Active Clients')"
                 :value="$activeClients"
@@ -69,35 +69,120 @@
             </x-widgets.metrics.stat-card>
         </div>
 
-        {{-- Financial Overview --}}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <x-widgets.financial.summary-card
-                :title="__('Current Month Revenue')"
-                :amount="number_format($currentMonthRevenue, 2) . ' RON'"
-                :yearlyAmount="number_format($yearlyRevenue, 2) . ' RON'"
-                type="revenue"
-                :href="route('financial.revenues.index')"
-            />
+        {{-- Financial Overview with Period Selector --}}
+        <div
+            x-data="{
+                revenue: {{ $yearlyRevenue }},
+                expenses: {{ $yearlyExpenses }},
+                profit: {{ $yearlyProfit }},
+                revenueFormatted: '{{ number_format($yearlyRevenue, 2) }} RON',
+                expensesFormatted: '{{ number_format($yearlyExpenses, 2) }} RON',
+                profitFormatted: '{{ number_format($yearlyProfit, 2) }} RON',
+                periodLabel: '{{ __('Anul curent') }}',
+                loading: false,
 
-            <x-widgets.financial.summary-card
-                :title="__('Current Month Expenses')"
-                :amount="number_format($currentMonthExpenses, 2) . ' RON'"
-                :yearlyAmount="number_format($yearlyExpenses, 2) . ' RON'"
-                type="expense"
-                :href="route('financial.expenses.index')"
-            />
+                async fetchData(event) {
+                    this.loading = true;
+                    try {
+                        const params = new URLSearchParams({ period: event.detail.period });
+                        if (event.detail.from) params.append('from', event.detail.from);
+                        if (event.detail.to) params.append('to', event.detail.to);
 
-            <x-widgets.financial.summary-card
-                :title="__('Current Month Net Profit')"
-                :amount="number_format($currentMonthProfit, 2) . ' RON'"
-                :yearlyAmount="number_format($yearlyProfit, 2) . ' RON'"
-                type="profit"
-                :href="route('financial.dashboard')"
-            />
+                        const response = await fetch('{{ route('widgets.financial-summary') }}?' + params.toString(), {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            this.revenue = data.revenue;
+                            this.expenses = data.expenses;
+                            this.profit = data.profit;
+                            this.revenueFormatted = data.revenue_formatted;
+                            this.expensesFormatted = data.expenses_formatted;
+                            this.profitFormatted = data.profit_formatted;
+                            this.periodLabel = data.period_label;
+                        }
+                    } catch (error) {
+                        console.error('Failed to fetch financial summary:', error);
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }"
+            @period-changed-financial.window="fetchData($event)"
+        >
+            {{-- Header with Period Selector --}}
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <h2 class="text-lg font-semibold text-slate-900">{{ __('Financial Overview') }}</h2>
+                    <x-widgets.period-selector selected="current_year" widget-id="financial" />
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 relative">
+                {{-- Loading Overlay --}}
+                <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/50 flex items-center justify-center z-10 rounded-lg">
+                    <svg class="animate-spin h-8 w-8 text-white" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </div>
+
+                {{-- Revenue Card --}}
+                <div class="bg-gradient-to-br from-green-500 to-emerald-600 text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-4 md:p-5"
+                     onclick="window.location.href='{{ route('financial.revenues.index') }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-xs font-medium text-green-100 uppercase tracking-wide mb-1">{{ __('Revenue') }}</p>
+                            <p class="text-xl md:text-2xl font-bold" x-text="revenueFormatted"></p>
+                        </div>
+                        <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-green-100" x-text="periodLabel"></p>
+                </div>
+
+                {{-- Expenses Card --}}
+                <div class="bg-gradient-to-br from-red-500 to-rose-600 text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-4 md:p-5"
+                     onclick="window.location.href='{{ route('financial.expenses.index') }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-xs font-medium text-red-100 uppercase tracking-wide mb-1">{{ __('Expenses') }}</p>
+                            <p class="text-xl md:text-2xl font-bold" x-text="expensesFormatted"></p>
+                        </div>
+                        <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-red-100" x-text="periodLabel"></p>
+                </div>
+
+                {{-- Net Profit Card --}}
+                <div class="bg-gradient-to-br from-slate-700 to-slate-900 text-white rounded-lg shadow-sm hover:shadow-lg transition-shadow cursor-pointer p-4 md:p-5"
+                     onclick="window.location.href='{{ route('financial.dashboard') }}'">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-xs font-medium text-slate-300 uppercase tracking-wide mb-1">{{ __('Net Profit') }}</p>
+                            <p class="text-xl md:text-2xl font-bold" x-text="profitFormatted"></p>
+                        </div>
+                        <div class="flex-shrink-0 w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-300" x-text="periodLabel"></p>
+                </div>
+            </div>
         </div>
 
         {{-- Monthly Trend & Top Clients Row --}}
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
             {{-- Monthly Trend Chart --}}
             <x-dashboard.financial-trend-chart
                 :yearlyRevenueTrend="$yearlyRevenueTrend"
@@ -105,35 +190,93 @@
                 :yearlyProfitTrend="$yearlyProfitTrend"
             />
 
-            {{-- Top Clients --}}
-            <x-widgets.activity.list-card
-            :title="__('Top Clients')"
-            :items="$topClients"
-            :emptyMessage="__('No clients with recorded revenue')"
-            :viewAllHref="route('clients.index')"
-        >
-            @foreach($topClients as $index => $client)
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
-                    <div class="flex items-center gap-3">
-                        <div class="flex-shrink-0 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                            {{ $index + 1 }}
-                        </div>
-                        <div>
-                            <p class="font-medium text-slate-900">{{ $client->display_name }}</p>
-                            <p class="text-xs text-slate-500">{{ $client->email ?? __('No email') }}</p>
-                        </div>
+            {{-- Top Clients with Period Selector --}}
+            <div
+                x-data="{
+                    clients: {{ Js::from($topClients->map(fn($c) => ['id' => $c->id, 'name' => $c->display_name, 'email' => $c->email, 'total_revenue' => $c->total_revenue, 'total_revenue_formatted' => number_format($c->total_revenue, 2) . ' RON'])) }},
+                    loading: false,
+                    period: 'current_year',
+
+                    async fetchData(event) {
+                        this.loading = true;
+                        this.period = event.detail.period;
+
+                        try {
+                            const params = new URLSearchParams({ period: event.detail.period });
+                            if (event.detail.from) params.append('from', event.detail.from);
+                            if (event.detail.to) params.append('to', event.detail.to);
+
+                            const response = await fetch('{{ route('widgets.top-clients') }}?' + params.toString(), {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                this.clients = data.clients;
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch top clients:', error);
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }"
+                @period-changed-top-clients.window="fetchData($event)"
+                class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden"
+            >
+                {{-- Header with Period Selector --}}
+                <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
+                    <div class="flex items-center gap-4">
+                        <h3 class="text-base font-semibold text-slate-900">{{ __('Top Clients') }}</h3>
+                        <x-widgets.period-selector selected="current_year" widget-id="top-clients" />
                     </div>
-                    <div class="text-right">
-                        <p class="font-semibold text-slate-900">{{ number_format($client->total_revenue, 2) }} RON</p>
-                        <p class="text-xs text-slate-500">{{ __('total revenue') }}</p>
-                    </div>
+                    <a href="{{ route('clients.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
                 </div>
-            @endforeach
-        </x-widgets.activity.list-card>
+
+                {{-- Content --}}
+                <div class="p-4 md:p-6 relative">
+                    {{-- Loading Overlay --}}
+                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                        <svg class="animate-spin h-6 w-6 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+
+                    {{-- Client List --}}
+                    <template x-if="clients.length > 0">
+                        <div class="space-y-3">
+                            <template x-for="(client, index) in clients" :key="client.id">
+                                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex-shrink-0 w-8 h-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-sm font-bold" x-text="index + 1"></div>
+                                        <div>
+                                            <p class="font-medium text-slate-900" x-text="client.name"></p>
+                                            <p class="text-xs text-slate-500" x-text="client.email || '{{ __('No email') }}'"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="font-semibold text-slate-900" x-text="client.total_revenue_formatted"></p>
+                                        <p class="text-xs text-slate-500">{{ __('total revenue') }}</p>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    {{-- Empty State --}}
+                    <template x-if="clients.length === 0 && !loading">
+                        <p class="text-sm text-slate-500 text-center py-8">{{ __('No clients with recorded revenue') }}</p>
+                    </template>
+                </div>
+            </div>
         </div>
 
         {{-- Business Analytics Row - 4 widgets in single line (1/4 each) --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {{-- Profit Margin --}}
             <x-dashboard.profit-margin-widget
                 :currentMonthProfitMargin="$currentMonthProfitMargin"
@@ -167,7 +310,7 @@
         </div>
 
         {{-- Secondary Row - 3 widgets (1/3 each) --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {{-- Next Renewals --}}
             <x-widgets.activity.list-card
                 :title="__('Next Renewals')"
@@ -211,13 +354,100 @@
                 :domainRenewals90Days="$domainRenewals90Days"
             />
 
-            {{-- Category Expenses --}}
-            <x-dashboard.expense-category-chart :categoryData="$categoryBreakdown" :year="now()->year" />
+            {{-- Category Expenses with Period Selector --}}
+            <div
+                x-data="{
+                    categories: {{ Js::from($categoryBreakdown->map(fn($cat, $index) => [
+                        'id' => $cat->category_option_id,
+                        'name' => $cat->category?->label ?? __('Uncategorized'),
+                        'total' => $cat->total,
+                        'total_formatted' => number_format($cat->total, 0) . ' RON',
+                        'percentage' => $categoryBreakdown->sum('total') > 0 ? round(($cat->total / $categoryBreakdown->sum('total')) * 100, 1) : 0,
+                        'color' => ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'][$index % 8]
+                    ])) }},
+                    loading: false,
+                    periodLabel: '{{ __('Anul curent') }}',
+
+                    async fetchData(event) {
+                        this.loading = true;
+                        try {
+                            const params = new URLSearchParams({ period: event.detail.period });
+                            if (event.detail.from) params.append('from', event.detail.from);
+                            if (event.detail.to) params.append('to', event.detail.to);
+
+                            const response = await fetch('{{ route('widgets.expense-categories') }}?' + params.toString(), {
+                                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+
+                            if (response.ok) {
+                                const data = await response.json();
+                                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+                                this.categories = data.categories.map((cat, index) => ({
+                                    ...cat,
+                                    color: colors[index % colors.length]
+                                }));
+                                this.periodLabel = data.period_label;
+                            }
+                        } catch (error) {
+                            console.error('Failed to fetch expense categories:', error);
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }"
+                @period-changed-expenses.window="fetchData($event)"
+                class="bg-white border border-slate-200 rounded-xl shadow-sm"
+            >
+                <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-base font-semibold text-slate-900">{{ __('Expenses by Category') }}</h3>
+                        <x-widgets.period-selector selected="current_year" widget-id="expenses" />
+                    </div>
+                    <a href="{{ route('financial.expenses.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
+                </div>
+                <div class="p-4 md:p-6 relative">
+                    {{-- Loading Overlay --}}
+                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                        <svg class="animate-spin h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                    </div>
+
+                    <template x-if="categories.length > 0">
+                        <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                            <template x-for="(cat, index) in categories" :key="cat.id || index">
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between text-xs">
+                                        <span class="text-slate-700 font-medium truncate flex-1 min-w-0 pr-2" x-text="cat.name"></span>
+                                        <span class="text-slate-900 font-semibold flex-shrink-0">
+                                            <span x-text="cat.total_formatted"></span>
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                                            <div class="h-full rounded-full transition-all duration-500"
+                                                 :style="'width: ' + cat.percentage + '%; background-color: ' + cat.color"></div>
+                                        </div>
+                                        <span class="text-xs text-slate-500 font-medium w-10 text-right flex-shrink-0" x-text="Math.round(cat.percentage) + '%'"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+
+                    <template x-if="categories.length === 0 && !loading">
+                        <div class="py-8 text-center">
+                            <p class="text-xs text-slate-400">{{ __('No data available') }}</p>
+                        </div>
+                    </template>
+                </div>
+            </div>
         </div>
 
         {{-- Alerts --}}
         @if($overdueSubscriptions->count() > 0 || $expiringDomains->count() > 0)
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {{-- Overdue Subscriptions --}}
             @if($overdueSubscriptions->count() > 0)
                 <x-widgets.alerts.alert-card
@@ -275,7 +505,7 @@
                  @click="close()"></div>
 
             {{-- Panel --}}
-            <div class="fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div class="fixed inset-y-0 right-0 flex max-w-full pl-0 md:pl-10">
                 <div x-show="isOpen"
                      x-transition:enter="transform transition ease-in-out duration-300"
                      x-transition:enter-start="translate-x-full"
@@ -283,7 +513,7 @@
                      x-transition:leave="transform transition ease-in-out duration-300"
                      x-transition:leave-start="translate-x-0"
                      x-transition:leave-end="translate-x-full"
-                     class="w-screen max-w-lg"
+                     class="w-screen max-w-full md:max-w-lg"
                      @keydown.escape.window="close()">
 
                     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">
@@ -359,7 +589,7 @@
                  @click="close()"></div>
 
             {{-- Panel --}}
-            <div class="fixed inset-y-0 right-0 flex max-w-full pl-10">
+            <div class="fixed inset-y-0 right-0 flex max-w-full pl-0 md:pl-10">
                 <div x-show="isOpen"
                      x-transition:enter="transform transition ease-in-out duration-300"
                      x-transition:enter-start="translate-x-full"
@@ -367,7 +597,7 @@
                      x-transition:leave="transform transition ease-in-out duration-300"
                      x-transition:leave-start="translate-x-0"
                      x-transition:leave-end="translate-x-full"
-                     class="w-screen max-w-lg"
+                     class="w-screen max-w-full md:max-w-lg"
                      @keydown.escape.window="close()">
 
                     <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">

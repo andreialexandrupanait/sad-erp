@@ -18,7 +18,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-6">
         <!-- Success Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">

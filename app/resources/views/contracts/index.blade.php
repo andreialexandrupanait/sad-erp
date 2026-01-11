@@ -10,13 +10,13 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6"
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6"
          x-data="contractsPage({ stats: @js($stats) })"
          x-init="init()"
          @keydown.escape.window="clearSelection()">
 
         {{-- Statistics Cards --}}
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
             <x-widgets.metrics.stat-card
                 :title="__('Active')"
                 :value="$stats['active'] ?? 0"
@@ -249,7 +249,7 @@
             <x-ui.card>
                 {{-- Summary Box --}}
                 <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
-                    <div class="flex items-center justify-between flex-wrap gap-4">
+                    <div class="flex items-center justify-between flex-wrap gap-3 md:gap-4">
                         <p class="text-sm text-indigo-900">
                             <span class="font-semibold" x-text="pagination.total || contracts.length"></span>
                             <span x-text="(pagination.total || contracts.length) === 1 ? '{{ __("contract") }}' : '{{ __("contracte") }}'"></span> &middot;

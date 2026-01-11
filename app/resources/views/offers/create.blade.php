@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('New Offer') }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <form action="{{ route('offers.store') }}" method="POST" x-data="offerForm(@js($clients), @js($services), @js($selectedClient))">
             @csrf
 

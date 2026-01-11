@@ -3,7 +3,7 @@
 @section('title', __('Email Notifications'))
 
 @section('content')
-<div class="p-6">
+<div class="p-4 md:p-6">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-slate-900">{{ __('Email Notifications') }}</h1>
         <p class="text-slate-600 mt-1">{{ __('Configure email notifications for important system events.') }}</p>
@@ -14,7 +14,7 @@
         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
             <h2 class="text-lg font-semibold text-slate-900">{{ __('Mail Configuration') }}</h2>
         </div>
-        <div class="p-6">
+        <div class="p-4 md:p-6">
             <div class="grid grid-cols-2 gap-4 text-sm">
                 <div>
                     <span class="text-slate-500">{{ __('Mail Driver') }}:</span>
@@ -174,7 +174,7 @@
         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100">
             <h3 class="text-lg font-semibold text-slate-900">{{ __('Send Test Email') }}</h3>
         </div>
-        <div class="p-6">
+        <div class="p-4 md:p-6">
             <label for="test_email" class="block text-sm font-medium text-slate-700 mb-1">
                 {{ __('Test Email Address') }}
             </label>

@@ -68,7 +68,7 @@
         <!-- Sidebar Navigation -->
         <aside class="w-64 bg-white border-r border-slate-200 flex-shrink-0">
             <div class="sticky top-0 overflow-y-auto max-h-screen">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <h1 class="text-xl font-bold text-slate-900">Settings</h1>
                     <p class="text-sm text-slate-500 mt-1">Manage your application</p>
                 </div>
@@ -188,7 +188,7 @@
         <main class="flex-1 overflow-y-auto">
             <!-- Application Settings Section -->
             <div x-show="activeSection === 'application'" x-cloak>
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="mb-4">
                         <h2 class="text-xl font-bold text-slate-900">Setari aplicatie</h2>
                         <p class="text-sm text-slate-500 mt-1">Configureaza preferintele aplicatiei</p>
@@ -276,7 +276,7 @@
             <!-- Nomenclature Sections -->
             @foreach($nomenclature as $key => $section)
                 <div x-show="activeSection === '{{ $key }}'" x-cloak>
-                    <div class="p-6">
+                    <div class="p-4 md:p-6">
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <h2 class="text-xl font-bold text-slate-900">{{ $section['title'] }}</h2>
@@ -293,7 +293,7 @@
                         </div>
 
                         <div class="bg-white rounded-lg shadow-sm border border-slate-200">
-                            <div class="p-6">
+                            <div class="p-4 md:p-6">
                                 <!-- Add Form (For all nomenclature types) -->
                                 <div x-show="addingToGroup === '{{ $key }}'" x-cloak class="mb-6 p-4 bg-slate-50 rounded-lg border border-slate-200">
                                     <form id="add-form-{{ $key }}" @submit.prevent="saveOption('{{ $key }}')">

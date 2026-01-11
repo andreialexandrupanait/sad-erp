@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-3 mb-2">
@@ -140,7 +140,7 @@
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Notification Types') }}</h3>
                             <p class="text-sm text-slate-500 mt-1">{{ __('Choose which notifications to send to Slack') }}</p>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <!-- Domain Expiry -->
                                 <label class="flex items-start cursor-pointer p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">

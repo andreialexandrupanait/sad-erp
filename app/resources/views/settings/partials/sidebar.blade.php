@@ -1,6 +1,6 @@
 <aside class="w-64 bg-white border-r border-slate-200 flex-shrink-0">
     <div class="sticky top-0 overflow-y-auto max-h-screen">
-        <div class="p-6">
+        <div class="p-4 md:p-6">
             <h1 class="text-xl font-bold text-slate-900">{{ __('Settings') }}</h1>
             <p class="text-sm text-slate-500 mt-1">{{ __('Manage your application') }}</p>
         </div>

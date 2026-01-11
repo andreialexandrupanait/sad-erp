@@ -255,7 +255,7 @@
                 }
             }
         }">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-slate-900">{{ $title }}</h2>

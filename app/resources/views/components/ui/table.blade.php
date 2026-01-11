@@ -6,7 +6,7 @@
             <thead class="bg-slate-100">
                 <tr class="border-b border-slate-200">
                     @foreach($headers as $header)
-                        <th class="px-6 py-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
+                        <th class="px-3 md:px-6 py-3 md:py-4 text-left align-middle font-medium text-slate-600 [&:has([role=checkbox])]:pr-0">
                             {{ $header }}
                         </th>
                     @endforeach

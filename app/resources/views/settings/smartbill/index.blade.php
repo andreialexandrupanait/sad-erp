@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
     <div class="flex-1 overflow-y-auto">
-        <div class="p-6">
+        <div class="p-4 md:p-6">
             <!-- Header -->
             <div class="mb-8">
                 <h1 class="text-3xl font-bold text-slate-900">{{ __('Smartbill Integration') }}</h1>

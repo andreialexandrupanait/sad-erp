@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Edit Offer') }} - {{ $offer->offer_number }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <form action="{{ route('offers.update', $offer) }}" method="POST" x-data="offerForm(@js($clients), @js($services), @js($offer->client), @js($offer), @js($offer->items))">
             @csrf
             @method('PUT')

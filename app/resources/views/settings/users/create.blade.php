@@ -5,9 +5,9 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
             <div class="bg-white rounded-lg border border-slate-200">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="mb-6">
                         <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Add New User") }}

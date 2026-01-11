@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Import / Export') }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <!-- Success Message -->
         @if (session('success'))
             <x-ui.alert variant="success" class="mb-6">

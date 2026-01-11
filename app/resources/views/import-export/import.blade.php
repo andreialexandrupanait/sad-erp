@@ -10,7 +10,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <div class="max-w-3xl mx-auto">
             <!-- Instructions Card -->
             <x-ui.card class="mb-6">

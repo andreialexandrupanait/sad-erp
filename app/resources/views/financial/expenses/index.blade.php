@@ -17,7 +17,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium text-slate-700">{{ __('An') }}:</label>
+                    
                     <x-ui.select name="year" onchange="this.form.submit()">
                         @foreach($availableYears as $availableYear)
                             <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>{{ $availableYear }}</option>
@@ -26,7 +26,7 @@
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium text-slate-700">{{ __('Valută') }}:</label>
+                    
                     <x-ui.select name="currency" onchange="this.form.submit()">
                         <option value="">{{ __('Toate') }}</option>
                         @foreach($currencies as $curr)
@@ -36,7 +36,7 @@
                 </div>
 
                 <div class="flex items-center gap-2" x-data @category-selected.window="if ($event.target.closest('[x-data]') === $el) { $el.closest('form').submit(); }">
-                    <label class="text-sm font-medium text-slate-700">{{ __('Categorie') }}:</label>
+                    
                     <x-category-combobox
                         :categories="$categories"
                         :selected="$categoryId ?? null"
@@ -58,7 +58,7 @@
         </div>
     </x-slot>
 
-    <div class="p-6" x-data="expenseBulkSelection()">
+    <div class="p-4 md:p-6" x-data="expenseBulkSelection()">
 
         @if(session('success'))
             <div class="mb-4 p-4 bg-green-50 border border-green-200 rounded-lg text-green-700">
@@ -67,7 +67,7 @@
         @endif
 
         <!-- Widgets Container -->
-        <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             <!-- Widget 1: Filtered Total -->
             <div class="bg-white rounded-lg shadow p-4 border-l-4 border-red-500">
                 <div class="flex items-center justify-between">

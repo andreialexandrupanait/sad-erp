@@ -11,7 +11,7 @@
         </a>
     </x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <x-ui.card>
             <x-ui.card-header>
                 <div class="flex items-center justify-between">

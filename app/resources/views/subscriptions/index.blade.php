@@ -10,7 +10,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6"
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6"
          x-data="subscriptionsPage()"
          @keydown.escape.window="clearSelection()">
         <!-- Success/Info Messages -->
@@ -33,18 +33,18 @@
         @endif
 
         <!-- Statistics Cards -->
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="grid grid-cols-2 gap-4 md:gap-6 lg:grid-cols-4">
             <!-- Monthly Cost - Featured -->
             <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300">{{ __('Monthly Cost') }}</p>
-                            <p class="mt-2 text-3xl font-bold">{{ number_format($stats['monthly_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-400">RON {{ __('per month') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-300">{{ __('Monthly Cost') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold">{{ number_format($stats['monthly_cost'], 2) }}</p>
+                            <p class="mt-1 text-xs text-slate-400 hidden md:block">RON {{ __('per month') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-white/10">
+                            <svg class="h-4 w-4 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
                         </div>
@@ -54,15 +54,15 @@
 
             <!-- Annual Cost -->
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('Annual Cost') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ number_format($stats['annual_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-slate-500">RON {{ __('per year') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('Annual Cost') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ number_format($stats['annual_cost'], 2) }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">RON {{ __('per year') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-50">
-                            <svg class="h-6 w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-purple-50">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -72,15 +72,15 @@
 
             <!-- Active Subscriptions -->
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('Active') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['active'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ __('subscriptions') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('Active') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ $stats['active'] }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">{{ __('subscriptions') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-50">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-green-50">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -90,15 +90,15 @@
 
             <!-- Upcoming Renewals -->
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('Upcoming') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['upcoming_renewals'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ __('next 30 days') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('Upcoming') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ $stats['upcoming_renewals'] }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">{{ __('next 30 days') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-50">
-                            <svg class="h-6 w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-orange-50">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -166,8 +166,8 @@
                         </div>
 
                         <!-- Buttons -->
-                        <div class="flex gap-2">
-                            <x-ui.button type="submit" variant="default">
+                        <div class="w-full sm:w-auto flex gap-2">
+                            <x-ui.button type="submit" variant="default" class="w-full sm:w-auto">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                                 </svg>
@@ -287,7 +287,8 @@
                     </div>
                 </div>
             @else
-                <div class="overflow-x-auto">
+                {{-- Desktop Table --}}
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
@@ -396,6 +397,63 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Cards --}}
+                <div class="md:hidden divide-y divide-slate-100">
+                    @foreach($subscriptions as $subscription)
+                        <div class="p-4 {{ !$subscription->auto_renew ? 'bg-slate-50 opacity-75' : '' }}"
+                             data-selectable
+                             data-subscription-id="{{ $subscription->id }}"
+                             x-bind:class="{ 'bg-blue-50': selectedIds.includes({{ $subscription->id }}) }">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div class="flex items-center gap-3">
+                                    <input type="checkbox"
+                                           :checked="selectedIds.includes({{ $subscription->id }})"
+                                           @change="toggleItem({{ $subscription->id }})"
+                                           class="h-4 w-4 rounded border-slate-300 text-blue-600 cursor-pointer">
+                                    <div>
+                                        <a href="{{ route('subscriptions.show', $subscription) }}" class="font-medium text-slate-900">
+                                            {{ $subscription->vendor_name }}
+                                        </a>
+                                        <div class="text-sm font-semibold text-slate-700">
+                                            {{ number_format($subscription->price, 2) }} {{ $subscription->currency ?? 'RON' }}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <a href="{{ route('subscriptions.edit', $subscription) }}" class="p-1.5 text-blue-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </a>
+                                    <form method="POST" action="{{ route('subscriptions.destroy', $subscription) }}" class="inline" onsubmit="return confirm('{{ __('Delete?') }}')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="p-1.5 text-red-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-sm">
+                                @if($subscription->status === 'paused')
+                                    <x-ui.badge variant="default">{{ __('Paused') }}</x-ui.badge>
+                                @elseif($subscription->status === 'cancelled')
+                                    <x-ui.badge variant="destructive">{{ __('Cancelled') }}</x-ui.badge>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ !$subscription->auto_renew ? 'bg-orange-50 text-orange-600' : ($subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'))) }}">
+                                        {{ $subscription->renewal_text }}
+                                    </span>
+                                    <span class="text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</span>
+                                @endif
+                                <span class="text-slate-400">|</span>
+                                <span class="text-slate-500">{{ $subscription->billing_cycle_label }}</span>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
 
                 @if($subscriptions->hasPages())

@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-3 mb-2">
@@ -190,7 +190,7 @@
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 rounded-t-xl">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('What to Store in R2') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <label class="flex items-start cursor-pointer p-4 rounded-lg border border-slate-200 hover:bg-slate-50 transition-colors">
                                     <input type="checkbox"
@@ -253,7 +253,7 @@
                         <h3 class="text-lg font-semibold text-slate-900">{{ __('Migrate Existing Files') }}</h3>
                         <p class="text-sm text-slate-500 mt-1">{{ __('Move your existing local files to R2 storage') }}</p>
                     </div>
-                    <div class="p-6">
+                    <div class="p-4 md:p-6">
                         <p class="text-sm text-slate-600 mb-4">
                             {{ __('After configuring R2, you can migrate existing files from local storage to R2 using the command below.') }}
                         </p>

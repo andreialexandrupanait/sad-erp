@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">{{ __('Yearly Objectives') }}</h2>
                     <p class="text-sm text-slate-500 mt-1">{{ __('Set budget limits and targets to track your financial progress') }}</p>
@@ -48,7 +48,7 @@
                                 <p class="text-sm text-slate-500">{{ __('Set maximum expense limits for the year') }}</p>
                             </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label for="expense_budget_ron" class="block text-sm font-medium text-slate-700 mb-2">
@@ -105,7 +105,7 @@
                                 <p class="text-sm text-slate-500">{{ __('Set revenue goals for the year') }}</p>
                             </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label for="revenue_target_ron" class="block text-sm font-medium text-slate-700 mb-2">
@@ -162,7 +162,7 @@
                                 <p class="text-sm text-slate-500">{{ __('Set minimum acceptable profit margin') }}</p>
                             </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label for="profit_margin_min" class="block text-sm font-medium text-slate-700 mb-2">

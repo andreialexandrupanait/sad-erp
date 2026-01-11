@@ -10,7 +10,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         @if ($errors->any())
             <x-ui.alert variant="destructive" class="mb-4">
                 <ul class="list-disc list-inside">

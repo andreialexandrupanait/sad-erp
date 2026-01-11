@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
     <div class="flex-1 overflow-y-auto">
-        <div class="p-6">
+        <div class="p-4 md:p-6">
             <!-- Header -->
             <div class="mb-8">
                 <a href="{{ route('settings.smartbill.index') }}" class="text-blue-600 hover:text-blue-700 mb-4 inline-flex items-center">

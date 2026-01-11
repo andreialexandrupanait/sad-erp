@@ -1,11 +1,11 @@
 @props(['revenueGrowth', 'expenseGrowth', 'clientGrowth', 'newClientsThisMonth', 'newClientsLastMonth'])
 
 <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-100">
+    <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
         <h3 class="text-base font-semibold text-slate-900">{{ __('app.Month-over-Month Growth') }}</h3>
         <a href="{{ route('financial.dashboard') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
     </div>
-    <div class="p-6">
+    <div class="p-4 md:p-6">
 
     <div class="space-y-3">
         {{-- Revenue Growth --}}

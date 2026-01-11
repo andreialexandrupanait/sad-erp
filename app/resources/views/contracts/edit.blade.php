@@ -57,7 +57,7 @@
 
         {{-- Editor --}}
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <textarea id="contract-content" class="w-full">{{ $contract->content }}</textarea>
             </div>
         </div>

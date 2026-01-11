@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">
@@ -39,7 +39,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">{{ __('Logo companie') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                         <div class="flex items-start gap-6">
                             <div class="flex-shrink-0">
                                 <div id="logoPreview" class="w-32 h-32 bg-slate-100 rounded-lg flex items-center justify-center border-2 border-dashed border-slate-300 overflow-hidden">
@@ -84,7 +84,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">{{ __('Date obligatorii') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Denumire firmă') }} <span class="text-red-500">*</span></label>
@@ -192,7 +192,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">{{ __('Date opționale') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Telefon') }}</label>
@@ -242,7 +242,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">{{ __('Setări documente') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-medium text-slate-700 mb-1">{{ __('Prefix oferte') }}</label>
@@ -272,7 +272,7 @@
                             </div>
                             <h3 class="text-lg font-semibold text-gray-900">{{ __('Conturi bancare') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                         <!-- Add new account form -->
                         <div class="flex flex-col md:flex-row gap-3 items-end mb-6">
                             <div class="w-full md:flex-[2]">

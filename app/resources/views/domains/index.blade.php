@@ -10,7 +10,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6" x-data="{
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6" x-data="{
         ...bulkSelection({
             idAttribute: 'data-domain-id',
             rowSelector: '[data-selectable]'
@@ -27,18 +27,18 @@
         @endif
 
         <!-- Statistics Cards -->
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
+        <div class="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-5">
             <!-- Total Domains - Featured -->
-            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
-                <div class="p-6">
+            <div class="col-span-2 md:col-span-1 rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300">{{ __('Total Domains') }}</p>
-                            <p class="mt-2 text-3xl font-bold">{{ $stats['total'] }}</p>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('domains managed') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-300">{{ __('Total Domains') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold">{{ $stats['total'] }}</p>
+                            <p class="mt-1 text-xs text-slate-400 hidden md:block">{{ __('domains managed') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-white/10">
+                            <svg class="h-4 w-4 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
                             </svg>
                         </div>
@@ -48,15 +48,15 @@
 
             <!-- Expired -->
             <div class="rounded-lg border border-red-200 bg-red-50 shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-red-600">{{ __('Expired') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-red-700">{{ $stats['expired'] }}</p>
-                            <p class="mt-1 text-xs text-red-600">{{ __('domains') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-red-600">{{ __('Expired') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-red-700">{{ $stats['expired'] }}</p>
+                            <p class="mt-1 text-xs text-red-600 hidden md:block">{{ __('domains') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-red-100">
-                            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-red-100">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -66,15 +66,15 @@
 
             <!-- Expiring Soon -->
             <div class="rounded-lg border border-yellow-200 bg-yellow-50 shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-yellow-600">{{ __('Expiring Soon') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-yellow-700">{{ $stats['expiring_soon'] }}</p>
-                            <p class="mt-1 text-xs text-yellow-600">{{ __('next 30 days') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-yellow-600">{{ __('Expiring Soon') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-yellow-700">{{ $stats['expiring_soon'] }}</p>
+                            <p class="mt-1 text-xs text-yellow-600 hidden md:block">{{ __('next 30 days') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-yellow-100">
-                            <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-yellow-100">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -84,15 +84,15 @@
 
             <!-- Valid -->
             <div class="rounded-lg border border-green-200 bg-green-50 shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-green-600">{{ __('Valid') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-green-700">{{ $stats['valid'] }}</p>
-                            <p class="mt-1 text-xs text-green-600">{{ __('domains') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-green-600">{{ __('Valid') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-green-700">{{ $stats['valid'] }}</p>
+                            <p class="mt-1 text-xs text-green-600 hidden md:block">{{ __('domains') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-green-100">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -102,15 +102,15 @@
 
             <!-- Annual Cost -->
             <div class="rounded-lg border border-blue-200 bg-blue-50 shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-blue-600">{{ __('Annual Cost') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-blue-700">${{ number_format($stats['total_annual_cost'], 2) }}</p>
-                            <p class="mt-1 text-xs text-blue-600">{{ __('per year') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-blue-600">{{ __('Annual Cost') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-blue-700">${{ number_format($stats['total_annual_cost'], 2) }}</p>
+                            <p class="mt-1 text-xs text-blue-600 hidden md:block">{{ __('per year') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-blue-100">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                             </svg>
                         </div>
@@ -126,7 +126,6 @@
                     <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
                         <!-- Search -->
                         <div>
-                            <x-ui.label for="search">{{ __('Search') }}</x-ui.label>
                             <x-ui.input
                                 type="text"
                                 name="search"
@@ -138,7 +137,6 @@
 
                         <!-- Client Filter -->
                         <div>
-                            <x-ui.label for="client_id">{{ __('Client') }}</x-ui.label>
                             <x-ui.searchable-select
                                 name="client_id"
                                 :options="$clients"
@@ -151,7 +149,6 @@
 
                         <!-- Registrar Filter -->
                         <div>
-                            <x-ui.label for="registrar">{{ __('Registrar') }}</x-ui.label>
                             <x-ui.select name="registrar" id="registrar">
                                 <option value="">{{ __('All Registrars') }}</option>
                                 @foreach ($registrars as $key => $value)
@@ -164,7 +161,6 @@
 
                         <!-- Expiry Status Filter -->
                         <div>
-                            <x-ui.label for="expiry_status">{{ __('Expiry Status') }}</x-ui.label>
                             <x-ui.select name="expiry_status" id="expiry_status">
                                 <option value="">{{ __('All Expiry Statuses') }}</option>
                                 <option value="expired" {{ request('expiry_status') == 'expired' ? 'selected' : '' }}>{{ __('Expired') }}</option>
@@ -238,7 +234,8 @@
         <!-- Domains Table -->
         <x-ui.card>
             @if ($domains->count() > 0)
-                <div class="overflow-x-auto">
+                {{-- Desktop Table --}}
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
@@ -310,6 +307,59 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Cards --}}
+                <div class="md:hidden divide-y divide-slate-100">
+                    @foreach ($domains as $domain)
+                        <div class="p-4" data-selectable data-domain-id="{{ $domain->id }}" x-bind:class="{ 'bg-blue-50': selectedIds.includes({{ $domain->id }}) }">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div class="flex items-center gap-3">
+                                    <x-bulk-checkbox
+                                        @change="toggleItem({{ $domain->id }})"
+                                        x-bind:checked="selectedIds.includes({{ $domain->id }})"
+                                    />
+                                    <div>
+                                        <a href="{{ route('domains.show', $domain) }}" class="font-medium text-slate-900">
+                                            {{ $domain->domain_name }}
+                                        </a>
+                                        @if ($domain->auto_renew)
+                                            <x-ui.badge variant="info" class="ml-1">{{ __('Auto') }}</x-ui.badge>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <a href="{{ route('domains.edit', $domain) }}" class="p-1.5 text-blue-600">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        </svg>
+                                    </a>
+                                    <form method="POST" action="{{ route('domains.destroy', $domain) }}" class="inline" onsubmit="return confirm('{{ __('Delete?') }}')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="p-1.5 text-red-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-2 text-sm">
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $domain->expiry_status === 'Expired' ? 'bg-red-100 text-red-700' : ($domain->expiry_status === 'Expiring' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600') }}">
+                                    {{ $domain->expiry_text }}
+                                </span>
+                                <span class="text-slate-500">{{ $domain->expiry_date->format('d.m.Y') }}</span>
+                                @if ($domain->annual_cost)
+                                    <span class="text-slate-400">|</span>
+                                    <span class="text-slate-600 font-medium">${{ number_format($domain->annual_cost, 2) }}</span>
+                                @endif
+                            </div>
+                            @if ($domain->client)
+                                <div class="mt-1 text-sm text-slate-500">{{ $domain->client->display_name }}</div>
+                            @endif
+                        </div>
+                    @endforeach
                 </div>
 
                 <!-- Pagination -->

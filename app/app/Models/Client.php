@@ -282,11 +282,17 @@ class Client extends Model
 
     /**
      * Get total revenue for this client.
-     * Uses the cached total_incomes column which is synced by FinancialRevenueObserver.
-     * This avoids N+1 queries when accessing total_revenue in lists.
+     * If total_revenue was explicitly selected in query, use that value.
+     * Otherwise falls back to cached total_incomes column.
      */
     public function getTotalRevenueAttribute()
     {
+        // Check if total_revenue was explicitly set via query (e.g., from a SUM)
+        if (array_key_exists('total_revenue', $this->attributes)) {
+            return $this->attributes['total_revenue'] ?? 0;
+        }
+
+        // Fall back to cached all-time total
         return $this->total_incomes ?? 0;
     }
 

@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">
@@ -43,7 +43,7 @@
                     </div>
 
                     <!-- Add new service form -->
-                    <div class="p-6">
+                    <div class="p-4 md:p-6">
                         <form id="addServiceForm" action="{{ route('settings.services.store') }}" method="POST">
                             @csrf
                             <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">

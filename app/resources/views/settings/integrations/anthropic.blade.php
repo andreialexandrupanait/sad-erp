@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-3 mb-2">
@@ -162,7 +162,7 @@
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 rounded-t-xl">
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('API Limits & Pricing') }}</h3>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <!-- Current Plan Info -->
                             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                                 <div class="bg-slate-50 rounded-lg p-4">

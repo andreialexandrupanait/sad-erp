@@ -16,7 +16,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-6">
         @if (session('success'))
             <x-ui.alert variant="success">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@
                     @endif
 
                     <div class="md:col-span-2 pt-4 border-t border-slate-200">
-                        <div class="flex justify-between text-xs text-slate-500">
+                        <div class="flex flex-col sm:flex-row sm:justify-between text-xs text-slate-500 gap-1">
                             <span>{{ __('Created') }}: {{ $subscription->created_at->translatedFormat('d M Y H:i') }}</span>
                             <span>{{ __('Last Updated') }}: {{ $subscription->updated_at->translatedFormat('d M Y H:i') }}</span>
                         </div>
@@ -147,7 +147,9 @@
             <x-ui.card>
                 <x-ui.card-content>
                     <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Renewal Change History') }}</h3>
-                    <div class="overflow-x-auto">
+
+                    {{-- Desktop Table --}}
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
                             <thead class="bg-slate-100">
                                 <tr>
@@ -176,6 +178,34 @@
                                 @endforeach
                             </tbody>
                         </table>
+                    </div>
+
+                    {{-- Mobile Cards --}}
+                    <div class="md:hidden divide-y divide-slate-100">
+                        @foreach($subscription->logs as $log)
+                            <div class="py-3 {{ !$loop->first ? 'pt-3' : '' }}">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-sm font-medium text-slate-900">{{ $log->changed_at->translatedFormat('d M Y H:i') }}</span>
+                                    <span class="text-xs text-slate-500">
+                                        @if($log->changedBy)
+                                            {{ $log->changedBy->name }}
+                                        @else
+                                            {{ __('System') }}
+                                        @endif
+                                    </span>
+                                </div>
+                                <div class="flex items-center gap-2 text-sm">
+                                    <span class="text-slate-600">{{ $log->old_renewal_date->translatedFormat('d M Y') }}</span>
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                                    </svg>
+                                    <span class="font-medium text-slate-900">{{ $log->new_renewal_date->translatedFormat('d M Y') }}</span>
+                                </div>
+                                @if($log->change_reason)
+                                    <p class="text-xs text-slate-500 mt-1">{{ $log->change_reason }}</p>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
                 </x-ui.card-content>
             </x-ui.card>

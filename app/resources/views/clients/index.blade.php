@@ -21,7 +21,7 @@
             'color_text' => $s->color_text
         ])->values()->all();
     @endphp
-    <div class="p-6 space-y-6"
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6"
          x-data="clientsPage({
              statuses: @js($statusData),
              filters: @js($initialFilters),
@@ -637,7 +637,7 @@
                         </div>
 
                         {{-- Pagination --}}
-                        <div x-show="pagination.last_page > 1" class="bg-slate-50 px-4 py-3 border-t border-slate-200 rounded-b-lg flex items-center justify-between flex-wrap gap-4">
+                        <div x-show="pagination.last_page > 1" class="bg-slate-50 px-4 py-3 border-t border-slate-200 rounded-b-lg flex items-center justify-between flex-wrap gap-3 md:gap-4">
                             <div class="flex items-center gap-2 text-sm text-slate-600">
                                 <span>{{ __('Per page:') }}</span>
                                 <select @change="setPerPage($event.target.value)"
@@ -687,7 +687,7 @@
 
         {{-- KANBAN VIEW --}}
         <template x-if="ui.viewMode === 'kanban'">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                 <template x-for="status in statuses" :key="status.id">
                     <x-ui.card>
                         <x-ui.card-header>
@@ -744,7 +744,7 @@
                     <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No clients found') }}</h3>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     <template x-for="client in clients" :key="client.id">
                         <x-ui.card class="hover:shadow-lg transition-shadow">
                             <x-ui.card-content>

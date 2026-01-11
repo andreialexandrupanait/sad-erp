@@ -46,7 +46,8 @@
                        @keydown.enter.prevent="selectItem()"
                        placeholder="{{ __('Search pages, actions...') }}"
                        class="w-full pl-12 pr-4 py-4 text-lg text-slate-900 placeholder-slate-400 focus:outline-none"
-                       id="command-palette-title">
+                       id="command-palette-title"
+                       autocomplete="off">
                 <div class="absolute right-4 top-1/2 -translate-y-1/2">
                     <kbd class="px-2 py-1 text-xs font-medium text-slate-500 bg-slate-100 rounded">ESC</kbd>
                 </div>

@@ -140,6 +140,13 @@ Route::middleware(['auth', '2fa'])->group(function () {
         ->middleware('throttle:10,1')  // 10 exports per minute
         ->name('import-export.export');
 
+    // Widget Data Endpoints (AJAX)
+    Route::prefix('widgets')->name('widgets.')->group(function () {
+        Route::get('top-clients', [App\Http\Controllers\Api\WidgetController::class, 'topClients'])->name('top-clients');
+        Route::get('financial-summary', [App\Http\Controllers\Api\WidgetController::class, 'financialSummary'])->name('financial-summary');
+        Route::get('expense-categories', [App\Http\Controllers\Api\WidgetController::class, 'expenseCategories'])->name('expense-categories');
+    });
+
     // Clients Module
     Route::middleware('module:clients')->group(function () {
         Route::resource('clients', ClientController::class);

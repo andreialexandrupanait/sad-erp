@@ -108,7 +108,7 @@
         };
     </script>
 
-    <div class="p-6 space-y-6" x-data="internalAccountsPage({ accounts: {{ Js::from($accountsJson) }} })">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6" x-data="internalAccountsPage({ accounts: {{ Js::from($accountsJson) }} })">
         <!-- Success/Info Messages -->
         @if (session('success'))
             <x-ui.alert variant="success">
@@ -120,18 +120,18 @@
         @endif
 
         <!-- Statistics Cards -->
-        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div class="grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-2 lg:grid-cols-4">
             <!-- Total Accounts - Featured -->
-            <div class="rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
-                <div class="p-6">
+            <div class="col-span-2 md:col-span-1 rounded-lg border border-slate-200 bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-300">{{ __('Total Accounts') }}</p>
-                            <p class="mt-2 text-3xl font-bold">{{ $stats['total_accounts'] }}</p>
-                            <p class="mt-1 text-xs text-slate-400">{{ __('all accounts') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-300">{{ __('Total Accounts') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold">{{ $stats['total_accounts'] }}</p>
+                            <p class="mt-1 text-xs text-slate-400 hidden md:block">{{ __('all accounts') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-white/10">
-                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-white/10">
+                            <svg class="h-4 w-4 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                         </div>
@@ -141,15 +141,15 @@
 
             <!-- My Accounts -->
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('My Accounts') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['my_accounts'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ __('owned by me') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('My Accounts') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ $stats['my_accounts'] }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">{{ __('owned by me') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-blue-50">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
                         </div>
@@ -159,15 +159,15 @@
 
             <!-- Team Shared -->
             <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div class="flex items-center justify-between">
                         <div class="flex-1">
-                            <p class="text-sm font-medium text-slate-600">{{ __('Team Shared') }}</p>
-                            <p class="mt-2 text-2xl font-bold text-slate-900">{{ $stats['team_accounts'] }}</p>
-                            <p class="mt-1 text-xs text-slate-500">{{ __('accessible to team') }}</p>
+                            <p class="text-xs md:text-sm font-medium text-slate-600">{{ __('Team Shared') }}</p>
+                            <p class="mt-1 md:mt-2 text-xl md:text-2xl font-bold text-slate-900">{{ $stats['team_accounts'] }}</p>
+                            <p class="mt-1 text-xs text-slate-500 hidden md:block">{{ __('accessible to team') }}</p>
                         </div>
-                        <div class="ml-4 flex h-12 w-12 items-center justify-center rounded-lg bg-green-50">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="ml-2 md:ml-4 flex h-8 w-8 md:h-12 md:w-12 items-center justify-center rounded-lg bg-green-50">
+                            <svg class="h-4 w-4 md:h-6 md:w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
                             </svg>
                         </div>
@@ -210,8 +210,8 @@
                         </div>
 
                         <!-- Submit Button -->
-                        <div class="flex gap-2">
-                            <x-ui.button type="submit" variant="default">
+                        <div class="w-full sm:w-auto">
+                            <x-ui.button type="submit" variant="default" class="w-full sm:w-auto">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
                                 </svg>
@@ -236,7 +236,8 @@
         <!-- Accounts Table -->
         <x-ui.card>
             @if ($accounts->count() > 0)
-                <div class="overflow-x-auto">
+                {{-- Desktop Table --}}
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full caption-bottom text-sm">
                         <thead class="bg-slate-100">
                             <tr class="border-b border-slate-200">
@@ -367,6 +368,77 @@
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Mobile Cards --}}
+                <div class="md:hidden divide-y divide-slate-100">
+                    @foreach ($accounts as $account)
+                        <div class="p-4" x-bind:class="{ 'bg-blue-50': isSelected({{ $account->id }}) }">
+                            <div class="flex items-start justify-between gap-3 mb-2">
+                                <div class="flex items-center gap-3">
+                                    @if($account->isOwner())
+                                        <input type="checkbox" :checked="isSelected({{ $account->id }})" @change="toggleItem({{ $account->id }})" class="h-4 w-4 rounded border-slate-300 text-blue-600 cursor-pointer">
+                                    @endif
+                                    <div>
+                                        <a href="{{ route('internal-accounts.show', $account) }}" class="font-medium text-slate-900">
+                                            {{ $account->account_name }}
+                                        </a>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            @if ($account->team_accessible)
+                                                <x-ui.badge variant="success">{{ __('Team') }}</x-ui.badge>
+                                            @else
+                                                <x-ui.badge variant="secondary">{{ __('Private') }}</x-ui.badge>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    @if($account->isOwner())
+                                        <a href="{{ route('internal-accounts.edit', $account) }}" class="p-1.5 text-blue-600">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            </svg>
+                                        </a>
+                                        <form method="POST" action="{{ route('internal-accounts.destroy', $account) }}" class="inline" onsubmit="return confirm('{{ __('Delete?') }}')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="p-1.5 text-red-600">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="space-y-1 text-sm">
+                                @if($account->url)
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                                        </svg>
+                                        <a href="{{ $account->url }}" target="_blank" class="text-blue-600 truncate max-w-[200px]">{{ parse_url($account->url, PHP_URL_HOST) }}</a>
+                                    </div>
+                                @endif
+                                @if($account->username)
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                        <span class="text-slate-600">{{ $account->username }}</span>
+                                        <button onclick="copyToClipboard('{{ $account->username }}', 'Username')" class="text-slate-400 hover:text-slate-600">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                @endif
+                                <div class="text-xs text-slate-500 mt-1">
+                                    {{ $account->isOwner() ? __('You') : $account->user->name }}
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
 
                 <!-- Pagination -->

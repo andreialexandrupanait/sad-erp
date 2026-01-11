@@ -30,7 +30,7 @@
              @click="close()"></div>
 
         {{-- Panel --}}
-        <div class="fixed inset-y-0 right-0 flex max-w-full pl-10">
+        <div class="fixed inset-y-0 right-0 flex max-w-full pl-0 md:pl-10">
             <div x-show="isOpen"
                  x-transition:enter="transform transition ease-in-out duration-300"
                  x-transition:enter-start="translate-x-full"
@@ -38,7 +38,7 @@
                  x-transition:leave="transform transition ease-in-out duration-300"
                  x-transition:leave-start="translate-x-0"
                  x-transition:leave-end="translate-x-full"
-                 class="w-screen max-w-lg"
+                 class="w-screen max-w-full md:max-w-lg"
                  @keydown.escape.window="close()">
 
                 <div class="flex h-full flex-col overflow-y-auto bg-white shadow-xl">

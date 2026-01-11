@@ -243,13 +243,11 @@ class FileController extends Controller
 
         $mimeType = $file->mime_type ?? $file->file_type ?? 'application/octet-stream';
 
-        return response()->file(
-            Storage::disk('financial')->path($file->file_path),
-            [
-                'Content-Type' => $mimeType,
-                'Content-Disposition' => 'inline; filename="' . $file->file_name . '"'
-            ]
-        );
+        // Use Storage::response() to work with both local and cloud storage (R2/S3)
+        return Storage::disk('financial')->response($file->file_path, $file->file_name, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . $file->file_name . '"',
+        ]);
     }
 
     /**

@@ -604,6 +604,21 @@
             }
         </style>
 
+        <!-- Sidebar responsive styles -->
+        <style>
+            #sidebar-wrapper {
+                transform: translateX(-100%);
+            }
+            #sidebar-wrapper.translate-x-0 {
+                transform: translateX(0) !important;
+            }
+            @media (min-width: 768px) {
+                #sidebar-wrapper {
+                    transform: translateX(0);
+                }
+            }
+        </style>
+
         <!-- Fix for cards with colored headers - ensure border radius clips properly -->
         <style>
             /* Cards with rounded corners and internal colored backgrounds need overflow:hidden */
@@ -995,10 +1010,17 @@
         @stack('styles')
     </head>
     <body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200" x-data="{
-        sidebarOpen: true,
+        sidebarOpen: window.innerWidth >= 768,
         touchStartX: 0,
         touchCurrentX: 0,
-        isDragging: false
+        isDragging: false,
+        init() {
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 768) {
+                    this.sidebarOpen = true;
+                }
+            });
+        }
     }">
         <!-- Skip to main content link for accessibility -->
         <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-slate-900 focus:text-white focus:rounded-md focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
@@ -1007,9 +1029,10 @@
 
         <div class="flex h-screen overflow-hidden">
             <!-- Sidebar - toggleable on mobile, always visible on desktop -->
-            <x-sidebar
-                class="md:flex"
-                x-show="sidebarOpen"
+            <div
+                id="sidebar-wrapper"
+                class="fixed md:static inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out"
+                :class="sidebarOpen && 'translate-x-0'"
                 @touchstart="if (window.innerWidth < 768) {
                     touchStartX = $event.touches[0].clientX;
                     isDragging = true;
@@ -1032,26 +1055,22 @@
                     }
                     touchStartX = 0;
                     touchCurrentX = 0;
-                }"
-                x-transition:enter="transition-transform ease-out duration-200 md:transition-none"
-                x-transition:enter-start="-translate-x-full md:translate-x-0"
-                x-transition:enter-end="translate-x-0"
-                x-transition:leave="transition-transform ease-in duration-150 md:transition-none"
-                x-transition:leave-start="translate-x-0 md:translate-x-0"
-                x-transition:leave-end="-translate-x-full md:translate-x-0" />
+                }">
+                <x-sidebar class="h-full" />
+            </div>
 
             <!-- Overlay for mobile -->
             <div
+                x-cloak
                 x-show="sidebarOpen"
-                @click="sidebarOpen = false"
-                x-transition:enter="transition-opacity ease-linear duration-300"
+                x-transition:enter="transition-opacity ease-linear duration-200"
                 x-transition:enter-start="opacity-0"
                 x-transition:enter-end="opacity-100"
-                x-transition:leave="transition-opacity ease-linear duration-300"
+                x-transition:leave="transition-opacity ease-linear duration-200"
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
+                @click="sidebarOpen = false"
                 class="fixed inset-0 bg-slate-900/50 z-40 md:hidden"
-                style="display: none;"
             ></div>
 
             <!-- Main Content Area -->

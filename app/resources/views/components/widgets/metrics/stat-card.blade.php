@@ -20,7 +20,7 @@
 @endphp
 
 <div
-    class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-5"
+    class="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer p-4 md:p-5"
     @if($href)
         onclick="window.location.href='{{ $href }}'"
     @endif
@@ -28,12 +28,12 @@
     <div class="flex items-start justify-between">
         <div class="flex-1">
             <p class="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">{{ $title }}</p>
-            <p class="text-2xl font-bold text-slate-900">{{ $value }}</p>
+            <p class="text-xl md:text-2xl font-bold text-slate-900">{{ $value }}</p>
             @if($subtitle)
                 <p class="text-xs text-slate-500 mt-1">{{ $subtitle }}</p>
             @endif
         </div>
-        <div class="flex-shrink-0 w-10 h-10 {{ $iconColors }} rounded-lg flex items-center justify-center">
+        <div class="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 {{ $iconColors }} rounded-lg flex items-center justify-center">
             {!! $icon !!}
         </div>
     </div>

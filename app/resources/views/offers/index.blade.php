@@ -10,7 +10,7 @@
         </x-ui.button>
     </x-slot>
 
-    <div class="p-6 space-y-6"
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6"
          x-data="offersPage({ stats: @js($stats) })"
          x-init="init()">
 
@@ -25,7 +25,7 @@
                 return implode(' + ', $parts);
             };
         @endphp
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-4">
             <x-widgets.metrics.stat-card
                 :title="__('Draft')"
                 :value="$stats['draft']"

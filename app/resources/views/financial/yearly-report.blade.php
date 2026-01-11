@@ -24,7 +24,7 @@
         </div>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6">
 
         {{-- Section 1: KPI Cards --}}
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -308,7 +308,7 @@
             </div>
 
             {{-- Top Clients Tab --}}
-            <div x-show="activeTab === 'clients'" class="p-6">
+            <div x-show="activeTab === 'clients'" class="p-4 md:p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Top Clients List --}}
                     <div>
@@ -346,7 +346,7 @@
             </div>
 
             {{-- Expense Categories Tab --}}
-            <div x-show="activeTab === 'categories'" class="p-6">
+            <div x-show="activeTab === 'categories'" class="p-4 md:p-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {{-- Categories List --}}
                     <div>

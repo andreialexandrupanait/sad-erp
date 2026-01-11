@@ -5,7 +5,7 @@
     };
 @endphp
 
-<aside {{ $attributes->merge(['class' => 'w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col shadow-xl fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out']) }} role="navigation" aria-label="Main navigation">
+<aside {{ $attributes->merge(['class' => 'w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col shadow-xl']) }} role="navigation" aria-label="Main navigation">
     <!-- Header -->
     <div class="h-16 flex items-center px-6 border-b border-white/10">
         <a href="{{ route('dashboard') }}" class="block">
@@ -249,7 +249,7 @@
                 </a>
             </li>
             <li>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('logout') }}" autocomplete="off">
                     @csrf
                     <button type="submit" class="w-full flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] font-medium transition-colors text-slate-400 hover:bg-white/5 hover:text-white">
                         <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Profile') }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <div class="max-w-4xl mx-auto space-y-6">
             <!-- Quick Links -->
             <x-ui.card>

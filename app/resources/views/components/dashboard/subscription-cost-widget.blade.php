@@ -1,14 +1,14 @@
 @props(['monthlySubscriptionCost', 'annualProjectedCost', 'activeSubscriptionsCount', 'pausedSubscriptionsCount', 'cancelledSubscriptionsCount'])
 
 <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
-    <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-100">
+    <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
         <h3 class="text-base font-semibold text-slate-900">{{ __('app.Subscription Costs') }}</h3>
         <a href="{{ route('subscriptions.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
     </div>
-    <div class="p-6">
+    <div class="p-4 md:p-6">
     <div class="flex items-baseline justify-between gap-2 mb-4">
         <div class="flex items-baseline gap-2">
-            <p class="text-3xl font-bold text-slate-900">{{ number_format($monthlySubscriptionCost, 0) }}</p>
+            <p class="text-2xl md:text-3xl font-bold text-slate-900">{{ number_format($monthlySubscriptionCost, 0) }}</p>
             <span class="text-xs text-slate-500">RON/{{ __('app.month') }}</span>
         </div>
         <div class="flex-shrink-0 w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center">

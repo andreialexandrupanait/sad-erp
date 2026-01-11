@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Edit Credential') }}</x-slot>
 
-    <div class="p-6">
+    <div class="p-4 md:p-6">
         <div class="max-w-4xl mx-auto">
             <x-credential-form
                 :credential="$credential"

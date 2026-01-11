@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Subscription;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -66,9 +67,13 @@ class TrendsCalculator
                 }
             ),
             'topClients' => Cache::remember(
-                $this->cacheKey('dashboard.top_clients'),
+                $this->cacheKey('dashboard.top_clients_current_year'),
                 self::CACHE_TTL,
-                fn() => $this->getTopClientsByRevenue()
+                fn() => $this->getTopClientsByRevenue(
+                    5,
+                    Carbon::now()->startOfYear(),
+                    Carbon::now()->endOfDay()
+                )
             ),
         ];
     }
@@ -236,25 +241,38 @@ class TrendsCalculator
 
     /**
      * Get top clients ranked by total revenue
+     *
+     * @param int $limit Number of clients to return
+     * @param Carbon|null $from Start date for filtering revenues
+     * @param Carbon|null $to End date for filtering revenues
      */
-    public function getTopClientsByRevenue(int $limit = 5): Collection
+    public function getTopClientsByRevenue(int $limit = 5, ?Carbon $from = null, ?Carbon $to = null): Collection
     {
         $userId = auth()->id();
 
+        // Build revenue subquery with proper Eloquent scopes applied
+        $revenueQuery = FinancialRevenue::select('client_id', DB::raw('SUM(amount) as total_revenue'))
+            ->where('currency', 'RON')
+            ->when($userId, function ($query) use ($userId) {
+                $query->where('user_id', $userId);
+            })
+            ->when($from && $to, function ($query) use ($from, $to) {
+                $query->whereBetween('occurred_at', [
+                    $from->copy()->startOfDay(),
+                    $to->copy()->endOfDay()
+                ]);
+            })
+            ->groupBy('client_id');
+
         return Client::select('clients.*')
-            ->selectRaw('COALESCE(SUM(financial_revenues.amount), 0) as total_revenue')
-            ->leftJoin('financial_revenues', function ($join) use ($userId) {
-                $join->on('clients.id', '=', 'financial_revenues.client_id')
-                    ->where('financial_revenues.currency', '=', 'RON');
-                if ($userId) {
-                    $join->where('financial_revenues.user_id', '=', $userId);
-                }
+            ->selectRaw('COALESCE(revenue_totals.total_revenue, 0) as total_revenue')
+            ->leftJoinSub($revenueQuery, 'revenue_totals', function ($join) {
+                $join->on('clients.id', '=', 'revenue_totals.client_id');
             })
             ->when($userId, function ($query) use ($userId) {
                 return $query->where('clients.user_id', $userId);
             })
-            ->withoutGlobalScope('organization')
-            ->groupBy('clients.id')
+            ->having('total_revenue', '>', 0)
             ->orderByDesc('total_revenue')
             ->take($limit)
             ->get();
@@ -293,5 +311,6 @@ class TrendsCalculator
         Cache::forget($this->cacheKey('dashboard.yearly_expense'));
         Cache::forget($this->cacheKey('dashboard.yearly_profit'));
         Cache::forget($this->cacheKey('dashboard.top_clients'));
+        Cache::forget($this->cacheKey('dashboard.top_clients_current_year'));
     }
 }

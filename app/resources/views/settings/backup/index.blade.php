@@ -5,7 +5,7 @@
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
-            <div class="p-6">
+            <div class="p-4 md:p-6">
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">{{ __('Database Backup') }}</h2>
                     <p class="text-sm text-slate-500 mt-1">{{ __('Create, download, restore and manage backups') }}</p>
@@ -62,7 +62,7 @@
                                 <p class="text-sm text-slate-500">{{ __('Create a backup of your database.') }}</p>
                             </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <form id="export-form" class="space-y-4">
                                 @csrf
                                 <div>
@@ -121,7 +121,7 @@
                                 <p class="text-sm text-slate-500">{{ __('Restore data from a backup file.') }}</p>
                             </div>
                         </div>
-                        <div class="p-6">
+                        <div class="p-4 md:p-6">
                             <form id="import-form" action="{{ route('settings.backup.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
                                 @csrf
                                 <div>
@@ -191,7 +191,7 @@
                             <p class="text-sm text-slate-500">{{ count($backups) }} {{ __('backup(s) available') }}</p>
                         </div>
                     </div>
-                    <div class="p-6">
+                    <div class="p-4 md:p-6">
                         @if(count($backups) > 0)
                             <div class="overflow-x-auto">
                                 <table class="min-w-full divide-y divide-slate-200">

@@ -5,7 +5,7 @@
         <div class="flex items-center gap-3">
             <form method="GET" id="filterForm" class="flex items-center gap-3">
                 <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium text-slate-700">{{ __('An') }}:</label>
+                    
                     <x-ui.select name="year" onchange="this.form.submit()">
                         @foreach($availableYears as $availableYear)
                             <option value="{{ $availableYear }}" {{ $year == $availableYear ? 'selected' : '' }}>{{ $availableYear }}</option>
@@ -35,7 +35,7 @@
         </div>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6">
         @php
             // Calculate budget status for alerts
             $alerts = [];
@@ -96,7 +96,7 @@
         @endif
 
         <!-- Widgets Container - 3 Widgets -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             <!-- Widget 1: Venituri (RON + EUR) -->
             <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-5 {{ $budgetThresholds['revenue_target_ron'] && $revenueProgress < 50 ? 'ring-2 ring-amber-300' : '' }}">
                 <div class="flex items-center justify-between mb-3">
@@ -217,14 +217,14 @@
         </div>
 
         <!-- Charts Section -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             <!-- Revenue Chart (RON Only) -->
             <div class="bg-white border border-slate-200 rounded-xl shadow-sm">
                 <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-100">
                     <h3 class="text-base font-semibold text-slate-900">{{ __('Revenues (monthly)') }}</h3>
                     <a href="{{ route('financial.revenues.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('app.View all') }} →</a>
                 </div>
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div style="height: 320px;">
                         {!! $revenueChart->container() !!}
                     </div>
@@ -237,7 +237,7 @@
                     <h3 class="text-base font-semibold text-slate-900">{{ __('Expenses (monthly)') }}</h3>
                     <a href="{{ route('financial.expenses.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('app.View all') }} →</a>
                 </div>
-                <div class="p-6">
+                <div class="p-4 md:p-6">
                     <div style="height: 320px;">
                         {!! $expenseChart->container() !!}
                     </div>

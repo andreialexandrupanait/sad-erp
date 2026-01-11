@@ -509,7 +509,7 @@
                  class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
                  @keydown.escape.window="showSaveTemplateModal = false">
                 <div class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4" @click.stop>
-                    <div class="p-6">
+                    <div class="p-4 md:p-6">
                         <h3 class="text-lg font-semibold text-slate-900 mb-4">{{ __('Save as Template') }}</h3>
                         <p class="text-sm text-slate-600 mb-4">{{ __('Save the current layout and services as a reusable template.') }}</p>
 
