@@ -1,11 +1,12 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Yearly Objectives') }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">{{ __('Yearly Objectives') }}</h2>
                     <p class="text-sm text-slate-500 mt-1">{{ __('Set budget limits and targets to track your financial progress') }}</p>

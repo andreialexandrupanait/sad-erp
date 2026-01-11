@@ -154,4 +154,124 @@ class WidgetController extends Controller
             'date_range' => $dateRange['range_text'],
         ]);
     }
+
+    /**
+     * Get revenue concentration data with period filtering
+     */
+    public function revenueConcentration(Request $request): JsonResponse
+    {
+        $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
+        $customFrom = $request->get('from');
+        $customTo = $request->get('to');
+
+        if (!PeriodHelper::isValidPeriod($period)) {
+            $period = PeriodHelper::DEFAULT_PERIOD;
+        }
+
+        $dateRange = PeriodHelper::getDateRange($period, $customFrom, $customTo);
+        $from = $dateRange['from'];
+        $to = $dateRange['to'];
+
+        // Get total revenue for period
+        $totalRevenue = $this->applyRonFilter(FinancialRevenue::query())
+            ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
+            ->sum('amount');
+
+        // Get top 3 clients revenue
+        $topClients = $this->trendsCalculator->getTopClientsByRevenue(
+            limit: 3,
+            from: $from,
+            to: $to
+        );
+
+        $topThreeRevenue = $topClients->sum('total_revenue');
+        $concentration = $totalRevenue > 0 ? ($topThreeRevenue / $totalRevenue) * 100 : 0;
+
+        // Determine risk level
+        $thresholds = config('dashboard.revenue_concentration.thresholds');
+        $riskLevel = 'low';
+        if ($concentration >= $thresholds['high_risk']) {
+            $riskLevel = 'high';
+        } elseif ($concentration >= $thresholds['medium_risk']) {
+            $riskLevel = 'medium';
+        }
+
+        $riskLabels = [
+            'high' => __('app.High Risk'),
+            'medium' => __('app.Medium Risk'),
+            'low' => __('app.Low Risk'),
+        ];
+
+        return response()->json([
+            'concentration' => round($concentration, 1),
+            'top_three_revenue' => $topThreeRevenue,
+            'top_three_revenue_formatted' => number_format($topThreeRevenue, 0) . ' RON',
+            'total_revenue' => $totalRevenue,
+            'total_revenue_formatted' => number_format($totalRevenue, 0) . ' RON',
+            'risk_level' => $riskLevel,
+            'risk_label' => $riskLabels[$riskLevel],
+            'period' => $period,
+            'period_label' => $dateRange['label'],
+        ]);
+    }
+
+    /**
+     * Get financial trend data with period filtering
+     */
+    public function financialTrend(Request $request): JsonResponse
+    {
+        $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
+        $customFrom = $request->get('from');
+        $customTo = $request->get('to');
+
+        if (!PeriodHelper::isValidPeriod($period)) {
+            $period = PeriodHelper::DEFAULT_PERIOD;
+        }
+
+        $dateRange = PeriodHelper::getDateRange($period, $customFrom, $customTo);
+        $from = $dateRange['from'];
+        $to = $dateRange['to'];
+
+        // Get monthly trends for the selected period
+        $revenueTrend = $this->applyRonFilter(FinancialRevenue::query())
+            ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
+            ->selectRaw("DATE_FORMAT(occurred_at, '%Y-%m') as month_key, SUM(amount) as amount")
+            ->groupBy('month_key')
+            ->orderBy('month_key')
+            ->get()
+            ->map(fn($r) => ['month' => $r->month_key, 'amount' => (float) $r->amount])
+            ->values()
+            ->toArray();
+
+        $expenseTrend = $this->applyRonFilter(FinancialExpense::query())
+            ->whereBetween('occurred_at', [$from->copy()->startOfDay(), $to->copy()->endOfDay()])
+            ->selectRaw("DATE_FORMAT(occurred_at, '%Y-%m') as month_key, SUM(amount) as amount")
+            ->groupBy('month_key')
+            ->orderBy('month_key')
+            ->get()
+            ->map(fn($r) => ['month' => $r->month_key, 'amount' => (float) $r->amount])
+            ->values()
+            ->toArray();
+
+        // Calculate profit trend
+        $profitTrend = [];
+        $revenueByMonth = collect($revenueTrend)->keyBy('month');
+        $expenseByMonth = collect($expenseTrend)->keyBy('month');
+        $allMonths = $revenueByMonth->keys()->merge($expenseByMonth->keys())->unique()->sort()->values();
+
+        foreach ($allMonths as $month) {
+            $revenue = $revenueByMonth->get($month)['amount'] ?? 0;
+            $expense = $expenseByMonth->get($month)['amount'] ?? 0;
+            $profitTrend[] = ['month' => $month, 'amount' => $revenue - $expense];
+        }
+
+        return response()->json([
+            'revenue_trend' => $revenueTrend,
+            'expense_trend' => $expenseTrend,
+            'profit_trend' => $profitTrend,
+            'labels' => $allMonths->toArray(),
+            'period' => $period,
+            'period_label' => $dateRange['label'],
+        ]);
+    }
 }

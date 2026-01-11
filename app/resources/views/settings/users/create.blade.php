@@ -1,13 +1,15 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
             <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-4 md:p-6">
+
                     <div class="mb-6">
                         <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Add New User") }}
@@ -95,11 +97,11 @@
                             </div>
                         </div>
 
-                        <div class="mt-6 flex items-center justify-end gap-3">
-                            <a href="{{ route('settings.users.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
+                        <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
+                            <a href="{{ route('settings.users.index') }}" class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
                                 {{ __("Cancel") }}
                             </a>
-                            <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            <button type="submit" class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                                 {{ __("Create User") }}
                             </button>
                         </div>

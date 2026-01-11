@@ -24,11 +24,24 @@
         periodLabel: '{{ $periods[$selected] ?? $periods['current_year'] }}',
         dateRange: '',
         periods: {{ Js::from($periods) }},
+        dropdownStyle: {},
 
         init() {
             this.customFrom = new Date().toISOString().split('T')[0].replace(/-/g, '-');
             this.customTo = new Date().toISOString().split('T')[0].replace(/-/g, '-');
             this.updateDateRange();
+        },
+
+        positionDropdown() {
+            const button = this.$refs.triggerButton;
+            if (!button) return;
+            const rect = button.getBoundingClientRect();
+            this.dropdownStyle = {
+                position: 'fixed',
+                top: (rect.bottom + 8) + 'px',
+                left: rect.left + 'px',
+                zIndex: 9999
+            };
         },
 
         selectPeriod(key) {
@@ -112,17 +125,18 @@
     {{-- Trigger Button --}}
     <button
         type="button"
-        @click="open = !open"
+        x-ref="triggerButton"
+        @click="positionDropdown(); open = !open"
         class="flex items-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors"
     >
         <span x-text="periodLabel" class="font-medium"></span>
         <svg class="w-4 h-4 transition-transform" :class="open && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
         </svg>
-        <span class="text-xs text-slate-400" x-text="dateRange"></span>
+        <span class="text-xs text-slate-400 hidden sm:inline" x-text="dateRange"></span>
     </button>
 
-    {{-- Dropdown Panel --}}
+    {{-- Dropdown Panel (fixed position to escape container) --}}
     <div
         x-show="open"
         x-transition:enter="transition ease-out duration-100"
@@ -131,7 +145,8 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="opacity-100 scale-100"
         x-transition:leave-end="opacity-0 scale-95"
-        class="absolute left-0 top-full mt-2 w-72 bg-white rounded-lg shadow-xl border border-slate-200 z-50"
+        :style="dropdownStyle"
+        class="w-72 bg-white rounded-lg shadow-xl border border-slate-200"
         x-cloak
     >
         <div class="p-3">

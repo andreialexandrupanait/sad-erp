@@ -1,14 +1,16 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
             <!-- User Info Card -->
             <div class="bg-white rounded-lg border border-slate-200 mb-6">
                 <div class="p-4 md:p-6">
+
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div class="flex items-center gap-4">
                             <div class="flex-shrink-0 h-16 w-16">
@@ -71,6 +73,7 @@
             <!-- Permission Matrix -->
             <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-4 md:p-6">
+
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
                             <h3 class="text-lg font-medium text-slate-900">
@@ -184,6 +187,7 @@
             <!-- User Activity Info -->
             <div class="mt-6 bg-white rounded-lg border border-slate-200">
                 <div class="p-4 md:p-6">
+
                     <h3 class="text-lg font-medium text-slate-900 mb-4">{{ __("Account Information") }}</h3>
                     <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>

@@ -1,13 +1,15 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __("Users & Permissions") }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
+
             <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
                 <div class="bg-white rounded-lg border border-slate-200 p-4">
                     <div class="flex items-center justify-between">
                         <div>
@@ -64,6 +66,8 @@
 
             <div class="bg-white rounded-lg border border-slate-200">
                 <div class="p-4 md:p-6">
+
+
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                         <div>
                             <h2 class="text-lg font-medium text-slate-900">
@@ -73,7 +77,7 @@
                                 {{ __("Manage users and their access permissions.") }}
                             </p>
                         </div>
-                        <a href="{{ route('settings.users.create') }}" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                        <a href="{{ route('settings.users.create') }}" class="w-full sm:w-auto justify-center inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                             </svg>
@@ -124,7 +128,90 @@
                         @endif
                     </form>
 
-                    <div class="overflow-x-auto">
+                    {{-- Mobile Cards --}}
+                    <div class="md:hidden divide-y divide-slate-200">
+                        @forelse($users as $user)
+                            <div class="p-4 {{ $user->trashed() ? 'opacity-50' : '' }}">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
+                                        <span class="text-sm font-medium text-slate-600">
+                                            {{ strtoupper(substr($user->name, 0, 2)) }}
+                                        </span>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="text-sm font-medium text-slate-900">
+                                            {{ $user->name }}
+                                            @if($user->id === auth()->id())
+                                                <span class="text-xs text-gray-500">({{ __("you") }})</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-sm text-slate-500 truncate">{{ $user->email }}</div>
+                                        <div class="flex flex-wrap items-center gap-1.5 mt-2">
+                                            @php
+                                                $roleBadges = [
+                                                    'superadmin' => 'bg-purple-100 text-purple-800',
+                                                    'admin' => 'bg-blue-100 text-blue-800',
+                                                    'manager' => 'bg-amber-100 text-amber-800',
+                                                    'user' => 'bg-slate-100 text-slate-800',
+                                                ];
+                                                $roleLabels = [
+                                                    'superadmin' => __("Super Admin"),
+                                                    'admin' => __("Admin"),
+                                                    'manager' => __("Manager"),
+                                                    'user' => __("User"),
+                                                ];
+                                            @endphp
+                                            <span class="px-2 py-0.5 text-xs font-medium rounded-full {{ $roleBadges[$user->role] ?? $roleBadges['user'] }}">
+                                                {{ $roleLabels[$user->role] ?? ucfirst($user->role) }}
+                                            </span>
+                                            @if($user->trashed())
+                                                <span class="px-2 py-0.5 text-xs font-medium bg-red-100 text-red-800 rounded-full">{{ __("Arhivat") }}</span>
+                                            @elseif($user->status === 'active')
+                                                <span class="px-2 py-0.5 text-xs font-medium bg-green-100 text-green-800 rounded-full">{{ __("Activ") }}</span>
+                                            @else
+                                                <span class="px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-800 rounded-full">{{ __("Inactiv") }}</span>
+                                            @endif
+                                        </div>
+                                        <div class="text-xs text-slate-400 mt-2">
+                                            @if($user->last_login_at)
+                                                {{ __("Last Login") }}: {{ $user->last_login_at->diffForHumans() }}
+                                            @else
+                                                {{ __("Last Login") }}: {{ __("Niciodată") }}
+                                            @endif
+                                        </div>
+                                        <div class="flex flex-wrap gap-3 mt-3 text-sm">
+                                            @if($user->trashed())
+                                                <form method="POST" action="{{ route('settings.users.restore', $user->id) }}" class="inline">
+                                                    @csrf
+                                                    <button type="submit" class="text-green-600 hover:text-green-800">{{ __("Restaurează") }}</button>
+                                                </form>
+                                            @else
+                                                <a href="{{ route('settings.users.show', $user) }}" class="text-blue-600 hover:text-blue-800">{{ __("Permisiuni") }}</a>
+                                                <a href="{{ route('settings.users.edit', $user) }}" class="text-slate-600 hover:text-slate-800">{{ __("Editează") }}</a>
+                                                @if($user->id !== auth()->id() && !$user->isSuperAdmin())
+                                                    <form method="POST" action="{{ route('settings.users.destroy', $user) }}" class="inline" onsubmit="return confirm('{{ __("Ești sigur că vrei să arhivezi acest utilizator?") }}')">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="text-red-600 hover:text-red-800">{{ __("Arhivează") }}</button>
+                                                    </form>
+                                                @endif
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="p-8 text-center text-slate-500">
+                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                                <p class="mt-2">{{ __("No users found.") }}</p>
+                            </div>
+                        @endforelse
+                    </div>
+
+                    {{-- Desktop Table --}}
+                    <div class="hidden md:block overflow-x-auto">
                         <table class="min-w-full divide-y divide-slate-200">
                             <thead class="bg-slate-50">
                                 <tr>

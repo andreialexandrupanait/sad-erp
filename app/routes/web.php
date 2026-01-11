@@ -145,6 +145,8 @@ Route::middleware(['auth', '2fa'])->group(function () {
         Route::get('top-clients', [App\Http\Controllers\Api\WidgetController::class, 'topClients'])->name('top-clients');
         Route::get('financial-summary', [App\Http\Controllers\Api\WidgetController::class, 'financialSummary'])->name('financial-summary');
         Route::get('expense-categories', [App\Http\Controllers\Api\WidgetController::class, 'expenseCategories'])->name('expense-categories');
+        Route::get('revenue-concentration', [App\Http\Controllers\Api\WidgetController::class, 'revenueConcentration'])->name('revenue-concentration');
+        Route::get('financial-trend', [App\Http\Controllers\Api\WidgetController::class, 'financialTrend'])->name('financial-trend');
     });
 
     // Clients Module

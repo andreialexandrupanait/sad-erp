@@ -1,11 +1,12 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Settings') }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">{{ __('Application Settings') }}</h2>
                     <p class="text-sm text-slate-500 mt-1">{{ __('Configure your application preferences and branding') }}</p>
@@ -264,13 +265,13 @@
                     </div>
 
                     <!-- Save Button -->
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <a href="{{ route('dashboard') }}"
-                           class="px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors">
+                           class="w-full sm:w-auto px-6 py-2.5 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors text-center">
                             {{ __('Cancel') }}
                         </a>
                         <button type="submit"
-                                class="px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
+                                class="w-full sm:w-auto justify-center px-6 py-2.5 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                             </svg>

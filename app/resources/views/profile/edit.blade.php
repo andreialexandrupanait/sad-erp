@@ -111,7 +111,7 @@
                 <x-ui.card-header>
                     <div class="flex items-center justify-between">
                         <div>
-                            <h3 class="text-2xl font-semibold leading-none tracking-tight">{{ __('Recent Activity') }}</h3>
+                            <h3 class="text-lg md:text-xl font-semibold leading-none tracking-tight text-slate-900">{{ __('Recent Activity') }}</h3>
                             <p class="text-sm text-slate-500">{{ __('Your recent account activity and security events.') }}</p>
                         </div>
                         @if($recentActivities->count() > 0)

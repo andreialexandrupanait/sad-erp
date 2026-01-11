@@ -19,6 +19,7 @@
     </x-slot>
 
     <div class="p-4 md:p-6">
+
         @if (session('success'))
             <x-ui.alert variant="success" class="mb-4">{{ session('success') }}</x-ui.alert>
         @endif

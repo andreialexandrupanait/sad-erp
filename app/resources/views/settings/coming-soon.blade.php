@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ $title }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">

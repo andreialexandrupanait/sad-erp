@@ -1,11 +1,13 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Notification Settings') }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
+
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-slate-900">{{ __('Notification Settings') }}</h2>
                     <p class="text-sm text-slate-500 mt-1">{{ __('Configure email notifications, reminders, and SMTP settings') }}</p>
@@ -44,6 +46,8 @@
                             <h3 class="text-lg font-semibold text-slate-900">{{ __('Master Settings') }}</h3>
                         </div>
                         <div class="p-4 md:p-6">
+
+
                             <label class="flex items-center cursor-pointer">
                                 <input type="checkbox"
                                        name="notifications_enabled"

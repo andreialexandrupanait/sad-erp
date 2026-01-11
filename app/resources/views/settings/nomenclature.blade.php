@@ -7,7 +7,7 @@
     <meta http-equiv="Expires" content="0">
     @endpush
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto" x-data="{
@@ -256,6 +256,8 @@
             }
         }">
             <div class="p-4 md:p-6">
+
+
                 <div class="mb-4 flex items-center justify-between">
                     <div>
                         <h2 class="text-xl font-bold text-slate-900">{{ $title }}</h2>

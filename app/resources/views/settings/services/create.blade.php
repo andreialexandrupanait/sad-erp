@@ -11,6 +11,7 @@
     </x-slot>
 
     <div class="p-4 md:p-6">
+
         <x-service-form
             :action="route('settings.services.store')"
             method="POST"

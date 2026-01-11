@@ -40,12 +40,12 @@
 
             <!-- Download Template -->
             <x-ui.card class="mb-6">
-                <x-ui.card-content class="flex items-center justify-between">
+                <x-ui.card-content class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
                         <h3 class="text-sm font-medium text-slate-900">Download CSV Template</h3>
                         <p class="text-sm text-slate-600 mt-1">Get a pre-formatted template with example data</p>
                     </div>
-                    <x-ui.button variant="outline" onclick="window.location.href='{{ route('import-export.template', $module) }}'">
+                    <x-ui.button variant="outline" class="w-full sm:w-auto" onclick="window.location.href='{{ route('import-export.template', $module) }}'">
                         <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
@@ -80,11 +80,11 @@
                             @enderror
                         </div>
 
-                        <div class="flex items-center justify-end gap-x-4 pt-4 border-t border-slate-200">
-                            <x-ui.button type="button" variant="ghost" onclick="window.location.href='{{ route('import-export.index') }}'">
+                        <div class="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3 pt-4 border-t border-slate-200">
+                            <x-ui.button type="button" variant="ghost" class="w-full sm:w-auto" onclick="window.location.href='{{ route('import-export.index') }}'">
                                 Cancel
                             </x-ui.button>
-                            <x-ui.button type="submit" variant="default">
+                            <x-ui.button type="submit" variant="default" class="w-full sm:w-auto">
                                 <svg class="w-4 h-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>

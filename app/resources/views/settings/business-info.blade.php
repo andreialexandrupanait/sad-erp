@@ -1,11 +1,12 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Informații companie') }}</x-slot>
 
-    <div class="flex min-h-screen bg-slate-50">
+    <div class="flex flex-col lg:flex-row min-h-screen bg-slate-50">
         @include('settings.partials.sidebar')
 
         <div class="flex-1 overflow-y-auto">
             <div class="p-4 md:p-6">
+
                 <!-- Header -->
                 <div class="mb-8">
                     <div class="flex items-center gap-2 text-sm text-slate-500 mb-2">

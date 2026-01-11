@@ -225,30 +225,32 @@
                     }
                 }"
                 @period-changed-top-clients.window="fetchData($event)"
-                class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden"
+                class="bg-white border border-slate-200 rounded-xl shadow-sm"
             >
-                {{-- Header with Period Selector --}}
+                {{-- Header --}}
                 <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
-                    <div class="flex items-center gap-4">
-                        <h3 class="text-base font-semibold text-slate-900">{{ __('Top Clients') }}</h3>
-                        <x-widgets.period-selector selected="current_year" widget-id="top-clients" />
-                    </div>
-                    <a href="{{ route('clients.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
+                    <h3 class="text-base font-semibold text-slate-900">{{ __('Top Clients') }}</h3>
+                    <a href="{{ route('clients.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} &rarr;</a>
                 </div>
 
                 {{-- Content --}}
                 <div class="p-4 md:p-6 relative">
                     {{-- Loading Overlay --}}
-                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
-                        <svg class="animate-spin h-6 w-6 text-slate-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
+                        <svg class="animate-spin h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
 
+                    {{-- Period Selector at top --}}
+                    <div class="relative z-30 pb-3 mb-3 border-b border-slate-200/60">
+                        <x-widgets.period-selector selected="current_year" widget-id="top-clients" />
+                    </div>
+
                     {{-- Client List --}}
                     <template x-if="clients.length > 0">
-                        <div class="space-y-3">
+                        <div class="space-y-3 max-h-72 overflow-y-auto">
                             <template x-for="(client, index) in clients" :key="client.id">
                                 <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                                     <div class="flex items-center gap-3">
@@ -399,23 +401,25 @@
                 class="bg-white border border-slate-200 rounded-xl shadow-sm"
             >
                 <div class="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-slate-200 bg-slate-100">
-                    <div class="flex items-center gap-3">
-                        <h3 class="text-base font-semibold text-slate-900">{{ __('Expenses by Category') }}</h3>
-                        <x-widgets.period-selector selected="current_year" widget-id="expenses" />
-                    </div>
-                    <a href="{{ route('financial.expenses.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} →</a>
+                    <h3 class="text-base font-semibold text-slate-900">{{ __('Expenses by Category') }}</h3>
+                    <a href="{{ route('financial.expenses.index') }}" class="text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">{{ __('View all') }} &rarr;</a>
                 </div>
                 <div class="p-4 md:p-6 relative">
                     {{-- Loading Overlay --}}
-                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-10">
+                    <div x-show="loading" x-transition.opacity class="absolute inset-0 bg-white/70 flex items-center justify-center z-20">
                         <svg class="animate-spin h-6 w-6 text-slate-600" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
                     </div>
 
+                    {{-- Period Selector at top --}}
+                    <div class="relative z-30 pb-3 mb-3 border-b border-slate-200/60">
+                        <x-widgets.period-selector selected="current_year" widget-id="expenses" />
+                    </div>
+
                     <template x-if="categories.length > 0">
-                        <div class="space-y-3 max-h-64 overflow-y-auto pr-1">
+                        <div class="space-y-3 max-h-48 overflow-y-auto pr-1">
                             <template x-for="(cat, index) in categories" :key="cat.id || index">
                                 <div class="space-y-1">
                                     <div class="flex items-center justify-between text-xs">
