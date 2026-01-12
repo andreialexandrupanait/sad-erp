@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Add Annex to') }} {{ $contract->formatted_number }}</x-slot>
 
-    <div class="p-6 max-w-2xl">
+    <div class="p-4 md:p-6 max-w-2xl">
         {{-- Error Messages --}}
         @if(session('error'))
             <div class="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -38,9 +38,9 @@
 
         <x-ui.card>
             <x-ui.card-header>
-                <div class="flex justify-between items-center">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <h2 class="text-lg font-semibold">{{ __('Add Annex to Contract') }}</h2>
-                    <x-ui.button variant="outline" size="sm" onclick="window.location.href='{{ route('offers.create', ['client_id' => $contract->client_id, 'parent_contract_id' => $contract->id]) }}'">
+                    <x-ui.button variant="outline" size="sm" class="w-full sm:w-auto" onclick="window.location.href='{{ route('offers.create', ['client_id' => $contract->client_id, 'parent_contract_id' => $contract->id]) }}'">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                         </svg>
@@ -112,25 +112,25 @@
                             </div>
                         @endif
 
-                        <div class="mt-6 flex gap-3">
+                        <div class="mt-6 flex flex-col-reverse sm:flex-row gap-3">
+                            <x-ui.button variant="destructive-outline" type="button" class="w-full sm:w-auto" onclick="window.history.back()">
+                                {{ __('Cancel') }}
+                            </x-ui.button>
                             @if($contract->canAcceptAnnex())
-                                <x-ui.button variant="default" type="submit">
+                                <x-ui.button variant="default" type="submit" class="w-full sm:w-auto">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                     {{ __('Add Annex') }}
                                 </x-ui.button>
                             @else
-                                <x-ui.button variant="default" type="button" disabled class="opacity-50 cursor-not-allowed">
+                                <x-ui.button variant="default" type="button" disabled class="w-full sm:w-auto opacity-50 cursor-not-allowed">
                                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                     </svg>
                                     {{ __('Add Annex') }}
                                 </x-ui.button>
                             @endif
-                            <x-ui.button variant="destructive-outline" type="button" onclick="window.history.back()">
-                                {{ __('Cancel') }}
-                            </x-ui.button>
                         </div>
                     </form>
                 @else
@@ -140,14 +140,14 @@
                         </svg>
                         <h3 class="mt-2 text-sm font-medium text-slate-900">{{ __('No accepted offers available') }}</h3>
                         <p class="mt-1 text-sm text-slate-500">{{ __('Create a new offer for this client. Once it\'s accepted, you can add it as an annex.') }}</p>
-                        <div class="mt-6 flex justify-center gap-3">
-                            <x-ui.button variant="default" onclick="window.location.href='{{ route('offers.create', ['client_id' => $contract->client_id, 'parent_contract_id' => $contract->id]) }}'">
+                        <div class="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+                            <x-ui.button variant="default" class="w-full sm:w-auto" onclick="window.location.href='{{ route('offers.create', ['client_id' => $contract->client_id, 'parent_contract_id' => $contract->id]) }}'">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                 </svg>
                                 {{ __('Create New Offer') }}
                             </x-ui.button>
-                            <x-ui.button variant="destructive-outline" onclick="window.history.back()">
+                            <x-ui.button variant="destructive-outline" class="w-full sm:w-auto" onclick="window.history.back()">
                                 {{ __('Cancel') }}
                             </x-ui.button>
                         </div>

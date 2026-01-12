@@ -108,20 +108,22 @@ This document tracks the mobile responsiveness implementation for the ERP applic
 - [x] `import-export/import.blade.php` - Template card stacking, button stacking
 - [x] Added to Settings sidebar
 
+### Contracts Module
+- [x] `contracts/index.blade.php` - Mobile cards, responsive stats, summary box
+- [x] `contracts/create.blade.php` - Form button stacking, responsive padding
+- [x] `contracts/show.blade.php` - Mobile dropdown menu, responsive header actions
+- [x] `contracts/add-annex.blade.php` - Button stacking, responsive card header
+- [x] `contracts/annex-edit.blade.php` - Responsive grid, button stacking, responsive header
+- [x] `contracts/annex-show.blade.php` - Mobile header buttons, responsive padding
+- [x] `contracts/pdf.blade.php` - Print only, skip
+- [x] `contracts/annex-pdf.blade.php` - Print only, skip
+
 ---
 
 ## Remaining Work
 
-### Contracts Module
-- [ ] `contracts/index.blade.php` - Add mobile cards, hide table columns
-- [ ] `contracts/create.blade.php` - Form button stacking, responsive form
-- [ ] `contracts/edit.blade.php` - Form button stacking, responsive form
-- [ ] `contracts/show.blade.php` - Responsive details layout
-- [ ] `contracts/add-annex.blade.php` - Form responsiveness
-- [ ] `contracts/annex-edit.blade.php` - Form responsiveness
-- [ ] `contracts/annex-show.blade.php` - Responsive details
-- [ ] `contracts/pdf.blade.php` - Print only, skip
-- [ ] `contracts/annex-pdf.blade.php` - Print only, skip
+### Contracts Module (Partial)
+- [ ] `contracts/edit.blade.php` - Needs permission fix for responsive header/info bar
 
 ### Offers Module
 - [ ] `offers/index.blade.php` - Add mobile cards, hide table columns

@@ -248,17 +248,17 @@
         <template x-if="!loading && contracts.length > 0">
             <x-ui.card>
                 {{-- Summary Box --}}
-                <div class="px-6 py-4 bg-indigo-50 border-b border-indigo-100">
-                    <div class="flex items-center justify-between flex-wrap gap-3 md:gap-4">
-                        <p class="text-sm text-indigo-900">
+                <div class="px-4 md:px-6 py-3 md:py-4 bg-indigo-50 border-b border-indigo-100">
+                    <div class="flex items-center justify-between flex-wrap gap-2 md:gap-4">
+                        <p class="text-xs md:text-sm text-indigo-900">
                             <span class="font-semibold" x-text="pagination.total || contracts.length"></span>
                             <span x-text="(pagination.total || contracts.length) === 1 ? '{{ __("contract") }}' : '{{ __("contracte") }}'"></span> &middot;
                             <span class="font-semibold" x-text="stats.active || 0"></span>
-                            <span x-text="(stats.active || 0) === 1 ? '{{ __("activ") }}' : '{{ __("active") }}'"></span> &middot;
-                            <span x-text="formatActiveValues()"></span> {{ __('valoare totală activă') }}
+                            <span x-text="(stats.active || 0) === 1 ? '{{ __("activ") }}' : '{{ __("active") }}'"></span>
+                            <span class="hidden sm:inline">&middot; <span x-text="formatActiveValues()"></span> {{ __('valoare totală activă') }}</span>
                         </p>
                         <template x-if="hasAnyAnnexes()">
-                            <div class="flex items-center gap-3 text-xs">
+                            <div class="hidden md:flex items-center gap-3 text-xs">
                                 <button @click="expandAllAnnexes()"
                                         class="text-indigo-600 hover:text-indigo-800 hover:underline font-medium">
                                     {{ __('Extinde toate anexele') }}
@@ -273,7 +273,110 @@
                     </div>
                 </div>
 
-                <div class="overflow-x-auto">
+                {{-- Mobile Cards --}}
+                <div class="md:hidden divide-y divide-slate-200">
+                    <template x-for="contract in contracts" :key="'mobile-' + contract.id">
+                        <div class="p-4" :class="{ 'bg-blue-50': selectedIds.includes(contract.id), 'bg-amber-50/50': isExpiringSoon(contract) }">
+                            <div class="flex items-start gap-3">
+                                <input type="checkbox"
+                                       :checked="selectedIds.includes(contract.id)"
+                                       @change="toggleItem(contract.id)"
+                                       class="mt-1 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <a :href="'/contracts/' + contract.id" class="font-semibold text-slate-900 hover:text-indigo-600">
+                                                <span x-text="contract.contract_number"></span>
+                                            </a>
+                                            <div class="text-sm text-slate-500 truncate" x-text="contract.title"></div>
+                                        </div>
+                                        <span class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                              :class="{
+                                                  'bg-green-100 text-green-700': contract.status === 'active',
+                                                  'bg-blue-100 text-blue-700': contract.status === 'completed',
+                                                  'bg-red-100 text-red-700': contract.status === 'terminated',
+                                                  'bg-amber-100 text-amber-700': contract.status === 'expired',
+                                                  'bg-slate-100 text-slate-700': contract.status === 'draft'
+                                              }"
+                                              x-text="contract.status_label">
+                                        </span>
+                                    </div>
+
+                                    <div class="mt-2 grid grid-cols-2 gap-2 text-sm">
+                                        <div>
+                                            <span class="text-slate-500">{{ __('Client') }}:</span>
+                                            <a x-show="contract.client" :href="'/clients/' + contract.client?.slug" class="text-slate-700 hover:text-indigo-600" x-text="contract.client?.name"></a>
+                                            <span x-show="!contract.client" class="text-slate-400">-</span>
+                                        </div>
+                                        <div class="text-right">
+                                            <span class="font-semibold text-slate-900" x-text="formatCurrency(contract.total_value, contract.currency)"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-1 text-xs text-slate-500">
+                                        <span x-text="contract.start_date"></span>
+                                        <template x-if="contract.end_date">
+                                            <span>
+                                                <span class="mx-1">&rarr;</span>
+                                                <span x-text="contract.end_date"></span>
+                                            </span>
+                                        </template>
+                                        <span x-show="!contract.end_date" class="text-slate-400 italic">{{ __('Nedeterminat') }}</span>
+                                        <template x-if="isExpiringSoon(contract) && contract.status === 'active'">
+                                            <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">
+                                                {{ __('Expiră') }}
+                                            </span>
+                                        </template>
+                                    </div>
+
+                                    {{-- Annexes indicator --}}
+                                    <template x-if="contract.annexes && contract.annexes.length > 0">
+                                        <div class="mt-2">
+                                            <button @click="toggleAnnexExpand(contract.id)"
+                                                    class="inline-flex items-center gap-1 text-xs font-medium text-purple-700 bg-purple-100 rounded-full px-2 py-0.5">
+                                                <span x-text="contract.annexes.length"></span> {{ __('anexe') }}
+                                                <svg class="w-3 h-3 transition-transform" :class="{ 'rotate-180': isAnnexExpanded(contract.id) }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                                </svg>
+                                            </button>
+                                            <div x-show="isAnnexExpanded(contract.id)" x-collapse class="mt-2 pl-3 border-l-2 border-purple-200 space-y-1">
+                                                <template x-for="annex in contract.annexes" :key="'mobile-annex-' + annex.id">
+                                                    <a :href="'/contracts/' + contract.id + '/annexes/' + annex.id"
+                                                       class="block text-xs text-purple-600 hover:text-purple-800">
+                                                        <span x-text="annex.annex_code"></span>
+                                                        <span class="text-slate-400"> - </span>
+                                                        <span class="text-green-600">+<span x-text="formatCurrency(annex.additional_value, annex.currency)"></span></span>
+                                                    </a>
+                                                </template>
+                                            </div>
+                                        </div>
+                                    </template>
+
+                                    {{-- Actions --}}
+                                    <div class="mt-3 flex items-center gap-2">
+                                        <a :href="'/contracts/' + contract.id"
+                                           class="flex-1 text-center px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200">
+                                            {{ __('View') }}
+                                        </a>
+                                        <a :href="'/contracts/' + contract.id + '/edit'"
+                                           class="flex-1 text-center px-3 py-1.5 text-xs font-medium text-blue-700 bg-blue-100 rounded-lg hover:bg-blue-200">
+                                            {{ __('Edit') }}
+                                        </a>
+                                        <a :href="'/contracts/' + contract.id + '/download'"
+                                           class="px-3 py-1.5 text-xs font-medium text-green-700 bg-green-100 rounded-lg hover:bg-green-200">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                            </svg>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                {{-- Desktop Table --}}
+                <div class="hidden md:block overflow-x-auto">
                     <table class="w-full text-sm">
                         <thead class="bg-slate-100 border-b border-slate-200">
                             <tr>
@@ -492,7 +595,7 @@
                     </table>
                 </div>
 
-                {{-- Pagination --}}
+                {{-- Pagination (Mobile + Desktop) --}}
                 <div x-show="pagination.last_page > 1" class="px-4 py-3 border-t border-slate-200 flex items-center justify-between">
                     <div class="text-sm text-slate-600">
                         {{ __('Afișare') }} <span x-text="pagination.from || 0"></span> - <span x-text="pagination.to || 0"></span> {{ __('din') }} <span x-text="pagination.total || 0"></span>

@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('Create Contract') }}</x-slot>
 
-    <div class="p-6 max-w-4xl">
+    <div class="p-4 md:p-6 max-w-4xl">
         @if (session('error'))
             <x-ui.alert variant="destructive" class="mb-6">{{ session('error') }}</x-ui.alert>
         @endif
@@ -188,15 +188,15 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="mt-8 flex items-center gap-3 pt-6 border-t border-slate-200">
-                        <x-ui.button variant="default" type="submit">
+                    <div class="mt-8 flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-6 border-t border-slate-200">
+                        <x-ui.button variant="destructive-outline" type="button" class="w-full sm:w-auto" onclick="window.location.href='{{ route('contracts.index') }}'">
+                            {{ __('Cancel') }}
+                        </x-ui.button>
+                        <x-ui.button variant="default" type="submit" class="w-full sm:w-auto">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                             </svg>
                             {{ __('Create Contract') }}
-                        </x-ui.button>
-                        <x-ui.button variant="destructive-outline" type="button" onclick="window.location.href='{{ route('contracts.index') }}'">
-                            {{ __('Cancel') }}
                         </x-ui.button>
                     </div>
                 </form>

@@ -3,18 +3,18 @@
 
     <div class="p-4 md:p-6">
         {{-- Top Navigation Bar --}}
-        <div class="flex items-center justify-between mb-6">
+        <div class="flex items-center justify-between mb-4 md:mb-6">
             {{-- Back Button & Title --}}
-            <div class="flex items-center gap-4">
+            <div class="flex items-center gap-3 md:gap-4">
                 <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}"
-                   class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors">
+                   class="inline-flex items-center justify-center w-10 h-10 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 transition-colors flex-shrink-0">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
                     </svg>
                 </a>
-                <div>
-                    <h1 class="text-2xl font-bold text-slate-900">{{ __("Edit Annex") }}: {{ $annex->annex_code }}</h1>
-                    <p class="text-slate-500">{{ __("Contract") }}: {{ $contract->formatted_number }}</p>
+                <div class="min-w-0">
+                    <h1 class="text-lg md:text-2xl font-bold text-slate-900 truncate">{{ __("Edit Annex") }}: {{ $annex->annex_code }}</h1>
+                    <p class="text-sm text-slate-500 truncate">{{ __("Contract") }}: {{ $contract->formatted_number }}</p>
                 </div>
             </div>
         </div>
@@ -23,9 +23,9 @@
             @csrf
             @method("PUT")
 
-            <div class="grid grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {{-- Main Content --}}
-                <div class="col-span-2 space-y-6">
+                <div class="lg:col-span-2 space-y-6">
                     {{-- Editor --}}
                     <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
                         <div class="px-5 py-4 border-b border-slate-200 bg-slate-50">
@@ -37,13 +37,13 @@
                     </div>
 
                     {{-- Actions --}}
-                    <div class="flex justify-end gap-3">
+                    <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
                         <a href="{{ route('contracts.annex.show', [$contract, $annex]) }}"
-                           class="px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
+                           class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-red-600 bg-white border border-red-300 rounded-lg hover:bg-red-50 transition-colors">
                             {{ __("Cancel") }}
                         </a>
                         <button type="submit"
-                                class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                                class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
                             {{ __("Save Changes") }}
                         </button>
                     </div>

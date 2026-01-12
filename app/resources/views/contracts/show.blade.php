@@ -2,7 +2,53 @@
     <x-slot name="pageTitle">{{ $contract->formatted_number }}</x-slot>
 
     <x-slot name="headerActions">
-        <div class="flex items-center gap-2">
+        {{-- Mobile: Dropdown menu --}}
+        <div class="md:hidden" x-data="{ open: false }">
+            <div class="flex items-center gap-2">
+                <x-ui.button variant="outline" onclick="window.location.href='{{ route('contracts.index') }}'" class="p-2">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                    </svg>
+                </x-ui.button>
+                @if(in_array($contract->status, ['draft', 'active']))
+                    <x-ui.button variant="primary" onclick="window.location.href='{{ route('contracts.edit', $contract) }}'" class="p-2">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </x-ui.button>
+                @endif
+                <div class="relative">
+                    <button @click="open = !open" type="button" class="inline-flex items-center justify-center p-2 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+                        </svg>
+                    </button>
+                    <div x-show="open" @click.away="open = false" x-transition
+                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                        @if($contract->isActive())
+                            <a href="{{ route('contracts.add-annex', $contract) }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">{{ __('Add Annex') }}</a>
+                        @endif
+                        @if($contract->pdf_path)
+                            <a href="{{ route('contracts.download', $contract) }}" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">{{ __('Download PDF') }}</a>
+                        @endif
+                        @if($contract->isDraft() && $contract->content && !$contract->is_finalized)
+                            <a href="{{ route('contracts.preview', $contract) }}" target="_blank" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">{{ __('Preview PDF') }}</a>
+                            <button onclick="finalizeAndRedirect()" class="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">{{ __('Finalize & Download') }}</button>
+                        @endif
+                        @if($contract->isActive())
+                            <form action="{{ route('contracts.terminate', $contract) }}" method="POST" class="block"
+                                  onsubmit="return confirm('{{ __('Are you sure you want to terminate this contract?') }}')">
+                                @csrf
+                                <button type="submit" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">{{ __('Terminate') }}</button>
+                            </form>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Desktop: Full button row --}}
+        <div class="hidden md:flex items-center gap-2">
             {{-- Navigation --}}
             <x-ui.button variant="outline" onclick="window.location.href='{{ route('contracts.index') }}'">
                 <svg class="-ml-1 mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,7 +163,7 @@
         </div>
     </x-slot>
 
-    <div class="p-6 space-y-6">
+    <div class="p-4 md:p-6 space-y-4 md:space-y-6">
         {{-- Messages --}}
         @if (session('success'))
             <x-ui.alert variant="success">{{ session('success') }}</x-ui.alert>
