@@ -33,11 +33,13 @@ class BnrExchangeRateService
     public function fetchTodayRates(?int $organizationId = null): array
     {
         try {
-            $response = Http::timeout(10)->get(self::BNR_URL);
+            $response = Http::retry(3, 100, throw: false)
+                ->timeout(10)
+                ->get(self::BNR_URL);
 
             if (!$response->successful()) {
                 Log::error('BNR rate fetch failed', ['status' => $response->status()]);
-                return ['success' => false, 'error' => 'Failed to fetch BNR rates'];
+                return ['success' => false, 'error' => 'Failed to fetch BNR rates (status: ' . $response->status() . ')'];
             }
 
             $xml = simplexml_load_string($response->body());

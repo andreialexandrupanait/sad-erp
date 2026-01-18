@@ -5,7 +5,7 @@
 
     <x-ui.button
         variant="destructive"
-        x-data=""
+        x-data="{}"
         x-on:click.prevent="$dispatch('open-modal', 'confirm-user-deletion')"
     >{{ __('Delete Account') }}</x-ui.button>
 </div>

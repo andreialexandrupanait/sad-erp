@@ -72,7 +72,7 @@
                                              copied: false,
                                              async copyUsername() {
                                                  try {
-                                                     await navigator.clipboard.writeText('{{ addslashes($credential->username) }}');
+                                                     await navigator.clipboard.writeText(@js($credential->username));
                                                      this.copied = true;
                                                      setTimeout(() => this.copied = false, 2000);
                                                  } catch (err) {
@@ -114,7 +114,7 @@
                                          copied: false,
                                          async copyPassword() {
                                              try {
-                                                 await navigator.clipboard.writeText('{{ addslashes($credential->password) }}');
+                                                 await navigator.clipboard.writeText(@js($credential->password));
                                                  this.copied = true;
                                                  setTimeout(() => this.copied = false, 2000);
                                              } catch (err) {
@@ -167,7 +167,7 @@
                                            title="{{ __('Open Login Page') }}"
                                            x-data
                                            @click="
-                                               navigator.clipboard.writeText('{{ addslashes($credential->username) }}');
+                                               navigator.clipboard.writeText(@js($credential->username));
                                                $dispatch('toast', {message: '{{ __('Username copied!') }}', type: 'success'});
                                            ">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

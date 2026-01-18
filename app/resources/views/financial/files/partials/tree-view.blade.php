@@ -102,11 +102,56 @@
                                  x-collapse>
 
                                 @php
+                                    // Pre-define all Tailwind classes to ensure JIT compilation
                                     $catConfigs = [
-                                        'incasare' => ['label' => 'Incasari', 'color' => 'green', 'count' => $monthData['incasare']],
-                                        'plata' => ['label' => 'Plati', 'color' => 'red', 'count' => $monthData['plata']],
-                                        'extrase' => ['label' => 'Extrase', 'color' => 'blue', 'count' => $monthData['extrase']],
-                                        'general' => ['label' => 'General', 'color' => 'slate', 'count' => $monthData['general']],
+                                        'incasare' => [
+                                            'label' => 'Incasari',
+                                            'count' => $monthData['incasare'],
+                                            'hoverBg' => 'hover:bg-green-50',
+                                            'activeBg' => 'bg-green-100',
+                                            'buttonHoverBg' => 'hover:bg-green-100',
+                                            'iconColor' => 'text-green-500',
+                                            'svgColor' => 'text-green-600',
+                                            'textActive' => 'font-medium text-green-800',
+                                            'textNormal' => 'text-green-700',
+                                            'badgeColor' => 'text-green-600',
+                                        ],
+                                        'plata' => [
+                                            'label' => 'Plati',
+                                            'count' => $monthData['plata'],
+                                            'hoverBg' => 'hover:bg-red-50',
+                                            'activeBg' => 'bg-red-100',
+                                            'buttonHoverBg' => 'hover:bg-red-100',
+                                            'iconColor' => 'text-red-500',
+                                            'svgColor' => 'text-red-600',
+                                            'textActive' => 'font-medium text-red-800',
+                                            'textNormal' => 'text-red-700',
+                                            'badgeColor' => 'text-red-600',
+                                        ],
+                                        'extrase' => [
+                                            'label' => 'Extrase',
+                                            'count' => $monthData['extrase'],
+                                            'hoverBg' => 'hover:bg-blue-50',
+                                            'activeBg' => 'bg-blue-100',
+                                            'buttonHoverBg' => 'hover:bg-blue-100',
+                                            'iconColor' => 'text-blue-500',
+                                            'svgColor' => 'text-blue-600',
+                                            'textActive' => 'font-medium text-blue-800',
+                                            'textNormal' => 'text-blue-700',
+                                            'badgeColor' => 'text-blue-600',
+                                        ],
+                                        'general' => [
+                                            'label' => 'General',
+                                            'count' => $monthData['general'],
+                                            'hoverBg' => 'hover:bg-slate-50',
+                                            'activeBg' => 'bg-slate-100',
+                                            'buttonHoverBg' => 'hover:bg-slate-100',
+                                            'iconColor' => 'text-slate-500',
+                                            'svgColor' => 'text-slate-600',
+                                            'textActive' => 'font-medium text-slate-800',
+                                            'textNormal' => 'text-slate-700',
+                                            'badgeColor' => 'text-slate-600',
+                                        ],
                                     ];
                                 @endphp
 
@@ -114,17 +159,16 @@
                                     @if($catConfig['count'] > 0)
                                         @php
                                             $isActive = ($year == $y && $month == $m && $category == $catKey);
-                                            $color = $catConfig['color'];
                                         @endphp
 
                                         <!-- Category Node (expandable) -->
                                         <div class="tree-node" x-data="categoryFiles({{ $y }}, {{ $m }}, '{{ $catKey }}')">
-                                            <div class="flex items-center gap-1 w-full px-2 py-1 rounded-lg hover:bg-{{ $color }}-50 {{ $isActive ? 'bg-'.$color.'-100' : '' }}">
+                                            <div class="flex items-center gap-1 w-full px-2 py-1 rounded-lg {{ $catConfig['hoverBg'] }} {{ $isActive ? $catConfig['activeBg'] : '' }}">
                                                 <!-- Expand/Collapse Arrow -->
                                                 <button type="button"
-                                                        class="tree-toggle p-0.5 hover:bg-{{ $color }}-100 rounded transition-colors"
+                                                        class="tree-toggle p-0.5 {{ $catConfig['buttonHoverBg'] }} rounded transition-colors"
                                                         @click.stop.prevent="toggle()">
-                                                    <svg class="w-3 h-3 text-{{ $color }}-500 transition-transform duration-200"
+                                                    <svg class="w-3 h-3 {{ $catConfig['iconColor'] }} transition-transform duration-200"
                                                          :class="{ 'rotate-90': open }"
                                                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -134,13 +178,13 @@
                                                 <!-- Category Link -->
                                                 <a href="{{ route('financial.files.category', ['year' => $y, 'month' => $m, 'category' => $catKey]) }}"
                                                    class="flex items-center gap-2 flex-1 py-0.5">
-                                                    <svg class="w-4 h-4 text-{{ $color }}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg class="w-4 h-4 {{ $catConfig['svgColor'] }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                                     </svg>
-                                                    <span class="text-sm {{ $isActive ? 'font-medium text-'.$color.'-800' : 'text-'.$color.'-700' }}">{{ $catConfig['label'] }}</span>
+                                                    <span class="text-sm {{ $isActive ? $catConfig['textActive'] : $catConfig['textNormal'] }}">{{ $catConfig['label'] }}</span>
                                                 </a>
 
-                                                <span class="text-xs font-medium text-{{ $color }}-600 tabular-nums">{{ $catConfig['count'] }}</span>
+                                                <span class="text-xs font-medium {{ $catConfig['badgeColor'] }} tabular-nums">{{ $catConfig['count'] }}</span>
                                             </div>
 
                                             <!-- Files List (lazy loaded) -->

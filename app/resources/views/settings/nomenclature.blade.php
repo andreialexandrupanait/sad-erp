@@ -403,7 +403,7 @@
                                                 @if($hasColors)
                                                     <div class="w-7 h-7 rounded border border-slate-300 flex-shrink-0 cursor-pointer hover:ring-2 hover:ring-blue-300 transition-all"
                                                          style="background-color: {{ $parent->color_class ?? '#3b82f6' }}"
-                                                         @click="openEditForm({{ $parent->id }}, '{{ addslashes($parent->label) }}', '{{ $parent->color_class ?? '#3b82f6' }}', {{ $parent->parent_id ?? 'null' }}, true)"
+                                                         @click="openEditForm({{ $parent->id }}, @js($parent->label), '{{ $parent->color_class ?? '#3b82f6' }}', {{ $parent->parent_id ?? 'null' }}, true)"
                                                          title="{{ __('settings.change_color') }}"></div>
                                                 @endif
                                                 <div class="flex items-center gap-1 border-l border-slate-200 pl-2">
@@ -412,7 +412,7 @@
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                                                         </svg>
                                                     </button>
-                                                    <button @click="openEditForm({{ $parent->id }}, '{{ addslashes($parent->label) }}', '{{ $parent->color_class ?? '#3b82f6' }}', {{ $parent->parent_id ?? 'null' }}, true)"
+                                                    <button @click="openEditForm({{ $parent->id }}, @js($parent->label), '{{ $parent->color_class ?? '#3b82f6' }}', {{ $parent->parent_id ?? 'null' }}, true)"
                                                             class="p-1.5 text-slate-500 hover:text-slate-700 hover:bg-slate-200 rounded" title="{{ __('settings.edit') }}">
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -472,7 +472,7 @@
                                                             @endif
                                                             <div class="flex items-center gap-1 border-l border-slate-200 pl-2">
                                                                 <div class="w-7 h-7"></div>
-                                                                <button @click="openEditForm({{ $child->id }}, '{{ addslashes($child->label) }}', '{{ $child->color_class ?? '#3b82f6' }}', {{ $child->parent_id ?? 'null' }}, true)"
+                                                                <button @click="openEditForm({{ $child->id }}, @js($child->label), '{{ $child->color_class ?? '#3b82f6' }}', {{ $child->parent_id ?? 'null' }}, true)"
                                                                         class="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded" title="{{ __('settings.edit') }}">
                                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -566,7 +566,7 @@
                                                 </td>
                                                 <td class="px-6 py-4 align-middle text-right">
                                                     <div class="flex justify-end gap-1">
-                                                        <button @click="openEditForm({{ $option->id }}, '{{ addslashes($option->label) }}', '{{ $option->color_class ?? '#3b82f6' }}', null, true)"
+                                                        <button @click="openEditForm({{ $option->id }}, @js($option->label), '{{ $option->color_class ?? '#3b82f6' }}', null, true)"
                                                                 class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded" title="{{ __('settings.edit') }}">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>

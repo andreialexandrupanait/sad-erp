@@ -80,7 +80,7 @@
                 />
             </div>
             <div class="w-24">
-                <select :name="$p.'currency'" :id="$p.'currency'" required class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
+                <select name="{{ $p }}currency" id="{{ $p }}currency" required class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
                     @foreach($currencies as $currency)
                         <option value="{{ $currency->value }}" {{ old($p.'currency', $subscription->currency ?? 'RON') === $currency->value ? 'selected' : '' }}>
                             {{ $currency->value }}

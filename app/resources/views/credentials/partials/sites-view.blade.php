@@ -108,7 +108,7 @@
                                     </svg>
                                     <span class="text-sm text-slate-700 truncate flex-1 font-mono">{{ $credential->username }}</span>
                                     <button type="button"
-                                            onclick="copyToClipboard('{{ addslashes($credential->username) }}', this)"
+                                            onclick="copyToClipboard(@js($credential->username), this)"
                                             class="p-1 text-slate-400 hover:text-slate-600 flex-shrink-0"
                                             title="{{ __('Copy username') }}">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

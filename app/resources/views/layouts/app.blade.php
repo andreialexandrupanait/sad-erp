@@ -43,9 +43,6 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Tailwind CSS CDN with custom config -->
-        <script src="https://cdn.tailwindcss.com"></script>
-
         <!-- Custom Primary Color CSS -->
         <style>
             :root {
@@ -626,25 +623,7 @@
             .bg-white.rounded-xl {
                 overflow: hidden;
             }
-
-            /* Card utility classes */
-            .card {
-                background: white;
-                border-radius: 0.75rem;
-                box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-                border: 1px solid #e2e8f0;
-                overflow: hidden;
-            }
-
-            .card-header {
-                padding: 1rem 1.5rem;
-                border-bottom: 1px solid #e2e8f0;
-                background-color: #f8fafc;
-            }
-
-            .card-body {
-                padding: 1.5rem;
-            }
+            /* Card utility classes defined in resources/css/app.css via @layer components */
         </style>
 
         <style>
@@ -1147,11 +1126,11 @@
         <!-- Command Palette (Cmd+K) -->
         <x-command-palette />
 
-        <!-- Livewire Scripts (includes Alpine.js) -->
-        @livewireScripts
-
         <!-- Load Vite bundle (registers Alpine components via alpine:init) -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+        <!-- Livewire Scripts (includes Alpine.js) - must load AFTER Vite so Alpine is available -->
+        @livewireScripts
 
         <!-- File Uploader Component for financial forms -->
         <script>
@@ -1341,6 +1320,7 @@
             } catch (e) {
                 console.log("Could not play notification sound");
             }
+        }
 
         // Push Notification Registration
         async function initPushNotifications() {

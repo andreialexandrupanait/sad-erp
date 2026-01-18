@@ -17,13 +17,14 @@ window.Pusher = Pusher;
 // Initialize Echo - support both Reverb and Pusher
 if (import.meta.env.VITE_REVERB_APP_KEY) {
     // Laravel Reverb configuration
+    // WebSocket is routed through nginx on standard HTTPS port (443) for SSL termination
     window.Echo = new Echo({
         broadcaster: "reverb",
         key: import.meta.env.VITE_REVERB_APP_KEY,
         wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
-        forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? "https") === "https",
+        wsPort: 80,
+        wssPort: 443,
+        forceTLS: true,
         enabledTransports: ["ws", "wss"],
     });
 } else if (import.meta.env.VITE_PUSHER_APP_KEY) {

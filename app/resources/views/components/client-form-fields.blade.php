@@ -58,26 +58,29 @@
                 id="{{ $idPrefix }}tax_id"
                 value="{{ old($namePrefix.'tax_id', $client->tax_id ?? '') }}"
                 placeholder="{{ __('e.g., RO12345678') }}"
-                @blur="if ($event.target.value && !document.getElementById('{{ $idPrefix }}company_name').value) {
-                    loading = true;
-                    fetch(`https://api.openapi.ro/api/companies/${$event.target.value.replace('RO', '')}`)
-                        .then(res => res.json())
-                        .then(data => {
-                            if (data.found && data.cif) {
-                                if (!document.getElementById('{{ $idPrefix }}company_name').value) {
-                                    document.getElementById('{{ $idPrefix }}company_name').value = data.denumire || '';
+                @blur="
+                    const cui = $event.target.value.replace(/[^0-9]/g, '');
+                    if (cui.length >= 6 && !document.getElementById('{{ $idPrefix }}company_name').value) {
+                        loading = true;
+                        fetch(`https://api.openapi.ro/api/companies/${cui}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.found && data.cif) {
+                                    if (!document.getElementById('{{ $idPrefix }}company_name').value) {
+                                        document.getElementById('{{ $idPrefix }}company_name').value = data.denumire || '';
+                                    }
+                                    const regNum = document.getElementById('{{ $idPrefix }}registration_number');
+                                    if (regNum) regNum.value = data.numar_reg_com || '';
+                                    const addr = document.getElementById('{{ $idPrefix }}address');
+                                    if (addr) addr.value = data.adresa || '';
+                                    const vatPayer = document.getElementById('{{ $idPrefix }}vat_payer');
+                                    if (vatPayer) vatPayer.checked = data.tva === 'DA';
                                 }
-                                const regNum = document.getElementById('{{ $idPrefix }}registration_number');
-                                if (regNum) regNum.value = data.numar_reg_com || '';
-                                const addr = document.getElementById('{{ $idPrefix }}address');
-                                if (addr) addr.value = data.adresa || '';
-                                const vatPayer = document.getElementById('{{ $idPrefix }}vat_payer');
-                                if (vatPayer) vatPayer.checked = data.tva === 'DA';
-                            }
-                        })
-                        .catch(err => console.error('Error fetching company data:', err))
-                        .finally(() => loading = false);
-                }"
+                            })
+                            .catch(err => console.error('Error fetching company data:', err))
+                            .finally(() => loading = false);
+                    }
+                "
             />
             <div x-show="loading" class="absolute right-3 top-1/2 transform -translate-y-1/2">
                 <svg class="animate-spin h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

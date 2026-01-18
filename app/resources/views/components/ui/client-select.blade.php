@@ -242,7 +242,7 @@
                         </div>
 
                         {{-- Form --}}
-                        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+                        <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6" :data-form-id="componentId">
                             {{-- Error Display --}}
                             <div x-show="formErrors.length > 0" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                                 <div class="flex gap-2">
@@ -261,7 +261,7 @@
                             <x-client-form-fields
                                 :client="null"
                                 :statuses="$clientStatuses"
-                                prefix="new_client_"
+                                :prefix="$componentId . '_'"
                                 :compact="true"
                             />
                         </div>
@@ -471,9 +471,12 @@ document.addEventListener('alpine:init', () => {
             this.slideOverOpen = true;
             this.formErrors = [];
             this.$nextTick(() => {
-                // Focus first input
-                const firstInput = document.getElementById('new_client_name');
-                if (firstInput) firstInput.focus();
+                // Focus first input using container query
+                const container = document.querySelector(`[data-form-id="${this.componentId}"]`);
+                if (container) {
+                    const firstInput = container.querySelector('input[type="text"]');
+                    if (firstInput) firstInput.focus();
+                }
             });
         },
 
@@ -484,12 +487,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         getFormData() {
-            const prefix = 'new_client_';
+            // Find the form container by data attribute (works with teleported content)
+            const container = document.querySelector(`[data-form-id="${this.componentId}"]`);
+            if (!container) return {};
+
+            const prefix = this.componentId + '_';
             const fields = ['name', 'company_name', 'tax_id', 'registration_number', 'contact_person', 'status_id', 'email', 'phone', 'address', 'vat_payer'];
             const data = {};
 
             fields.forEach(field => {
-                const input = document.getElementById(prefix + field);
+                // Try by name attribute first (more reliable), then by ID
+                let input = container.querySelector(`[name="${prefix}${field}"]`);
+                if (!input) {
+                    input = container.querySelector(`#${prefix}${field}`);
+                }
                 if (input) {
                     if (input.type === 'checkbox') {
                         data[field] = input.checked ? '1' : '0';
@@ -503,11 +514,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         clearFormFields() {
-            const prefix = 'new_client_';
+            const container = document.querySelector(`[data-form-id="${this.componentId}"]`);
+            if (!container) return;
+
+            const prefix = this.componentId + '_';
             const fields = ['name', 'company_name', 'tax_id', 'registration_number', 'contact_person', 'status_id', 'email', 'phone', 'address', 'vat_payer', 'notes'];
 
             fields.forEach(field => {
-                const input = document.getElementById(prefix + field);
+                let input = container.querySelector(`[name="${prefix}${field}"]`);
+                if (!input) {
+                    input = container.querySelector(`#${prefix}${field}`);
+                }
                 if (input) {
                     if (input.type === 'checkbox') {
                         input.checked = false;
@@ -521,7 +538,20 @@ document.addEventListener('alpine:init', () => {
         async createClient() {
             if (this.saving) return;
 
+            // Debug: check what we're working with
+            const container = document.querySelector(`[data-form-id="${this.componentId}"]`);
+            console.log('componentId:', this.componentId);
+            console.log('Container found:', container);
+            if (container) {
+                console.log('All inputs in container:', container.querySelectorAll('input'));
+                const nameInput = container.querySelector('input[type="text"]');
+                console.log('First text input:', nameInput);
+                console.log('First text input value:', nameInput ? nameInput.value : 'N/A');
+                console.log('First text input name:', nameInput ? nameInput.name : 'N/A');
+            }
+
             const formData = this.getFormData();
+            console.log('Form data collected:', formData);
 
             // Basic validation
             this.formErrors = [];

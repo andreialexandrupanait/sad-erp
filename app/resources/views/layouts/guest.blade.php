@@ -16,9 +16,6 @@
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=inter:300,400,500,600,700&display=swap" rel="stylesheet" />
 
-        <!-- Tailwind CSS CDN -->
-        <script src="https://cdn.tailwindcss.com"></script>
-
         <!-- Custom Primary Color CSS -->
         <style>
             :root {
@@ -46,6 +43,9 @@
             }
 
         </style>
+
+        <!-- Vite CSS & JS -->
+        @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen gradient-bg flex items-center justify-center p-4">

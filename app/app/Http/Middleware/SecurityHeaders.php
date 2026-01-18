@@ -54,22 +54,20 @@ class SecurityHeaders
             'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=()'
         );
 
-        // Content Security Policy (Nonce-based)
-        // Security: CSP is now ENFORCED by default to protect against XSS attacks
-        // Note: 'unsafe-inline' is still present for styles (hard to migrate) but removed from scripts
-        // TODO: Migrate remaining inline scripts to use nonce attribute, then remove 'unsafe-inline' entirely
+        // Content Security Policy
+        // Note: Nonces removed from script-src because they make 'unsafe-inline' ignored per CSP spec.
+        // Alpine.js requires 'unsafe-eval' for its expression evaluation (x-data, @click, etc.)
+        // TODO: Consider migrating to @alpinejs/csp build for stricter security
         $csp = [
             "default-src 'self'",
-            // script-src: Allow scripts from self with nonce for inline scripts
-            // SECURITY: Removed 'unsafe-eval' (prevents eval() attacks)
-            // SECURITY: 'unsafe-inline' kept temporarily - migrate to nonces then remove
-            "script-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com https://cdnjs.cloudflare.com",
-            // style-src: Allow styles from self, with nonce for inline styles
-            // Note: 'unsafe-inline' required for many CSS frameworks and Tailwind
-            "style-src 'self' 'nonce-{$nonce}' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
+            // script-src: 'unsafe-inline' needed for Alpine event handlers (@click, @blur, etc.)
+            // 'unsafe-eval' needed for Alpine.js expression evaluation (x-data objects, etc.)
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.tiny.cloud",
+            // style-src: 'unsafe-inline' required for Tailwind and dynamic styles
+            "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net",
-            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tiny.cloud wss://hub.simplead.ro:6001 https://api.openapi.ro",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

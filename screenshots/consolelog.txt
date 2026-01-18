@@ -1,0 +1,205 @@
+The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.
+12Executing inline script violates the following Content Security Policy directive 'script-src 'self' 'nonce-YGMrph8sx2SP7EibFwND5w==' 'unsafe-inline' <URL> <URL> <URL> <URL> <URL>'. Note that 'unsafe-inline' is ignored if either a hash or nonce value is present in the source list. The policy is report-only, so the violation has been logged but no further action has been taken.
+(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ (index):64
+(anonymous) @ (index):64
+144Applying inline style violates the following Content Security Policy directive 'style-src 'self' 'nonce-YGMrph8sx2SP7EibFwND5w==' 'unsafe-inline' <URL> <URL> <URL> <URL> <URL>'. Note that 'unsafe-inline' is ignored if either a hash or nonce value is present in the source list. The policy is report-only, so the violation has been logged but no further action has been taken.
+dashboard:12948 Livewire: The published Livewire assets are out of date
+ See: https://livewire.laravel.com/docs/installation#publishing-livewires-frontend-assets
+(anonymous) @ dashboard:12948
+dashboard:13213 Uncaught SyntaxError: Unexpected end of input (at dashboard:13213:9)
+5Connecting to '<URL>' violates the following Content Security Policy directive: "connect-src 'self' <URL> <URL> <URL>". The policy is report-only, so the violation has been logged but no further action has been taken.
+312Evaluating a string as JavaScript violates the following Content Security Policy directive because 'unsafe-eval' is not an allowed source of script: "script-src 'self' 'nonce-YGMrph8sx2SP7EibFwND5w==' 'unsafe-inline' <URL> <URL> <URL> <URL> <URL>".
+ The policy is report-only, so the violation has been logged but no further action has been taken.
+module.esm.js:435 Alpine Expression Error: Unexpected string
+
+Expression: "$p.'auto_renew'"
+
+ input.h-4.w-4.rounded.border-slate-300.text-slate-900.focus:ring-slate-900
+lt @ module.esm.js:435
+(anonymous) @ module.esm.js:497
+Dl @ module.esm.js:500
+Bl @ module.esm.js:506
+Xi @ module.esm.js:468
+U @ module.esm.js:458
+Jo @ module.esm.js:3010
+r @ module.esm.js:600
+n @ module.esm.js:605
+Hl @ module.esm.js:608
+oe @ module.esm.js:809
+(anonymous) @ module.esm.js:758
+Kl @ module.esm.js:757
+za @ lifecycle.js:110
+(anonymous) @ index.js:52
+module.esm.js:435 Alpine Expression Error: Unexpected string
+
+Expression: "$p.'currency'"
+
+ select.flex.h-10.w-full.rounded-md.border.border-slate-200.bg-white.px-3.py-2.text-sm.ring-offset-white.focus-visible:outline-none.focus-visible:ring-2.focus-visible:ring-slate-950.focus-visible:ring-offset-2
+lt @ module.esm.js:435
+(anonymous) @ module.esm.js:497
+Dl @ module.esm.js:500
+Bl @ module.esm.js:506
+Xi @ module.esm.js:468
+U @ module.esm.js:458
+Jo @ module.esm.js:3010
+r @ module.esm.js:600
+n @ module.esm.js:605
+Hl @ module.esm.js:608
+oe @ module.esm.js:809
+(anonymous) @ module.esm.js:758
+Kl @ module.esm.js:757
+za @ lifecycle.js:110
+(anonymous) @ index.js:52
+2module.esm.js:488 Uncaught SyntaxError: Unexpected string
+    at new AsyncFunction (<anonymous>)
+    at module.esm.js:488:19
+    at Dl (module.esm.js:500:3)
+    at Bl (module.esm.js:506:14)
+    at Xi (module.esm.js:468:109)
+    at U (module.esm.js:458:10)
+    at Jo (module.esm.js:3010:19)
+    at r (module.esm.js:600:45)
+    at n (module.esm.js:605:5)
+    at Hl (module.esm.js:608:3)
+(anonymous) @ module.esm.js:488
+Dl @ module.esm.js:500
+Bl @ module.esm.js:506
+Xi @ module.esm.js:468
+U @ module.esm.js:458
+Jo @ module.esm.js:3010
+r @ module.esm.js:600
+n @ module.esm.js:605
+Hl @ module.esm.js:608
+oe @ module.esm.js:809
+(anonymous) @ module.esm.js:758
+Kl @ module.esm.js:757
+za @ lifecycle.js:110
+(anonymous) @ index.js:52
+inject_main.js:1 inject_main.js
+web-client-content-script.js:2 The Content Security Policy directive 'upgrade-insecure-requests' is ignored when delivered in a report-only policy.
+(anonymous) @ web-client-content-script.js:2
+ru @ web-client-content-script.js:2
+wu @ web-client-content-script.js:2
+yu @ web-client-content-script.js:2
+bu @ web-client-content-script.js:2
+(anonymous) @ web-client-content-script.js:2
+kl @ web-client-content-script.js:2
+ul @ web-client-content-script.js:2
+Vn @ web-client-content-script.js:2
+ll @ web-client-content-script.js:2
+notify @ web-client-content-script.js:2
+a.notifyNestedSubs @ web-client-content-script.js:2
+t.notifySubscribers @ web-client-content-script.js:2
+a.handleChangeWrapper @ web-client-content-script.js:2
+m @ web-client-content-script.js:2
+(anonymous) @ web-client-content-script.js:299
+(anonymous) @ web-client-content-script.js:2
+(anonymous) @ web-client-content-script.js:2
+(anonymous) @ web-client-content-script.js:2
+dashboard:1407 Executing inline event handler violates the following Content Security Policy directive 'script-src 'self' 'nonce-YGMrph8sx2SP7EibFwND5w==' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com https://cdnjs.cloudflare.com'. Note that 'unsafe-inline' is ignored if either a hash or nonce value is present in the source list. The policy is report-only, so the violation has been logged but no further action has been taken.
+dashboard:1407 Executing inline event handler violates the following Content Security Policy directive 'script-src 'self' 'nonce-YGMrph8sx2SP7EibFwND5w==' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdn.quilljs.com https://unpkg.com https://cdnjs.cloudflare.com'. Note that 'unsafe-inline' is ignored if either a hash or nonce value is present in the source list. The policy is report-only, so the violation has been logged but no further action has been taken.
+VM4531:5  GET https://api.openapi.ro/api/companies/- 400 (Bad Request)
+eval @ VM4531:5
+[Alpine] if ($event.target.value && !document.getElementById('new_client_company_name').value) {
+                    loading = true;
+                    fetch(`https://api.openapi.ro/api/companies/${$event.target.value.replace('RO', '')}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.found && data.cif) {
+                                if (!document.getElementById('new_client_company_name').value) {
+                                    document.getElementById('new_client_company_name').value = data.denumire || '';
+                                }
+                                const regNum = document.getElementById('new_client_registration_number');
+                                if (regNum) regNum.value = data.numar_reg_com || '';
+                                const addr = document.getElementById('new_client_address');
+                                if (addr) addr.value = data.adresa || '';
+                                const vatPayer = document.getElementById('new_client_vat_payer');
+                                if (vatPayer) vatPayer.checked = data.tva === 'DA';
+                            }
+                        })
+                        .catch(err => console.error('Error fetching company data:', err))
+                        .finally(() => loading = false);
+                } @ VM4531:22
+(anonymous) @ module.esm.js:513
+Il @ module.esm.js:425
+(anonymous) @ module.esm.js:3382
+o @ module.esm.js:2645
+app-mX2gZs6J.js:6 WebSocket connection to 'wss://hub.simplead.ro:6001/app/ae258805f4019149316fa84c905c81d8?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+close @ app-mX2gZs6J.js:6
+abort @ app-mX2gZs6J.js:7
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+setTimeout
+te @ app-mX2gZs6J.js:6
+X @ app-mX2gZs6J.js:6
+tryStrategy @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+kt @ app-mX2gZs6J.js:6
+Fs @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+startConnecting @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:7
+M @ app-mX2gZs6J.js:7
+connect @ app-mX2gZs6J.js:6
+Xn @ app-mX2gZs6J.js:6
+Fe @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+Oo @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:7
+app-mX2gZs6J.js:6 WebSocket connection to 'wss://hub.simplead.ro:6001/app/ae258805f4019149316fa84c905c81d8?protocol=7&client=js&version=8.4.0&flash=false' failed: WebSocket is closed before the connection is established.
+close @ app-mX2gZs6J.js:6
+abort @ app-mX2gZs6J.js:7
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+setTimeout
+te @ app-mX2gZs6J.js:6
+X @ app-mX2gZs6J.js:6
+tryStrategy @ app-mX2gZs6J.js:6
+x @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+setTimeout
+te @ app-mX2gZs6J.js:6
+X @ app-mX2gZs6J.js:6
+tryStrategy @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+kt @ app-mX2gZs6J.js:6
+Fs @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+startConnecting @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:7
+M @ app-mX2gZs6J.js:7
+connect @ app-mX2gZs6J.js:6
+Xn @ app-mX2gZs6J.js:6
+Fe @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+Oo @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:7
+app-mX2gZs6J.js:7 WebSocket connection to 'wss://hub.simplead.ro:6001/app/ae258805f4019149316fa84c905c81d8?protocol=7&client=js&version=8.4.0&flash=false' failed: 
+createWebSocket @ app-mX2gZs6J.js:7
+getSocket @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:6
+C @ app-mX2gZs6J.js:7
+emit @ app-mX2gZs6J.js:6
+changeState @ app-mX2gZs6J.js:6
+Ws @ app-mX2gZs6J.js:6
+connect @ app-mX2gZs6J.js:7
+tryStrategy @ app-mX2gZs6J.js:6
+x @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6
+(anonymous) @ app-mX2gZs6J.js:6

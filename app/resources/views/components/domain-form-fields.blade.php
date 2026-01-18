@@ -154,15 +154,15 @@
             <div class="flex h-6 items-center">
                 <input
                     type="checkbox"
-                    :name="$p.'auto_renew'"
-                    :id="$p.'auto_renew'"
+                    name="{{ $p }}auto_renew"
+                    id="{{ $p }}auto_renew"
                     value="1"
                     {{ old($p.'auto_renew', $domain->auto_renew ?? false) ? 'checked' : '' }}
                     class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
                 >
             </div>
             <div class="ml-3 text-sm leading-6">
-                <label :for="$p.'auto_renew'" class="font-medium text-slate-900">{{ __('Auto-renew enabled') }}</label>
+                <label for="{{ $p }}auto_renew" class="font-medium text-slate-900">{{ __('Auto-renew enabled') }}</label>
                 @if(!$compact)
                     <p class="text-slate-500">{{ __('Domain will automatically renew before expiry') }}</p>
                 @endif
