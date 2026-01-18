@@ -116,8 +116,7 @@ class FinancialExpense extends Model
 
     public function scopeByCurrency($query, $currency)
     {
-        return $query->where('currency',
-        'exchange_rate', $currency);
+        return $query->where('currency', $currency);
     }
 
     public function scopeByCategory($query, $categoryId)

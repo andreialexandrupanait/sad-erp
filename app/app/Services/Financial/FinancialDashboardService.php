@@ -4,6 +4,7 @@ namespace App\Services\Financial;
 
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
+use App\Services\Concerns\HasOrganizationCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -16,6 +17,8 @@ use Illuminate\Support\Collection;
  */
 class FinancialDashboardService
 {
+    use HasOrganizationCache;
+
     // Cache TTL in seconds (10 minutes)
     private const CACHE_TTL = 600;
 
@@ -31,15 +34,6 @@ class FinancialDashboardService
         $this->revenueAggregator = $revenueAggregator;
         $this->expenseAggregator = $expenseAggregator;
         $this->chartBuilder = $chartBuilder;
-    }
-
-    /**
-     * Get cache key with organization prefix.
-     */
-    private function cacheKey(string $key): string
-    {
-        $orgId = auth()->user()->organization_id ?? 'default';
-        return "org.{$orgId}.{$key}";
     }
 
     /**

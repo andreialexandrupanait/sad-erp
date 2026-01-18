@@ -32,6 +32,7 @@ class OfferController extends Controller
         protected ContractService $contractService
     ) {
         $this->middleware('auth')->except(['publicView', 'publicAccept', 'publicReject']);
+        $this->authorizeResource(Offer::class, 'offer');
     }
 
     /**

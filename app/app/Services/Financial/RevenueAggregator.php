@@ -3,6 +3,7 @@
 namespace App\Services\Financial;
 
 use App\Models\FinancialRevenue;
+use App\Services\Concerns\HasOrganizationCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -15,16 +16,9 @@ use Illuminate\Support\Collection;
  */
 class RevenueAggregator
 {
-    private const CACHE_TTL = 600; // 10 minutes
+    use HasOrganizationCache;
 
-    /**
-     * Get cache key with organization prefix
-     */
-    private function cacheKey(string $key): string
-    {
-        $orgId = auth()->user()->organization_id ?? 'default';
-        return "org.{$orgId}.{$key}";
-    }
+    private const CACHE_TTL = 600; // 10 minutes
 
     /**
      * Get yearly revenue totals by currency
@@ -122,14 +116,25 @@ class RevenueAggregator
         return Cache::remember(
             $this->cacheKey("financial.revenues.clients.{$year}"),
             self::CACHE_TTL,
-            fn() => FinancialRevenue::forYear($year)
-                ->whereNotNull('client_id')
-                ->select('client_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-                ->groupBy('client_id')
-                ->orderByDesc('total')
-                ->limit($limit)
-                ->with('client')
-                ->get()
+            function () use ($year, $limit) {
+                // Get aggregated data
+                $results = FinancialRevenue::forYear($year)
+                    ->whereNotNull('client_id')
+                    ->select('client_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+                    ->groupBy('client_id')
+                    ->orderByDesc('total')
+                    ->limit($limit)
+                    ->get();
+
+                // Load clients separately to avoid N+1
+                $clientIds = $results->pluck('client_id')->filter();
+                $clients = \App\Models\Client::whereIn('id', $clientIds)->get()->keyBy('id');
+
+                // Map clients to results
+                $results->each(fn($r) => $r->setRelation('client', $clients->get($r->client_id)));
+
+                return $results;
+            }
         );
     }
 

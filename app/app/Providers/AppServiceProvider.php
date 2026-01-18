@@ -10,6 +10,7 @@ use App\Models\Credential;
 use App\Models\Domain;
 use App\Models\FinancialFile;
 use App\Models\InternalAccount;
+use App\Models\Offer;
 use App\Models\Service;
 use App\Models\SettingOption;
 use App\Models\Subscription;
@@ -38,6 +39,7 @@ use App\Policies\DomainPolicy;
 use App\Policies\FinancialExpensePolicy;
 use App\Policies\FinancialFilePolicy;
 use App\Policies\FinancialRevenuePolicy;
+use App\Policies\OfferPolicy;
 use App\Policies\ServicePolicy;
 use App\Policies\InternalAccountPolicy;
 use App\Policies\SubscriptionPolicy;
@@ -99,5 +101,6 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(FinancialFile::class, FinancialFilePolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
         Gate::policy(Contract::class, ContractPolicy::class);
+        Gate::policy(Offer::class, OfferPolicy::class);
     }
 }

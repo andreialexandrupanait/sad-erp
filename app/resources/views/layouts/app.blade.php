@@ -8,6 +8,13 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
+        <!-- Critical CSS - Prevents FOUC (must be first) -->
+        <style>
+            [x-cloak] { display: none !important; }
+            .no-fouc { opacity: 0; }
+            .no-fouc.ready { opacity: 1; transition: opacity 0.1s ease-in; }
+        </style>
+
         <!-- Theme Detection Script (must run early to prevent flash) -->
         <script>
             (function() {
@@ -61,6 +68,9 @@
 
         <!-- Livewire Styles (must be in head) -->
         @livewireStyles
+
+        <!-- Vite CSS (must be in head to prevent FOUC) -->
+        @vite(['resources/css/app.css'])
 
         <!-- Bulk Selection Component - Must load before Alpine.js evaluates x-data -->
         <script>
@@ -594,24 +604,30 @@
         };
         </script>
 
-        <!-- Alpine.js x-cloak - Hide elements until Alpine is ready -->
-        <style>
-            [x-cloak] {
-                display: none !important;
-            }
-        </style>
-
         <!-- Sidebar responsive styles -->
         <style>
+            /* Mobile: closed by default */
             #sidebar-wrapper {
                 transform: translateX(-100%);
+                transition: transform 300ms ease-in-out;
             }
-            #sidebar-wrapper.translate-x-0 {
-                transform: translateX(0) !important;
+            #sidebar-wrapper.sidebar-open {
+                transform: translateX(0);
             }
+            /* Desktop: open by default, use sidebar-closed to hide */
             @media (min-width: 768px) {
                 #sidebar-wrapper {
                     transform: translateX(0);
+                }
+                #sidebar-wrapper.sidebar-closed {
+                    transform: translateX(-100%);
+                }
+                #content-wrapper {
+                    margin-left: 16rem;
+                    transition: margin-left 300ms ease-in-out;
+                }
+                #content-wrapper.sidebar-closed {
+                    margin-left: 0;
                 }
             }
         </style>
@@ -989,14 +1005,14 @@
         @stack('styles')
     </head>
     <body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200" x-data="{
-        sidebarOpen: window.innerWidth >= 768,
+        sidebarOpen: window.innerWidth >= 768 ? localStorage.getItem('sidebarOpen') !== 'false' : false,
         touchStartX: 0,
         touchCurrentX: 0,
         isDragging: false,
         init() {
-            window.addEventListener('resize', () => {
+            this.$watch('sidebarOpen', (value) => {
                 if (window.innerWidth >= 768) {
-                    this.sidebarOpen = true;
+                    localStorage.setItem('sidebarOpen', value);
                 }
             });
         }
@@ -1010,8 +1026,8 @@
             <!-- Sidebar - toggleable on mobile, always visible on desktop -->
             <div
                 id="sidebar-wrapper"
-                class="fixed md:static inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out"
-                :class="sidebarOpen && 'translate-x-0'"
+                class="fixed inset-y-0 left-0 z-50"
+                :class="sidebarOpen ? 'sidebar-open' : 'sidebar-closed'"
                 @touchstart="if (window.innerWidth < 768) {
                     touchStartX = $event.touches[0].clientX;
                     isDragging = true;
@@ -1053,7 +1069,7 @@
             ></div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 flex flex-col overflow-hidden">
+            <div id="content-wrapper" class="flex-1 flex flex-col overflow-hidden" :class="!sidebarOpen && 'sidebar-closed'">
                 <!-- Global Header -->
                 <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 flex-shrink-0 h-16">
                     <div class="flex items-center justify-between h-full px-4 md:px-6 gap-4">
@@ -1126,8 +1142,8 @@
         <!-- Command Palette (Cmd+K) -->
         <x-command-palette />
 
-        <!-- Load Vite bundle (registers Alpine components via alpine:init) -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
+        <!-- Load Vite JS bundle (registers Alpine components via alpine:init) -->
+        @vite(['resources/js/app.js'])
 
         <!-- Livewire Scripts (includes Alpine.js) - must load AFTER Vite so Alpine is available -->
         @livewireScripts
@@ -1325,33 +1341,32 @@
         // Push Notification Registration
         async function initPushNotifications() {
             if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-                console.log("Push notifications not supported");
+                // Push notifications not supported in this browser - silent return
                 return;
             }
 
             try {
+                // Get VAPID public key first - if not configured, skip silently
+                const response = await fetch("/push/vapid-key");
+                const { publicKey } = await response.json();
+
+                // Validate VAPID key - must be a non-empty base64url string (65 bytes when decoded)
+                if (!publicKey || typeof publicKey !== "string" || publicKey.length < 50) {
+                    // VAPID key not configured - push notifications disabled, skip silently
+                    return;
+                }
+
                 const registration = await navigator.serviceWorker.register("/sw.js");
-                console.log("Service Worker registered");
 
                 // Check if already subscribed
                 const subscription = await registration.pushManager.getSubscription();
                 if (subscription) {
-                    console.log("Already subscribed to push");
                     return;
                 }
 
                 // Request permission
                 const permission = await Notification.requestPermission();
                 if (permission !== "granted") {
-                    console.log("Push notification permission denied");
-                    return;
-                }
-
-                // Get VAPID public key
-                const response = await fetch("/push/vapid-key");
-                const { publicKey } = await response.json();
-                if (!publicKey) {
-                    console.log("VAPID key not configured");
                     return;
                 }
 
@@ -1373,7 +1388,8 @@
 
                 console.log("Push notifications enabled");
             } catch (error) {
-                console.error("Failed to setup push notifications:", error);
+                // Silently ignore push notification setup errors
+                // Common causes: VAPID key not configured, service worker issues, etc.
             }
         }
 

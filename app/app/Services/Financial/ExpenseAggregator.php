@@ -3,6 +3,7 @@
 namespace App\Services\Financial;
 
 use App\Models\FinancialExpense;
+use App\Services\Concerns\HasOrganizationCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
@@ -15,16 +16,9 @@ use Illuminate\Support\Collection;
  */
 class ExpenseAggregator
 {
-    private const CACHE_TTL = 600; // 10 minutes
+    use HasOrganizationCache;
 
-    /**
-     * Get cache key with organization prefix
-     */
-    private function cacheKey(string $key): string
-    {
-        $orgId = auth()->user()->organization_id ?? 'default';
-        return "org.{$orgId}.{$key}";
-    }
+    private const CACHE_TTL = 600; // 10 minutes
 
     /**
      * Get yearly expense totals by currency
@@ -96,14 +90,25 @@ class ExpenseAggregator
         return Cache::remember(
             $this->cacheKey("financial.expenses.categories.{$year}"),
             self::CACHE_TTL,
-            fn() => FinancialExpense::forYear($year)
-                ->whereNotNull('category_option_id')
-                ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-                ->groupBy('category_option_id')
-                ->orderByDesc('total')
-                ->limit($limit)
-                ->with('category')
-                ->get()
+            function () use ($year, $limit) {
+                // Get aggregated data
+                $results = FinancialExpense::forYear($year)
+                    ->whereNotNull('category_option_id')
+                    ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
+                    ->groupBy('category_option_id')
+                    ->orderByDesc('total')
+                    ->limit($limit)
+                    ->get();
+
+                // Load categories separately to avoid N+1
+                $categoryIds = $results->pluck('category_option_id')->filter();
+                $categories = \App\Models\SettingOption::whereIn('id', $categoryIds)->get()->keyBy('id');
+
+                // Map categories to results
+                $results->each(fn($r) => $r->setRelation('category', $categories->get($r->category_option_id)));
+
+                return $results;
+            }
         );
     }
 

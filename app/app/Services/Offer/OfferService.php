@@ -13,6 +13,7 @@ use App\Models\Offer;
 use App\Models\OfferItem;
 use App\Models\Service;
 use App\Services\Contract\ContractService;
+use App\Services\Mail\SmtpConfigurationService;
 use App\Services\Notification\NotificationService;
 use App\Services\Notification\Messages\OfferSentMessage;
 use App\Services\Notification\Messages\OfferAcceptedMessage;
@@ -44,8 +45,11 @@ class OfferService implements OfferServiceInterface
 {
     public function __construct(
         protected ?NotificationService $notificationService = null,
-        protected ?ContractService $contractService = null
-    ) {}
+        protected ?ContractService $contractService = null,
+        protected ?SmtpConfigurationService $smtpService = null
+    ) {
+        $this->smtpService ??= app(SmtpConfigurationService::class);
+    }
 
     /**
      * Execute a callback with the offer's locale temporarily set.
@@ -333,40 +337,7 @@ class OfferService implements OfferServiceInterface
      */
     protected function configureSmtpFromDatabase(): void
     {
-        $smtpEnabled = \App\Models\ApplicationSetting::get('smtp_enabled', false);
-
-        if ($smtpEnabled) {
-            $smtpHost = \App\Models\ApplicationSetting::get('smtp_host');
-            $smtpPort = \App\Models\ApplicationSetting::get('smtp_port', 587);
-            $smtpUsername = \App\Models\ApplicationSetting::get('smtp_username');
-            $smtpPassword = \App\Models\ApplicationSetting::get('smtp_password');
-            $smtpEncryption = \App\Models\ApplicationSetting::get('smtp_encryption', 'tls');
-            $fromEmail = \App\Models\ApplicationSetting::get('smtp_from_email');
-            $fromName = \App\Models\ApplicationSetting::get('smtp_from_name', config('app.name'));
-
-            // Decrypt password if encrypted
-            if ($smtpPassword) {
-                try {
-                    $smtpPassword = decrypt($smtpPassword);
-                } catch (\Exception $e) {
-                    // Password might not be encrypted
-                }
-            }
-
-            // Configure SMTP on the fly
-            config([
-                'mail.default' => 'smtp',
-                'mail.mailers.smtp.host' => $smtpHost,
-                'mail.mailers.smtp.port' => (int) $smtpPort,
-                'mail.mailers.smtp.username' => $smtpUsername,
-                'mail.mailers.smtp.password' => $smtpPassword,
-                'mail.mailers.smtp.encryption' => $smtpEncryption === 'none' ? null : $smtpEncryption,
-                'mail.from.address' => $fromEmail ?: $smtpUsername,
-                'mail.from.name' => $fromName,
-            ]);
-
-            Log::info('SMTP configured from database settings', ['host' => $smtpHost, 'from' => $fromEmail]);
-        }
+        $this->smtpService->configure();
     }
 
     /**

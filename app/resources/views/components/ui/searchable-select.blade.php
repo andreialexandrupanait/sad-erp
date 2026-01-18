@@ -49,7 +49,7 @@
     {{ $disabled ? 'data-disabled' : '' }}
 >
     {{-- Hidden input for form submission --}}
-    <input type="hidden" :name="name" :value="selectedValue || ''">
+    <input type="hidden" :id="name" :name="name" :value="selectedValue || ''">
 
     {{-- Trigger Button --}}
     <button

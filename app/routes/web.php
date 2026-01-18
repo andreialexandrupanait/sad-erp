@@ -141,7 +141,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
         ->name('import-export.export');
 
     // Widget Data Endpoints (AJAX)
-    Route::prefix('widgets')->name('widgets.')->group(function () {
+    Route::prefix('widgets')->name('widgets.')->middleware('throttle:60,1')->group(function () {
         Route::get('top-clients', [App\Http\Controllers\Api\WidgetController::class, 'topClients'])->name('top-clients');
         Route::get('financial-summary', [App\Http\Controllers\Api\WidgetController::class, 'financialSummary'])->name('financial-summary');
         Route::get('expense-categories', [App\Http\Controllers\Api\WidgetController::class, 'expenseCategories'])->name('expense-categories');
@@ -164,8 +164,12 @@ Route::middleware(['auth', '2fa'])->group(function () {
         // Notes
         Route::resource('notes', ClientNoteController::class)->parameters(['notes' => 'clientNote']);
         Route::patch('notes/{clientNote}/update-client', [ClientNoteController::class, 'updateClient'])->name('notes.update-client');
-        Route::get('api/clients/{client}/notes', [ClientNoteController::class, 'forClient'])->name('api.clients.notes');
-        Route::get('api/notes/tag-stats', [ClientNoteController::class, 'tagStats'])->name('api.notes.tag-stats');
+        Route::get('api/clients/{client}/notes', [ClientNoteController::class, 'forClient'])
+            ->middleware('throttle:60,1')
+            ->name('api.clients.notes');
+        Route::get('api/notes/tag-stats', [ClientNoteController::class, 'tagStats'])
+            ->middleware('throttle:60,1')
+            ->name('api.notes.tag-stats');
     });
 
     // Credentials Module

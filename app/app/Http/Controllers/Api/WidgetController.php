@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\PeriodHelper;
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\FinancialRevenue;
 use App\Models\FinancialExpense;
 use App\Services\Dashboard\TrendsCalculator;
@@ -35,6 +36,8 @@ class WidgetController extends Controller
      */
     public function topClients(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', Client::class);
+
         $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
@@ -70,6 +73,8 @@ class WidgetController extends Controller
      */
     public function financialSummary(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', FinancialRevenue::class);
+
         $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
@@ -113,6 +118,8 @@ class WidgetController extends Controller
      */
     public function expenseCategories(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', FinancialExpense::class);
+
         $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
@@ -160,6 +167,8 @@ class WidgetController extends Controller
      */
     public function revenueConcentration(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', FinancialRevenue::class);
+
         $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
@@ -220,6 +229,8 @@ class WidgetController extends Controller
      */
     public function financialTrend(Request $request): JsonResponse
     {
+        $this->authorize('viewAny', FinancialRevenue::class);
+
         $period = $request->get('period', PeriodHelper::DEFAULT_PERIOD);
         $customFrom = $request->get('from');
         $customTo = $request->get('to');
