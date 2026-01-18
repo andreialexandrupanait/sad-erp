@@ -47,7 +47,7 @@ class NotificationMail extends Mailable
         return new Content(
             view: 'emails.notification',
             with: [
-                'message' => $this->notificationMessage,
+                'notification' => $this->notificationMessage,
                 'isTest' => $this->isTest,
                 'appName' => config('app.name'),
                 'appUrl' => config('app.url'),

@@ -129,8 +129,8 @@
                 ✓ This is a test notification - Email is configured correctly!
             </div>
             <div class="priority-bar priority-low"></div>
-        @elseif($message)
-            <div class="priority-bar priority-{{ $message->getPriority() }}"></div>
+        @elseif($notification)
+            <div class="priority-bar priority-{{ $notification->getPriority() }}"></div>
         @endif
 
         <div class="header">
@@ -159,16 +159,16 @@
                         <span class="field-value">{{ config('mail.default') }}</span>
                     </div>
                 </div>
-            @elseif($message)
-                <span class="category-badge category-{{ $message->getCategory() }}">
-                    {{ ucfirst($message->getCategory()) }}
+            @elseif($notification)
+                <span class="category-badge category-{{ $notification->getCategory() }}">
+                    {{ ucfirst($notification->getCategory()) }}
                 </span>
-                <h2 class="title">{{ $message->getTitle() }}</h2>
-                <p class="body">{{ $message->getBody() }}</p>
+                <h2 class="title">{{ $notification->getTitle() }}</h2>
+                <p class="body">{{ $notification->getBody() }}</p>
 
-                @if(count($message->getFields()) > 0)
+                @if(count($notification->getFields()) > 0)
                     <div class="fields">
-                        @foreach($message->getFields() as $field)
+                        @foreach($notification->getFields() as $field)
                             <div class="field">
                                 <span class="field-label">{{ $field['title'] }}</span>
                                 <span class="field-value">{{ $field['value'] }}</span>
@@ -177,9 +177,9 @@
                     </div>
                 @endif
 
-                @if($message->getUrl())
+                @if($notification->getUrl())
                     <p style="text-align: center;">
-                        <a href="{{ $message->getUrl() }}" class="action-button">
+                        <a href="{{ $notification->getUrl() }}" class="action-button">
                             View Details
                         </a>
                     </p>

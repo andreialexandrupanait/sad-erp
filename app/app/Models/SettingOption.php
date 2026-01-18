@@ -80,11 +80,6 @@ class SettingOption extends Model implements Sortable
         return $this->hasMany(SettingOption::class, 'parent_id')->orderBy('sort_order');
     }
 
-    public function tasks()
-    {
-        return $this->hasMany(Task::class, 'status_id');
-    }
-
     // Scopes by category
     public function scopeClientStatuses($query)
     {
