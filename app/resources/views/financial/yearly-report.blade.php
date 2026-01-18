@@ -177,7 +177,8 @@
                     @endif
 
                     {{-- Expense Spikes --}}
-                    @if($analytics['expense_spikes']->isNotEmpty())
+                    @php $spike = $analytics['expense_spikes']->first(); @endphp
+                    @if($spike)
                     <div class="bg-white/60 backdrop-blur rounded-lg p-3 border border-white/50">
                         <div class="flex items-center gap-2 mb-1">
                             <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -185,7 +186,6 @@
                             </svg>
                             <span class="text-xs font-medium text-slate-600">{{ __('Vârf de cheltuieli') }}</span>
                         </div>
-                        @php $spike = $analytics['expense_spikes']->first(); @endphp
                         <p class="text-lg font-bold text-slate-900">{{ \Carbon\Carbon::create()->month($spike['month'])->translatedFormat('F') }} {{ $spike['year'] }}</p>
                         <p class="text-sm text-red-600">{{ $spike['multiplier'] }}x {{ __('peste medie') }}</p>
                     </div>

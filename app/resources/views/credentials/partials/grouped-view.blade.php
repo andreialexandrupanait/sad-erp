@@ -2,9 +2,12 @@
 <div class="space-y-4" x-data="credentialAccordion()">
     @forelse($groupedCredentials as $clientId => $siteGroups)
         @php
-            $client = $siteGroups->first()->first()->client;
+            $firstSiteGroup = $siteGroups->first();
+            $firstCredential = $firstSiteGroup ? $firstSiteGroup->first() : null;
+            $client = $firstCredential?->client;
             $totalCredentials = $siteGroups->flatten()->count();
         @endphp
+        @continue(!$client)
 
         <!-- Client Accordion -->
         <x-ui.card class="overflow-hidden">
@@ -214,13 +217,16 @@ document.addEventListener('alpine:init', () => {
         init() {
             // Auto-expand first client if exists
             @if($groupedCredentials->isNotEmpty())
-                this.openClients[{{ $groupedCredentials->keys()->first() }}] = true;
-                // Also expand first site of first client
                 @php
+                    $firstClientKey = $groupedCredentials->keys()->first();
                     $firstClient = $groupedCredentials->first();
-                    $firstSiteKey = $groupedCredentials->keys()->first() . '_' . md5($firstClient->keys()->first());
+                    $firstSiteKeyPart = $firstClient && $firstClient->keys()->isNotEmpty() ? $firstClient->keys()->first() : '';
+                    $firstSiteKey = $firstClientKey . '_' . md5($firstSiteKeyPart);
                 @endphp
-                this.openSites['{{ $firstSiteKey }}'] = true;
+                @if($firstClientKey !== null)
+                    this.openClients[{{ $firstClientKey }}] = true;
+                    this.openSites['{{ $firstSiteKey }}'] = true;
+                @endif
             @endif
         },
 
