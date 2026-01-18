@@ -137,6 +137,6 @@ return [
     |
     */
 
-    'csp_enforce' => env('CSP_ENFORCE', false),
+    'csp_enforce' => env('CSP_ENFORCE', true),
 
 ];

@@ -15,7 +15,6 @@ use Symfony\Component\HttpFoundation\Response;
  * Headers added:
  * - X-Content-Type-Options: Prevents MIME sniffing
  * - X-Frame-Options: Prevents clickjacking
- * - X-XSS-Protection: Enables XSS filter in older browsers
  * - Referrer-Policy: Controls referrer information
  * - Permissions-Policy: Controls browser features
  * - Content-Security-Policy: Controls resource loading
@@ -41,9 +40,6 @@ class SecurityHeaders
 
         // Prevent clickjacking attacks
         $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
-
-        // Enable XSS protection in older browsers
-        $response->headers->set('X-XSS-Protection', '1; mode=block');
 
         // Control referrer information leakage
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

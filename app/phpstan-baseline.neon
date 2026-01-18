@@ -1,10 +1,118 @@
 parameters:
 	ignoreErrors:
 		-
-			message: '#^Call to an undefined method Illuminate\\Contracts\\Support\\Htmlable\:\:render\(\)\.$#'
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:canSync\(\)\.$#'
 			identifier: method.notFound
 			count: 1
-			path: app/Http/Controllers/Financial/FileController.php
+			path: app/Console/Commands/ImportHistoricalTransactions.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Console/Commands/MigrateEurRevenuesCommand.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 2
+			path: app/Console/Commands/MigrateEurRevenuesCommand.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Console/Commands/MigrateEurRevenuesCommand.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Console/Commands/SanitizeContracts.php
+
+		-
+			message: '#^Right side of && is always true\.$#'
+			identifier: booleanAnd.rightAlwaysTrue
+			count: 1
+			path: app/Console/Commands/SanitizeOffers.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:canSync\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Console/Commands/SyncBankTransactions.php
+
+		-
+			message: '#^Call to an undefined static method App\\Models\\BankingCredential\:\:needingSync\(\)\.$#'
+			identifier: staticMethod.notFound
+			count: 1
+			path: app/Console/Commands/SyncBankTransactions.php
+
+		-
+			message: '#^Negated boolean expression is always true\.$#'
+			identifier: booleanNot.alwaysTrue
+			count: 1
+			path: app/Console/Commands/SyncBankTransactions.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: app/Console/Commands/SyncBankTransactions.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Console/Commands/SyncBankTransactions.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: app/Exports/OffersExport.php
+
+		-
+			message: '#^Property App\\Models\\User\:\:\$two_factor_recovery_codes \(string\|null\) does not accept array\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Http/Controllers/Auth/TwoFactorChallengeController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between \*NEVER\* and mixed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/Auth/TwoFactorChallengeController.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\Contract\:\:sanitizeHtml\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ContractController.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Http/Controllers/ContractController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/ContractController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/CredentialController.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Http/Controllers/DocumentTemplateController.php
 
 		-
 			message: '#^Match arm comparison between ''general'' and ''extrase'' is always false\.$#'
@@ -25,10 +133,100 @@ parameters:
 			path: app/Http/Controllers/Financial/FileController.php
 
 		-
-			message: '#^Class App\\Http\\Controllers\\Financial\\ImportController constructor invoked with 0 parameters, 2 required\.$#'
+			message: '#^Match expression does not handle remaining value\: string$#'
+			identifier: match.unhandled
+			count: 1
+			path: app/Http/Controllers/HealthController.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Controllers\\ImportExportController\:\:importAccounts\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ImportExportController.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Controllers\\ImportExportController\:\:importCredentials\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ImportExportController.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Controllers\\ImportExportController\:\:importDomains\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ImportExportController.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Controllers\\ImportExportController\:\:importSubscriptions\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ImportExportController.php
+
+		-
+			message: '#^Call to an undefined method App\\Services\\Offer\\OfferPublicService\:\:acceptSigned\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Offer/OfferPublicController.php
+
+		-
+			message: '#^Call to an undefined method App\\Services\\Offer\\OfferPublicService\:\:getPublicStateSigned\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Offer/OfferPublicController.php
+
+		-
+			message: '#^Call to an undefined method App\\Services\\Offer\\OfferPublicService\:\:rejectSigned\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Offer/OfferPublicController.php
+
+		-
+			message: '#^Call to an undefined method App\\Services\\Offer\\OfferPublicService\:\:updateSelectionsSigned\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Offer/OfferPublicController.php
+
+		-
+			message: '#^Method App\\Services\\Offer\\OfferPublicService\:\:rejectPublic\(\) invoked with 3 parameters, 1\-2 required\.$#'
 			identifier: arguments.count
 			count: 1
+			path: app/Http/Controllers/Offer/OfferPublicController.php
+
+		-
+			message: '#^Variable \$offer on left side of \?\? is never defined\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Http/Controllers/OfferController.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\Service\:\:userServices\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/ServiceController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:getSmartbillSettings\(\)\.$#'
+			identifier: method.notFound
+			count: 3
 			path: app/Http/Controllers/Settings/SmartbillController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:setSmartbillSettings\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Settings/SmartbillController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\SubscriptionController\:\:bulkUpdateStatus\(\) invoked with 2 parameters, 1 required\.$#'
+			identifier: arguments.count
+			count: 1
+			path: app/Http/Controllers/SubscriptionController.php
+
+		-
+			message: '#^Offset 0 on non\-empty\-list\<string\> on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Http/Middleware/CheckModuleAccess.php
 
 		-
 			message: '#^Strict comparison using \=\=\= between ''admin''\|''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
@@ -37,244 +235,76 @@ parameters:
 			path: app/Http/Middleware/CheckRole.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$amount\.$#'
-			identifier: property.notFound
+			message: '#^Access to property \$id on an unknown class App\\Models\\BankSyncLog\.$#'
+			identifier: class.notFound
 			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
+			path: app/Jobs/Banking/SyncBankTransactionsJob.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$assignedUser\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$assigned_to\.$#'
-			identifier: property.notFound
+			message: '#^Access to property \$transactions_fetched on an unknown class App\\Models\\BankSyncLog\.$#'
+			identifier: class.notFound
 			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
+			path: app/Jobs/Banking/SyncBankTransactionsJob.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$due_date\.$#'
-			identifier: property.notFound
+			message: '#^Access to property \$transactions_new on an unknown class App\\Models\\BankSyncLog\.$#'
+			identifier: class.notFound
 			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
+			path: app/Jobs/Banking/SyncBankTransactionsJob.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$list\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$list_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$position\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$priority\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$service\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$service_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$time_tracked\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskMinimalResource\:\:\$total_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskMinimalResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$assignedUser\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$attachments\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$comments\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$created_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$creator\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$due_date\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$list\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$parentTask\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$position\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$priority\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$service\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 4
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$time_tracked\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$total_amount\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\Task\\TaskResource\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Call to an undefined method App\\Http\\Resources\\Task\\TaskResource\:\:relationLoaded\(\)\.$#'
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:canSync\(\)\.$#'
 			identifier: method.notFound
-			count: 2
-			path: app/Http/Resources/Task/TaskResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Livewire\\Tasks\\TaskList\:\:\$taskCounts\.$#'
-			identifier: property.notFound
 			count: 1
-			path: app/Livewire/Tasks/TaskList.php
+			path: app/Jobs/Banking/SyncBankTransactionsJob.php
 
 		-
-			message: '#^Method App\\Models\\ClickUpMapping\:\:createMapping\(\) should return static\(App\\Models\\ClickUpMapping\) but returns App\\Models\\ClickUpMapping\.$#'
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:isConsentValid\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Jobs/Banking/SyncBankTransactionsJob.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Jobs/GenerateDocumentPdfJob.php
+
+		-
+			message: '#^Offset ''active''\|''completed''\|''draft''\|''expired''\|''terminated'' on array\{draft\: ''gray'', active\: ''green'', completed\: ''blue'', terminated\: ''red'', expired\: ''yellow''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Contract.php
+
+		-
+			message: '#^Offset ''active''\|''completed''\|''draft''\|''expired''\|''terminated'' on array\{draft\: \(array\|string\), active\: \(array\|string\), completed\: \(array\|string\), terminated\: \(array\|string\), expired\: \(array\|string\)\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Contract.php
+
+		-
+			message: '#^Offset ''active''\|''completed''\|''draft''\|''expired''\|''terminated'' on array\{draft\: array\{''active'', ''terminated''\}, active\: array\{''completed'', ''terminated'', ''expired''\}, completed\: array\{\}, terminated\: array\{\}, expired\: array\{''active''\}\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Models/Contract.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 1
+			path: app/Models/ContractItem.php
+
+		-
+			message: '#^Method App\\Models\\ContractVersion\:\:createVersion\(\) should return static\(App\\Models\\ContractVersion\)\|null but returns App\\Models\\ContractVersion\.$#'
 			identifier: return.type
 			count: 1
-			path: app/Models/ClickUpMapping.php
+			path: app/Models/ContractVersion.php
 
 		-
-			message: '#^Class App\\Models\\AccessCredential not found\.$#'
-			identifier: class.notFound
+			message: '#^Match arm comparison between ''annex'' and ''annex'' is always true\.$#'
+			identifier: match.alwaysTrue
 			count: 1
-			path: app/Models/Client.php
-
-		-
-			message: '#^Class App\\Models\\Contract not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Models/Client.php
-
-		-
-			message: '#^Class App\\Models\\Offer not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Models/Client.php
+			path: app/Models/DocumentTemplate.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
@@ -289,22 +319,58 @@ parameters:
 			path: app/Models/Domain.php
 
 		-
+			message: '#^Method App\\Models\\ExchangeRate\:\:setRate\(\) should return static\(App\\Models\\ExchangeRate\) but returns App\\Models\\ExchangeRate\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/ExchangeRate.php
+
+		-
 			message: '#^Strict comparison using \!\=\= between non\-falsy\-string and '''' will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: app/Models/FinancialFile.php
 
 		-
-			message: '#^Class App\\Models\\Contract not found\.$#'
-			identifier: class.notFound
+			message: '#^Property ''is_owner'' does not exist in model\.$#'
+			identifier: rules.modelAppends
 			count: 1
-			path: app/Models/Organization.php
+			path: app/Models/InternalAccount.php
 
 		-
-			message: '#^Class App\\Models\\Offer not found\.$#'
-			identifier: class.notFound
+			message: '#^Offset ''accepted''\|''draft''\|''expired''\|''rejected''\|''sent''\|''viewed'' on array\{draft\: ''gray'', sent\: ''blue'', viewed\: ''purple'', accepted\: ''green'', rejected\: ''red'', expired\: ''yellow''\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Models/Organization.php
+			path: app/Models/Offer.php
+
+		-
+			message: '#^Offset ''accepted''\|''draft''\|''expired''\|''rejected''\|''sent''\|''viewed'' on array\{draft\: \(array\|string\), sent\: \(array\|string\), viewed\: \(array\|string\), accepted\: \(array\|string\), rejected\: \(array\|string\), expired\: \(array\|string\)\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Models/Offer.php
+
+		-
+			message: '#^Offset ''accepted''\|''draft''\|''expired''\|''rejected''\|''sent''\|''viewed'' on array\{draft\: array\<string, float\>, sent\: array\<string, float\>, viewed\: array\<string, float\>, accepted\: array\<string, float\>, rejected\: array\<string, float\>, expired\: array\<string, float\>\} in isset\(\) always exists and is not nullable\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Models/Offer.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Offer.php
+
+		-
+			message: '#^Unsafe usage of new static\(\)\.$#'
+			identifier: new.static
+			count: 2
+			path: app/Models/OfferItem.php
+
+		-
+			message: '#^Property App\\Models\\OfferTemplate\:\:\$slug \(string\) does not accept null\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Models/OfferTemplate.php
 
 		-
 			message: '#^Return type \(Illuminate\\Database\\Eloquent\\Builder\) of method App\\Models\\Service\:\:scopeOrdered\(\) should be compatible with return type \(Illuminate\\Database\\Query\\Builder\) of method Spatie\\EloquentSortable\\Sortable\:\:scopeOrdered\(\)$#'
@@ -331,10 +397,28 @@ parameters:
 			path: app/Models/Subscription.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between int\<min, \-1\>\|int\<1, max\> and 0 will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
+			message: '#^Method App\\Models\\Template\:\:createVersion\(\) should return App\\Models\\TemplateVersion but returns Illuminate\\Database\\Eloquent\\Model\.$#'
+			identifier: return.type
 			count: 1
-			path: app/Models/Task.php
+			path: app/Models/Template.php
+
+		-
+			message: '#^Offset 1 on array\{list\<string\>, list\<non\-empty\-string\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Models/Template.php
+
+		-
+			message: '#^Match arm comparison between ''admin''\|''manager''\|''user'' and ''superadmin'' is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Match arm comparison between ''user'' and ''user'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Models/User.php
 
 		-
 			message: '#^Offset string on array\{\}\|string on left side of \?\? does not exist\.$#'
@@ -347,6 +431,18 @@ parameters:
 			identifier: assign.propertyType
 			count: 1
 			path: app/Models/User.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''admin''\|''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:clearPermissionCache\(\)\.$#'
+			identifier: method.notFound
+			count: 2
+			path: app/Models/UserModulePermission.php
 
 		-
 			message: '#^Negated boolean expression is always false\.$#'
@@ -367,6 +463,24 @@ parameters:
 			path: app/Observers/SubscriptionObserver.php
 
 		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Policies/BankTransactionPolicy.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between ''auto_matched''\|''ignored''\|''manual_matched''\|''unmatched'' and ''matched'' will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Policies/BankTransactionPolicy.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between ''auto_matched''\|''ignored''\|''manual_matched''\|''unmatched'' and ''matched'' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Policies/BankTransactionPolicy.php
+
+		-
 			message: '#^Strict comparison using \=\=\= between ''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
 			identifier: identical.alwaysFalse
 			count: 1
@@ -379,34 +493,142 @@ parameters:
 			path: app/Policies/FinancialRevenuePolicy.php
 
 		-
-			message: '#^Strict comparison using \=\=\= between ''manager''\|''user'' and ''superadmin'' will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 1
-			path: app/Policies/TaskPolicy.php
-
-		-
 			message: '#^Property App\\Providers\\EventServiceProvider\:\:\$listen \(array\<class\-string, array\<int, class\-string\>\>\) does not accept default value of type array\<string, list\<string\>\>\.$#'
 			identifier: property.defaultValue
 			count: 1
 			path: app/Providers/EventServiceProvider.php
 
 		-
-			message: '#^Binary operation "\-" between non\-falsy\-string and int\<1, max\> results in an error\.$#'
-			identifier: binaryOp.invalid
-			count: 1
-			path: app/Services/ClickUp/ClickUpRateLimiter.php
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:isTokenExpired\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Services/Banking/BancaTransilvaniaService.php
 
 		-
-			message: '#^Method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\FinancialExpense\>\:\:select\(\) invoked with 2 parameters, 0\-1 required\.$#'
-			identifier: arguments.count
+			message: '#^Strict comparison using \=\=\= between float and 0 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Services/Banking/ConfidenceCalculator.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between float and 1 will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
 			count: 1
-			path: app/Services/Dashboard/DashboardService.php
+			path: app/Services/Banking/ConfidenceCalculator.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\BankingCredential\:\:syncLogs\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Services/Banking/TransactionImportService.php
+
+		-
+			message: '#^Call to static method startSync\(\) on an unknown class App\\Models\\BankSyncLog\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Services/Banking/TransactionImportService.php
+
+		-
+			message: '#^Method App\\Services\\Banking\\TransactionImportService\:\:syncTransactions\(\) has invalid return type App\\Models\\BankSyncLog\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Services/Banking/TransactionImportService.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\BankTransaction\:\:isMatched\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Banking/TransactionMatchingService.php
+
+		-
+			message: '#^Method App\\Models\\BankTransaction\:\:matchToExpense\(\) invoked with 4 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: app/Services/Banking/TransactionMatchingService.php
+
+		-
+			message: '#^Method App\\Models\\BankTransaction\:\:matchToRevenue\(\) invoked with 4 parameters, 1\-3 required\.$#'
+			identifier: arguments.count
+			count: 2
+			path: app/Services/Banking/TransactionMatchingService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Contracts\\Pagination\\LengthAwarePaginator\:\:getCollection\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Client/ClientQueryService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Contract/ContractService.php
+
+		-
+			message: '#^Method App\\Services\\Contract\\ContractService\:\:getActiveContractsForOfferClient\(\) should return Illuminate\\Database\\Eloquent\\Collection but returns Illuminate\\Support\\Collection\<\(int\|string\), mixed\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Services/Contract/ContractService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Contract/ContractService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Contract/ContractVariableRegistry.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Contract/ContractVariableRegistry.php
 
 		-
 			message: '#^Method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\FinancialRevenue\>\:\:select\(\) invoked with 3 parameters, 0\-1 required\.$#'
 			identifier: arguments.count
 			count: 1
-			path: app/Services/Dashboard/DashboardService.php
+			path: app/Services/Dashboard/TrendsCalculator.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Services/Editor/VariableResolver.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Editor/VariableResolver.php
+
+		-
+			message: '#^Offset ''currency'' on non\-empty\-array on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Financial/Import/SmartBillDataMapper.php
+
+		-
+			message: '#^Offset ''amount_eur'' on array\{amount\: float, amount_eur\: float, exchange_rate\?\: float\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Financial/RevenueImportService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\<string, mixed\> and false will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Import/CsvImportService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Http\\Client\\Response\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Notification/Channels/SlackChannel.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
@@ -419,6 +641,18 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Services/Notification/Messages/DomainExpiringMessage.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Notification/Messages/OfferSentMessage.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Notification/Messages/OfferSentMessage.php
 
 		-
 			message: '#^Expression on left side of \?\? is not nullable\.$#'
@@ -455,6 +689,84 @@ parameters:
 			identifier: isset.offset
 			count: 2
 			path: app/Services/Notification/NotificationService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 1
+			path: app/Services/Offer/OfferBlockRenderer.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Offer/OfferBlockRenderer.php
+
+		-
+			message: '#^Call to function is_array\(\) with array will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Offer/OfferService.php
+
+		-
+			message: '#^Call to function is_string\(\) with array\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/Offer/OfferService.php
+
+		-
+			message: '#^PHPDoc tag @implements has invalid value \(OfferServiceInterface\)\: Unexpected token "\\n ", expected ''\<'' at offset 259 on line 11$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: app/Services/Offer/OfferService.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Offer/OfferService.php
+
+		-
+			message: '#^Call to function is_string\(\) with non\-empty\-array will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Services/Offer/SimpleBlockRenderer.php
+
+		-
+			message: '#^Variable \$total on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Services/SmartbillImporter.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Http\\Client\\Response\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/SmartbillService.php
+
+		-
+			message: '#^Match arm comparison between ''annual''\|''custom''\|''monthly'' and ''weekly'' is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/Services/Subscription/SubscriptionCalculationService.php
+
+		-
+			message: '#^Match arm comparison between ''custom'' and ''custom'' is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Services/Subscription/SubscriptionCalculationService.php
+
+		-
+			message: '#^Expression on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.expr
+			count: 2
+			path: app/Services/VariableRegistry.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type Carbon\\Carbon\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/VariableRegistry.php
 
 		-
 			message: '#^Method App\\View\\Components\\Dashboard\\DomainWidget\:\:getDaysUntilExpiry\(\) should return int but returns float\.$#'

@@ -55,12 +55,13 @@ class BackupDatabase extends Command
         // Build mysqldump command
         // --ssl=0 disables SSL which can cause issues in Docker
         // --no-tablespaces avoids needing PROCESS privilege
+        // SECURITY: Password passed via MYSQL_PWD environment variable instead of command line
+        // to prevent exposure in process lists (ps aux)
         $command = sprintf(
-            'mysqldump --host=%s --port=%s --user=%s --password=%s --ssl=0 --no-tablespaces --single-transaction --routines --triggers %s',
+            'mysqldump --host=%s --port=%s --user=%s --ssl=0 --no-tablespaces --single-transaction --routines --triggers %s',
             escapeshellarg($host),
             escapeshellarg($port),
             escapeshellarg($username),
-            escapeshellarg($password),
             escapeshellarg($database)
         );
 
@@ -76,6 +77,8 @@ class BackupDatabase extends Command
 
         $process = Process::fromShellCommandline($command);
         $process->setTimeout(600); // 10 minutes max for large databases
+        // Pass password via environment variable for security (not visible in process list)
+        $process->setEnv(['MYSQL_PWD' => $password]);
 
         try {
             $process->mustRun();
@@ -150,7 +153,7 @@ class BackupDatabase extends Command
 
         foreach ($directories as $dir) {
             if (!is_dir($dir)) {
-                mkdir($dir, 0755, true);
+                mkdir($dir, 0700, true);
                 $this->info("Created directory: {$dir}");
             }
         }
@@ -168,7 +171,7 @@ class BackupDatabase extends Command
         $targetDir = base_path("../backups/files/{$type}_{$timestamp}");
 
         if (!is_dir($targetDir)) {
-            mkdir($targetDir, 0755, true);
+            mkdir($targetDir, 0700, true);
         }
 
         foreach ($sourceDirs as $sourceDir) {

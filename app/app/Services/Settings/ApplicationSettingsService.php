@@ -66,12 +66,7 @@ class ApplicationSettingsService
                 'notification_email_cc' => ApplicationSetting::get('notification_email_cc', ''),
 
                 // SMTP
-                'smtp_enabled' => ApplicationSetting::get('smtp_enabled',
-            'push_notifications_enabled',
-            'push_notify_offer_accepted',
-            'push_notify_offer_rejected',
-            'push_notify_new_client',
-            'push_notify_payment_received', false),
+                'smtp_enabled' => ApplicationSetting::get('smtp_enabled', false),
                 'smtp_host' => ApplicationSetting::get('smtp_host', ''),
                 'smtp_port' => ApplicationSetting::get('smtp_port', 587),
                 'smtp_username' => ApplicationSetting::get('smtp_username', ''),
