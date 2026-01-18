@@ -246,8 +246,8 @@
                     </div>
                     <div class="bg-white rounded-xl border border-slate-200 p-4">
                         <div class="text-sm text-slate-500 mb-1">{{ __('Valid Until') }}</div>
-                        <div class="text-lg font-semibold {{ $offer->valid_until < now() ? 'text-red-600' : 'text-slate-900' }}">
-                            {{ $offer->valid_until->format('d.m.Y') }}
+                        <div class="text-lg font-semibold {{ $offer->valid_until && $offer->valid_until < now() ? 'text-red-600' : 'text-slate-900' }}">
+                            {{ $offer->valid_until?->format('d.m.Y') ?? '—' }}
                         </div>
                     </div>
                 </div>

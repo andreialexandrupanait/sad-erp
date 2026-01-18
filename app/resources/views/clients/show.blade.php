@@ -651,7 +651,7 @@
                                                     {{ $note->created_at->format('d M Y, H:i') }}
                                                 </span>
                                                 <span class="text-xs text-slate-400">
-                                                    {{ __('by') }} {{ $note->user->name ?? 'Unknown' }}
+                                                    {{ __('by') }} {{ $note->user?->name ?? 'Unknown' }}
                                                 </span>
                                             </div>
 
