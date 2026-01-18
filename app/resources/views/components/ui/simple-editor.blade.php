@@ -89,7 +89,7 @@
             selector: '#' + editorId,
             height: editorHeight,
             menubar: false,
-            plugins: 'lists link autolink table code hr wordcount',
+            plugins: 'lists link autolink table code wordcount',
             toolbar: 'blocks fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright | bullist numlist | link table | removeformat',
             toolbar_mode: 'sliding',
             placeholder: placeholder,

@@ -56,6 +56,10 @@ function clientsPage(initialData = {}) {
             return this.selectedIds.length > 0;
         },
 
+        get isLoading() {
+            return this.loading;
+        },
+
         get sortColumn() {
             return this.filters.sort.split(':')[0];
         },

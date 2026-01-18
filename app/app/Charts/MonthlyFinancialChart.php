@@ -15,6 +15,22 @@ class MonthlyFinancialChart extends Chart
     public function __construct()
     {
         parent::__construct();
+
+        // Override parent's Chart.js v2 options with v4-compatible options
+        // The dashboard JS handles the full configuration
+        $this->options([
+            'responsive' => true,
+            'maintainAspectRatio' => false,
+            'scales' => (object)[
+                'x' => (object)[
+                    'display' => true,
+                ],
+                'y' => (object)[
+                    'display' => true,
+                    'beginAtZero' => true,
+                ],
+            ],
+        ], true);
     }
 
     /**

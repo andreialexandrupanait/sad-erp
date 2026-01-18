@@ -72,12 +72,18 @@ class SecurityHeaders
             "base-uri 'self'",
             "form-action 'self'",
             "object-src 'none'",
-            "upgrade-insecure-requests",
         ];
 
         // SECURITY: CSP is now enforced by default (was report-only)
         // Set CSP_ENFORCE=false in .env to temporarily disable during debugging
-        $cspHeader = config('app.csp_enforce', true)
+        $enforceCSP = config('app.csp_enforce', true);
+
+        // upgrade-insecure-requests only works in enforced mode, not report-only
+        if ($enforceCSP) {
+            $csp[] = "upgrade-insecure-requests";
+        }
+
+        $cspHeader = $enforceCSP
             ? 'Content-Security-Policy'
             : 'Content-Security-Policy-Report-Only';
 
