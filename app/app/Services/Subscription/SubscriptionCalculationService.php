@@ -25,10 +25,12 @@ class SubscriptionCalculationService
     {
         $baseDate = $fromDate ?? Carbon::parse($subscription->next_renewal_date);
 
-        return match ($subscription->billing_cycle) {
-            'weekly' => $baseDate->copy()->addWeek(),
-            'monthly' => $baseDate->copy()->addMonth(),
-            'annual' => $baseDate->copy()->addYear(),
+        $cycle = strtolower($subscription->billing_cycle ?? '');
+
+        return match ($cycle) {
+            'weekly', 'saptamanal' => $baseDate->copy()->addWeek(),
+            'monthly', 'lunar' => $baseDate->copy()->addMonth(),
+            'annual', 'anual' => $baseDate->copy()->addYear(),
             'custom' => $baseDate->copy()->addDays($subscription->custom_days ?? 30),
             default => $baseDate->copy()->addMonth(),
         };

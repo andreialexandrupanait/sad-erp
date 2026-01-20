@@ -16,14 +16,18 @@
     calculateNextRenewal() {
         if (!this.startDate) return;
         const date = new Date(this.startDate);
-        switch(this.billingCycle) {
+        const cycle = (this.billingCycle || '').toLowerCase();
+        switch(cycle) {
             case 'weekly':
+            case 'saptamanal':
                 date.setDate(date.getDate() + 7);
                 break;
             case 'monthly':
+            case 'lunar':
                 date.setMonth(date.getMonth() + 1);
                 break;
             case 'annual':
+            case 'anual':
                 date.setFullYear(date.getFullYear() + 1);
                 break;
             case 'custom':
@@ -77,12 +81,14 @@
         if (this.convertToRon && this.currency === 'EUR') {
             this.fetchRate();
         }
+    },
+
+    init() {
+        this.$watch('startDate', () => this.calculateNextRenewal());
+        this.$watch('billingCycle', () => this.calculateNextRenewal());
+        this.$watch('customDays', () => this.calculateNextRenewal());
     }
-}" x-init="
-    $watch('startDate', () => calculateNextRenewal());
-    $watch('billingCycle', () => calculateNextRenewal());
-    $watch('customDays', () => calculateNextRenewal());
-">
+}">
     @csrf
     @if($method !== 'POST')
         @method($method)
@@ -203,7 +209,7 @@
                 </template>
 
                 <!-- Billing Cycle (Required) -->
-                <div class="sm:col-span-3 field-wrapper" @nomenclature-selected.window="if ($event.target.closest('[id^=nom-sel]')?.querySelector('input[name=billing_cycle]')) billingCycle = $event.detail.value">
+                <div class="sm:col-span-3 field-wrapper" x-on:nomenclature-selected.window="if ($event.target.closest('[id^=nom-sel]')?.querySelector('input[name=billing_cycle]')) { billingCycle = $event.detail.value; calculateNextRenewal(); }">
                     <x-ui.label for="billing_cycle">
                         {{ __('Billing Cycle') }} <span class="text-red-500">*</span>
                     </x-ui.label>
@@ -250,12 +256,14 @@
                         {{ __('Custom Days') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.input
+                        <input
                             type="number"
                             name="custom_days"
                             id="custom_days"
                             x-model="customDays"
+                            x-on:input="calculateNextRenewal()"
                             placeholder="{{ __('e.g., 90 for quarterly') }}"
+                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm ring-offset-white transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 border-slate-200 focus-visible:ring-slate-950"
                         />
                     </div>
                     <p class="mt-1 text-xs text-slate-500">{{ __('Enter the number of days between renewals (e.g., 90 for quarterly)') }}</p>
@@ -270,13 +278,14 @@
                         {{ __('Start Date') }} <span class="text-red-500">*</span>
                     </x-ui.label>
                     <div class="mt-2">
-                        <x-ui.input
+                        <input
                             type="date"
                             name="start_date"
                             id="start_date"
                             required
-                            placeholder="{{ __('YYYY-MM-DD') }}"
                             x-model="startDate"
+                            x-on:change="calculateNextRenewal()"
+                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm ring-offset-white transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 border-slate-200 focus-visible:ring-slate-950"
                         />
                     </div>
                     @error('start_date')
