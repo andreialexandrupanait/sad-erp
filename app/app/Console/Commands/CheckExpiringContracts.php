@@ -99,9 +99,11 @@ class CheckExpiringContracts extends Command
         foreach ($contracts as $contract) {
             // Check if notification was already sent for this interval
             $alreadySent = NotificationLog::wasAlreadySent(
-                'Contract',
-                $contract->id,
                 $notificationType,
+                'Contract',
+                (int) $contract->id,
+                $contract->organization_id,
+                Carbon::today(),
                 'email'
             );
 

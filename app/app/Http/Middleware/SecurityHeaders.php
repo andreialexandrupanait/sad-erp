@@ -63,7 +63,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net",
-            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tiny.cloud wss://hub.simplead.ro:6001 https://api.openapi.ro",
+            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tiny.cloud https://unpkg.com wss://hub.simplead.ro:6001 https://api.openapi.ro",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

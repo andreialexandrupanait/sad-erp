@@ -688,6 +688,9 @@
                 // Collect form data
                 const formData = this.collectFormData();
 
+                // Debug: log what's being sent
+                console.log('Form data being sent:', formData);
+
                 try {
                     const response = await fetch('{{ route('credentials.store') }}', {
                         method: 'POST',
@@ -702,6 +705,10 @@
                     const data = await response.json();
 
                     if (!response.ok) {
+                        // Debug: log the validation errors
+                        console.log('Validation errors:', data.errors);
+                        console.log('Response data:', data);
+
                         // Show validation errors
                         if (data.errors) {
                             // Dispatch errors to form fields component

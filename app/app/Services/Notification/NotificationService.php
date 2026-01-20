@@ -167,7 +167,7 @@ class NotificationService
             return false;
         }
 
-        return NotificationLog::wasAlreadySent($entityType, $entityId, $notificationType, $channel);
+        return NotificationLog::wasAlreadySent($notificationType, $entityType, (int) $entityId, null, null, $channel);
     }
 
     /**

@@ -849,7 +849,10 @@
             },
 
             resetForm() {
-                const form = this.$el.querySelector('form');
+                let form = this.$el.querySelector('form');
+                if (!form) {
+                    form = document.querySelector('[x-data*="quickAddCredential"] form');
+                }
                 if (form) {
                     form.querySelectorAll('input:not([type="hidden"]), select, textarea').forEach(el => {
                         if (el.name && el.name.startsWith('quick_cred_')) {
@@ -863,6 +866,9 @@
             async submit() {
                 this.saving = true;
                 const formData = this.collectFormData();
+
+                // Debug: log what's being sent
+                console.log('Form data being sent:', formData);
 
                 try {
                     const response = await fetch('{{ route('credentials.store') }}', {
@@ -878,6 +884,10 @@
                     const data = await response.json();
 
                     if (!response.ok) {
+                        // Debug: log validation errors
+                        console.log('Validation errors:', data.errors);
+                        console.log('Full response:', data);
+
                         if (data.errors) {
                             const firstError = Object.values(data.errors)[0];
                             showToast(Array.isArray(firstError) ? firstError[0] : firstError, 'error');
@@ -898,20 +908,40 @@
 
             collectFormData() {
                 const data = {};
-                const form = this.$el.querySelector('form');
-                if (!form) return data;
+                // Try multiple approaches to find the form
+                let form = this.$el.tagName === 'FORM' ? this.$el : null;
+                if (!form) {
+                    form = this.$el.querySelector('form');
+                }
+                if (!form) {
+                    // Fallback: use explicit DOM query
+                    form = document.querySelector('[x-data*="quickAddCredential"] form');
+                }
 
-                form.querySelectorAll('input, select, textarea').forEach(el => {
-                    if (el.name && el.name.startsWith('quick_cred_')) {
-                        const key = el.name.replace('quick_cred_', '');
+                if (!form) {
+                    console.error('collectFormData: Form not found!');
+                    return data;
+                }
+
+                const allInputs = form.querySelectorAll('input, select, textarea');
+                console.log('Found', allInputs.length, 'inputs. Names:');
+                allInputs.forEach(el => {
+                    console.log('  -', el.tagName, 'name="' + el.name + '"', 'value="' + el.value + '"');
+                });
+
+                allInputs.forEach(el => {
+                    const name = el.name || el.getAttribute('name');
+                    if (name && name.startsWith('quick_cred_')) {
+                        const key = name.replace('quick_cred_', '');
                         if (el.type === 'checkbox') {
                             data[key] = el.checked;
-                        } else if (el.value) {
-                            data[key] = el.value;
+                        } else {
+                            data[key] = el.value || '';
                         }
                     }
                 });
 
+                console.log('Final data:', data);
                 return data;
             }
         };
