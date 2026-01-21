@@ -172,7 +172,7 @@
                         <x-ui.client-select
                             name="client_id"
                             :clients="$clients"
-                            :selected="old('client_id', $revenue->client_id ?? '')">
+                            :selected="old('client_id', $revenue->client_id ?? '')"
                             :placeholder="__('Selectează client (opțional)')"
                             :emptyLabel="__('Fără client')"
                             :clientStatuses="$clientStatuses ?? []"
