@@ -182,8 +182,14 @@ function quickAddSlideOver(id, route, prefix, firstField) {
                     const key = el.name.replace(this.prefix, '');
                     if (el.type === 'checkbox') {
                         data[key] = el.checked ? 1 : 0;
-                    } else if (el.value !== '') {
-                        data[key] = el.value;
+                    } else {
+                        // Check for Alpine.js x-model binding first
+                        const xModel = el.getAttribute('x-model');
+                        if (xModel && this[xModel] !== undefined) {
+                            data[key] = this[xModel];
+                        } else {
+                            data[key] = el.value;
+                        }
                     }
                 }
             });
