@@ -20,6 +20,7 @@ class Subscription extends Model
         'vendor_name',
         'price',
         'price_eur',
+        'price_usd',
         'currency',
         'exchange_rate',
         'billing_cycle',
@@ -34,6 +35,7 @@ class Subscription extends Model
     protected $casts = [
         'price' => 'decimal:2',
         'price_eur' => 'decimal:2',
+        'price_usd' => 'decimal:2',
         'exchange_rate' => 'decimal:6',
         'start_date' => 'date',
         'next_renewal_date' => 'date',
@@ -311,10 +313,12 @@ class Subscription extends Model
      * Statistics for user's subscriptions
      * Optimized to use database-level aggregations instead of loading all records
      *
-     * Shows separate totals for RON and EUR subscriptions.
+     * Shows separate totals for RON, EUR, and USD subscriptions.
      * - RON subscriptions: price is in RON
      * - EUR subscriptions with price_eur: converted to RON (price is RON)
      * - EUR subscriptions without price_eur: legacy, shown as EUR total
+     * - USD subscriptions with price_usd: converted to RON (price is RON)
+     * - USD subscriptions without price_usd: legacy, shown as USD total
      */
     public static function getStatistics()
     {
@@ -325,13 +329,15 @@ class Subscription extends Model
             SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled_count
         ")->first();
 
-        // Cost calculations for RON subscriptions (includes converted EUR)
+        // Cost calculations for RON subscriptions (includes converted EUR and USD)
         // RON subscriptions: currency = 'RON'
         // Converted EUR subscriptions: currency = 'EUR' AND price_eur IS NOT NULL (price is in RON)
+        // Converted USD subscriptions: currency = 'USD' AND price_usd IS NOT NULL (price is in RON)
         $ronCosts = self::where('status', 'active')
             ->where(function($q) {
                 $q->where('currency', 'RON')
-                  ->orWhereNotNull('price_eur');
+                  ->orWhereNotNull('price_eur')
+                  ->orWhereNotNull('price_usd');
             })
             ->selectRaw("
                 SUM(CASE
@@ -372,6 +378,28 @@ class Subscription extends Model
                 END) as annual_cost
             ")->first();
 
+        // Cost calculations for legacy USD subscriptions (not converted)
+        // These are USD subscriptions without price_usd set (price is in USD)
+        $usdCosts = self::where('status', 'active')
+            ->where('currency', 'USD')
+            ->whereNull('price_usd')
+            ->selectRaw("
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 4.33
+                    WHEN billing_cycle = 'monthly' THEN price
+                    WHEN billing_cycle = 'annual' THEN price / 12
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 30
+                    ELSE 0
+                END) as monthly_cost,
+                SUM(CASE
+                    WHEN billing_cycle = 'weekly' THEN price * 52
+                    WHEN billing_cycle = 'monthly' THEN price * 12
+                    WHEN billing_cycle = 'annual' THEN price
+                    WHEN billing_cycle = 'custom' THEN (price / COALESCE(NULLIF(custom_days, 0), 30)) * 365
+                    ELSE 0
+                END) as annual_cost
+            ")->first();
+
         // Upcoming renewals (next 30 days)
         $upcomingRenewals = self::where('status', 'active')
             ->whereBetween('next_renewal_date', [
@@ -388,6 +416,8 @@ class Subscription extends Model
             'annual_cost' => round($ronCosts->annual_cost ?? 0, 2),
             'monthly_cost_eur' => round($eurCosts->monthly_cost ?? 0, 2),
             'annual_cost_eur' => round($eurCosts->annual_cost ?? 0, 2),
+            'monthly_cost_usd' => round($usdCosts->monthly_cost ?? 0, 2),
+            'annual_cost_usd' => round($usdCosts->annual_cost ?? 0, 2),
             'upcoming_renewals' => $upcomingRenewals,
         ];
     }
