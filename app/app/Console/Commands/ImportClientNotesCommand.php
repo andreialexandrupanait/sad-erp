@@ -17,6 +17,10 @@ class ImportClientNotesCommand extends Command
     protected $clientsByCompany = [];
     protected $unmatchedClientNames = [];
 
+    // Pre-built regex pattern for O(1) client matching instead of O(n) loops
+    protected $clientSearchPattern = '';
+    protected $clientTermToId = [];
+
     public function handle()
     {
         $filePath = $this->argument('file');
@@ -63,6 +67,10 @@ class ImportClientNotesCommand extends Command
 
         $this->info("Loaded {$this->clients->count()} clients for matching");
         $this->info("Loaded {$this->clientsByCompany->count()} company names for matching");
+
+        // Build single multi-term regex pattern for O(1) matching instead of O(n) loops per block
+        $this->buildClientSearchPattern();
+        $this->info("Built search pattern with " . count($this->clientTermToId) . " searchable terms");
         $this->newLine();
 
         // Read and parse file
@@ -149,53 +157,57 @@ class ImportClientNotesCommand extends Command
     }
 
     /**
-     * Try to detect a client name from the message block
+     * Build a single regex pattern with all client names for fast matching.
+     * This reduces O(n*m) to O(n) where n is blocks and m is clients.
+     */
+    protected function buildClientSearchPattern(): void
+    {
+        $terms = [];
+
+        // Collect all client names >= 4 chars
+        foreach ($this->clients as $lowerName => $client) {
+            if (strlen($lowerName) >= 4) {
+                $terms[$lowerName] = $client->id;
+            }
+        }
+
+        // Also collect company names
+        foreach ($this->clientsByCompany as $lowerCompanyName => $client) {
+            if (strlen($lowerCompanyName) >= 4) {
+                $terms[$lowerCompanyName] = $client->id;
+            }
+        }
+
+        if (empty($terms)) {
+            $this->clientSearchPattern = '';
+            return;
+        }
+
+        // Sort by length descending so longer matches come first in the pattern
+        uksort($terms, fn($a, $b) => strlen($b) <=> strlen($a));
+
+        $this->clientTermToId = $terms;
+
+        // Build single regex pattern with all terms (longest first for priority)
+        $escapedTerms = array_map(fn($t) => preg_quote($t, '/'), array_keys($terms));
+        $this->clientSearchPattern = '/(' . implode('|', $escapedTerms) . ')/i';
+    }
+
+    /**
+     * Try to detect a client name from the message block.
+     * Uses pre-built regex pattern for O(1) matching instead of O(n) loops.
      */
     protected function detectClient(string $block): ?int
     {
-        // Search the ENTIRE message for client names
-        $searchText = Str::lower($block);
-
-        $bestMatch = null;
-        $bestMatchLength = 0;
-
-        // Search for all client names anywhere in the message
-        // Prioritize longer matches (more specific)
-        foreach ($this->clients as $lowerName => $client) {
-            // Skip very short names (less than 4 chars) to avoid false positives
-            if (strlen($lowerName) < 4) {
-                continue;
-            }
-
-            if (Str::contains($searchText, $lowerName)) {
-                // Keep the longest match (most specific)
-                if (strlen($lowerName) > $bestMatchLength) {
-                    $bestMatch = $client;
-                    $bestMatchLength = strlen($lowerName);
-                }
-            }
+        // If no pattern was built, no clients to match
+        if (empty($this->clientSearchPattern)) {
+            return null;
         }
 
-        if ($bestMatch) {
-            return $bestMatch->id;
-        }
-
-        // Also check for client company names
-        foreach ($this->clientsByCompany as $lowerCompanyName => $client) {
-            if (strlen($lowerCompanyName) < 4) {
-                continue;
-            }
-
-            if (Str::contains($searchText, $lowerCompanyName)) {
-                if (strlen($lowerCompanyName) > $bestMatchLength) {
-                    $bestMatch = $client;
-                    $bestMatchLength = strlen($lowerCompanyName);
-                }
-            }
-        }
-
-        if ($bestMatch) {
-            return $bestMatch->id;
+        // Single regex match finds the first (longest due to pattern order) client name
+        if (preg_match($this->clientSearchPattern, $block, $matches)) {
+            $matchedTerm = strtolower($matches[1]);
+            return $this->clientTermToId[$matchedTerm] ?? null;
         }
 
         return null;

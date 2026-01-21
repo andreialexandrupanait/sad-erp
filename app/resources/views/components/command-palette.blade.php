@@ -64,7 +64,7 @@
                     </div>
                 </template>
 
-                <template x-for="(group, groupIndex) in groupedItems" :key="groupIndex">
+                <template x-for="(group, groupIndex) in groupedItems" :key="group.name">
                     <div>
                         <div class="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider" x-text="group.name"></div>
                         <template x-for="(item, itemIndex) in group.items" :key="item.id">
@@ -143,9 +143,18 @@ function commandPalette() {
             { id: 'profile', name: '{{ __("Profile") }}', description: '{{ __("Your profile") }}', url: '{{ route("profile.edit") }}', group: '{{ __("System") }}', icon: '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>' },
         ],
 
+        // Cached computed values for memoization
+        _cachedFilteredItems: null,
+        _lastQuery: null,
+        _cachedGroupedItems: null,
+        _lastFilteredItems: null,
+
         init() {
             this.$watch('query', () => {
                 this.selectedIndex = 0;
+                // Invalidate cache when query changes
+                this._cachedFilteredItems = null;
+                this._cachedGroupedItems = null;
             });
         },
 
@@ -153,6 +162,9 @@ function commandPalette() {
             this.isOpen = true;
             this.query = '';
             this.selectedIndex = 0;
+            // Clear caches on open
+            this._cachedFilteredItems = null;
+            this._cachedGroupedItems = null;
             this.$nextTick(() => {
                 this.$refs.searchInput.focus();
             });
@@ -164,15 +176,33 @@ function commandPalette() {
         },
 
         get filteredItems() {
-            if (!this.query) return this.items;
-            const q = this.query.toLowerCase();
-            return this.items.filter(item =>
-                item.name.toLowerCase().includes(q) ||
-                (item.description && item.description.toLowerCase().includes(q))
-            );
+            // Return cached result if query hasn't changed
+            if (this._lastQuery === this.query && this._cachedFilteredItems !== null) {
+                return this._cachedFilteredItems;
+            }
+
+            this._lastQuery = this.query;
+            if (!this.query) {
+                this._cachedFilteredItems = this.items;
+            } else {
+                const q = this.query.toLowerCase();
+                this._cachedFilteredItems = this.items.filter(item =>
+                    item.name.toLowerCase().includes(q) ||
+                    (item.description && item.description.toLowerCase().includes(q))
+                );
+            }
+            // Invalidate grouped items cache when filtered items change
+            this._cachedGroupedItems = null;
+            return this._cachedFilteredItems;
         },
 
         get groupedItems() {
+            // Return cached result if filtered items haven't changed
+            if (this._lastFilteredItems === this.filteredItems && this._cachedGroupedItems !== null) {
+                return this._cachedGroupedItems;
+            }
+
+            this._lastFilteredItems = this.filteredItems;
             const groups = {};
             this.filteredItems.forEach(item => {
                 if (!groups[item.group]) {
@@ -180,7 +210,8 @@ function commandPalette() {
                 }
                 groups[item.group].items.push(item);
             });
-            return Object.values(groups);
+            this._cachedGroupedItems = Object.values(groups);
+            return this._cachedGroupedItems;
         },
 
         getGlobalIndex(groupIndex, itemIndex) {

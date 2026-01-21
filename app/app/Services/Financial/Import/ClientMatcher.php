@@ -17,7 +17,8 @@ class ClientMatcher
 
     public function loadIndex(): void
     {
-        $clients = Client::all();
+        // Only select columns needed for matching to reduce memory usage
+        $clients = Client::select(['id', 'name', 'tax_id'])->get();
         $this->clientsByCif = [];
 
         foreach ($clients as $client) {

@@ -22,16 +22,20 @@ class RenewalPredictor
      */
     public function getUpcomingRenewals(): array
     {
+        // Cache now() to avoid redundant Carbon instantiations
+        $now = now();
+        $thirtyDaysFromNow = $now->copy()->addDays(30);
+
         return [
             'upcomingRenewals' => [
                 'domains' => Domain::with('client')
-                    ->whereBetween('expiry_date', [now(), now()->addDays(30)])
+                    ->whereBetween('expiry_date', [$now, $thirtyDaysFromNow])
                     ->orderBy('expiry_date')
                     ->take(10)
                     ->get(),
                 'subscriptions' => Subscription::with(['organization', 'user'])
                     ->where('status', 'active')
-                    ->whereBetween('next_renewal_date', [now(), now()->addDays(30)])
+                    ->whereBetween('next_renewal_date', [$now, $thirtyDaysFromNow])
                     ->orderBy('next_renewal_date')
                     ->take(10)
                     ->get(),
@@ -42,32 +46,42 @@ class RenewalPredictor
     /**
      * Get domain renewal analytics for 30, 60, 90 day windows
      *
-     * OPTIMIZATION: Single query for all data, then filter in PHP for better performance
+     * OPTIMIZATION: Use database aggregation with conditional sums instead of PHP filtering.
+     * Single query returns only aggregated values, not all domain records.
      */
     public function getDomainRenewalAnalytics(): array
     {
-        $domainsExpiring = Domain::whereBetween('expiry_date', [now(), now()->addDays(90)])
-            ->select('id', 'expiry_date', 'annual_cost')
-            ->get();
+        // Cache now() to avoid redundant Carbon instantiations
+        $now = now();
+        $day30 = $now->copy()->addDays(30)->toDateString();
+        $day60 = $now->copy()->addDays(60)->toDateString();
+        $day90 = $now->copy()->addDays(90)->toDateString();
+        $today = $now->toDateString();
 
-        $day30 = now()->copy()->addDays(30);
-        $day60 = now()->copy()->addDays(60);
-
-        $domains30Days = $domainsExpiring->filter(fn($d) => $d->expiry_date <= $day30);
-        $domains60Days = $domainsExpiring->filter(fn($d) => $d->expiry_date <= $day60);
+        // Single query with conditional aggregation - returns 1 row instead of N domain records
+        $stats = Domain::whereBetween('expiry_date', [$today, $day90])
+            ->selectRaw("
+                SUM(CASE WHEN expiry_date <= ? THEN 1 ELSE 0 END) as count_30,
+                SUM(CASE WHEN expiry_date <= ? THEN annual_cost ELSE 0 END) as cost_30,
+                SUM(CASE WHEN expiry_date <= ? THEN 1 ELSE 0 END) as count_60,
+                SUM(CASE WHEN expiry_date <= ? THEN annual_cost ELSE 0 END) as cost_60,
+                COUNT(*) as count_90,
+                COALESCE(SUM(annual_cost), 0) as cost_90
+            ", [$day30, $day30, $day60, $day60])
+            ->first();
 
         return [
             'domainRenewals30Days' => [
-                'count' => $domains30Days->count(),
-                'cost' => $domains30Days->sum('annual_cost'),
+                'count' => (int) ($stats->count_30 ?? 0),
+                'cost' => (float) ($stats->cost_30 ?? 0),
             ],
             'domainRenewals60Days' => [
-                'count' => $domains60Days->count(),
-                'cost' => $domains60Days->sum('annual_cost'),
+                'count' => (int) ($stats->count_60 ?? 0),
+                'cost' => (float) ($stats->cost_60 ?? 0),
             ],
             'domainRenewals90Days' => [
-                'count' => $domainsExpiring->count(),
-                'cost' => $domainsExpiring->sum('annual_cost'),
+                'count' => (int) ($stats->count_90 ?? 0),
+                'cost' => (float) ($stats->cost_90 ?? 0),
             ],
         ];
     }
@@ -79,8 +93,9 @@ class RenewalPredictor
      */
     public function getExpiringDomains(int $days = 30): \Illuminate\Database\Eloquent\Collection
     {
+        $now = now();
         return Domain::with('client')
-            ->whereBetween('expiry_date', [now(), now()->addDays($days)])
+            ->whereBetween('expiry_date', [$now, $now->copy()->addDays($days)])
             ->orderBy('expiry_date')
             ->get();
     }
@@ -105,11 +120,14 @@ class RenewalPredictor
      */
     public function calculateUpcomingRenewalCosts(int $days = 30): array
     {
-        $domains = Domain::whereBetween('expiry_date', [now(), now()->addDays($days)])
+        $now = now();
+        $endDate = $now->copy()->addDays($days);
+
+        $domains = Domain::whereBetween('expiry_date', [$now, $endDate])
             ->sum('annual_cost');
 
         $subscriptions = Subscription::where('status', 'active')
-            ->whereBetween('next_renewal_date', [now(), now()->addDays($days)])
+            ->whereBetween('next_renewal_date', [$now, $endDate])
             ->sum('price');
 
         return [

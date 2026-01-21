@@ -54,7 +54,8 @@ if (!function_exists('romanian_month')) {
      */
     function romanian_month(int $monthNumber, bool $withPrefix = true): string
     {
-        $months = [
+        // Use static to avoid recreating array on each call
+        static $months = [
             1 => 'Ianuarie',
             2 => 'Februarie',
             3 => 'Martie',

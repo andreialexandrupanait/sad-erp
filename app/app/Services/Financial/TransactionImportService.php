@@ -84,6 +84,21 @@ class TransactionImportService
             $result['metadata']['currency'] ?? 'RON'
         );
 
+        // Pre-build category regex patterns ONCE before the loop to avoid O(n*m) regex compilation
+        // This is a significant performance optimization for large imports
+        $categoryPatterns = [];
+        foreach (array_merge($categoryLabelToId, $categoryValueToId) as $term => $catId) {
+            if (strlen($term) >= 4) {
+                $categoryPatterns[] = [
+                    'pattern' => '/\b' . preg_quote($term, '/') . '(\b|\w)/i',
+                    'catId' => $catId,
+                    'length' => strlen($term),
+                ];
+            }
+        }
+        // Sort by length descending for longest match priority
+        usort($categoryPatterns, fn($a, $b) => $b['length'] <=> $a['length']);
+
         // Mark duplicates in transactions and set suggested category
         foreach ($result['transactions'] as &$transaction) {
             // Try to find category: first from mapping, then from direct label/value match
@@ -94,29 +109,12 @@ class TransactionImportService
                 $suggestedCategoryId = $categoryValueToId[$transaction['suggested_category']] ?? null;
             }
 
-            // If no mapping found, try direct match against category labels/values
+            // If no mapping found, try direct match against pre-built category patterns
             if (!$suggestedCategoryId && !empty($transaction['description'])) {
-                // Helper to check if pattern matches as whole word or word prefix
-                $matchesWord = function($pattern, $text) {
-                    // Match whole word OR word that starts with pattern (e.g., "postmark" matches "POSTMARKAPP")
-                    return preg_match('/\b' . preg_quote($pattern, '/') . '(\b|\w)/i', $text);
-                };
-
-                // Check category labels (min 4 chars to avoid false positives)
-                foreach ($categoryLabelToId as $label => $catId) {
-                    if (strlen($label) >= 4 && $matchesWord($label, $transaction['description'])) {
-                        $suggestedCategoryId = $catId;
+                foreach ($categoryPatterns as $patternData) {
+                    if (preg_match($patternData['pattern'], $transaction['description'])) {
+                        $suggestedCategoryId = $patternData['catId'];
                         break;
-                    }
-                }
-
-                // Also check category values
-                if (!$suggestedCategoryId) {
-                    foreach ($categoryValueToId as $value => $catId) {
-                        if (strlen($value) >= 4 && $matchesWord($value, $transaction['description'])) {
-                            $suggestedCategoryId = $catId;
-                            break;
-                        }
                     }
                 }
             }

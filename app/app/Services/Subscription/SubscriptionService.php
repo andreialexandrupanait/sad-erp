@@ -129,7 +129,9 @@ class SubscriptionService
      */
     public function advanceOverdueSubscriptions(): int
     {
-        $subscriptions = Subscription::where('status', 'active')
+        // Eager load user to avoid N+1 when logging (accesses $subscription->user->organization_id)
+        $subscriptions = Subscription::with('user')
+            ->where('status', 'active')
             ->where('next_renewal_date', '<', Carbon::now()->startOfDay())
             ->get();
 

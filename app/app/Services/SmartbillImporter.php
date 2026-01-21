@@ -17,6 +17,24 @@ use Exception;
 
 class SmartbillImporter
 {
+    /**
+     * Romanian month names - static to avoid recreating on every call
+     */
+    protected const ROMANIAN_MONTHS = [
+        1 => 'Ianuarie',
+        2 => 'Februarie',
+        3 => 'Martie',
+        4 => 'Aprilie',
+        5 => 'Mai',
+        6 => 'Iunie',
+        7 => 'Iulie',
+        8 => 'August',
+        9 => 'Septembrie',
+        10 => 'Octombrie',
+        11 => 'Noiembrie',
+        12 => 'Decembrie',
+    ];
+
     protected $smartbillService;
     protected $organization;
     protected $userId;
@@ -201,23 +219,18 @@ class SmartbillImporter
         }
 
         try {
-            // Update each affected client's total in a single efficient query per client
-            foreach ($clientIds as $clientId) {
-                $client = Client::withoutGlobalScopes()->find($clientId);
-
-                if (!$client) {
-                    continue;
-                }
-
-                // Sum revenues for this client within the organization
-                $total = FinancialRevenue::withoutGlobalScopes()
-                    ->where('client_id', $clientId)
-                    ->where('organization_id', $this->organization->id)
-                    ->sum('amount');
-
-                $client->total_incomes = $total ?? 0;
-                $client->saveQuietly();
-            }
+            // Use a single bulk UPDATE with subquery instead of 3N individual queries
+            // This updates all affected clients in one database operation
+            DB::statement("
+                UPDATE clients
+                SET total_incomes = (
+                    SELECT COALESCE(SUM(amount), 0)
+                    FROM financial_revenues
+                    WHERE financial_revenues.client_id = clients.id
+                    AND financial_revenues.organization_id = ?
+                )
+                WHERE id IN (" . implode(',', array_fill(0, count($clientIds), '?')) . ")
+            ", array_merge([$this->organization->id], $clientIds));
 
             Log::info('Updated client totals after bulk import', [
                 'clients_updated' => count($clientIds),
@@ -479,21 +492,6 @@ class SmartbillImporter
      */
     protected function getRomanianMonthName($monthNumber)
     {
-        $months = [
-            1 => 'Ianuarie',
-            2 => 'Februarie',
-            3 => 'Martie',
-            4 => 'Aprilie',
-            5 => 'Mai',
-            6 => 'Iunie',
-            7 => 'Iulie',
-            8 => 'August',
-            9 => 'Septembrie',
-            10 => 'Octombrie',
-            11 => 'Noiembrie',
-            12 => 'Decembrie',
-        ];
-
-        return $months[$monthNumber] ?? 'Unknown';
+        return self::ROMANIAN_MONTHS[$monthNumber] ?? 'Unknown';
     }
 }

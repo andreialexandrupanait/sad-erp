@@ -100,7 +100,11 @@ class TrendsCalculator
      */
     public function getAnalytics(): array
     {
-        $previousMonth = now()->subMonth();
+        // Cache now() at method start to avoid redundant Carbon instantiations
+        $now = now();
+        $currentYear = $now->year;
+        $currentMonth = $now->month;
+        $previousMonth = $now->copy()->subMonth();
 
         // Month-over-month growth - include all RON-valued records
         $previousMonthRevenue = $this->applyRonFilter(
@@ -114,18 +118,18 @@ class TrendsCalculator
         )->sum('amount');
 
         $currentMonthRevenue = $this->applyRonFilter(
-            FinancialRevenue::where('year', now()->year)
-                ->where('month', now()->month)
+            FinancialRevenue::where('year', $currentYear)
+                ->where('month', $currentMonth)
         )->sum('amount');
 
         $currentMonthExpenses = $this->applyRonFilter(
-            FinancialExpense::where('year', now()->year)
-                ->where('month', now()->month)
+            FinancialExpense::where('year', $currentYear)
+                ->where('month', $currentMonth)
         )->sum('amount');
 
         // Client growth
-        $newClientsThisMonth = Client::whereYear('created_at', now()->year)
-            ->whereMonth('created_at', now()->month)
+        $newClientsThisMonth = Client::whereYear('created_at', $currentYear)
+            ->whereMonth('created_at', $currentMonth)
             ->count();
         $newClientsLastMonth = Client::whereYear('created_at', $previousMonth->year)
             ->whereMonth('created_at', $previousMonth->month)
@@ -143,11 +147,11 @@ class TrendsCalculator
         $topClients = $this->getTopClientsByRevenue(3);
         $topClientsRevenue = $topClients->sum('total_revenue');
         $yearlyRevenue = $this->applyRonFilter(
-            FinancialRevenue::where('year', now()->year)
+            FinancialRevenue::where('year', $currentYear)
         )->sum('amount');
 
         // Expense categories - use SQL ordering
-        $categoryBreakdown = FinancialExpense::where('year', now()->year)
+        $categoryBreakdown = FinancialExpense::where('year', $currentYear)
             ->whereNotNull('category_option_id')
             ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
             ->groupBy('category_option_id')

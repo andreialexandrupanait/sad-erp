@@ -171,6 +171,14 @@ document.addEventListener('alpine:init', () => {
         open: false,
         highlightedIndex: -1,
 
+        // Cached computed values for memoization
+        _cachedFilteredOptions: null,
+        _lastSearchQuery: null,
+
+        // Store listener references for cleanup
+        _scrollListener: null,
+        _resizeListener: null,
+
         init() {
             // Convert selectedValue to string for comparison
             if (this.selectedValue !== null) {
@@ -178,13 +186,26 @@ document.addEventListener('alpine:init', () => {
             }
             this.updateSelectedLabel();
 
-            // Reposition on scroll/resize
-            window.addEventListener('scroll', () => {
+            // Reposition on scroll/resize - store references for cleanup
+            this._scrollListener = () => {
                 if (this.open) this.positionDropdown();
-            }, true);
-            window.addEventListener('resize', () => {
+            };
+            this._resizeListener = () => {
                 if (this.open) this.positionDropdown();
-            });
+            };
+
+            window.addEventListener('scroll', this._scrollListener, true);
+            window.addEventListener('resize', this._resizeListener);
+
+            // Cleanup listeners when component is destroyed
+            this.$cleanup = () => {
+                window.removeEventListener('scroll', this._scrollListener, true);
+                window.removeEventListener('resize', this._resizeListener);
+            };
+        },
+
+        destroy() {
+            if (this.$cleanup) this.$cleanup();
         },
 
         updateSelectedLabel() {
@@ -197,9 +218,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         get filteredOptions() {
-            if (!this.searchQuery.trim()) return this.options;
-            const q = this.searchQuery.toLowerCase().trim();
-            return this.options.filter(o => o.label.toLowerCase().includes(q));
+            // Return cached result if search query hasn't changed
+            const currentQuery = this.searchQuery.trim();
+            if (this._lastSearchQuery === currentQuery && this._cachedFilteredOptions !== null) {
+                return this._cachedFilteredOptions;
+            }
+
+            this._lastSearchQuery = currentQuery;
+            if (!currentQuery) {
+                this._cachedFilteredOptions = this.options;
+            } else {
+                const q = currentQuery.toLowerCase();
+                this._cachedFilteredOptions = this.options.filter(o => o.label.toLowerCase().includes(q));
+            }
+            return this._cachedFilteredOptions;
         },
 
         toggle() {

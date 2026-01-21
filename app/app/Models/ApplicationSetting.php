@@ -79,9 +79,10 @@ class ApplicationSetting extends Model
      */
     public static function clearCache(): void
     {
-        $settings = self::all();
-        foreach ($settings as $setting) {
-            Cache::forget("app_setting_{$setting->key}");
+        // Only fetch keys needed for cache clearing
+        $keys = self::pluck('key');
+        foreach ($keys as $key) {
+            Cache::forget("app_setting_{$key}");
         }
     }
 }

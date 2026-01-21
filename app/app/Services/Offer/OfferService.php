@@ -662,8 +662,10 @@ class OfferService implements OfferServiceInterface
         $organization = auth()->user()->organization;
 
         $clients = Client::orderBy('name')->get(['id', 'name', 'company_name', 'slug', 'created_from_temp']);
-        $templates = DocumentTemplate::active()->ofType('offer')->get();
-        $services = Service::where('is_active', true)->orderBy('sort_order')->get();
+        $templates = DocumentTemplate::active()->ofType('offer')->select(['id', 'name', 'type', 'content'])->get();
+        $services = Service::where('is_active', true)->orderBy('sort_order')
+            ->select(['id', 'name', 'description', 'unit_price', 'unit', 'tax_rate', 'sort_order'])
+            ->get();
 
         $selectedClient = $clientId ? Client::find($clientId) : ($offer?->client);
 

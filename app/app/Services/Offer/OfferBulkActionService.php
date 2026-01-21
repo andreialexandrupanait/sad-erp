@@ -48,8 +48,11 @@ class OfferBulkActionService
         $deleted = 0;
         $skipped = 0;
 
+        // Batch load all offers in a single query to avoid N+1
+        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+
         foreach ($offerIds as $id) {
-            $offer = Offer::find($id);
+            $offer = $offers->get($id);
             if ($offer) {
                 // Only allow deletion of draft offers
                 if ($offer->status === 'draft') {
@@ -85,8 +88,11 @@ class OfferBulkActionService
         $deleted = 0;
         $skipped = 0;
 
+        // Batch load all offers in a single query to avoid N+1
+        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+
         foreach ($offerIds as $id) {
-            $offer = Offer::find($id);
+            $offer = $offers->get($id);
             if ($offer) {
                 // Only skip accepted offers that have contracts
                 if ($offer->status === 'accepted' && $offer->contract_id) {
@@ -131,8 +137,11 @@ class OfferBulkActionService
             'rejected' => ['draft'],
         ];
 
+        // Batch load all offers in a single query to avoid N+1
+        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+
         foreach ($offerIds as $id) {
-            $offer = Offer::find($id);
+            $offer = $offers->get($id);
             if (!$offer) {
                 continue;
             }

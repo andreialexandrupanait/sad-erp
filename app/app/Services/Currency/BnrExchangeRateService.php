@@ -178,8 +178,8 @@ class BnrExchangeRateService
             );
         }
 
-        // Store for all organizations
-        $organizations = Organization::all();
+        // Store for all organizations - only need IDs
+        $organizations = Organization::select('id')->get();
         $storedRate = null;
 
         foreach ($organizations as $org) {
@@ -205,10 +205,11 @@ class BnrExchangeRateService
      */
     protected function clearCache(): void
     {
-        // Clear all BNR rate cache keys
-        Cache::forget('bnr_rate_EUR_RON_' . now()->format('Y-m-d'));
-        Cache::forget('bnr_rate_USD_RON_' . now()->format('Y-m-d'));
-        Cache::forget('bnr_rate_GBP_RON_' . now()->format('Y-m-d'));
+        // Clear all BNR rate cache keys - cache date string to avoid redundant now() calls
+        $today = now()->format('Y-m-d');
+        Cache::forget("bnr_rate_EUR_RON_{$today}");
+        Cache::forget("bnr_rate_USD_RON_{$today}");
+        Cache::forget("bnr_rate_GBP_RON_{$today}");
     }
 
     /**

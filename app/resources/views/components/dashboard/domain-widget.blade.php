@@ -6,13 +6,13 @@
     </div>
     <div class="p-4 md:p-6">
 
-    @if($expiringDomains->count() > 0)
+    @if($expiringDomainsCount > 0)
         <!-- Expiring Domains List -->
         <div class="space-y-2 mb-4">
             <div class="flex items-center justify-between mb-2">
                 <p class="text-xs font-medium text-orange-700 uppercase tracking-wide">{{ __('app.Expiring Soon') }}</p>
                 <span class="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-md text-xs font-bold bg-orange-100 text-orange-700">
-                    {{ $expiringDomains->count() }}
+                    {{ $expiringDomainsCount }}
                 </span>
             </div>
 
@@ -37,9 +37,9 @@
                 </div>
             @endforeach
 
-            @if($expiringDomains->count() > 3)
+            @if($expiringDomainsCount > 3)
                 <p class="text-xs text-slate-500 text-center pt-1">
-                    +{{ $expiringDomains->count() - 3 }} {{ __('more') }}
+                    +{{ $expiringDomainsCount - 3 }} {{ __('more') }}
                 </p>
             @endif
         </div>

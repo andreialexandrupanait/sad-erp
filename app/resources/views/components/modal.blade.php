@@ -17,13 +17,17 @@ $maxWidth = [
 <div
     x-data="{
         show: @js($show),
+        _focusablesCache: null,
         focusables() {
-            // All focusable element types...
-            let selector = 'a, button, input:not([type=\'hidden\']), textarea, select, details, [tabindex]:not([tabindex=\'-1\'])'
-            return [...$el.querySelectorAll(selector)]
-                // All non-disabled elements...
-                .filter(el => ! el.hasAttribute('disabled'))
+            // Cache DOM query result to avoid repeated querySelectorAll calls
+            if (this._focusablesCache === null) {
+                let selector = 'a, button, input:not([type=\'hidden\']), textarea, select, details, [tabindex]:not([tabindex=\'-1\'])'
+                this._focusablesCache = [...$el.querySelectorAll(selector)]
+                    .filter(el => ! el.hasAttribute('disabled'))
+            }
+            return this._focusablesCache
         },
+        clearFocusablesCache() { this._focusablesCache = null },
         firstFocusable() { return this.focusables()[0] },
         lastFocusable() { return this.focusables().slice(-1)[0] },
         nextFocusable() { return this.focusables()[this.nextFocusableIndex()] || this.firstFocusable() },
@@ -34,6 +38,7 @@ $maxWidth = [
     x-init="$watch('show', value => {
         if (value) {
             document.body.classList.add('overflow-y-hidden');
+            this.clearFocusablesCache();
             {{ $attributes->has('focusable') ? 'setTimeout(() => firstFocusable().focus(), 100)' : '' }}
         } else {
             document.body.classList.remove('overflow-y-hidden');

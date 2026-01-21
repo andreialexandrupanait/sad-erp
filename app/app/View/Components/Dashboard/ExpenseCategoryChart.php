@@ -7,7 +7,8 @@ use Illuminate\Support\Collection;
 
 class ExpenseCategoryChart extends Component
 {
-    public Collection $categoryData;
+    // Protected to avoid unnecessary serialization - only processed data is needed in view
+    protected Collection $categoryData;
     public float $total;
     public array $chartColors;
     public bool $hasData;

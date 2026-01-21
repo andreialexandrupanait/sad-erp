@@ -340,7 +340,9 @@ class SubscriptionController extends Controller
      */
     public function checkRenewals()
     {
-        $subscriptions = Subscription::where('status', 'active')
+        // Eager load user to avoid N+1 when logging (accesses $subscription->user->organization_id)
+        $subscriptions = Subscription::with('user')
+            ->where('status', 'active')
             ->where('next_renewal_date', '<', Carbon::now()->startOfDay())
             ->get();
 
@@ -434,7 +436,8 @@ class SubscriptionController extends Controller
 
         DB::beginTransaction();
         try {
-            $subscriptions = Subscription::whereIn("id", $validated["ids"])->get();
+            // Eager load user to avoid N+1 when logging (accesses $subscription->user->organization_id)
+            $subscriptions = Subscription::with('user')->whereIn("id", $validated["ids"])->get();
             $count = 0;
 
             foreach ($subscriptions as $subscription) {
@@ -460,7 +463,8 @@ class SubscriptionController extends Controller
             "status" => "required|in:active,paused,cancelled",
         ]);
 
-        $subscriptions = Subscription::whereIn("id", $validated["ids"])->get();
+        // Eager load user in case logging is added later
+        $subscriptions = Subscription::with('user')->whereIn("id", $validated["ids"])->get();
 
         foreach ($subscriptions as $subscription) {
             Gate::authorize("update", $subscription);

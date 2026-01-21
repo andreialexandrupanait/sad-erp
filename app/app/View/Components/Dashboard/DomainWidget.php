@@ -7,7 +7,9 @@ use Illuminate\Support\Collection;
 
 class DomainWidget extends Component
 {
-    public Collection $expiringDomains;
+    // Protected to avoid unnecessary serialization - only count is needed in view
+    protected Collection $expiringDomains;
+    public int $expiringDomainsCount;
     public array $domainRenewals30Days;
     public array $domainRenewals60Days;
     public array $domainRenewals90Days;
@@ -28,6 +30,7 @@ class DomainWidget extends Component
         array $domainRenewals90Days
     ) {
         $this->expiringDomains = $expiringDomains;
+        $this->expiringDomainsCount = $expiringDomains->count();
         $this->domainRenewals30Days = $domainRenewals30Days;
         $this->domainRenewals60Days = $domainRenewals60Days;
         $this->domainRenewals90Days = $domainRenewals90Days;

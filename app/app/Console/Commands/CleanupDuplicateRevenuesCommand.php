@@ -66,16 +66,18 @@ class CleanupDuplicateRevenuesCommand extends Command
             $this->info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
             $this->info("Invoice: {$series}-{$number} ({$count} copies)");
 
-            // Get all instances of this duplicate
+            // Get all instances of this duplicate - eager load relationships to avoid N+1
             $revenues = FinancialRevenue::withoutGlobalScope('user_scope')
                 ->where('smartbill_series', $series)
                 ->where('smartbill_invoice_number', $number)
+                ->with(['files', 'client'])
+                ->withCount('files')
                 ->orderBy('id')
                 ->get();
 
             // Display all copies
             foreach ($revenues as $index => $revenue) {
-                $hasFiles = $revenue->files()->count() > 0;
+                $hasFiles = $revenue->files_count > 0;
                 $fileInfo = $hasFiles ? " [HAS FILES]" : "";
                 $clientInfo = $revenue->client_id ? " Client: " . ($revenue->client->name ?? 'Unknown') : " [NO CLIENT]";
 
@@ -86,10 +88,10 @@ class CleanupDuplicateRevenuesCommand extends Command
             if ($isAuto) {
                 // Auto mode: keep the one with files, or the oldest one
                 $toKeep = $revenues->first(function ($r) {
-                    return $r->files()->count() > 0;
+                    return $r->files_count > 0;
                 }) ?? $revenues->first();
 
-                $this->warn("  → Auto-keeping: ID {$toKeep->id} (has files: " . ($toKeep->files()->count() > 0 ? 'yes' : 'no') . ")");
+                $this->warn("  → Auto-keeping: ID {$toKeep->id} (has files: " . ($toKeep->files_count > 0 ? 'yes' : 'no') . ")");
             } else {
                 // Interactive mode
                 $choice = $this->ask("Which one should we KEEP? Enter the index [0-" . ($revenues->count() - 1) . "], or 's' to skip", '0');
@@ -115,10 +117,9 @@ class CleanupDuplicateRevenuesCommand extends Command
                 $this->line("  🗑️  Deleting ID: {$revenue->id}");
 
                 if (!$isDryRun) {
-                    // Check if it has files
-                    $fileCount = $revenue->files()->count();
-                    if ($fileCount > 0) {
-                        $this->warn("    ⚠️  This revenue has {$fileCount} file(s). They will be deleted too.");
+                    // Check if it has files (using pre-loaded count)
+                    if ($revenue->files_count > 0) {
+                        $this->warn("    ⚠️  This revenue has {$revenue->files_count} file(s). They will be deleted too.");
 
                         // Files will be auto-deleted by FinancialFile model's deleted event
                     }
