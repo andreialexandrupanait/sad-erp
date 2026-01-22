@@ -80,7 +80,7 @@
                 />
             </div>
             <div class="w-24">
-                <select name="{{ $p }}currency" id="{{ $p }}currency" required class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2">
+                <select name="{{ $p }}currency" id="{{ $p }}currency" required class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
                     @foreach($currencies as $currency)
                         <option value="{{ $currency->value }}" {{ old($p.'currency', $subscription->currency ?? 'RON') === $currency->value ? 'selected' : '' }}>
                             {{ $currency->value }}
@@ -127,7 +127,7 @@
                 id="{{ $p }}custom_days"
                 x-model="customDays"
                 placeholder="{{ __('e.g., 90 for quarterly') }}"
-                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             />
         </div>
         @error($p.'custom_days')
@@ -147,7 +147,7 @@
                 id="{{ $p }}start_date"
                 required
                 x-model="startDate"
-                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             />
         </div>
         @error($p.'start_date')
@@ -189,7 +189,7 @@
                 required
                 x-model="nextRenewalDate"
                 readonly
-                class="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-950 focus-visible:ring-offset-2"
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
             />
         </div>
         <p class="mt-1 text-xs text-slate-500">{{ __('Auto-calculated based on start date and billing cycle') }}</p>

@@ -157,7 +157,7 @@
                                 id="auto_renew"
                                 value="1"
                                 {{ old('auto_renew', $domain->auto_renew ?? false) ? 'checked' : '' }}
-                                class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900"
+                                class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-blue-500"
                             >
                         </div>
                         <div class="ml-3 text-sm leading-6">

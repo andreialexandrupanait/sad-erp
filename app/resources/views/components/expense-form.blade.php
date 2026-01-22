@@ -96,7 +96,7 @@
                     </x-ui.label>
                     <div class="mt-2">
                         <select name="currency" id="currency" required x-model="currency" @change="onCurrencyChange()"
-                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6">
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                             @foreach($currencies as $curr)
                                 <option value="{{ $curr->value }}">{{ $curr->label }}</option>
                             @endforeach
@@ -114,7 +114,7 @@
                             <input type="number" step="0.01" name="amount_eur" id="amount_eur"
                                 x-model="amountEur" @input="calculateRon()"
                                 placeholder="0.00" required
-                                class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
                         </div>
                     </div>
                 </template>
@@ -130,7 +130,7 @@
                             <input type="number" step="0.0001" name="exchange_rate" id="exchange_rate"
                                 x-model="exchangeRate" @input="calculateRon()"
                                 placeholder="0.0000"
-                                class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
                             <p x-show="rateError" x-text="rateError" class="mt-1 text-xs text-red-500"></p>
                         </div>
                     </div>
@@ -146,7 +146,7 @@
                         <input type="number" step="0.01" name="amount" id="amount"
                             x-model="amountRon"
                             placeholder="0.00" required
-                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
                     </div>
                     <p x-show="currency === 'EUR' && amountEur && exchangeRate" class="mt-1 text-xs text-slate-500">
                         <span x-text="amountEur"></span> EUR × <span x-text="exchangeRate"></span> = <span x-text="amountRon"></span> RON
@@ -161,7 +161,7 @@
                     <div class="mt-2">
                         <input type="date" name="occurred_at" id="occurred_at" required
                             x-model="occurredAt" @change="currency === 'EUR' && fetchRate()"
-                            class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-blue-600 sm:text-sm sm:leading-6" />
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
                     </div>
                 </div>
 

@@ -145,6 +145,13 @@ class BankingCredential extends Model
                      ->where('consent_expires_at', '<=', now()->addDays(7));
     }
 
+    public function scopeNeedingSync($query)
+    {
+        return $query->where('status', 'active')
+                     ->where('consent_status', 'active')
+                     ->where('consent_expires_at', '>', now());
+    }
+
     // Accessors
     public function getIsTokenValidAttribute()
     {
@@ -206,5 +213,20 @@ class BankingCredential extends Model
             'refresh_token' => null,
             'status' => 'inactive',
         ]);
+    }
+
+    public function canSync(): bool
+    {
+        return $this->status === 'active' && $this->is_consent_valid;
+    }
+
+    public function isConsentValid(): bool
+    {
+        return $this->is_consent_valid;
+    }
+
+    public function isTokenExpired(): bool
+    {
+        return !$this->is_token_valid;
     }
 }

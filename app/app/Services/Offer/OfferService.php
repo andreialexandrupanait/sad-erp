@@ -4,6 +4,7 @@ namespace App\Services\Offer;
 
 use App\Contracts\OfferServiceInterface;
 use App\Jobs\GenerateDocumentPdfJob;
+use App\Jobs\Offer\SendOfferEmailJob;
 use App\Models\Client;
 use App\Models\Contract;
 use App\Models\Document;
@@ -243,29 +244,18 @@ class OfferService implements OfferServiceInterface
             // Mark as sent
             $offer->markAsSent();
 
-            // Generate PDF synchronously so it's ready for the email
-            GenerateDocumentPdfJob::dispatchSync($offer, Document::TYPE_OFFER_SENT);
-
             // Log activity
             $offer->logActivity('sent');
         });
 
-        // Email and notifications OUTSIDE transaction to prevent rollback on email failure
-        try {
-            $this->sendOfferEmail($offer);
+        // Dispatch async job to generate PDF and send email
+        // This prevents blocking the request while email is being sent
+        SendOfferEmailJob::dispatch($offer);
 
-            if ($this->notificationService) {
-                $message = new OfferSentMessage($offer);
-                $this->notificationService->send($message);
-            }
-        } catch (\Exception $e) {
-            // Log email failure but don't roll back the offer status change
-            Log::error("Failed to send offer email after status update", [
-                'offer_id' => $offer->id,
-                'error' => $e->getMessage(),
-            ]);
-            // Re-throw so caller knows email failed
-            throw $e;
+        // Send push notification (non-blocking)
+        if ($this->notificationService) {
+            $message = new OfferSentMessage($offer);
+            $this->notificationService->send($message);
         }
 
         return true;
@@ -274,7 +264,7 @@ class OfferService implements OfferServiceInterface
     /**
      * Send offer email to client.
      */
-    protected function sendOfferEmail(Offer $offer): void
+    public function sendOfferEmail(Offer $offer): void
     {
         $offer->load(['client', 'organization']);
 
@@ -951,7 +941,7 @@ class OfferService implements OfferServiceInterface
 
             $offer->load('organization');
 
-            Mail::send('emails.offer-viewed', [
+            Mail::queue('emails.offer-viewed', [
                 'offer' => $offer,
                 'organization' => $offer->organization,
             ], function ($mail) use ($offer, $adminEmail) {
@@ -983,7 +973,7 @@ class OfferService implements OfferServiceInterface
 
             $offer->load('organization');
 
-            Mail::send('emails.offer-accepted-admin', [
+            Mail::queue('emails.offer-accepted-admin', [
                 'offer' => $offer,
                 'organization' => $offer->organization,
             ], function ($mail) use ($offer, $adminEmail) {
@@ -1015,7 +1005,7 @@ class OfferService implements OfferServiceInterface
 
             $offer->load('organization');
 
-            Mail::send('emails.offer-rejected-admin', [
+            Mail::queue('emails.offer-rejected-admin', [
                 'offer' => $offer,
                 'organization' => $offer->organization,
             ], function ($mail) use ($offer, $adminEmail) {
@@ -1047,7 +1037,7 @@ class OfferService implements OfferServiceInterface
 
             $offer->load('organization');
 
-            Mail::send('emails.offer-modified-admin', [
+            Mail::queue('emails.offer-modified-admin', [
                 'offer' => $offer,
                 'organization' => $offer->organization,
                 'changes' => $changes,
@@ -1082,7 +1072,7 @@ class OfferService implements OfferServiceInterface
 
             // Use offer's language for email content
             $this->withOfferLocale($offer, function () use ($offer, $clientEmail) {
-                Mail::send('emails.offer-accepted-client', [
+                Mail::queue('emails.offer-accepted-client', [
                     'offer' => $offer,
                     'organization' => $offer->organization,
                 ], function ($mail) use ($offer, $clientEmail) {
@@ -1148,7 +1138,7 @@ class OfferService implements OfferServiceInterface
 
             // Use offer's language for email content
             $this->withOfferLocale($offer, function () use ($offer, $clientEmail) {
-                Mail::send('emails.offer-rejected-client', [
+                Mail::queue('emails.offer-rejected-client', [
                     'offer' => $offer,
                     'organization' => $offer->organization,
                 ], function ($mail) use ($offer, $clientEmail) {

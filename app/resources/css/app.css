@@ -1,6 +1,11 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@layer base {
+    /* Set default border color to match the app's design system */
+    *, ::before, ::after {
+        border-color: theme('colors.slate.200');
+    }
+}
 
 @layer components {
     /* Card component with proper border radius handling */

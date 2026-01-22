@@ -16,7 +16,7 @@
 
     $stateClasses = $hasError
         ? 'border-red-300 focus:ring-red-500'
-        : 'border-slate-200 focus:ring-slate-950';
+        : 'border-slate-200 focus:ring-blue-500';
 @endphp
 
 <select

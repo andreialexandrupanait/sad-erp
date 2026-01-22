@@ -28,6 +28,6 @@
         'dark:text-slate-100',
         $hasError
             ? 'border-red-300 dark:border-red-500 text-red-900 dark:text-red-400 placeholder:text-red-300 focus-visible:ring-red-500 pr-10'
-            : 'border-slate-200 dark:border-slate-600 focus-visible:ring-slate-950 dark:focus-visible:ring-slate-400',
+            : 'border-slate-200 dark:border-slate-600 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:focus-visible:ring-blue-400',
     ]) }}
 >
