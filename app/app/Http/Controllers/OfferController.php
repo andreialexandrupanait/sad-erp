@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Traits\SafeJson;
+use App\Http\Controllers\Traits\SafeJsonResponse;
 use App\Http\Requests\Offer\BulkActionRequest;
+use App\Rules\SecureFileUpload;
 use App\Http\Requests\Offer\StoreOfferRequest;
 use App\Http\Requests\Offer\UpdateOfferRequest;
 use App\Models\Client;
@@ -24,7 +26,7 @@ use Illuminate\Support\Facades\Storage;
 
 class OfferController extends Controller
 {
-    use SafeJson;
+    use SafeJson, SafeJsonResponse;
     public function __construct(
         protected OfferService $offerService,
         protected OfferPublicService $offerPublicService,
@@ -1213,7 +1215,7 @@ class OfferController extends Controller
     public function uploadImage(Request $request): JsonResponse
     {
         $request->validate([
-            'image' => 'required|image|max:5120', // 5MB max
+            'image' => ['required', 'image', 'max:5120', new SecureFileUpload()], // 5MB max with secure validation
             'type' => 'nullable|string|in:brands,general'
         ]);
 

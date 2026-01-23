@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
 class ExchangeRate extends Model
@@ -155,21 +156,41 @@ class ExchangeRate extends Model
     }
 
     /**
-     * Set or update a rate for today
+     * Set or update a rate for today.
+     * Uses transaction with locking to prevent race conditions.
      */
     public static function setRate(string $from, string $to, float $rate, string $source = 'manual'): static
     {
-        return static::updateOrCreate(
-            [
-                'organization_id' => Auth::user()->organization_id,
-                'from_currency' => strtoupper($from),
-                'to_currency' => strtoupper($to),
-                'effective_date' => now()->toDateString(),
-            ],
-            [
+        return DB::transaction(function () use ($from, $to, $rate, $source) {
+            $orgId = Auth::user()->organization_id;
+            $fromCurrency = strtoupper($from);
+            $toCurrency = strtoupper($to);
+            $date = now()->toDateString();
+
+            // Try to find and lock existing rate
+            $existing = static::lockForUpdate()
+                ->where('organization_id', $orgId)
+                ->where('from_currency', $fromCurrency)
+                ->where('to_currency', $toCurrency)
+                ->where('effective_date', $date)
+                ->first();
+
+            if ($existing) {
+                $existing->update([
+                    'rate' => $rate,
+                    'source' => $source,
+                ]);
+                return $existing;
+            }
+
+            return static::create([
+                'organization_id' => $orgId,
+                'from_currency' => $fromCurrency,
+                'to_currency' => $toCurrency,
+                'effective_date' => $date,
                 'rate' => $rate,
                 'source' => $source,
-            ]
-        );
+            ]);
+        });
     }
 }

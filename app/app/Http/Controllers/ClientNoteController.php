@@ -236,6 +236,7 @@ class ClientNoteController extends Controller
 
     /**
      * Get tag statistics for filtering.
+     * Optimized to use a single query instead of N+1 queries per tag.
      */
     public function tagStats(Request $request): JsonResponse
     {
@@ -245,14 +246,16 @@ class ClientNoteController extends Controller
             $query->forClient($request->client_id);
         }
 
-        // Get tag counts
-        $allTags = ClientNote::getAvailableTags();
-        $tagCounts = [];
+        // Get all notes matching the filter and extract tags
+        $notes = $query->whereNotNull('tags')->pluck('tags');
 
-        foreach ($allTags as $tag) {
-            $count = (clone $query)->withTag($tag)->count();
-            if ($count > 0) {
-                $tagCounts[$tag] = $count;
+        // Count occurrences of each tag across all notes
+        $tagCounts = [];
+        foreach ($notes as $noteTags) {
+            if (is_array($noteTags)) {
+                foreach ($noteTags as $tag) {
+                    $tagCounts[$tag] = ($tagCounts[$tag] ?? 0) + 1;
+                }
             }
         }
 

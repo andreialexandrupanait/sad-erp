@@ -97,8 +97,10 @@ class ClientQueryService
 
         if ($column === 'activity') {
             // Combined sort: invoice count (most active) + last invoice date (most recent)
-            $query->orderByRaw('(SELECT COUNT(*) FROM financial_revenues WHERE financial_revenues.client_id = clients.id) DESC')
-                  ->orderBy('last_invoice_at', 'desc');
+            // Use withCount instead of raw subquery for better performance
+            $query->withCount('revenues')
+                  ->orderByDesc('revenues_count')
+                  ->orderByDesc('last_invoice_at');
         } else {
             $query->orderBy($column, $direction);
         }

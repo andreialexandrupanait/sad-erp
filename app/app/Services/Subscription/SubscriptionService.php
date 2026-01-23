@@ -6,6 +6,7 @@ use App\Models\Subscription;
 use App\Models\SubscriptionLog;
 use Illuminate\Support\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class SubscriptionService
@@ -66,32 +67,38 @@ class SubscriptionService
 
     /**
      * Update an existing subscription.
+     * Uses transaction with locking to prevent race conditions.
      */
     public function update(Subscription $subscription, array $data): Subscription
     {
-        $oldRenewalDate = $subscription->next_renewal_date;
-        $oldStatus = $subscription->status;
+        return DB::transaction(function () use ($subscription, $data) {
+            // Lock the subscription row to prevent concurrent updates
+            $subscription = Subscription::lockForUpdate()->find($subscription->id);
 
-        // Check if renewal date changed
-        $renewalDateChanged = isset($data['next_renewal_date']) &&
-            $subscription->next_renewal_date->format('Y-m-d') !== $data['next_renewal_date'];
+            $oldRenewalDate = $subscription->next_renewal_date;
+            $oldStatus = $subscription->status;
 
-        // Check if status changed
-        $statusChanged = isset($data['status']) && $oldStatus !== $data['status'];
+            // Check if renewal date changed
+            $renewalDateChanged = isset($data['next_renewal_date']) &&
+                $subscription->next_renewal_date->format('Y-m-d') !== $data['next_renewal_date'];
 
-        if ($renewalDateChanged) {
-            $subscription->fill($data);
-            $subscription->updateRenewalDate($data['next_renewal_date'], __('Manual update from form'));
-        } else {
-            $subscription->update($data);
-        }
+            // Check if status changed
+            $statusChanged = isset($data['status']) && $oldStatus !== $data['status'];
 
-        // Log status change if applicable
-        if ($statusChanged) {
-            $this->logStatusChange($subscription, $oldStatus, $data['status'], __('Status change from form'));
-        }
+            if ($renewalDateChanged) {
+                $subscription->fill($data);
+                $subscription->updateRenewalDate($data['next_renewal_date'], __('Manual update from form'));
+            } else {
+                $subscription->update($data);
+            }
 
-        return $subscription->fresh();
+            // Log status change if applicable
+            if ($statusChanged) {
+                $this->logStatusChange($subscription, $oldStatus, $data['status'], __('Status change from form'));
+            }
+
+            return $subscription->fresh();
+        });
     }
 
     /**
@@ -126,22 +133,25 @@ class SubscriptionService
 
     /**
      * Advance all overdue subscriptions.
+     * Uses transaction to ensure atomicity of batch operation.
      */
     public function advanceOverdueSubscriptions(): int
     {
-        // Eager load user to avoid N+1 when logging (accesses $subscription->user->organization_id)
-        $subscriptions = Subscription::with('user')
-            ->where('status', 'active')
-            ->where('next_renewal_date', '<', Carbon::now()->startOfDay())
-            ->get();
+        return DB::transaction(function () {
+            // Eager load user to avoid N+1 when logging (accesses $subscription->user->organization_id)
+            $subscriptions = Subscription::with('user')
+                ->where('status', 'active')
+                ->where('next_renewal_date', '<', Carbon::now()->startOfDay())
+                ->get();
 
-        $count = 0;
-        foreach ($subscriptions as $subscription) {
-            $subscription->advanceOverdueRenewals();
-            $count++;
-        }
+            $count = 0;
+            foreach ($subscriptions as $subscription) {
+                $subscription->advanceOverdueRenewals();
+                $count++;
+            }
 
-        return $count;
+            return $count;
+        });
     }
 
     /**

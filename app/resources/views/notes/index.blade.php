@@ -289,7 +289,7 @@
                                             </div>
                                             @if($isLong)
                                             <div x-show="expanded" x-cloak class="text-sm text-slate-700 prose prose-sm max-w-none">
-                                                {!! $note->content !!}
+                                                {!! sanitize_html($note->content) !!}
                                                 <button @click="expanded = false" class="text-blue-600 hover:text-blue-800 font-medium ml-1">{{ __('Show less') }}</button>
                                             </div>
                                             @endif

@@ -204,7 +204,6 @@
                             this.showToast(data.message || 'Action failed', 'error');
                         }
                     } catch (error) {
-                        console.error('Bulk action error:', error);
                         this.showToast('An error occurred. Please try again.', 'error');
                     } finally {
                         this.isLoading = false;
@@ -252,7 +251,6 @@
                             this.showToast(data.message || 'Export failed', 'error');
                         }
                     } catch (error) {
-                        console.error('Export error:', error);
                         this.showToast('An error occurred during export. Please try again.', 'error');
                     } finally {
                         this.isLoading = false;
@@ -320,9 +318,6 @@
                             this.selectedLabel = item.isParent
                                 ? item.label
                                 : `${item.parentLabel || this.getParentLabel(item.parentId)} > ${item.label}`;
-                        } else {
-                            // Debug: log if item not found
-                            console.log('Category not found for ID:', this.selectedId, 'Available:', this.flatList.map(i => i.id));
                         }
                     } else {
                         this.selectedLabel = '';
@@ -574,7 +569,6 @@
                             alert(data.message || 'Failed to create category');
                         }
                     } catch (error) {
-                        console.error('Error creating category:', error);
                         alert('Failed to create category. Please try again.');
                     } finally {
                         this.saving = false;
@@ -1267,16 +1261,12 @@
         // Real-time notification listener
         document.addEventListener("DOMContentLoaded", function() {
             if (typeof window.Echo !== "undefined" && window.organizationId) {
-                console.log("Setting up Echo listener for organization:", window.organizationId);
-                
                 window.Echo.private("organization." + window.organizationId)
                     .listen(".offer.accepted", (e) => {
-                        console.log("Offer accepted:", e);
                         showNotificationToast("success", e.message, e.client_name + " - " + e.total, "/offers/" + e.offer_id);
                         playNotificationSound();
                     })
                     .listen(".offer.rejected", (e) => {
-                        console.log("Offer rejected:", e);
                         showNotificationToast("warning", e.message, e.client_name + (e.rejection_reason ? ": " + e.rejection_reason : ""), "/offers/" + e.offer_id);
                         playNotificationSound();
                     });
@@ -1334,7 +1324,7 @@
                 oscillator.start(audioContext.currentTime);
                 oscillator.stop(audioContext.currentTime + 0.3);
             } catch (e) {
-                console.log("Could not play notification sound");
+                // Could not play notification sound
             }
         }
 
@@ -1385,8 +1375,6 @@
                     },
                     body: JSON.stringify(newSubscription.toJSON())
                 });
-
-                console.log("Push notifications enabled");
             } catch (error) {
                 // Silently ignore push notification setup errors
                 // Common causes: VAPID key not configured, service worker issues, etc.

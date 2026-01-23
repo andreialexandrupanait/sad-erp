@@ -69,7 +69,6 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             if (typeof tinymce === 'undefined') {
-                console.error('[ContractEditor] TinyMCE not loaded');
                 return;
             }
 
@@ -104,9 +103,6 @@
                 statusbar: true,
                 elementpath: false,
                 setup: function(editor) {
-                    editor.on('init', function() {
-                        console.log('[ContractEditor] TinyMCE initialized');
-                    });
                     editor.on('change', function() {
                         markUnsaved();
                     });
@@ -145,7 +141,6 @@
         async function saveContract() {
             const editor = tinymce.get('contract-content');
             if (!editor) {
-                console.error('[ContractEditor] Editor not found');
                 return;
             }
 
@@ -179,7 +174,6 @@
                     throw new Error(data.message || 'Save failed');
                 }
             } catch (error) {
-                console.error('[ContractEditor] Save error:', error);
                 document.getElementById('save-status').innerHTML = `
                     <svg class="w-4 h-4 inline text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>

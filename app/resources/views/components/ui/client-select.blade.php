@@ -538,20 +538,7 @@ document.addEventListener('alpine:init', () => {
         async createClient() {
             if (this.saving) return;
 
-            // Debug: check what we're working with
-            const container = document.querySelector(`[data-form-id="${this.componentId}"]`);
-            console.log('componentId:', this.componentId);
-            console.log('Container found:', container);
-            if (container) {
-                console.log('All inputs in container:', container.querySelectorAll('input'));
-                const nameInput = container.querySelector('input[type="text"]');
-                console.log('First text input:', nameInput);
-                console.log('First text input value:', nameInput ? nameInput.value : 'N/A');
-                console.log('First text input name:', nameInput ? nameInput.name : 'N/A');
-            }
-
             const formData = this.getFormData();
-            console.log('Form data collected:', formData);
 
             // Basic validation
             this.formErrors = [];
@@ -616,7 +603,6 @@ document.addEventListener('alpine:init', () => {
                 this.$dispatch('client-selected', { id: data.client.id, name: data.client.name });
 
             } catch (error) {
-                console.error('Error creating client:', error);
                 this.formErrors = ['{{ __("An error occurred. Please try again.") }}'];
             } finally {
                 this.saving = false;

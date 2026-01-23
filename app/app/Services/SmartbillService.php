@@ -31,7 +31,7 @@ class SmartbillService
     protected $cif;
 
     /** @var string SmartBill API base URL */
-    protected $baseUrl = 'https://ws.smartbill.ro:8183/SBORO/api';
+    protected $baseUrl;
 
     /**
      * Initialize SmartBill service with credentials.
@@ -42,6 +42,7 @@ class SmartbillService
      */
     public function __construct($username = null, $token = null, $cif = null)
     {
+        $this->baseUrl = config('smartbill.base_url', 'https://ws.smartbill.ro:8183/SBORO/api');
         $this->username = $username ?? config('smartbill.username');
         $this->token = $token ?? config('smartbill.token');
         $this->cif = $cif ?? config('smartbill.vatCode');

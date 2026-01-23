@@ -54,6 +54,8 @@ class SecurityHeaders
         // Note: Nonces removed from script-src because they make 'unsafe-inline' ignored per CSP spec.
         // Alpine.js requires 'unsafe-eval' for its expression evaluation (x-data, @click, etc.)
         // TODO: Consider migrating to @alpinejs/csp build for stricter security
+        $websocketUrl = config('app.websocket_url', 'wss://localhost:6001');
+
         $csp = [
             "default-src 'self'",
             // script-src: 'unsafe-inline' needed for Alpine event handlers (@click, @blur, etc.)
@@ -63,7 +65,7 @@ class SecurityHeaders
             "style-src 'self' 'unsafe-inline' https://fonts.bunny.net https://cdn.quilljs.com https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com",
             "img-src 'self' data: https:",
             "font-src 'self' data: https://fonts.bunny.net",
-            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tiny.cloud https://unpkg.com wss://hub.simplead.ro:6001 https://api.openapi.ro",
+            "connect-src 'self' https://cdn.quilljs.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.tiny.cloud https://unpkg.com {$websocketUrl} https://api.openapi.ro",
             "frame-ancestors 'self'",
             "base-uri 'self'",
             "form-action 'self'",

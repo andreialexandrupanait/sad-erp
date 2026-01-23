@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Offer;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Traits\SafeJsonResponse;
 use App\Models\Offer;
 use App\Services\Offer\OfferPublicService;
 use Illuminate\Contracts\View\View;
@@ -16,6 +17,8 @@ use Illuminate\Http\Request;
  */
 class OfferPublicController extends Controller
 {
+    use SafeJsonResponse;
+
     public function __construct(
         protected OfferPublicService $offerPublicService
     ) {}
@@ -48,10 +51,7 @@ class OfferPublicController extends Controller
         try {
             return response()->json($this->offerPublicService->getPublicState($token));
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 404);
+            return $this->safeJsonError($e, 'Get offer state', 404);
         }
     }
 
@@ -73,15 +73,9 @@ class OfferPublicController extends Controller
             $result = $this->offerPublicService->updateSelections($token, $validated);
             return response()->json($result);
         } catch (\RuntimeException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->safeJsonValidationError(__('This action is not allowed.'), [], 403);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return $this->safeJsonError($e, 'Update offer selections');
         }
     }
 
@@ -106,14 +100,7 @@ class OfferPublicController extends Controller
 
             return redirect()->back()->with('success', __('Offer accepted successfully.'));
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 400);
-            }
-
-            return redirect()->back()->with('error', $e->getMessage());
+            return $this->respondException($e, 'Accept offer');
         }
     }
 
@@ -138,14 +125,7 @@ class OfferPublicController extends Controller
 
             return redirect()->back()->with('success', __('Offer declined successfully.'));
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 400);
-            }
-
-            return redirect()->back()->with('error', $e->getMessage());
+            return $this->respondException($e, 'Reject offer');
         }
     }
 
@@ -162,10 +142,7 @@ class OfferPublicController extends Controller
                 'message' => __('Verification code sent to your email.'),
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
+            return $this->safeJsonError($e, 'Request verification code', 400);
         }
     }
 
@@ -195,10 +172,7 @@ class OfferPublicController extends Controller
         try {
             return response()->json($this->offerPublicService->getPublicStateSigned($offer));
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 404);
+            return $this->safeJsonError($e, 'Get signed offer state', 404);
         }
     }
 
@@ -220,15 +194,9 @@ class OfferPublicController extends Controller
             $result = $this->offerPublicService->updateSelectionsSigned($offer, $validated);
             return response()->json($result);
         } catch (\RuntimeException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 403);
+            return $this->safeJsonValidationError(__('This action is not allowed.'), [], 403);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
+            return $this->safeJsonError($e, 'Update signed offer selections');
         }
     }
 
@@ -249,14 +217,7 @@ class OfferPublicController extends Controller
 
             return redirect()->back()->with('success', __('Offer accepted successfully.'));
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 400);
-            }
-
-            return redirect()->back()->with('error', $e->getMessage());
+            return $this->respondException($e, 'Accept signed offer');
         }
     }
 
@@ -281,14 +242,7 @@ class OfferPublicController extends Controller
 
             return redirect()->back()->with('success', __('Offer declined successfully.'));
         } catch (\Exception $e) {
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $e->getMessage(),
-                ], 400);
-            }
-
-            return redirect()->back()->with('error', $e->getMessage());
+            return $this->respondException($e, 'Reject signed offer');
         }
     }
 }

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class Client extends Model
@@ -71,19 +72,25 @@ class Client extends Model
             }
 
             // Auto-generate slug if not provided
+            // Uses locking to prevent race conditions with concurrent client creation
             if (empty($client->slug)) {
-                $client->slug = Str::slug($client->name);
+                DB::transaction(function () use ($client) {
+                    $client->slug = Str::slug($client->name);
 
-                // Ensure unique slug within organization
-                $originalSlug = $client->slug;
-                $counter = 1;
-                while (static::withoutGlobalScopes()
-                    ->where('organization_id', $client->organization_id)
-                    ->where('slug', $client->slug)
-                    ->exists()) {
-                    $client->slug = $originalSlug . '-' . $counter;
-                    $counter++;
-                }
+                    // Ensure unique slug within organization using row-level locking
+                    $originalSlug = $client->slug;
+                    $counter = 1;
+
+                    // Lock existing rows to prevent race conditions
+                    while (static::withoutGlobalScopes()
+                        ->lockForUpdate()
+                        ->where('organization_id', $client->organization_id)
+                        ->where('slug', $client->slug)
+                        ->exists()) {
+                        $client->slug = $originalSlug . '-' . $counter;
+                        $counter++;
+                    }
+                });
             }
         });
 

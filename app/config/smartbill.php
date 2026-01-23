@@ -4,6 +4,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SmartBill API Base URL
+    |--------------------------------------------------------------------------
+    |
+    | The base URL for the SmartBill API. This should not need to be changed
+    | unless SmartBill changes their API endpoint.
+    |
+    */
+
+    'base_url' => env('SMARTBILL_BASE_URL', 'https://ws.smartbill.ro:8183/SBORO/api'),
+
+    /*
+    |--------------------------------------------------------------------------
     | SmartBill credentials
     |--------------------------------------------------------------------------
     |
@@ -14,8 +26,8 @@ return [
     |
     */
 
-    'username' => '',
-    'token' => '',
+    'username' => env('SMARTBILL_USERNAME', ''),
+    'token' => env('SMARTBILL_TOKEN', ''),
 
     /*
     |--------------------------------------------------------------------------
@@ -27,8 +39,8 @@ return [
     | one account is supported in this package
     |
     */
-    
-    'vatCode' => '',
+
+    'vatCode' => env('SMARTBILL_VAT_CODE', ''),
 
     /*
     |--------------------------------------------------------------------------
@@ -41,8 +53,8 @@ return [
     |
     */
 
-    'invoiceSeries' => 'TEST-INV',
-    'proformaSeries' => 'TEST-PRO',
-    'receiptSeries' => 'TEST-REC',
+    'invoiceSeries' => env('SMARTBILL_INVOICE_SERIES', 'TEST-INV'),
+    'proformaSeries' => env('SMARTBILL_PROFORMA_SERIES', 'TEST-PRO'),
+    'receiptSeries' => env('SMARTBILL_RECEIPT_SERIES', 'TEST-REC'),
 
 ];

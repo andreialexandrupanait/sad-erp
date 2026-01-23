@@ -139,4 +139,16 @@ return [
 
     'csp_enforce' => env('CSP_ENFORCE', true),
 
+    /*
+    |--------------------------------------------------------------------------
+    | WebSocket URL for CSP
+    |--------------------------------------------------------------------------
+    |
+    | The WebSocket URL used by Laravel Reverb/Echo for real-time features.
+    | This is added to the Content-Security-Policy connect-src directive.
+    |
+    */
+
+    'websocket_url' => env('REVERB_WSS_URL', 'wss://hub.simplead.ro:6001'),
+
 ];

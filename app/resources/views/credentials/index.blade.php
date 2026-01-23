@@ -334,7 +334,6 @@
                         this.error = data.message || '{{ __('Failed to send email.') }}';
                     }
                 } catch (err) {
-                    console.error('Error sending email:', err);
                     this.error = '{{ __('An error occurred. Please try again.') }}';
                 } finally {
                     this.sending = false;
@@ -393,7 +392,6 @@
                     this.visible = true;
                     this.startAutoHide();
                 } catch (error) {
-                    console.error('Error fetching password:', error);
                     showToast('{{ __("Failed to load password") }}', 'error');
                 } finally {
                     this.loading = false;
@@ -464,17 +462,14 @@
             init() {
                 // Restore filters from localStorage if no URL params
                 const savedFilters = localStorage.getItem('credentialsFilters');
-                console.log('init() - savedFilters:', savedFilters, 'URL search:', window.location.search);
                 if (savedFilters && !window.location.search) {
                     const filters = JSON.parse(savedFilters);
-                    console.log('Restoring filters:', filters);
                     if (filters.search || filters.clientId) {
                         localStorage.removeItem('credentialsFilters');
                         // Redirect with saved filters
                         const url = new URL(window.location.origin + '{{ route('credentials.index') }}');
                         if (filters.search) url.searchParams.set('search', filters.search);
                         if (filters.clientId) url.searchParams.set('client_id', filters.clientId);
-                        console.log('Redirecting to:', url.toString());
                         window.location.href = url.toString();
                         return;
                     }
@@ -508,13 +503,11 @@
 
             saveFilters() {
                 // Save current filters to localStorage before navigating away
-                console.log('saveFilters called', { search: this.search, clientId: this.clientId });
                 if (this.search || this.clientId) {
                     localStorage.setItem('credentialsFilters', JSON.stringify({
                         search: this.search,
                         clientId: this.clientId
                     }));
-                    console.log('Filters saved to localStorage');
                 }
             }
         };
@@ -688,9 +681,6 @@
                 // Collect form data
                 const formData = this.collectFormData();
 
-                // Debug: log what's being sent
-                console.log('Form data being sent:', formData);
-
                 try {
                     const response = await fetch('{{ route('credentials.store') }}', {
                         method: 'POST',
@@ -705,10 +695,6 @@
                     const data = await response.json();
 
                     if (!response.ok) {
-                        // Debug: log the validation errors
-                        console.log('Validation errors:', data.errors);
-                        console.log('Response data:', data);
-
                         // Show validation errors
                         if (data.errors) {
                             // Dispatch errors to form fields component
@@ -732,7 +718,6 @@
                     window.location.reload();
 
                 } catch (error) {
-                    console.error('Error creating credential:', error);
                     showToast('{{ __("An error occurred. Please try again.") }}', 'error');
                 } finally {
                     this.saving = false;
@@ -760,7 +745,6 @@
 
             onCredentialCreated(detail) {
                 // Can be used for additional actions after creation
-                console.log('Credential created:', detail);
             }
         };
     }

@@ -595,7 +595,6 @@
         // Helper function to safely parse template content
         function getDefaultBlocks() {
             if (existingOffer?.blocks) {
-                console.log('Using existing offer blocks:', existingOffer.blocks);
                 return existingOffer.blocks;
             }
 
@@ -603,15 +602,13 @@
                 try {
                     const parsed = JSON.parse(defaultTemplate.content);
                     const blocks = parsed.blocks || parsed;
-                    console.log('Using template blocks:', blocks);
                     return blocks;
                 } catch (e) {
-                    console.error('Failed to parse template content:', e);
+                    // Failed to parse template content
                 }
             }
 
             // Fallback to default blocks (matching OfferBlockRegistry)
-            console.log('Using fallback blocks');
             return [
                 { id: 'header_1', type: 'header', visible: true, data: {
                     introTitle: '{{ __('Your business partner for digital solutions.') }}',
@@ -713,10 +710,6 @@
             sortableInstance: null,
 
             init() {
-                console.log('offerBuilder init called');
-                console.log('Blocks on init:', this.blocks);
-                console.log('Active tab:', this.activeTab);
-
                 if (this.offer.client_id && this.offer.client_id !== 'new') {
                     this.$nextTick(() => this.onClientChange());
                 }
@@ -731,8 +724,6 @@
             initBlockSorting() {
                 const blocksContainer = this.$refs.blocksContainer;
                 const widgetPalette = this.$refs.widgetPalette || document.getElementById('widgetPalette');
-
-                console.log('initBlockSorting called', { blocksContainer, widgetPalette, SortableExists: typeof Sortable !== 'undefined' });
 
                 if (blocksContainer && typeof Sortable !== 'undefined') {
                     // Main canvas sortable - blocks only (no widgets from palette here)
@@ -753,7 +744,6 @@
 
                     // Widget palette - clone widgets when dragging out to widget containers
                     if (widgetPalette) {
-                        console.log('Initializing widget palette Sortable');
                         Sortable.create(widgetPalette, {
                             group: {
                                 name: 'widgets',  // Same group as widget containers
@@ -763,8 +753,6 @@
                             sort: false,
                             animation: 150,
                         });
-                    } else {
-                        console.warn('Widget palette not found!');
                     }
                 }
             },
@@ -881,7 +869,7 @@
                             this.items = [];
                         }
                     } catch (e) {
-                        console.error('Error loading template:', e);
+                        // Error loading template
                     }
                 }
             },
@@ -1439,7 +1427,6 @@
                         alert(result.message || '{{ __('Error saving offer') }}');
                     }
                 } catch (error) {
-                    console.error('Save error:', error);
                     alert('{{ __('Error saving offer') }}');
                 } finally {
                     this.isSaving = false;
@@ -1489,7 +1476,6 @@
                         alert(result.message || '{{ __('Error approving offer') }}');
                     }
                 } catch (error) {
-                    console.error('Approval error:', error);
                     alert('{{ __('Error approving offer') }}');
                 } finally {
                     this.isSaving = false;
@@ -1550,7 +1536,6 @@
                         alert(result.message || '{{ __('Error saving template') }}');
                     }
                 } catch (error) {
-                    console.error('Save template error:', error);
                     alert('{{ __('Error saving template') }}');
                 } finally {
                     this.isSavingTemplate = false;

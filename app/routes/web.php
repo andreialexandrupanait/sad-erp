@@ -44,7 +44,9 @@ Route::prefix('share')->name('share.')->middleware('throttle:60,1')->group(funct
 });
 
 // Public Offer Routes (no auth required) - Rate limited for security
-// Legacy token-based routes (kept for backward compatibility with existing shared links)
+// @deprecated Legacy token-based routes - prefer signed URLs (offers/s/) for new implementations
+// These routes are maintained for backward compatibility with existing shared links
+// Plan: Phase out by Q3 2026 after migrating all active offer links to signed URLs
 Route::prefix('offers/view')->name('offers.public')->group(function () {
     Route::get('{token}', [OfferController::class, 'publicView'])
         ->middleware('throttle:60,1')  // 60 views per minute per IP
