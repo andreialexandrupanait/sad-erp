@@ -33,7 +33,10 @@
                     <!-- Price -->
                     <div>
                         <h3 class="text-sm font-medium text-slate-600">{{ __('Price') }}</h3>
-                        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} {{ $subscription->currency ?? 'RON' }}</p>
+                        <p class="mt-2 text-2xl font-semibold text-slate-900">{{ number_format(($subscription->currency === 'EUR' && $subscription->price_eur) ? $subscription->price_eur : (($subscription->currency === 'USD' && $subscription->price_usd) ? $subscription->price_usd : $subscription->price), 2) }} {{ $subscription->currency ?? 'RON' }}</p>
+                        @if(($subscription->currency === 'EUR' && $subscription->price_eur) || ($subscription->currency === 'USD' && $subscription->price_usd))
+                            <p class="text-xs text-slate-500 mt-1">({{ number_format($subscription->price, 2) }} RON)</p>
+                        @endif
                         <p class="text-xs text-slate-500 mt-1">{{ $subscription->billing_cycle_label }}</p>
                     </div>
 

@@ -328,38 +328,9 @@
                                                 {{ $subscription->vendor_name }}
                                             </a>
                                         </div>
-                                        @if($subscription->status === 'active')
-                                            <div class="flex items-center gap-1 mt-1">
-                                                @if($subscription->auto_renew)
-                                                    {{-- Show Cancel button for auto-renewing subscriptions --}}
-                                                    <button
-                                                        type="button"
-                                                        onclick="cancelSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
-                                                        class="inline-flex items-center text-xs text-red-600 hover:text-red-800 transition-colors"
-                                                        title="{{ __('Cancel subscription') }}">
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                                        </svg>
-                                                        {{ __('Cancel') }}
-                                                    </button>
-                                                @else
-                                                    {{-- Show Reactivate button for cancelled subscriptions --}}
-                                                    <button
-                                                        type="button"
-                                                        onclick="reactivateSubscription({{ $subscription->id }}, '{{ $subscription->vendor_name }}')"
-                                                        class="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
-                                                        title="{{ __('Reactivate subscription') }}">
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                                                        </svg>
-                                                        {{ __('Reactivate') }}
-                                                    </button>
-                                                @endif
-                                            </div>
-                                        @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
-                                        <div class="text-sm font-semibold text-slate-900">{{ number_format($subscription->price, 2) }} <span class="text-slate-500 font-normal">{{ $subscription->currency ?? 'RON' }}</span></div>
+                                        <div class="text-sm font-semibold text-slate-900">{{ number_format(($subscription->currency === 'EUR' && $subscription->price_eur) ? $subscription->price_eur : (($subscription->currency === 'USD' && $subscription->price_usd) ? $subscription->price_usd : $subscription->price), 2) }} <span class="text-slate-500 font-normal">{{ $subscription->currency ?? 'RON' }}</span></div>
                                     </x-ui.table-cell>
                                     <x-ui.table-cell>
                                         <div class="text-sm text-slate-700">
@@ -378,17 +349,39 @@
                                             <div class="text-sm font-medium {{ !$subscription->auto_renew ? 'text-slate-500' : 'text-slate-900' }}">
                                                 {{ $subscription->next_renewal_date->translatedFormat('d M Y') }}
                                             </div>
-                                            @if(!$subscription->auto_renew)
-                                                {{-- Cancelled subscription (auto_renew disabled) - show in orange/gray --}}
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-600">
-                                                    {{ $subscription->renewal_text }}
-                                                </span>
-                                            @else
-                                                {{-- Active subscription - show renewal status with urgency colors --}}
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600')) }}">
-                                                    {{ $subscription->renewal_text }}
-                                                </span>
-                                            @endif
+                                            <div class="flex items-center gap-2 mt-1">
+                                                @if(!$subscription->auto_renew)
+                                                    {{-- Cancelled subscription (auto_renew disabled) - show in orange/gray --}}
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-50 text-orange-600">
+                                                        {{ $subscription->renewal_text }}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onclick="reactivateSubscription({{ $subscription->id }}, '{{ addslashes($subscription->vendor_name) }}')"
+                                                        class="inline-flex items-center text-xs text-green-600 hover:text-green-800 transition-colors"
+                                                        title="{{ __('Reactivate subscription') }}">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                                        </svg>
+                                                        {{ __('Reactivate') }}
+                                                    </button>
+                                                @else
+                                                    {{-- Active subscription - show renewal status with urgency colors --}}
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600')) }}">
+                                                        {{ $subscription->renewal_text }}
+                                                    </span>
+                                                    <button
+                                                        type="button"
+                                                        onclick="cancelSubscription({{ $subscription->id }}, '{{ addslashes($subscription->vendor_name) }}')"
+                                                        class="inline-flex items-center text-xs text-red-600 hover:text-red-800 transition-colors"
+                                                        title="{{ __('Cancel subscription') }}">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                        </svg>
+                                                        {{ __('Cancel') }}
+                                                    </button>
+                                                @endif
+                                            </div>
                                         @endif
                                     </x-ui.table-cell>
                                     <x-ui.table-cell class="text-right">
@@ -423,7 +416,7 @@
                                             {{ $subscription->vendor_name }}
                                         </a>
                                         <div class="text-sm font-semibold text-slate-700">
-                                            {{ number_format($subscription->price, 2) }} {{ $subscription->currency ?? 'RON' }}
+                                            {{ number_format(($subscription->currency === 'EUR' && $subscription->price_eur) ? $subscription->price_eur : (($subscription->currency === 'USD' && $subscription->price_usd) ? $subscription->price_usd : $subscription->price), 2) }} {{ $subscription->currency ?? 'RON' }}
                                         </div>
                                     </div>
                                 </div>
@@ -453,6 +446,11 @@
                                     <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ !$subscription->auto_renew ? 'bg-orange-50 text-orange-600' : ($subscription->renewal_urgency === 'overdue' ? 'bg-red-100 text-red-700' : ($subscription->renewal_urgency === 'urgent' ? 'bg-red-50 text-red-600' : ($subscription->renewal_urgency === 'warning' ? 'bg-orange-50 text-orange-600' : 'bg-green-50 text-green-600'))) }}">
                                         {{ $subscription->renewal_text }}
                                     </span>
+                                    @if($subscription->auto_renew)
+                                        <button type="button" onclick="cancelSubscription({{ $subscription->id }}, '{{ addslashes($subscription->vendor_name) }}')" class="text-xs text-red-600 hover:text-red-800">{{ __('Cancel') }}</button>
+                                    @else
+                                        <button type="button" onclick="reactivateSubscription({{ $subscription->id }}, '{{ addslashes($subscription->vendor_name) }}')" class="text-xs text-green-600 hover:text-green-800">{{ __('Reactivate') }}</button>
+                                    @endif
                                     <span class="text-slate-500">{{ $subscription->next_renewal_date->format('d.m.Y') }}</span>
                                 @endif
                                 <span class="text-slate-400">|</span>
