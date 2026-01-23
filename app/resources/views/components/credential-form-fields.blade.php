@@ -44,7 +44,7 @@
                 placeholder="{{ __('example.com') }}"
                 required
                 autocomplete="off"
-                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <!-- Dropdown with existing sites -->
             <div x-show="siteDropdownOpen && filteredSites.length > 0"
@@ -128,7 +128,7 @@
                     id="{{ $p }}password"
                     placeholder="{{ __('Enter password') }}"
                     {{ !$credential ? 'required' : '' }}
-                    class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                    class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 pr-10 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <button
                     type="button"

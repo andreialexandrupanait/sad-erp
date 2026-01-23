@@ -386,10 +386,10 @@
         @keydown="onKeydown($event)"
         :disabled="{{ $disabled ? 'true' : 'false' }}"
         class="w-full h-10 px-3 pr-8 text-left text-sm border border-slate-200 rounded-md bg-white
-               hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none
+               hover:border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none
                transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed
                flex items-center justify-between"
-        :class="{ 'border-blue-500 ring-2 ring-blue-500 ring-offset-2': open }"
+        :class="{ 'ring-2 ring-blue-500': open }"
     >
         <span class="flex items-center gap-2 truncate">
             <span
@@ -627,7 +627,7 @@
                                     x-model="newLabel"
                                     @keydown.enter.prevent="saveOption()"
                                     class="w-full h-10 px-3 text-sm border border-slate-200 rounded-md
-                                           focus:border-blue-500 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none"
+                                           focus:ring-2 focus:ring-blue-500 focus:outline-none"
                                     placeholder="{{ __('Enter option name...') }}"
                                 >
                             </div>

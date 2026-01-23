@@ -126,7 +126,7 @@
                     </x-ui.label>
                     <div class="mt-2">
                         <select name="currency" id="currency" required x-model="currency" @change="onCurrencyChange()"
-                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             @foreach($currencies as $curr)
                                 <option value="{{ $curr->value }}">{{ $curr->value }}</option>
                             @endforeach
@@ -147,7 +147,7 @@
                             <input type="number" step="0.01" name="price_eur" id="price_eur"
                                 x-model="priceEur" @input="calculateRon()"
                                 placeholder="0.00" required
-                                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
+                                class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                     </div>
                 </template>
@@ -164,7 +164,7 @@
                             placeholder="0.00" required
                             :readonly="currency === 'EUR' && convertToRon"
                             :class="currency === 'EUR' && convertToRon ? 'bg-slate-50' : ''"
-                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
+                            class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                     </div>
                     <p x-show="currency === 'EUR' && convertToRon && priceEur && exchangeRate" class="mt-1 text-xs text-slate-500">
                         <span x-text="priceEur"></span> EUR × <span x-text="exchangeRate"></span> = <span x-text="priceRon"></span> RON
@@ -198,7 +198,7 @@
                                         <input type="number" step="0.0001" name="exchange_rate" id="exchange_rate"
                                             x-model="exchangeRate" @input="calculateRon()"
                                             placeholder="0.0000"
-                                            class="w-28 h-9 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm ring-offset-white placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus:ring-blue-500 focus:border-blue-500 focus-visible:ring-offset-2" />
+                                            class="w-28 h-9 rounded-md border border-slate-200 bg-white px-2 py-1 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                                         <span x-show="loadingRate" class="text-slate-400 text-xs">(loading...)</span>
                                         <span x-show="rateError" x-text="rateError" class="text-xs text-red-500"></span>
                                     </div>
@@ -263,7 +263,7 @@
                             x-model="customDays"
                             x-on:input="calculateNextRenewal()"
                             placeholder="{{ __('e.g., 90 for quarterly') }}"
-                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm ring-offset-white transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm transition-colors placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200"
                         />
                     </div>
                     <p class="mt-1 text-xs text-slate-500">{{ __('Enter the number of days between renewals (e.g., 90 for quarterly)') }}</p>
@@ -285,7 +285,7 @@
                             required
                             x-model="startDate"
                             x-on:change="calculateNextRenewal()"
-                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm ring-offset-white transition-colors placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 border-slate-200 focus:ring-blue-500 focus:border-blue-500"
+                            class="flex h-10 w-full rounded-md border bg-white px-3 py-2 text-sm transition-colors placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 border-slate-200"
                         />
                     </div>
                     @error('start_date')

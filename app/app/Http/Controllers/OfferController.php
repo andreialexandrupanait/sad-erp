@@ -309,9 +309,11 @@ class OfferController extends Controller
     {
         try {
             $pdfPath = $this->offerService->generatePdfForDownload($offer);
+            $disk = config('filesystems.documents_disk', 'documents');
 
-            return response()->download(
-                storage_path('app/' . $pdfPath),
+            // Stream the file from the correct storage disk
+            return \Storage::disk($disk)->download(
+                $pdfPath,
                 $offer->offer_number . '.pdf',
                 ['Content-Type' => 'application/pdf']
             );
@@ -538,12 +540,19 @@ class OfferController extends Controller
     public function regenerateAnnex(Request $request, Offer $offer): RedirectResponse|JsonResponse
     {
         $annex = $offer->annex;
-        
+
         if (!$annex) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => __('This offer does not have a linked annex.')], 400);
             }
             return back()->with('error', __('This offer does not have a linked annex.'));
+        }
+
+        if (!$annex->contract_id) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => __('This annex is not linked to a contract. Please create or link a contract first.')], 400);
+            }
+            return back()->with('error', __('This annex is not linked to a contract. Please create or link a contract first.'));
         }
 
         try {

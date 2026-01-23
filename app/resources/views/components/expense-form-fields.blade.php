@@ -60,7 +60,7 @@
     <div class="{{ $colSpan3 }}">
         <x-ui.label :for="$p.'currency'">{{ __('Valută') }}</x-ui.label>
         <div class="mt-1.5">
-            <select name="{{ $p }}currency" id="{{ $p }}currency" class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2">
+            <select name="{{ $p }}currency" id="{{ $p }}currency" class="flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 @foreach($currencies as $currency)
                     <option value="{{ $currency->value }}" {{ $currentCurrency == $currency->value ? 'selected' : '' }}>
                         {{ $currency->label }}

@@ -20,14 +20,14 @@
     @if($hasError) aria-invalid="true" @endif
     @if($hasError && $errorId) aria-describedby="{{ $errorId }}" @endif
     {{ $attributes->class([
-        'flex h-10 w-full rounded-md border bg-white dark:bg-slate-800 px-3 py-2 text-sm ring-offset-white dark:ring-offset-slate-900 transition-colors',
+        'flex h-10 w-full rounded-md border bg-white dark:bg-slate-800 px-3 py-2 text-sm transition-colors',
         'file:border-0 file:bg-transparent file:text-sm file:font-medium',
         'placeholder:text-slate-500 dark:placeholder:text-slate-400',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+        'focus:outline-none focus:ring-2 focus:ring-blue-500',
         'disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-50 dark:disabled:bg-slate-700',
         'dark:text-slate-100',
         $hasError
-            ? 'border-red-300 dark:border-red-500 text-red-900 dark:text-red-400 placeholder:text-red-300 focus-visible:ring-red-500 pr-10'
-            : 'border-slate-200 dark:border-slate-600 focus-visible:ring-blue-500 focus-visible:border-blue-500 dark:focus-visible:ring-blue-400',
+            ? 'border-red-300 dark:border-red-500 text-red-900 dark:text-red-400 placeholder:text-red-300 focus:ring-red-500 pr-10'
+            : 'border-slate-200 dark:border-slate-600',
     ]) }}
 >

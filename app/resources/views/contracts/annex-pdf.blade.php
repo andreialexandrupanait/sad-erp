@@ -369,12 +369,14 @@
                 <div class="annex-header">
                     <div class="annex-title">{{ __('CONTRACT ANNEX') }}</div>
                     <div class="annex-code">{{ $annex->annex_code }}</div>
-                    <div class="contract-ref">
-                        {{ __('to Contract') }} {{ $contract->document_number }}
-                        @if($contract->title)
-                            - {{ $contract->title }}
-                        @endif
-                    </div>
+                    @if($contract)
+                        <div class="contract-ref">
+                            {{ __('to Contract') }} {{ $contract->document_number }}
+                            @if($contract->title)
+                                - {{ $contract->title }}
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <table class="parties-table">
@@ -389,7 +391,7 @@
                         <td>
                             <div class="party-title">{{ __('Client') }}</div>
                             <div class="party-content">
-                                @if($contract->client)
+                                @if($contract?->client)
                                     <p><strong>{{ $contract->client->display_name }}</strong></p>
                                     @if($contract->client->company_name)
                                         <p>{{ $contract->client->company_name }}</p>
@@ -476,11 +478,13 @@
                     </div>
                 </div>
 
+                @if($contract)
                 <div class="section">
                     <div style="text-align: center; font-style: italic; color: #666666;">
                         {{ __('This annex is an integral part of contract :number and has the same legal force.', ['number' => $contract->document_number]) }}
                     </div>
                 </div>
+                @endif
 
                 <table class="signature-table">
                     <tr>
@@ -495,7 +499,7 @@
                         </td>
                         <td>
                             <div class="signature-block">
-                                <div class="signature-name">{{ $contract->client?->display_name ?? '' }}</div>
+                                <div class="signature-name">{{ $contract?->client?->display_name ?? '' }}</div>
                                 <div style="font-size: 9pt; color: #666666;">{{ __('Client') }}</div>
                                 <div class="signature-line">
                                     {{ __('Signature & Stamp') }}

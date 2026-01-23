@@ -873,6 +873,11 @@ class ContractService
         // Ensure contract has all necessary relationships loaded including organization
         $annex->load(['contract.client', 'contract.organization', 'offer.items']);
 
+        // Check if annex has a linked contract
+        if (!$annex->contract) {
+            throw new \InvalidArgumentException(__('Cannot render annex content: annex is not linked to a contract.'));
+        }
+
         // Get contract-level variables first (includes client and org representatives)
         $variables = ContractVariableRegistry::resolve($annex->contract);
 
