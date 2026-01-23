@@ -156,7 +156,7 @@
                             @php
                                 $monthNum = $index + 1;
                                 $hasTransactions = isset($monthsWithTransactions[$monthNum]);
-                                $isSelected = $month === null || $month == $monthNum;
+                                $isSelected = $month == $monthNum;
                                 $transactionCount = $hasTransactions ? $monthsWithTransactions[$monthNum]['count'] : 0;
                                 $monthTotal = $hasTransactions ? $monthsWithTransactions[$monthNum]['total'] : 0;
                             @endphp

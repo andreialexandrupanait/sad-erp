@@ -42,7 +42,8 @@ class ExpenseController extends Controller
             $month = null;
             session()->forget('financial.filters.month');
         } else {
-            $month = $request->get('month', session('financial.filters.month'));
+            // Default to current month if no month filter is set
+            $month = $request->get('month', session('financial.filters.month', now()->month));
         }
         $currency = $request->get('currency', session('financial.filters.currency'));
         $categoryId = $request->get('category_id', session('financial.filters.category_id'));

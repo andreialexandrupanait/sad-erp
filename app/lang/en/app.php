@@ -278,6 +278,7 @@ return [
     // Import/Export
     'Import' => 'Import',
     'Export' => 'Export',
+    'SmartBill Import' => 'SmartBill Import',
     'Import / Export' => 'Import / Export',
     'Choose File' => 'Choose File',
     'No file chosen' => 'No file chosen',
@@ -429,6 +430,7 @@ return [
     // Dashboard Analytics Widgets
     'Profit Margin' => 'Profit Margin',
     'Current Month' => 'Current Month',
+    'Selected Period' => 'Selected Period',
     'Yearly Average' => 'Yearly Average',
     'Low' => 'Low',
     'Excellent' => 'Excellent',

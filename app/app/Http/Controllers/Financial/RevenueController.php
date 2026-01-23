@@ -54,7 +54,8 @@ class RevenueController extends Controller
             $month = null;
             session()->forget('financial.filters.month');
         } else {
-            $month = $validated['month'] ?? session('financial.filters.month');
+            // Default to current month if no month filter is set
+            $month = $validated['month'] ?? session('financial.filters.month', now()->month);
         }
         $currency = $validated['currency'] ?? session('financial.filters.currency');
         $clientId = $validated['client_id'] ?? session('financial.filters.client_id');

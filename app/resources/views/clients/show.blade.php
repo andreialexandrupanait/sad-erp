@@ -226,8 +226,8 @@
             <x-ui.card-content>
                 @if($activeTab === 'overview')
                     <div class="space-y-6">
-                        <!-- Quick Stats Grid -->
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <!-- Quick Stats Grid - All 6 widgets on one line -->
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'revenues']) }}" class="bg-green-50 hover:bg-green-100 p-4 rounded-lg border border-green-200 transition-colors group">
                                 <div class="flex items-center gap-3">
                                     <div class="p-2 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
@@ -283,10 +283,7 @@
                                     </div>
                                 </div>
                             </a>
-                        </div>
 
-                        <!-- Contracts Stats Row -->
-                        <div class="grid grid-cols-2 md:grid-cols-2 gap-4">
                             <a href="{{ route('clients.show', ['client' => $client, 'tab' => 'contracts']) }}" class="bg-indigo-50 hover:bg-indigo-100 p-4 rounded-lg border border-indigo-200 transition-colors group">
                                 <div class="flex items-center gap-3">
                                     <div class="p-2 bg-indigo-100 rounded-lg group-hover:bg-indigo-200 transition-colors">

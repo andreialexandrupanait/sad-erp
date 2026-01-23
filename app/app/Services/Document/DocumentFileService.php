@@ -43,11 +43,17 @@ class DocumentFileService
             $annexCode = $documentable->annex_code;
             preg_match('/A(\d+)/', $annexCode, $matches);
             $annexNum = isset($matches[1]) ? str_pad($matches[1], 2, '0', STR_PAD_LEFT) : str_pad($documentable->id, 2, '0', STR_PAD_LEFT);
-            $contractNum = $documentable->contract->contract_number;
+            $contractNum = $documentable->contract?->contract_number ?? 'unknown';
             return 'ANX SAD ' . $annexNum . ' to contract ' . $contractNum;
         } elseif ($documentable instanceof Offer) {
-            // OFR SAD 0001
-            return 'OFR SAD ' . $documentable->offer_number;
+            // Use offer_number directly - it already contains the full formatted number
+            // e.g., "OFR SAD0001" or just "0001"
+            $offerNumber = $documentable->offer_number;
+            // If it already starts with "OFR", use as-is; otherwise add prefix
+            if (str_starts_with($offerNumber, 'OFR')) {
+                return $offerNumber;
+            }
+            return 'OFR SAD ' . $offerNumber;
         }
 
         return (string) $documentable->id;
@@ -55,10 +61,16 @@ class DocumentFileService
 
     /**
      * Generate file path with proper naming
+     *
+     * Folder structure:
+     * - Offers: documents/YEAR/offers/OFR SAD XXXX.pdf
+     * - Contracts: documents/YEAR/contracts/CTRXX/CTR SAD XX.pdf
+     * - Contracts (signed): documents/YEAR/contracts/CTRXX/signed/CTR SAD XX-signed.pdf
+     * - Annexes: documents/YEAR/contracts/CTRXX/ANX SAD XX to contract XX.pdf
+     * - Annexes (signed): documents/YEAR/contracts/CTRXX/signed/ANX SAD XX to contract XX-signed.pdf
      */
     protected function generateFilePath(Model $documentable, string $documentType, int $version): string
     {
-        $category = DocumentFile::getCategoryForModel($documentable);
         $year = now()->format('Y');
 
         // Get base name
@@ -74,6 +86,25 @@ class DocumentFileService
             $baseName .= '-v' . $version;
         }
 
+        // Build path based on document type
+        if ($documentable instanceof Offer) {
+            // Offers: documents/YEAR/offers/OFR SAD XXXX.pdf
+            return "documents/{$year}/offers/{$baseName}.pdf";
+        } elseif ($documentable instanceof Contract) {
+            // Contracts: documents/YEAR/contracts/CTRXX/[signed/]CTR SAD XX.pdf
+            $contractFolder = 'CTR' . str_pad($documentable->contract_number, 2, '0', STR_PAD_LEFT);
+            $signedFolder = $documentType === DocumentFile::TYPE_SIGNED ? '/signed' : '';
+            return "documents/{$year}/contracts/{$contractFolder}{$signedFolder}/{$baseName}.pdf";
+        } elseif ($documentable instanceof ContractAnnex) {
+            // Annexes: documents/YEAR/contracts/CTRXX/[signed/]ANX SAD XX to contract XX.pdf
+            $contractNum = $documentable->contract->contract_number;
+            $contractFolder = 'CTR' . str_pad($contractNum, 2, '0', STR_PAD_LEFT);
+            $signedFolder = $documentType === DocumentFile::TYPE_SIGNED ? '/signed' : '';
+            return "documents/{$year}/contracts/{$contractFolder}{$signedFolder}/{$baseName}.pdf";
+        }
+
+        // Fallback to old structure
+        $category = DocumentFile::getCategoryForModel($documentable);
         return "documents/{$category}/{$year}/{$baseName}.pdf";
     }
 

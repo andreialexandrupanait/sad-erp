@@ -109,7 +109,7 @@
 
         <div class="pt-3 border-t border-slate-200 space-y-2">
             <div class="flex items-center justify-between text-xs">
-                <span class="text-slate-500">{{ __('app.Selected Period') }}</span>
+                <span class="text-slate-500">{{ __('Selected Period') }}</span>
                 <span class="font-semibold text-slate-900" x-text="profitMarginFormatted"></span>
             </div>
             <div class="flex items-center justify-between text-xs">

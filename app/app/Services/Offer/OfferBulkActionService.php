@@ -48,8 +48,12 @@ class OfferBulkActionService
         $deleted = 0;
         $skipped = 0;
 
-        // Batch load all offers in a single query to avoid N+1
-        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+        // Batch load all offers in a single query, scoped to current organization
+        $organizationId = auth()->user()->organization_id;
+        $offers = Offer::whereIn('id', $offerIds)
+            ->where('organization_id', $organizationId)
+            ->get()
+            ->keyBy('id');
 
         foreach ($offerIds as $id) {
             $offer = $offers->get($id);
@@ -88,8 +92,12 @@ class OfferBulkActionService
         $deleted = 0;
         $skipped = 0;
 
-        // Batch load all offers in a single query to avoid N+1
-        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+        // Batch load all offers in a single query, scoped to current organization
+        $organizationId = auth()->user()->organization_id;
+        $offers = Offer::whereIn('id', $offerIds)
+            ->where('organization_id', $organizationId)
+            ->get()
+            ->keyBy('id');
 
         foreach ($offerIds as $id) {
             $offer = $offers->get($id);
@@ -137,8 +145,12 @@ class OfferBulkActionService
             'rejected' => ['draft'],
         ];
 
-        // Batch load all offers in a single query to avoid N+1
-        $offers = Offer::whereIn('id', $offerIds)->get()->keyBy('id');
+        // Batch load all offers in a single query, scoped to current organization
+        $organizationId = auth()->user()->organization_id;
+        $offers = Offer::whereIn('id', $offerIds)
+            ->where('organization_id', $organizationId)
+            ->get()
+            ->keyBy('id');
 
         foreach ($offerIds as $id) {
             $offer = $offers->get($id);

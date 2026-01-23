@@ -278,6 +278,7 @@ return [
     // Import/Export
     'Import' => 'Importă',
     'Export' => 'Exportă',
+    'SmartBill Import' => 'Import SmartBill',
     'Export to CSV' => 'Exportă în CSV',
     'Import / Export' => 'Importă / Exportă',
     'Choose File' => 'Alege fișier',
@@ -426,6 +427,7 @@ return [
     // Dashboard Analytics Widgets
     'Profit Margin' => 'Marjă profit',
     'Current Month' => 'Luna curentă',
+    'Selected Period' => 'Perioada selectată',
     'Yearly Average' => 'Media anuală',
     'Excellent' => 'Excelent',
     'Low' => 'Scăzut',

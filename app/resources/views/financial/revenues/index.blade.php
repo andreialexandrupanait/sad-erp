@@ -36,6 +36,13 @@
                 </div>
             </form>
 
+            <x-ui.button variant="outline" onclick="window.location.href='{{ route('settings.smartbill.import') }}'">
+                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                {{ __('SmartBill Import') }}
+            </x-ui.button>
+
             <x-ui.button variant="default" onclick="window.location.href='{{ route('financial.revenues.create', ['month' => $month, 'year' => $year]) }}'">
                 <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -143,7 +150,7 @@
                             @php
                                 $monthNum = $index + 1;
                                 $hasTransactions = isset($monthsWithTransactions[$monthNum]);
-                                $isSelected = $month === null || $month == $monthNum;
+                                $isSelected = $month == $monthNum;
                                 $transactionCount = $hasTransactions ? $monthsWithTransactions[$monthNum]['count'] : 0;
                                 $monthTotal = $hasTransactions ? $monthsWithTransactions[$monthNum]['total'] : 0;
                             @endphp
