@@ -82,6 +82,15 @@
         x-transition
         class="absolute right-0 mt-2 w-52 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50"
     >
+        {{-- SmartBill Import - Always visible --}}
+        <a
+            href="{{ route('settings.smartbill.import') }}"
+            class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 hover:bg-amber-50 text-left border-b border-slate-100"
+        >
+            <span class="w-3 h-3 rounded-full flex-shrink-0 border border-amber-300" style="background-color: #f59e0b;"></span>
+            {{ __('SmartBill Import') }}
+        </a>
+
         @forelse($quickActions ?? [] as $action)
             @php $route = qa_getRouteForAction($action->value); @endphp
             @if($route)
@@ -94,13 +103,25 @@
                 </a>
             @endif
         @empty
-            <p class="px-4 py-2 text-sm text-slate-500">Nicio acțiune</p>
+            {{-- SmartBill is always shown, so no "empty" message needed --}}
         @endforelse
     </div>
 </div>
 
 {{-- Desktop: Inline buttons --}}
 <div class="hidden md:flex items-center gap-2">
+    {{-- SmartBill Import - Always visible --}}
+    <a
+        href="{{ route('settings.smartbill.import') }}"
+        class="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg shadow-sm transition-colors"
+        title="{{ __('Import transactions from SmartBill') }}"
+    >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+        </svg>
+        {{ __('SmartBill Import') }}
+    </a>
+
     @forelse($quickActions ?? [] as $action)
         @php
             $route = qa_getRouteForAction($action->value);
@@ -123,6 +144,6 @@
             </a>
         @endif
     @empty
-        <p class="text-sm text-slate-500">Nicio acțiune configurată</p>
+        {{-- SmartBill is always shown, so no "empty" message needed --}}
     @endforelse
 </div>
