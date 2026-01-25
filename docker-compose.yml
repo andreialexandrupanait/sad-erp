@@ -182,23 +182,25 @@ services:
       - erp_app
 
   # ==========================================================================
-  # phpMyAdmin (local)
+  # phpMyAdmin - DISABLED FOR PRODUCTION
+  # To enable for local development only, uncomment the section below
+  # WARNING: Never expose phpMyAdmin in production environments
   # ==========================================================================
-  erp_phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: erp_phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: erp_db
-      PMA_PORT: 3306
-      UPLOAD_LIMIT: 100M
-    ports:
-      - "8081:80"
-    networks:
-      - erpnet
-    depends_on:
-      erp_db:
-        condition: service_healthy
+  # erp_phpmyadmin:
+  #   image: phpmyadmin/phpmyadmin:latest
+  #   container_name: erp_phpmyadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     PMA_HOST: erp_db
+  #     PMA_PORT: 3306
+  #     UPLOAD_LIMIT: 100M
+  #   ports:
+  #     - "8081:80"
+  #   networks:
+  #     - erpnet
+  #   depends_on:
+  #     erp_db:
+  #       condition: service_healthy
 
 # ============================================================================
 # Networks
