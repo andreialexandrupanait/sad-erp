@@ -82,8 +82,8 @@
         x-transition:leave-end="opacity-0 scale-95"
         @click.outside="close()"
         @keydown.escape.prevent="close()"
-        class="fixed z-50 w-72 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
-        style="min-width: 280px;"
+        class="z-50 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+        :style="`position: fixed; left: ${dropdownStyle.left || '0'}; top: ${dropdownStyle.top || '0'}; min-width: ${dropdownStyle.minWidth || '280px'};`"
     >
         {{-- Search Input --}}
         <div class="p-2 border-b border-slate-100">

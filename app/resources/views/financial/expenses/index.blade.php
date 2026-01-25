@@ -239,10 +239,19 @@
         <!-- Table -->
         <x-ui.card>
             <div class="overflow-x-auto">
-                <table class="w-full caption-bottom text-sm">
+                <table class="w-full caption-bottom text-sm table-fixed">
+                    <colgroup>
+                        <col class="w-10">{{-- Checkbox --}}
+                        <col class="w-24">{{-- Date --}}
+                        <col>{{-- Document - flexible --}}
+                        <col class="w-36">{{-- Category --}}
+                        <col class="w-44">{{-- Amount --}}
+                        <col class="w-16">{{-- Files --}}
+                        <col class="w-24">{{-- Actions --}}
+                    </colgroup>
                     <thead class="bg-slate-100">
                         <tr class="border-b border-slate-200">
-                            <th class="px-6 py-4 text-left align-middle font-medium text-slate-500 w-12">
+                            <th class="px-6 py-4 text-left align-middle font-medium text-slate-500">
                                 <x-bulk-checkbox x-model="selectAll" @change="toggleAll()" />
                             </th>
                             <x-ui.sortable-header column="occurred_at" label="{{ __('Date') }}" />
@@ -262,13 +271,13 @@
                                            @change="toggleItem({{ $expense->id }})"
                                            class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-2 focus:ring-offset-2 cursor-pointer transition-colors">
                                 </x-ui.table-cell>
-                                <x-ui.table-cell>
+                                <x-ui.table-cell class="whitespace-nowrap">
                                     <div class="text-sm text-slate-900">{{ $expense->occurred_at->format('d M Y') }}</div>
                                 </x-ui.table-cell>
-                                <x-ui.table-cell>
-                                    <div class="text-sm font-medium text-slate-900">{{ $expense->document_name }}</div>
+                                <x-ui.table-cell class="overflow-hidden" style="max-width: 0;">
+                                    <p class="text-sm font-medium text-slate-900 truncate" title="{{ $expense->document_name }}">{{ $expense->document_name }}</p>
                                 </x-ui.table-cell>
-                                <x-ui.table-cell>
+                                <x-ui.table-cell class="whitespace-nowrap">
                                     @if($expense->category)
                                         <span class="px-2 py-1 rounded text-xs font-medium border"
                                               style="background-color: {{ $expense->category->color_background }}; color: {{ $expense->category->color_text }}; border-color: {{ $expense->category->color_class ?? '#d1d5db' }}">
@@ -278,7 +287,7 @@
                                         <span class="text-sm text-slate-400">—</span>
                                     @endif
                                 </x-ui.table-cell>
-                                <x-ui.table-cell class="text-right">
+                                <x-ui.table-cell class="text-right whitespace-nowrap">
                                     @if($expense->currency === 'EUR' && $expense->amount_eur)
                                         <div class="text-sm font-bold"><span class="text-slate-900">{{ number_format($expense->amount_eur, 2, ',', ' ') }} EUR</span> / <span class="text-red-600">{{ number_format($expense->amount, 2, ',', ' ') }} RON</span></div>
                                     @else
@@ -287,7 +296,7 @@
                                 </x-ui.table-cell>
 
                                 <!-- Files Column -->
-                                <x-ui.table-cell class="text-center">
+                                <x-ui.table-cell class="text-center whitespace-nowrap">
                                     @if($expense->files_count > 0)
                                         <span class="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -301,7 +310,7 @@
                                 </x-ui.table-cell>
 
                                 <!-- Actions Column -->
-                                <x-ui.table-cell class="text-right">
+                                <x-ui.table-cell class="text-right whitespace-nowrap">
                                     <x-table-actions
                                         :viewUrl="route('financial.expenses.show', $expense)"
                                         :editUrl="route('financial.expenses.edit', $expense)"
@@ -328,7 +337,7 @@
                             </x-ui.table-row>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-6 py-16 text-center">
+                                <td colspan="7" class="px-6 py-16 text-center">
                                     <div class="text-slate-500">
                                         <svg class="mx-auto h-12 w-12 text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>

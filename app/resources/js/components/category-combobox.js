@@ -33,6 +33,9 @@ export default function categoryCombobox(config = {}) {
         itemHeight: 36,
         visibleCount: 10,
 
+        // Dropdown positioning
+        dropdownStyle: {},
+
         /**
          * Initialize component
          */
@@ -133,9 +136,33 @@ export default function categoryCombobox(config = {}) {
                 ? this.filteredList.findIndex(i => i.id == this.selectedId)
                 : 0;
             this.$nextTick(() => {
+                this.positionDropdown();
                 const input = this.$refs.searchInput;
                 if (input) input.focus();
             });
+        },
+
+        /**
+         * Calculate and set dropdown position based on trigger element
+         */
+        positionDropdown() {
+            const trigger = this.$refs.trigger;
+            const dropdown = this.$refs.dropdown;
+            if (!trigger || !dropdown) return;
+
+            const rect = trigger.getBoundingClientRect();
+            const dropdownHeight = 350; // approximate max height
+            const viewportHeight = window.innerHeight;
+
+            // Check if dropdown fits below trigger, otherwise show above
+            const spaceBelow = viewportHeight - rect.bottom;
+            const showAbove = spaceBelow < dropdownHeight && rect.top > spaceBelow;
+
+            this.dropdownStyle = {
+                left: `${rect.left}px`,
+                top: showAbove ? `${rect.top - dropdownHeight}px` : `${rect.bottom + 4}px`,
+                minWidth: `${Math.max(rect.width, 280)}px`
+            };
         },
 
         /**

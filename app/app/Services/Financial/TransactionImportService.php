@@ -43,19 +43,30 @@ class TransactionImportService
             ];
         }
 
-        // Get the file path
-        $filePath = Storage::disk('financial')->path($file->file_path);
-
-        if (!file_exists($filePath)) {
+        // Check if file exists in storage (works with both local and cloud storage)
+        if (!Storage::disk('financial')->exists($file->file_path)) {
             return [
                 'success' => false,
                 'error' => __('Fisierul nu a fost gasit pe server.'),
             ];
         }
 
-        // Parse the PDF - only get debit transactions (payments/expenses)
-        $parser = new BankStatementPdfParser();
-        $result = $parser->getDebitTransactions($filePath);
+        // Download file to a temporary location for PDF parsing
+        // (PDF parser requires a local file path)
+        $tempPath = sys_get_temp_dir() . '/' . uniqid('bank_statement_') . '.pdf';
+        $contents = Storage::disk('financial')->get($file->file_path);
+        file_put_contents($tempPath, $contents);
+
+        try {
+            // Parse the PDF - only get debit transactions (payments/expenses)
+            $parser = new BankStatementPdfParser();
+            $result = $parser->getDebitTransactions($tempPath);
+        } finally {
+            // Clean up temporary file
+            if (file_exists($tempPath)) {
+                unlink($tempPath);
+            }
+        }
 
         if (!empty($result['errors'])) {
             return [
