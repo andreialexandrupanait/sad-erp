@@ -1,8 +1,5 @@
 <!DOCTYPE html>
-@php
-    $userTheme = auth()->check() ? auth()->user()->getSetting('theme', 'light') : 'light';
-@endphp
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $userTheme === 'dark' ? 'dark' : '' }}" data-theme="{{ $userTheme }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,22 +11,6 @@
             .no-fouc { opacity: 0; }
             .no-fouc.ready { opacity: 1; transition: opacity 0.1s ease-in; }
         </style>
-
-        <!-- Theme Detection Script (must run early to prevent flash) -->
-        <script>
-            (function() {
-                const theme = document.documentElement.dataset.theme;
-                if (theme === 'auto') {
-                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                        document.documentElement.classList.add('dark');
-                    }
-                    // Listen for system theme changes
-                    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
-                        document.documentElement.classList.toggle('dark', e.matches);
-                    });
-                }
-            })();
-        </script>
 
         <!-- User/Organization data for JS -->
         @auth
@@ -998,7 +979,7 @@
         </style>
         @stack('styles')
     </head>
-    <body class="font-sans antialiased bg-slate-50 dark:bg-slate-900 transition-colors duration-200" x-data="{
+    <body class="font-sans antialiased bg-slate-50" x-data="{
         sidebarOpen: window.innerWidth >= 768 ? localStorage.getItem('sidebarOpen') !== 'false' : false,
         touchStartX: 0,
         touchCurrentX: 0,
@@ -1065,17 +1046,17 @@
             <!-- Main Content Area -->
             <div id="content-wrapper" class="flex-1 flex flex-col overflow-hidden" :class="!sidebarOpen && 'sidebar-closed'">
                 <!-- Global Header -->
-                <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 flex-shrink-0 h-16">
+                <header class="bg-white border-b border-slate-200 sticky top-0 z-30 flex-shrink-0 h-16">
                     <div class="flex items-center justify-between h-full px-4 md:px-6 gap-4">
                         <!-- Left: Toggle + Breadcrumb/Title -->
                         <div class="flex items-center gap-3 min-w-0 flex-1">
                             <!-- Sidebar Toggle -->
                             <button
                                 @click="sidebarOpen = !sidebarOpen"
-                                class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+                                class="p-2 rounded-lg hover:bg-slate-100 transition-colors flex-shrink-0"
                                 aria-label="Toggle sidebar"
                             >
-                                <svg class="w-5 h-5 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                                 </svg>
                             </button>
@@ -1084,7 +1065,7 @@
                             <div class="min-w-0 flex-1">
                                 @isset($pageTitle)
                                     <div class="flex flex-col">
-                                        <h1 class="text-sm font-bold text-slate-900 dark:text-white truncate uppercase tracking-wide">{{ $pageTitle }}</h1>
+                                        <h1 class="text-sm font-bold text-slate-900 truncate uppercase tracking-wide">{{ $pageTitle }}</h1>
                                         @if(!isset($hideBreadcrumb) || !$hideBreadcrumb)
                                             @isset($breadcrumb)
                                                 <div class="mt-0.5">
@@ -1121,7 +1102,7 @@
                 </header>
 
                 <!-- Page Content -->
-                <main id="main-content" class="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900" role="main" tabindex="-1">
+                <main id="main-content" class="flex-1 overflow-y-auto bg-slate-50" role="main" tabindex="-1">
                     {{ $slot }}
                 </main>
             </div>

@@ -14,14 +14,14 @@
                         <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Edit User") }}
                         </h2>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-gray-600">
                             {{ __("Update user information for :name.", ['name' => $user->name]) }}
                         </p>
                     </div>
 
                     @if(session('success'))
-                        <div class="mb-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                            <p class="text-sm text-green-800 dark:text-green-200">{{ session('success') }}</p>
+                        <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-sm text-green-800">{{ session('success') }}</p>
                         </div>
                     @endif
 
@@ -48,7 +48,7 @@
 
                             <div>
                                 <x-ui.label for="role" required>{{ __("Role") }}</x-ui.label>
-                                <select name="role" id="role" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                <select name="role" id="role" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
                                     <option value="user" {{ old('role', $user->role) === 'user' ? 'selected' : '' }}>{{ __("User") }}</option>
                                     <option value="manager" {{ old('role', $user->role) === 'manager' ? 'selected' : '' }}>{{ __("Manager") }}</option>
                                     <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>{{ __("Admin") }}</option>
@@ -72,7 +72,7 @@
 
                             <div>
                                 <x-ui.label for="status" required>{{ __("Status") }}</x-ui.label>
-                                <select name="status" id="status" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
+                                <select name="status" id="status" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required {{ $user->id === auth()->id() ? 'disabled' : '' }}>
                                     <option value="active" {{ old('status', $user->status) === 'active' ? 'selected' : '' }}>{{ __("Active") }}</option>
                                     <option value="inactive" {{ old('status', $user->status) === 'inactive' ? 'selected' : '' }}>{{ __("Inactive") }}</option>
                                 </select>
@@ -85,9 +85,9 @@
                                 @enderror
                             </div>
 
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __("Change Password") }}</label>
-                                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">{{ __("Leave blank to keep current password.") }}</p>
+                            <div class="border-t border-gray-200 pt-6">
+                                <label class="text-sm font-medium text-gray-700">{{ __("Change Password") }}</label>
+                                <p class="text-sm text-gray-500 mb-4">{{ __("Leave blank to keep current password.") }}</p>
                                 <div class="space-y-4">
                                     <div>
                                         <x-ui.label for="password">{{ __("New Password") }}</x-ui.label>
@@ -107,13 +107,13 @@
                         <div class="mt-6 flex flex-col sm:flex-row sm:flex-wrap sm:items-center sm:justify-between gap-3">
                             <form method="POST" action="{{ route('settings.users.resend-invite', $user) }}" class="inline">
                                 @csrf
-                                <button type="submit" class="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                <button type="submit" class="text-sm text-blue-600 hover:text-blue-800">
                                     {{ __("Send password reset email") }}
                                 </button>
                             </form>
 
                             <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-                                <a href="{{ route('settings.users.index') }}" class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
+                                <a href="{{ route('settings.users.index') }}" class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                                     {{ __("Cancel") }}
                                 </a>
                                 <button type="submit" class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">

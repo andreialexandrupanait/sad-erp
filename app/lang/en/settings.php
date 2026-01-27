@@ -22,14 +22,6 @@ return [
     'primary_color' => 'Primary Color',
     'primary_color_hint' => 'This color will be used throughout the application for buttons, links, and accents',
 
-    // Appearance
-    'appearance' => 'Appearance',
-    'theme_mode' => 'Theme Mode',
-    'light' => 'Light',
-    'dark' => 'Dark',
-    'auto_system' => 'Auto (System)',
-    'theme_hint' => 'Currently only Light theme is implemented',
-
     // Regional settings
     'regional_settings' => 'Regional Settings',
     'timezone' => 'Timezone',

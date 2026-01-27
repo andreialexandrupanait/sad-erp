@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700">
+<nav x-data="{ open: false }" class="bg-white border-b border-slate-100">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -9,9 +9,9 @@
                         @if(isset($globalAppSettings['app_logo']) && $globalAppSettings['app_logo'])
                             <img src="{{ asset('storage/' . $globalAppSettings['app_logo']) }}" alt="{{ $globalAppSettings['app_name'] ?? 'Logo' }}" class="h-9 w-auto">
                         @else
-                            <x-application-logo class="block h-9 w-auto fill-current text-slate-800 dark:text-slate-200" />
+                            <x-application-logo class="block h-9 w-auto fill-current text-slate-800" />
                         @endif
-                        <span class="text-lg font-semibold text-slate-800 dark:text-slate-200">{{ $globalAppSettings['app_name'] ?? __('ERP System') }}</span>
+                        <span class="text-lg font-semibold text-slate-800">{{ $globalAppSettings['app_name'] ?? __('ERP System') }}</span>
                     </a>
                 </div>
 
@@ -54,7 +54,7 @@
             <div class="hidden sm:flex sm:items-center sm:ms-6">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 focus:outline-none transition ease-in-out duration-150">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-slate-500 bg-white hover:text-slate-700 focus:outline-none transition ease-in-out duration-150">
                             <div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
@@ -86,7 +86,7 @@
 
             <!-- Hamburger -->
             <div class="-me-2 flex items-center sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 dark:text-slate-500 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900 focus:outline-none focus:bg-slate-100 dark:focus:bg-slate-900 focus:text-slate-500 dark:focus:text-slate-400 transition duration-150 ease-in-out">
+                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 rounded-md text-slate-400 hover:text-slate-500 hover:bg-slate-100 focus:outline-none focus:bg-slate-100 focus:text-slate-500 transition duration-150 ease-in-out">
                     <svg class="h-6 w-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
                         <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                         <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -132,9 +132,9 @@
         </div>
 
         <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-slate-200 dark:border-slate-600">
+        <div class="pt-4 pb-1 border-t border-slate-200">
             <div class="px-4">
-                <div class="font-medium text-base text-slate-800 dark:text-slate-200">{{ Auth::user()->name }}</div>
+                <div class="font-medium text-base text-slate-800">{{ Auth::user()->name }}</div>
                 <div class="font-medium text-sm text-slate-500">{{ Auth::user()->email }}</div>
             </div>
 

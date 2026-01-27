@@ -26,7 +26,7 @@
 <nav class="flex items-center gap-1.5 text-xs" aria-label="Breadcrumb">
     @foreach($items as $index => $item)
         @if($index > 0)
-            <svg class="w-3 h-3 text-slate-400 dark:text-slate-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
             </svg>
         @endif
@@ -34,22 +34,22 @@
         @if(is_array($item))
             {{-- Item with URL --}}
             @if($loop->last)
-                <span class="text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                <span class="text-slate-600 font-medium whitespace-nowrap">
                     {{ $item['label'] }}
                 </span>
             @else
-                <a href="{{ $item['url'] }}" class="text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors whitespace-nowrap">
+                <a href="{{ $item['url'] }}" class="text-slate-500 hover:text-slate-700 transition-colors whitespace-nowrap">
                     {{ $item['label'] }}
                 </a>
             @endif
         @else
             {{-- Simple string item --}}
             @if($loop->last)
-                <span class="text-slate-600 dark:text-slate-300 font-medium whitespace-nowrap">
+                <span class="text-slate-600 font-medium whitespace-nowrap">
                     {{ $item }}
                 </span>
             @else
-                <span class="text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                <span class="text-slate-500 whitespace-nowrap">
                     {{ $item }}
                 </span>
             @endif
