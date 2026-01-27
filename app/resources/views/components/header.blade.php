@@ -1,19 +1,19 @@
-<header class="bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 sticky top-0 z-40 shadow-sm transition-colors duration-200">
+<header class="bg-white border-b border-gray-100 sticky top-0 z-40 shadow-sm">
     <div class="flex items-center justify-between px-6 py-4">
         <!-- Left Side - Page Title -->
         <div class="flex items-center gap-4">
-            <button @click="open = !open" class="md:hidden p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
-                <svg class="w-6 h-6 text-gray-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button @click="open = !open" class="md:hidden p-2 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
             </button>
 
             <div>
-                <h1 class="text-2xl font-semibold text-gray-900 dark:text-white">
+                <h1 class="text-2xl font-semibold text-gray-900">
                     @yield('page-title', 'Dashboard')
                 </h1>
                 @hasSection('page-description')
-                    <p class="text-sm text-gray-500 dark:text-slate-400 mt-0.5">@yield('page-description')</p>
+                    <p class="text-sm text-gray-500 mt-0.5">@yield('page-description')</p>
                 @endif
             </div>
         </div>

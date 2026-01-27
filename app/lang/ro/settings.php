@@ -22,14 +22,6 @@ return [
     'primary_color' => 'Culoare primară',
     'primary_color_hint' => 'Această culoare va fi folosită în toată aplicația pentru butoane, link-uri și accente',
 
-    // Aspect
-    'appearance' => 'Aspect',
-    'theme_mode' => 'Mod temă',
-    'light' => 'Luminos',
-    'dark' => 'Întunecat',
-    'auto_system' => 'Auto (Sistem)',
-    'theme_hint' => 'Momentan doar tema luminoasă este implementată',
-
     // Setări regionale
     'regional_settings' => 'Setări regionale',
     'timezone' => 'Fus orar',

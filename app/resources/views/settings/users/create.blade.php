@@ -14,7 +14,7 @@
                         <h2 class="text-lg font-medium text-slate-900">
                             {{ __("Add New User") }}
                         </h2>
-                        <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+                        <p class="mt-1 text-sm text-gray-600">
                             {{ __("Create a new team member account.") }}
                         </p>
                     </div>
@@ -41,7 +41,7 @@
 
                             <div>
                                 <x-ui.label for="role" required>{{ __("Role") }}</x-ui.label>
-                                <select name="role" id="role" class="w-full rounded-md border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
+                                <select name="role" id="role" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" required>
                                     <option value="user" {{ old('role') === 'user' ? 'selected' : '' }}>{{ __("User") }} - {{ __("Basic access with limited permissions") }}</option>
                                     <option value="manager" {{ old('role') === 'manager' ? 'selected' : '' }}>{{ __("Manager") }} - {{ __("Extended access, can manage most resources") }}</option>
                                     <option value="admin" {{ old('role') === 'admin' ? 'selected' : '' }}>{{ __("Admin") }} - {{ __("Full access to all features") }}</option>
@@ -59,21 +59,21 @@
                                 @enderror
                             </div>
 
-                            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
-                                <label class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ __("Password Setup") }}</label>
+                            <div class="border-t border-gray-200 pt-6">
+                                <label class="text-sm font-medium text-gray-700">{{ __("Password Setup") }}</label>
                                 <div class="mt-3 space-y-3">
-                                    <label class="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'invite' }">
+                                    <label class="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'invite' }">
                                         <input type="radio" name="password_option" value="invite" x-model="passwordOption" class="mt-1 text-blue-600 focus:ring-blue-500" checked>
                                         <div>
                                             <span class="block text-sm font-medium text-slate-900">{{ __("Send invitation email") }}</span>
-                                            <span class="block text-sm text-gray-500 dark:text-gray-400">{{ __("User will receive an email to set their own password.") }}</span>
+                                            <span class="block text-sm text-gray-500">{{ __("User will receive an email to set their own password.") }}</span>
                                         </div>
                                     </label>
-                                    <label class="flex items-start gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'manual' }">
+                                    <label class="flex items-start gap-3 p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50" :class="{ 'ring-2 ring-blue-500 border-blue-500': passwordOption === 'manual' }">
                                         <input type="radio" name="password_option" value="manual" x-model="passwordOption" class="mt-1 text-blue-600 focus:ring-blue-500">
                                         <div>
                                             <span class="block text-sm font-medium text-slate-900">{{ __("Set password manually") }}</span>
-                                            <span class="block text-sm text-gray-500 dark:text-gray-400">{{ __("Create a password and share it with the user yourself.") }}</span>
+                                            <span class="block text-sm text-gray-500">{{ __("Create a password and share it with the user yourself.") }}</span>
                                         </div>
                                     </label>
                                 </div>
@@ -98,7 +98,7 @@
                         </div>
 
                         <div class="mt-6 flex flex-col-reverse sm:flex-row sm:items-center sm:justify-end gap-3">
-                            <a href="{{ route('settings.users.index') }}" class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <a href="{{ route('settings.users.index') }}" class="w-full sm:w-auto text-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                                 {{ __("Cancel") }}
                             </a>
                             <button type="submit" class="w-full sm:w-auto px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">

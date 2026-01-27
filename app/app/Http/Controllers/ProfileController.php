@@ -89,7 +89,6 @@ class ProfileController extends Controller
             'timezone' => ['nullable', 'string', 'max:50'],
             'date_format' => ['nullable', 'string', 'in:d/m/Y,Y-m-d,m/d/Y,d.m.Y'],
             'language' => ['nullable', 'string', 'in:ro,en'],
-            'theme' => ['nullable', 'string', 'in:light,dark,auto'],
             'items_per_page' => ['nullable', 'integer', 'in:10,25,50,100'],
         ]);
 

@@ -54,18 +54,6 @@
             </x-ui.select>
         </x-ui.form-group>
 
-        <!-- Theme -->
-        <x-ui.form-group name="theme" label="{{ __('Theme') }}">
-            <x-ui.select name="theme" id="theme">
-                @php
-                    $currentTheme = $user->getSetting('theme', 'light');
-                @endphp
-                <option value="light" {{ $currentTheme === 'light' ? 'selected' : '' }}>{{ __('Light') }}</option>
-                <option value="dark" {{ $currentTheme === 'dark' ? 'selected' : '' }}>{{ __('Dark') }}</option>
-                <option value="auto" {{ $currentTheme === 'auto' ? 'selected' : '' }}>{{ __('System') }}</option>
-            </x-ui.select>
-        </x-ui.form-group>
-
         <!-- Items per page -->
         <x-ui.form-group name="items_per_page" label="{{ __('Items per page') }}">
             <x-ui.select name="items_per_page" id="items_per_page">
