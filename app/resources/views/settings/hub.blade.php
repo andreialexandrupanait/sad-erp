@@ -22,7 +22,7 @@
                         </div>
                         <div class="flex-1 min-w-0">
                             <h3 class="text-lg font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">{{ __('Application') }}</h3>
-                            <p class="text-sm text-slate-500 mt-1">{{ __('App name, logo, language, theme and regional settings') }}</p>
+                            <p class="text-sm text-slate-500 mt-1">{{ __('App name, logo, language, and regional settings') }}</p>
                         </div>
                         <svg class="w-5 h-5 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>

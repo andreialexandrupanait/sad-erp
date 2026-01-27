@@ -180,7 +180,6 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'app_name' => 'required|string|max:255',
-            'theme_mode' => 'required|in:light,dark,auto',
             'primary_color' => 'required|string|max:7',
             'language' => 'required|string|max:5',
             'timezone' => 'required|string|max:50',
@@ -220,7 +219,6 @@ class SettingsController extends Controller
 
         // Update other settings
         ApplicationSetting::set('app_name', $validated['app_name']);
-        ApplicationSetting::set('theme_mode', $validated['theme_mode']);
         ApplicationSetting::set('primary_color', $validated['primary_color']);
         ApplicationSetting::set('language', $validated['language']);
         ApplicationSetting::set('timezone', $validated['timezone']);
