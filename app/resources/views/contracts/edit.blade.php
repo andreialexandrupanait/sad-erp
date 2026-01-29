@@ -67,10 +67,24 @@
     <script>
         let hasUnsavedChanges = false;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof tinymce === 'undefined') {
-                return;
+        // Load TinyMCE on-demand (shared promise with other components)
+        function loadTinyMCE() {
+            if (!window.__tinymceLoading) {
+                window.__tinymceLoading = new Promise(function(resolve, reject) {
+                    if (typeof tinymce !== 'undefined') { resolve(); return; }
+                    var s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+                    s.referrerPolicy = 'origin';
+                    s.onload = resolve;
+                    s.onerror = function() { reject(new Error('Failed to load TinyMCE')); };
+                    document.head.appendChild(s);
+                });
             }
+            return window.__tinymceLoading;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTinyMCE().then(function() {
 
             tinymce.init({
                 selector: '#contract-content',
@@ -116,6 +130,7 @@
                     saveContract();
                 }
             });
+            }).catch(function(e) { console.error('[ContractEdit]', e); });
         });
 
         function markUnsaved() {

@@ -100,16 +100,33 @@
     @push("scripts")
     <script>
         let editor;
-        tinymce.init({
-            selector: ".tinymce-editor",
-            height: 500,
-            plugins: "lists link table code fullscreen searchreplace wordcount",
-            toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | code fullscreen",
-            content_style: "body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; }",
-            setup: function(ed) {
-                editor = ed;
+
+        // Load TinyMCE on-demand (shared promise with other components)
+        (function() {
+            if (!window.__tinymceLoading) {
+                window.__tinymceLoading = new Promise(function(resolve, reject) {
+                    if (typeof tinymce !== 'undefined') { resolve(); return; }
+                    var s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+                    s.referrerPolicy = 'origin';
+                    s.onload = resolve;
+                    s.onerror = function() { reject(new Error('Failed to load TinyMCE')); };
+                    document.head.appendChild(s);
+                });
             }
-        });
+            window.__tinymceLoading.then(function() {
+                tinymce.init({
+                    selector: ".tinymce-editor",
+                    height: 500,
+                    plugins: "lists link table code fullscreen searchreplace wordcount",
+                    toolbar: "undo redo | blocks | bold italic underline | alignleft aligncenter alignright | bullist numlist | link table | code fullscreen",
+                    content_style: "body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; }",
+                    setup: function(ed) {
+                        editor = ed;
+                    }
+                });
+            }).catch(function(e) { console.error('[AnnexEdit]', e); });
+        })();
 
         function insertVariable(varName) {
             if (editor) {

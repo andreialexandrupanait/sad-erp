@@ -1,3 +1,40 @@
+@pushOnce('styles')
+<link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
+<style>
+    trix-toolbar .trix-button-group--file-tools { display: none; }
+    trix-toolbar [data-trix-action="attachFiles"] { display: none; }
+    trix-editor {
+        min-height: 120px;
+        border: 1px solid #e2e8f0;
+        border-radius: 0.375rem;
+        padding: 0.75rem;
+    }
+    trix-editor:focus {
+        outline: none;
+        border-color: #0f172a;
+    }
+    trix-toolbar {
+        border: 1px solid #e2e8f0;
+        border-bottom: none;
+        border-radius: 0.375rem 0.375rem 0 0;
+        background: #f8fafc;
+        padding: 0.5rem;
+    }
+    trix-editor {
+        border-radius: 0 0 0.375rem 0.375rem;
+    }
+    trix-toolbar .trix-button {
+        border-radius: 0.25rem;
+    }
+    trix-toolbar .trix-button.trix-active {
+        background: #e2e8f0;
+    }
+</style>
+@endPushOnce
+@pushOnce('scripts')
+<script src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+@endPushOnce
+
 <x-app-layout>
     <x-slot name="pageTitle">{{ __('New Offer') }}</x-slot>
 

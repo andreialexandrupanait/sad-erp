@@ -357,12 +357,25 @@
             }
         }
 
+        // Load TinyMCE on-demand (shared promise with other components)
+        function loadTinyMCE() {
+            if (!window.__tinymceLoading) {
+                window.__tinymceLoading = new Promise(function(resolve, reject) {
+                    if (typeof tinymce !== 'undefined') { resolve(); return; }
+                    var s = document.createElement('script');
+                    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+                    s.referrerPolicy = 'origin';
+                    s.onload = resolve;
+                    s.onerror = function() { reject(new Error('Failed to load TinyMCE')); };
+                    document.head.appendChild(s);
+                });
+            }
+            return window.__tinymceLoading;
+        }
+
         // Initialize TinyMCE
         document.addEventListener('DOMContentLoaded', function() {
-            if (typeof tinymce === 'undefined') {
-                console.error('[ContractTemplate] TinyMCE not loaded');
-                return;
-            }
+            loadTinyMCE().then(function() {
 
             tinymce.init({
                 selector: '#content-editor',
@@ -395,9 +408,6 @@
                 statusbar: true,
                 elementpath: false,
                 setup: function(editor) {
-                    editor.on('init', function() {
-                        console.log('[ContractTemplate] TinyMCE initialized');
-                    });
                     editor.on('change', function() {
                         editor.save();
                     });
@@ -414,6 +424,7 @@
                     document.getElementById('template-form').submit();
                 }
             });
+            }).catch(function(e) { console.error('[ContractTemplate]', e); });
         });
     </script>
     @endpush

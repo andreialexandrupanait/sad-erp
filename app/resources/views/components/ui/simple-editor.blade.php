@@ -18,12 +18,181 @@
     $tinymceLang = $locale === 'ro' ? 'ro' : null;
 @endphp
 
+{{-- Lazy-load TinyMCE CSS only on pages that use this component --}}
+@pushOnce('styles')
+<style>
+    /* TinyMCE Customizations */
+    .tox-tinymce {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.5rem !important;
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+    }
+    .tox-tinymce:focus-within {
+        border-color: #0f172a !important;
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+    }
+    .tox-editor-header {
+        border-bottom: 1px solid #e2e8f0 !important;
+        box-shadow: none !important;
+    }
+    .tox:not(.tox-tinymce-inline) .tox-editor-header {
+        padding: 0 !important;
+    }
+    .tox-toolbar__primary {
+        background: #f8fafc !important;
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+    }
+    .tox-toolbar__group {
+        border: none !important;
+        padding: 0 4px !important;
+    }
+    .tox-toolbar__group:not(:last-of-type) {
+        border-right: 1px solid #e2e8f0 !important;
+    }
+    .tox-tbtn {
+        border-radius: 0.25rem !important;
+        margin: 2px !important;
+    }
+    .tox-tbtn:hover {
+        background: #e2e8f0 !important;
+    }
+    .tox-tbtn--enabled,
+    .tox-tbtn--enabled:hover {
+        background: #e2e8f0 !important;
+    }
+    .tox-tbtn--select {
+        border-radius: 0.25rem !important;
+    }
+    .tox-split-button {
+        border-radius: 0.25rem !important;
+        overflow: hidden;
+    }
+    .tox-split-button:hover {
+        box-shadow: none !important;
+    }
+    .tox-statusbar {
+        border-top: 1px solid #e2e8f0 !important;
+        background: #f8fafc !important;
+        border-radius: 0 0 0.5rem 0.5rem !important;
+        padding: 8px 12px !important;
+    }
+    .tox-statusbar__text-container {
+        font-size: 12px !important;
+        color: #64748b !important;
+    }
+    .tox-edit-area__iframe {
+        background: #fff !important;
+    }
+    /* Dropdown menus */
+    .tox-menu {
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.375rem !important;
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+    }
+    .tox-collection__item--active {
+        background: #f1f5f9 !important;
+    }
+    .tox-collection__item-label {
+        font-size: 13px !important;
+    }
+    /* Dialog styling */
+    .tox-dialog {
+        border-radius: 0.5rem !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .tox-dialog__header {
+        background: #f8fafc !important;
+        border-bottom: 1px solid #e2e8f0 !important;
+    }
+    .tox-dialog__footer {
+        background: #f8fafc !important;
+        border-top: 1px solid #e2e8f0 !important;
+    }
+    .tox-button {
+        border-radius: 0.375rem !important;
+    }
+    .tox-button--secondary {
+        background: #fff !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .tox-textfield, .tox-selectfield select {
+        border-radius: 0.375rem !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    .tox-textfield:focus, .tox-selectfield select:focus {
+        border-color: #0f172a !important;
+        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+    }
+    /* Loading skeleton for editor */
+    .simple-editor-skeleton {
+        border: 1px solid #e2e8f0;
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    .simple-editor-skeleton-toolbar {
+        background: #f8fafc;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 6px 8px;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .simple-editor-skeleton-btn {
+        width: 28px;
+        height: 24px;
+        background: #e2e8f0;
+        border-radius: 4px;
+        animation: skeleton-pulse 1.5s ease-in-out infinite;
+    }
+    .simple-editor-skeleton-btn.wide { width: 72px; }
+    .simple-editor-skeleton-sep {
+        width: 1px;
+        height: 20px;
+        background: #e2e8f0;
+        margin: 0 2px;
+    }
+    .simple-editor-skeleton-body {
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 13px;
+    }
+    @keyframes skeleton-pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.4; }
+    }
+</style>
+@endPushOnce
+
 <div class="simple-editor-wrapper" id="wrapper-{{ $uniqueId }}">
-    <!-- Textarea that TinyMCE will enhance -->
+    {{-- Loading skeleton (shown until TinyMCE is ready) --}}
+    <div id="skeleton-{{ $uniqueId }}" class="simple-editor-skeleton">
+        <div class="simple-editor-skeleton-toolbar">
+            <div class="simple-editor-skeleton-btn wide"></div>
+            <div class="simple-editor-skeleton-sep"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-sep"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-sep"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+            <div class="simple-editor-skeleton-btn"></div>
+        </div>
+        <div class="simple-editor-skeleton-body" style="height: {{ $heightNum - 42 }}px">
+            {{ __('Loading editor...') }}
+        </div>
+    </div>
+
+    {{-- Hidden textarea that TinyMCE will enhance --}}
     <textarea
         name="{{ $name }}"
         id="{{ $editorId }}"
         class="tinymce-editor"
+        style="display:none"
         placeholder="{{ $placeholder }}"
     >{!! $value !!}</textarea>
 
@@ -73,12 +242,32 @@
     var dismissedClients = [];
     var debounceTimer = null;
 
-    function initEditor() {
-        if (typeof tinymce === 'undefined') {
-            setTimeout(initEditor, 100);
-            return;
+    /**
+     * Load TinyMCE on-demand via a shared Promise.
+     * First editor on the page creates the <script> element;
+     * subsequent editors reuse the same promise — no polling.
+     */
+    function loadTinyMCE() {
+        if (!window.__tinymceLoading) {
+            window.__tinymceLoading = new Promise(function(resolve, reject) {
+                if (typeof tinymce !== 'undefined') {
+                    resolve();
+                    return;
+                }
+                var script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+                script.referrerPolicy = 'origin';
+                script.onload = resolve;
+                script.onerror = function() {
+                    reject(new Error('Failed to load TinyMCE'));
+                };
+                document.head.appendChild(script);
+            });
         }
+        return window.__tinymceLoading;
+    }
 
+    function initEditor() {
         // Remove existing instance if any
         var existing = tinymce.get(editorId);
         if (existing) {
@@ -101,6 +290,14 @@
             resize: true,
             setup: function(ed) {
                 editor = ed;
+
+                // Remove skeleton and show editor once TinyMCE renders
+                ed.on('init', function() {
+                    var skeleton = document.getElementById('skeleton-' + uniqueId);
+                    if (skeleton) skeleton.remove();
+                    var textarea = document.getElementById(editorId);
+                    if (textarea) textarea.style.display = '';
+                });
 
                 ed.on('input change keyup', function() {
                     // Client detection
@@ -223,11 +420,29 @@
         banner.classList.add('hidden');
     }
 
-    // Initialize when DOM is ready
+    // Load TinyMCE on-demand, then initialize — no polling
+    function boot() {
+        loadTinyMCE().then(initEditor).catch(function(err) {
+            console.error('[SimpleEditor] ' + err.message);
+            // Fallback: show plain textarea if CDN fails
+            var skeleton = document.getElementById('skeleton-' + uniqueId);
+            if (skeleton) skeleton.remove();
+            var textarea = document.getElementById(editorId);
+            if (textarea) {
+                textarea.style.display = '';
+                textarea.style.width = '100%';
+                textarea.style.minHeight = editorHeight + 'px';
+                textarea.style.border = '1px solid #e2e8f0';
+                textarea.style.borderRadius = '0.5rem';
+                textarea.style.padding = '12px';
+            }
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initEditor);
+        document.addEventListener('DOMContentLoaded', boot);
     } else {
-        initEditor();
+        boot();
     }
 })();
 </script>

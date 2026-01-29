@@ -1,3 +1,80 @@
+@pushOnce('styles')
+<style>
+    /* Contract content display styles */
+    .contract-content {
+        font-size: 14px !important;
+        line-height: 1.5 !important;
+        color: #1e293b;
+    }
+    .contract-content h1 {
+        font-size: 1.875rem !important;
+        font-weight: 700 !important;
+        line-height: 1.3 !important;
+        margin-top: 1.5rem !important;
+        margin-bottom: 0.25rem !important;
+        color: #1e293b;
+    }
+    .contract-content h2 {
+        font-size: 1.5rem !important;
+        font-weight: 600 !important;
+        line-height: 1.35 !important;
+        margin-top: 1.25rem !important;
+        margin-bottom: 0.2rem !important;
+        color: #1e293b;
+    }
+    .contract-content h3 {
+        font-size: 1.25rem !important;
+        font-weight: 600 !important;
+        line-height: 1.4 !important;
+        margin-top: 1rem !important;
+        margin-bottom: 0.15rem !important;
+        color: #334155;
+    }
+    .contract-content p {
+        margin-bottom: 0.5rem !important;
+        line-height: 1.5 !important;
+    }
+    .contract-content ul,
+    .contract-content ol {
+        margin-bottom: 0.75rem !important;
+        padding-left: 1.5rem !important;
+    }
+    .contract-content li {
+        margin-bottom: 0.1rem !important;
+        line-height: 1.4 !important;
+    }
+    .contract-content li:last-child {
+        margin-bottom: 0.5rem !important;
+    }
+    .contract-content blockquote {
+        border-left: 4px solid #3b82f6 !important;
+        padding-left: 1rem !important;
+        margin: 0.75rem 0 !important;
+        color: #475569;
+        font-style: italic;
+    }
+    .contract-content hr {
+        margin: 1rem 0 !important;
+        border-color: #e2e8f0;
+    }
+    .contract-content > *:first-child {
+        margin-top: 0 !important;
+    }
+    .contract-content p:empty::before {
+        content: '\00a0';
+    }
+    .contract-content .ql-align-center { text-align: center; }
+    .contract-content .ql-align-right { text-align: right; }
+    .contract-content .ql-align-justify { text-align: justify; }
+    .contract-content .ql-indent-1 { padding-left: 3em; }
+    .contract-content .ql-indent-2 { padding-left: 6em; }
+    .contract-content .ql-indent-3 { padding-left: 9em; }
+    .contract-content .ql-size-small { font-size: 0.75em; }
+    .contract-content .ql-size-large { font-size: 1.5em; }
+    .contract-content .ql-size-huge { font-size: 2.5em; }
+</style>
+@endPushOnce
+
 <x-app-layout>
     <x-slot name="pageTitle">{{ $contract->formatted_number }}</x-slot>
 

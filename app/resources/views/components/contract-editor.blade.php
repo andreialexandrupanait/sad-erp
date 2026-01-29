@@ -70,13 +70,31 @@
     const editorId = '{{ $editorId }}';
     const height = {{ $height }};
 
-    // Initialize TinyMCE when DOM is ready
-    function initEditor() {
-        if (typeof tinymce === 'undefined') {
-            console.error('[ContractEditor] TinyMCE not loaded');
-            return;
+    /**
+     * Load TinyMCE on-demand via a shared Promise.
+     * Reuses the same loader as simple-editor component.
+     */
+    function loadTinyMCE() {
+        if (!window.__tinymceLoading) {
+            window.__tinymceLoading = new Promise(function(resolve, reject) {
+                if (typeof tinymce !== 'undefined') {
+                    resolve();
+                    return;
+                }
+                var script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js';
+                script.referrerPolicy = 'origin';
+                script.onload = resolve;
+                script.onerror = function() {
+                    reject(new Error('Failed to load TinyMCE'));
+                };
+                document.head.appendChild(script);
+            });
         }
+        return window.__tinymceLoading;
+    }
 
+    function initEditor() {
         // Remove existing instance if any
         const existing = tinymce.get(editorId);
         if (existing) {
@@ -114,9 +132,6 @@
             statusbar: true,
             elementpath: false,
             setup: function(editor) {
-                editor.on('init', function() {
-                    console.log('[ContractEditor] Initialized:', editorId);
-                });
                 editor.on('change', function() {
                     editor.save(); // Sync to textarea
                 });
@@ -133,11 +148,17 @@
         }
     };
 
-    // Initialize
+    // Load TinyMCE on-demand, then initialize
+    function boot() {
+        loadTinyMCE().then(initEditor).catch(function(err) {
+            console.error('[ContractEditor] ' + err.message);
+        });
+    }
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initEditor);
+        document.addEventListener('DOMContentLoaded', boot);
     } else {
-        initEditor();
+        boot();
     }
 })();
 </script>
