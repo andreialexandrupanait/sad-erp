@@ -642,7 +642,224 @@
             }
         </style>
 
-        <!-- Editor libraries & styles (TinyMCE, Trix) are lazy-loaded by their components via @pushOnce -->
+        <!-- Trix WYSIWYG Editor (deferred — non-render-blocking) -->
+        <link rel="stylesheet" href="https://unpkg.com/trix@2.0.0/dist/trix.css">
+        <script defer src="https://unpkg.com/trix@2.0.0/dist/trix.umd.min.js"></script>
+
+        <!-- TinyMCE Rich Text Editor (deferred — non-render-blocking) -->
+        <script defer src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.2/tinymce.min.js" referrerpolicy="origin"></script>
+
+        <style>
+            /* TinyMCE Customizations */
+            .tox-tinymce {
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 0.5rem !important;
+                box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+            }
+            .tox-tinymce:focus-within {
+                border-color: #0f172a !important;
+                box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+            }
+            .tox-editor-header {
+                border-bottom: 1px solid #e2e8f0 !important;
+                box-shadow: none !important;
+            }
+            .tox:not(.tox-tinymce-inline) .tox-editor-header {
+                padding: 0 !important;
+            }
+            .tox-toolbar__primary {
+                background: #f8fafc !important;
+                border-radius: 0.5rem 0.5rem 0 0 !important;
+            }
+            .tox-toolbar__group {
+                border: none !important;
+                padding: 0 4px !important;
+            }
+            .tox-toolbar__group:not(:last-of-type) {
+                border-right: 1px solid #e2e8f0 !important;
+            }
+            .tox-tbtn {
+                border-radius: 0.25rem !important;
+                margin: 2px !important;
+            }
+            .tox-tbtn:hover {
+                background: #e2e8f0 !important;
+            }
+            .tox-tbtn--enabled,
+            .tox-tbtn--enabled:hover {
+                background: #e2e8f0 !important;
+            }
+            .tox-tbtn--select {
+                border-radius: 0.25rem !important;
+            }
+            .tox-split-button {
+                border-radius: 0.25rem !important;
+                overflow: hidden;
+            }
+            .tox-split-button:hover {
+                box-shadow: none !important;
+            }
+            .tox-statusbar {
+                border-top: 1px solid #e2e8f0 !important;
+                background: #f8fafc !important;
+                border-radius: 0 0 0.5rem 0.5rem !important;
+                padding: 8px 12px !important;
+            }
+            .tox-statusbar__text-container {
+                font-size: 12px !important;
+                color: #64748b !important;
+            }
+            .tox-edit-area__iframe {
+                background: #fff !important;
+            }
+            /* Dropdown menus */
+            .tox-menu {
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 0.375rem !important;
+                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
+            }
+            .tox-collection__item--active {
+                background: #f1f5f9 !important;
+            }
+            .tox-collection__item-label {
+                font-size: 13px !important;
+            }
+            /* Dialog styling */
+            .tox-dialog {
+                border-radius: 0.5rem !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .tox-dialog__header {
+                background: #f8fafc !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+            }
+            .tox-dialog__footer {
+                background: #f8fafc !important;
+                border-top: 1px solid #e2e8f0 !important;
+            }
+            .tox-button {
+                border-radius: 0.375rem !important;
+            }
+            .tox-button--secondary {
+                background: #fff !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .tox-textfield, .tox-selectfield select {
+                border-radius: 0.375rem !important;
+                border: 1px solid #e2e8f0 !important;
+            }
+            .tox-textfield:focus, .tox-selectfield select:focus {
+                border-color: #0f172a !important;
+                box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
+            }
+        </style>
+
+        <style>
+            /* Trix Customizations */
+            trix-toolbar .trix-button-group--file-tools { display: none; }
+            trix-toolbar [data-trix-action="attachFiles"] { display: none; }
+            trix-editor {
+                min-height: 120px;
+                border: 1px solid #e2e8f0;
+                border-radius: 0.375rem;
+                padding: 0.75rem;
+            }
+            trix-editor:focus {
+                outline: none;
+                border-color: #0f172a;
+            }
+            trix-toolbar {
+                border: 1px solid #e2e8f0;
+                border-bottom: none;
+                border-radius: 0.375rem 0.375rem 0 0;
+                background: #f8fafc;
+                padding: 0.5rem;
+            }
+            trix-editor {
+                border-radius: 0 0 0.375rem 0.375rem;
+            }
+            trix-toolbar .trix-button {
+                border-radius: 0.25rem;
+            }
+            trix-toolbar .trix-button.trix-active {
+                background: #e2e8f0;
+            }
+        </style>
+
+        <style>
+            /* Contract content display styles */
+            .contract-content {
+                font-size: 14px !important;
+                line-height: 1.5 !important;
+                color: #1e293b;
+            }
+            .contract-content h1 {
+                font-size: 1.875rem !important;
+                font-weight: 700 !important;
+                line-height: 1.3 !important;
+                margin-top: 1.5rem !important;
+                margin-bottom: 0.25rem !important;
+                color: #1e293b;
+            }
+            .contract-content h2 {
+                font-size: 1.5rem !important;
+                font-weight: 600 !important;
+                line-height: 1.35 !important;
+                margin-top: 1.25rem !important;
+                margin-bottom: 0.2rem !important;
+                color: #1e293b;
+            }
+            .contract-content h3 {
+                font-size: 1.25rem !important;
+                font-weight: 600 !important;
+                line-height: 1.4 !important;
+                margin-top: 1rem !important;
+                margin-bottom: 0.15rem !important;
+                color: #334155;
+            }
+            .contract-content p {
+                margin-bottom: 0.5rem !important;
+                line-height: 1.5 !important;
+            }
+            .contract-content ul,
+            .contract-content ol {
+                margin-bottom: 0.75rem !important;
+                padding-left: 1.5rem !important;
+            }
+            .contract-content li {
+                margin-bottom: 0.1rem !important;
+                line-height: 1.4 !important;
+            }
+            .contract-content li:last-child {
+                margin-bottom: 0.5rem !important;
+            }
+            .contract-content blockquote {
+                border-left: 4px solid #3b82f6 !important;
+                padding-left: 1rem !important;
+                margin: 0.75rem 0 !important;
+                color: #475569;
+                font-style: italic;
+            }
+            .contract-content hr {
+                margin: 1rem 0 !important;
+                border-color: #e2e8f0;
+            }
+            .contract-content > *:first-child {
+                margin-top: 0 !important;
+            }
+            .contract-content p:empty::before {
+                content: '\00a0';
+            }
+            .contract-content .ql-align-center { text-align: center; }
+            .contract-content .ql-align-right { text-align: right; }
+            .contract-content .ql-align-justify { text-align: justify; }
+            .contract-content .ql-indent-1 { padding-left: 3em; }
+            .contract-content .ql-indent-2 { padding-left: 6em; }
+            .contract-content .ql-indent-3 { padding-left: 9em; }
+            .contract-content .ql-size-small { font-size: 0.75em; }
+            .contract-content .ql-size-large { font-size: 1.5em; }
+            .contract-content .ql-size-huge { font-size: 2.5em; }
+        </style>
         @stack('styles')
     </head>
     <body class="font-sans antialiased bg-slate-50" x-data="{

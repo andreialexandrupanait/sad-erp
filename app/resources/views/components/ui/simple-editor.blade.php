@@ -18,112 +18,8 @@
     $tinymceLang = $locale === 'ro' ? 'ro' : null;
 @endphp
 
-{{-- Lazy-load TinyMCE CSS only on pages that use this component --}}
-@pushOnce('styles')
+{{-- Skeleton styles (inline — only renders on pages with this component) --}}
 <style>
-    /* TinyMCE Customizations */
-    .tox-tinymce {
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 0.5rem !important;
-        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
-    }
-    .tox-tinymce:focus-within {
-        border-color: #0f172a !important;
-        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
-    }
-    .tox-editor-header {
-        border-bottom: 1px solid #e2e8f0 !important;
-        box-shadow: none !important;
-    }
-    .tox:not(.tox-tinymce-inline) .tox-editor-header {
-        padding: 0 !important;
-    }
-    .tox-toolbar__primary {
-        background: #f8fafc !important;
-        border-radius: 0.5rem 0.5rem 0 0 !important;
-    }
-    .tox-toolbar__group {
-        border: none !important;
-        padding: 0 4px !important;
-    }
-    .tox-toolbar__group:not(:last-of-type) {
-        border-right: 1px solid #e2e8f0 !important;
-    }
-    .tox-tbtn {
-        border-radius: 0.25rem !important;
-        margin: 2px !important;
-    }
-    .tox-tbtn:hover {
-        background: #e2e8f0 !important;
-    }
-    .tox-tbtn--enabled,
-    .tox-tbtn--enabled:hover {
-        background: #e2e8f0 !important;
-    }
-    .tox-tbtn--select {
-        border-radius: 0.25rem !important;
-    }
-    .tox-split-button {
-        border-radius: 0.25rem !important;
-        overflow: hidden;
-    }
-    .tox-split-button:hover {
-        box-shadow: none !important;
-    }
-    .tox-statusbar {
-        border-top: 1px solid #e2e8f0 !important;
-        background: #f8fafc !important;
-        border-radius: 0 0 0.5rem 0.5rem !important;
-        padding: 8px 12px !important;
-    }
-    .tox-statusbar__text-container {
-        font-size: 12px !important;
-        color: #64748b !important;
-    }
-    .tox-edit-area__iframe {
-        background: #fff !important;
-    }
-    /* Dropdown menus */
-    .tox-menu {
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 0.375rem !important;
-        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1) !important;
-    }
-    .tox-collection__item--active {
-        background: #f1f5f9 !important;
-    }
-    .tox-collection__item-label {
-        font-size: 13px !important;
-    }
-    /* Dialog styling */
-    .tox-dialog {
-        border-radius: 0.5rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    .tox-dialog__header {
-        background: #f8fafc !important;
-        border-bottom: 1px solid #e2e8f0 !important;
-    }
-    .tox-dialog__footer {
-        background: #f8fafc !important;
-        border-top: 1px solid #e2e8f0 !important;
-    }
-    .tox-button {
-        border-radius: 0.375rem !important;
-    }
-    .tox-button--secondary {
-        background: #fff !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    .tox-textfield, .tox-selectfield select {
-        border-radius: 0.375rem !important;
-        border: 1px solid #e2e8f0 !important;
-    }
-    .tox-textfield:focus, .tox-selectfield select:focus {
-        border-color: #0f172a !important;
-        box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.1) !important;
-    }
-    /* Loading skeleton for editor */
     .simple-editor-skeleton {
         border: 1px solid #e2e8f0;
         border-radius: 0.5rem;
@@ -142,7 +38,7 @@
         height: 24px;
         background: #e2e8f0;
         border-radius: 4px;
-        animation: skeleton-pulse 1.5s ease-in-out infinite;
+        animation: se-pulse 1.5s ease-in-out infinite;
     }
     .simple-editor-skeleton-btn.wide { width: 72px; }
     .simple-editor-skeleton-sep {
@@ -159,12 +55,11 @@
         color: #94a3b8;
         font-size: 13px;
     }
-    @keyframes skeleton-pulse {
+    @@keyframes se-pulse {
         0%, 100% { opacity: 1; }
         50% { opacity: 0.4; }
     }
 </style>
-@endPushOnce
 
 <div class="simple-editor-wrapper" id="wrapper-{{ $uniqueId }}">
     {{-- Loading skeleton (shown until TinyMCE is ready) --}}
