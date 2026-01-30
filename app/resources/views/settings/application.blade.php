@@ -175,43 +175,6 @@
                         </div>
                     </div>
 
-                    <!-- Appearance -->
-                    <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
-                        <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">
-                            <div class="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                            <h3 class="text-lg font-semibold text-gray-900">{{ __('Appearance') }}</h3>
-                        </div>
-                        <div class="p-6 space-y-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Theme Mode -->
-                                <div>
-                                    <label for="theme_mode" class="block text-sm font-medium text-slate-700 mb-2">
-                                        {{ __('Theme Mode') }} <span class="text-red-500">*</span>
-                                    </label>
-                                    <select id="theme_mode"
-                                            name="theme_mode"
-                                            required
-                                            class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                                        <option value="light" {{ old('theme_mode', $appSettings['theme_mode']) === 'light' ? 'selected' : '' }}>
-                                            {{ __('Light') }}
-                                        </option>
-                                        <option value="dark" {{ old('theme_mode', $appSettings['theme_mode']) === 'dark' ? 'selected' : '' }}>
-                                            {{ __('Dark') }}
-                                        </option>
-                                        <option value="auto" {{ old('theme_mode', $appSettings['theme_mode']) === 'auto' ? 'selected' : '' }}>
-                                            {{ __('Auto (System)') }}
-                                        </option>
-                                    </select>
-                                    <p class="mt-1 text-xs text-slate-500">{{ __('Currently only Light theme is implemented') }}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Regional Settings -->
                     <div class="bg-white rounded-lg border border-slate-200 mb-6 overflow-hidden">
                         <div class="px-6 py-4 border-b border-slate-200 bg-slate-100 flex items-center gap-3">

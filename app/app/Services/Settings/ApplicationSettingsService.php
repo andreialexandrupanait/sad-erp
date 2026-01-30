@@ -28,7 +28,6 @@ class ApplicationSettingsService
                 'app_name' => ApplicationSetting::get('app_name', 'ERP System'),
                 'app_logo' => ApplicationSetting::get('app_logo'),
                 'app_favicon' => ApplicationSetting::get('app_favicon'),
-                'theme_mode' => ApplicationSetting::get('theme_mode', 'light'),
                 'primary_color' => ApplicationSetting::get('primary_color', '#3b82f6'),
                 'language' => ApplicationSetting::get('language', 'ro'),
                 'timezone' => ApplicationSetting::get('timezone', 'Europe/Bucharest'),

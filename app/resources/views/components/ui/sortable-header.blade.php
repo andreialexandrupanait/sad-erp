@@ -21,11 +21,14 @@
     $isRightAligned = str_contains($attributes->get('class', ''), 'text-right');
     $justifyClass = $isRightAligned ? 'justify-end' : '';
 
+    // Conditionally exclude text-left default when text-right or text-center is passed
+    $defaultAlignment = str_contains($attributes->get('class', ''), 'text-right') || str_contains($attributes->get('class', ''), 'text-center') ? '' : 'text-left';
+
     // Determine aria-sort value
     $ariaSort = $isActive ? ($currentDir === 'asc' ? 'ascending' : 'descending') : 'none';
 @endphp
 
-<th {{ $attributes->merge(['class' => 'px-6 py-4 text-left align-middle font-medium text-slate-500']) }}
+<th {{ $attributes->merge(['class' => "px-6 py-4 {$defaultAlignment} align-middle font-medium text-slate-500"]) }}
     scope="col"
     aria-sort="{{ $ariaSort }}">
     <a href="{{ route(Route::currentRouteName(), $allParams) }}"

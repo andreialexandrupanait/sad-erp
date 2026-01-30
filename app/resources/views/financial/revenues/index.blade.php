@@ -237,11 +237,11 @@
                     <colgroup>
                         <col class="w-10">{{-- Checkbox --}}
                         <col class="w-24">{{-- Date --}}
-                        <col class="w-32">{{-- Invoice --}}
+                        <col class="w-28">{{-- Invoice --}}
                         <col>{{-- Customer - flexible --}}
-                        <col class="w-44">{{-- Amount --}}
+                        <col class="w-64">{{-- Amount --}}
                         <col class="w-16">{{-- Files --}}
-                        <col class="w-24">{{-- Actions --}}
+                        <col class="w-40">{{-- Actions --}}
                     </colgroup>
                     <thead class="bg-slate-100">
                         <tr class="border-b border-slate-200">
