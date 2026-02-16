@@ -91,21 +91,30 @@ class ExpenseAggregator
             $this->cacheKey("financial.expenses.categories.{$year}"),
             self::CACHE_TTL,
             function () use ($year, $limit) {
-                // Get aggregated data
+                // Get aggregated data grouped by parent category
+                // Uses COALESCE to group by parent_id if it exists, otherwise by the category's own id
                 $results = FinancialExpense::forYear($year)
                     ->whereNotNull('category_option_id')
-                    ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-                    ->groupBy('category_option_id')
+                    ->join('settings_options', 'financial_expenses.category_option_id', '=', 'settings_options.id')
+                    ->select(
+                        DB::raw('COALESCE(settings_options.parent_id, settings_options.id) as parent_category_id'),
+                        DB::raw('SUM(financial_expenses.amount) as total'),
+                        DB::raw('COUNT(*) as count')
+                    )
+                    ->groupBy(DB::raw('COALESCE(settings_options.parent_id, settings_options.id)'))
                     ->orderByDesc('total')
                     ->limit($limit)
                     ->get();
 
-                // Load categories separately to avoid N+1
-                $categoryIds = $results->pluck('category_option_id')->filter();
-                $categories = \App\Models\SettingOption::whereIn('id', $categoryIds)->get()->keyBy('id');
+                // Load parent categories separately to avoid N+1
+                $parentCategoryIds = $results->pluck('parent_category_id')->filter();
+                $categories = \App\Models\SettingOption::whereIn('id', $parentCategoryIds)->get()->keyBy('id');
 
-                // Map categories to results
-                $results->each(fn($r) => $r->setRelation('category', $categories->get($r->category_option_id)));
+                // Map parent categories to results and set category_option_id for compatibility
+                $results->each(function($r) use ($categories) {
+                    $r->category_option_id = $r->parent_category_id;
+                    $r->setRelation('category', $categories->get($r->parent_category_id));
+                });
 
                 return $results;
             }

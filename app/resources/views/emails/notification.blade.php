@@ -126,7 +126,7 @@
     <div class="container">
         @if($isTest)
             <div class="test-banner">
-                ✓ This is a test notification - Email is configured correctly!
+                {{ __('notifications.test.banner') }}
             </div>
             <div class="priority-bar priority-low"></div>
         @elseif($notification)
@@ -140,22 +140,21 @@
         <div class="content">
             @if($isTest)
                 <span class="category-badge category-system">Test</span>
-                <h2 class="title">Notification System Test</h2>
+                <h2 class="title">{{ __('notifications.test.title') }}</h2>
                 <p class="body">
-                    This is a test message from your ERP notification system. If you're seeing this email,
-                    your email notifications are properly configured and working!
+                    {{ __('notifications.test.body') }}
                 </p>
                 <div class="fields">
                     <div class="field">
-                        <span class="field-label">Environment</span>
+                        <span class="field-label">{{ __('notifications.test.environment') }}</span>
                         <span class="field-value">{{ config('app.env') }}</span>
                     </div>
                     <div class="field">
-                        <span class="field-label">Timestamp</span>
+                        <span class="field-label">{{ __('notifications.test.timestamp') }}</span>
                         <span class="field-value">{{ now()->format('Y-m-d H:i:s') }}</span>
                     </div>
                     <div class="field">
-                        <span class="field-label">Mail Driver</span>
+                        <span class="field-label">{{ __('notifications.test.mail_driver') }}</span>
                         <span class="field-value">{{ config('mail.default') }}</span>
                     </div>
                 </div>
@@ -180,7 +179,7 @@
                 @if($notification->getUrl())
                     <p style="text-align: center;">
                         <a href="{{ $notification->getUrl() }}" class="action-button">
-                            View Details
+                            {{ __('notifications.view_details') }}
                         </a>
                     </p>
                 @endif
@@ -189,7 +188,7 @@
 
         <div class="footer">
             <p>
-                This notification was sent by <a href="{{ $appUrl }}">{{ $appName }}</a>
+                {{ __('notifications.email.sent_by') }} <a href="{{ $appUrl }}">{{ $appName }}</a>
             </p>
             <p>
                 {{ now()->format('Y-m-d H:i:s') }}

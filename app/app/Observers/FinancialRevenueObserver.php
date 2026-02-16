@@ -26,7 +26,7 @@ class FinancialRevenueObserver
     public function saved(FinancialRevenue $revenue): void
     {
         $this->updateClientStats($revenue->client_id, $revenue->organization_id);
-        $this->clearRevenueCache($revenue->year);
+        $this->clearRevenueCache($revenue->year, $revenue->organization_id, $revenue->month);
     }
 
     /**
@@ -35,7 +35,7 @@ class FinancialRevenueObserver
     public function deleted(FinancialRevenue $revenue): void
     {
         $this->updateClientStats($revenue->client_id, $revenue->organization_id);
-        $this->clearRevenueCache($revenue->year);
+        $this->clearRevenueCache($revenue->year, $revenue->organization_id, $revenue->month);
     }
 
     /**
@@ -44,7 +44,7 @@ class FinancialRevenueObserver
     public function restored(FinancialRevenue $revenue): void
     {
         $this->updateClientStats($revenue->client_id, $revenue->organization_id);
-        $this->clearRevenueCache($revenue->year);
+        $this->clearRevenueCache($revenue->year, $revenue->organization_id, $revenue->month);
     }
 
     /**
@@ -53,25 +53,51 @@ class FinancialRevenueObserver
     public function forceDeleted(FinancialRevenue $revenue): void
     {
         $this->updateClientStats($revenue->client_id, $revenue->organization_id);
-        $this->clearRevenueCache($revenue->year);
+        $this->clearRevenueCache($revenue->year, $revenue->organization_id, $revenue->month);
     }
 
     /**
      * Clear revenue-related caches when data changes.
      */
-    private function clearRevenueCache(?int $year): void
+    private function clearRevenueCache(?int $year, ?int $organizationId = null, ?int $month = null): void
     {
+        // Get organization ID from parameter or authenticated user
+        $orgId = $organizationId ?? (Auth::check() ? Auth::user()->organization_id : null);
+
+        if (!$orgId) {
+            return;
+        }
+
+        $currentMonth = $month ?? now()->month;
+        $currentYear = $year ?? now()->year;
+
+        // Clear revenue aggregator caches (org-prefixed)
         if ($year) {
-            Cache::forget("financial.revenues.totals.{$year}");
-            Cache::forget("financial.revenues.monthly.{$year}");
+            Cache::forget("org.{$orgId}.financial.revenues.totals.{$year}");
+            Cache::forget("org.{$orgId}.financial.revenues.monthly.{$year}.all");
+            Cache::forget("org.{$orgId}.financial.revenues.monthly.{$year}.RON");
+            Cache::forget("org.{$orgId}.financial.revenues.monthly.{$year}.EUR");
+            Cache::forget("org.{$orgId}.financial.revenues.count.{$year}");
+            Cache::forget("org.{$orgId}.financial.revenues.clients.{$year}");
         }
-        Cache::forget('financial.revenues.yearly_aggregates');
-        Cache::forget('financial.available_years');
-        
-        // Clear dashboard cache for organization
-        if (Auth::check()) {
-            Cache::forget('dashboard_stats_' . Auth::user()->organization_id);
-        }
+        Cache::forget("org.{$orgId}.financial.revenues.all_years");
+
+        // Clear financial dashboard caches
+        Cache::forget("org.{$orgId}.financial.available_years");
+        Cache::forget("org.{$orgId}.financial.cashflow.revenues.{$currentYear}");
+        Cache::forget("org.{$orgId}.financial.analytics.top_clients");
+
+        // Clear dashboard trend caches
+        Cache::forget("org.{$orgId}.dashboard.revenue_trend_6m");
+        Cache::forget("org.{$orgId}.dashboard.yearly_revenue");
+        Cache::forget("org.{$orgId}.dashboard.yearly_profit");
+        Cache::forget("org.{$orgId}.dashboard.top_clients");
+        Cache::forget("org.{$orgId}.dashboard.top_clients_current_year");
+
+        // Clear dashboard metrics
+        Cache::forget("org.{$orgId}.dashboard.metrics");
+        Cache::forget("org.{$orgId}.dashboard.activity");
+        Cache::forget("org.{$orgId}.dashboard.financial.{$currentYear}.{$currentMonth}");
     }
 
     /**

@@ -143,22 +143,36 @@ class TrendsCalculator
         $monthlySubscriptionCost = $subscriptionStats->where('status', 'active')->where('billing_cycle', 'monthly')->sum('total');
         $yearlySubscriptionCost = $subscriptionStats->where('status', 'active')->where('billing_cycle', 'yearly')->sum('total');
 
-        // Revenue concentration
-        $topClients = $this->getTopClientsByRevenue(3);
+        // Revenue concentration - use current year date range to match yearlyRevenue
+        $startOfYear = Carbon::create($currentYear, 1, 1)->startOfDay();
+        $endOfYear = Carbon::create($currentYear, 12, 31)->endOfDay();
+        $topClients = $this->getTopClientsByRevenue(3, $startOfYear, $endOfYear);
         $topClientsRevenue = $topClients->sum('total_revenue');
         $yearlyRevenue = $this->applyRonFilter(
             FinancialRevenue::where('year', $currentYear)
         )->sum('amount');
 
-        // Expense categories - use SQL ordering
+        // Expense categories - group by parent category for aggregated view
         $categoryBreakdown = FinancialExpense::where('year', $currentYear)
             ->whereNotNull('category_option_id')
-            ->select('category_option_id', DB::raw('SUM(amount) as total'), DB::raw('COUNT(*) as count'))
-            ->groupBy('category_option_id')
+            ->join('settings_options', 'financial_expenses.category_option_id', '=', 'settings_options.id')
+            ->select(
+                DB::raw('COALESCE(settings_options.parent_id, settings_options.id) as parent_category_id'),
+                DB::raw('SUM(financial_expenses.amount) as total'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy(DB::raw('COALESCE(settings_options.parent_id, settings_options.id)'))
             ->orderByDesc('total')
             ->limit(8)
-            ->with('category')
             ->get();
+
+        // Load parent categories and map to results
+        $parentCategoryIds = $categoryBreakdown->pluck('parent_category_id')->filter();
+        $categories = \App\Models\SettingOption::whereIn('id', $parentCategoryIds)->get()->keyBy('id');
+        $categoryBreakdown->each(function($r) use ($categories) {
+            $r->category_option_id = $r->parent_category_id;
+            $r->setRelation('category', $categories->get($r->parent_category_id));
+        });
 
         return [
             'revenueGrowth' => $previousMonthRevenue > 0

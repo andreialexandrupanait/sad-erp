@@ -81,8 +81,8 @@ class NotificationMail extends Mailable
         }
 
         return match ($this->notificationMessage->getPriority()) {
-            'urgent' => '🚨 URGENT: ',
-            'high' => '⚠️ ',
+            'urgent' => __('notifications.email.subject_prefix_urgent'),
+            'high' => '',
             default => '',
         };
     }
@@ -93,18 +93,13 @@ class NotificationMail extends Mailable
     protected function getCategoryLabel(): string
     {
         if (!$this->notificationMessage) {
-            return 'Alert';
+            return __('notifications.email.category_alert');
         }
 
-        $labels = [
-            'domain' => 'Domain',
-            'subscription' => 'Subscription',
-            'financial' => 'Financial',
-            'client' => 'Client',
-            'system' => 'System',
-        ];
+        $category = $this->notificationMessage->getCategory();
+        $key = 'notifications.email.category_' . $category;
 
-        return $labels[$this->notificationMessage->getCategory()] ?? 'Alert';
+        return __($key);
     }
 
     /**

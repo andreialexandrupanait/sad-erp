@@ -19,32 +19,42 @@ class SubscriptionRenewalMessage extends NotificationMessage
     public function getTitle(): string
     {
         if ($this->daysUntilRenewal < 0) {
-            return "Subscription Overdue: {$this->subscription->vendor_name}";
+            return __('notifications.subscription.overdue_title', ['vendor' => $this->subscription->vendor_name]);
         }
 
         if ($this->daysUntilRenewal === 0) {
-            return "Subscription Due Today: {$this->subscription->vendor_name}";
+            return __('notifications.subscription.due_today_title', ['vendor' => $this->subscription->vendor_name]);
         }
 
-        return "Subscription Renewal: {$this->subscription->vendor_name}";
+        return __('notifications.subscription.renewal_title', ['vendor' => $this->subscription->vendor_name]);
     }
 
     public function getBody(): string
     {
+        $vendor = $this->subscription->vendor_name;
+
         if ($this->daysUntilRenewal < 0) {
             $daysOverdue = abs($this->daysUntilRenewal);
-            return "The subscription for {$this->subscription->vendor_name} is {$daysOverdue} day(s) overdue. Please review and renew immediately.";
+            $daysText = trans_choice('notifications.subscription.day', $daysOverdue);
+            return __('notifications.subscription.overdue_body', [
+                'vendor' => $vendor,
+                'days' => $daysOverdue . ' ' . $daysText,
+            ]);
         }
 
         if ($this->daysUntilRenewal === 0) {
-            return "The subscription for {$this->subscription->vendor_name} is due for renewal TODAY.";
+            return __('notifications.subscription.due_today_body', ['vendor' => $vendor]);
         }
 
         if ($this->daysUntilRenewal === 1) {
-            return "The subscription for {$this->subscription->vendor_name} is due for renewal TOMORROW.";
+            return __('notifications.subscription.due_tomorrow_body', ['vendor' => $vendor]);
         }
 
-        return "The subscription for {$this->subscription->vendor_name} will renew in {$this->daysUntilRenewal} days.";
+        $daysText = trans_choice('notifications.subscription.day', $this->daysUntilRenewal);
+        return __('notifications.subscription.renewal_body', [
+            'vendor' => $vendor,
+            'days' => $this->daysUntilRenewal . ' ' . $daysText,
+        ]);
     }
 
     public function getPriority(): string
@@ -94,31 +104,40 @@ class SubscriptionRenewalMessage extends NotificationMessage
     public function getFields(): array
     {
         $fields = [];
+        $days = abs($this->daysUntilRenewal);
+        $daysText = trans_choice('notifications.subscription.day', $days);
 
         $fields[] = [
-            'title' => $this->daysUntilRenewal < 0 ? 'Days Overdue' : 'Days Until Renewal',
-            'value' => abs($this->daysUntilRenewal) . ' day(s)',
+            'title' => $this->daysUntilRenewal < 0
+                ? __('notifications.subscription.days_overdue')
+                : __('notifications.subscription.days_until_renewal'),
+            'value' => $days . ' ' . $daysText,
             'short' => true,
         ];
 
         $fields[] = [
-            'title' => 'Renewal Date',
-            'value' => $this->subscription->next_renewal_date?->format('Y-m-d') ?? 'N/A',
+            'title' => __('notifications.subscription.renewal_date'),
+            'value' => $this->subscription->next_renewal_date?->format('Y-m-d') ?? __('notifications.not_available'),
             'short' => true,
         ];
 
         $currency = $this->subscription->currency ?? 'EUR';
         $currencySymbol = $currency === 'EUR' ? '€' : ($currency === 'USD' ? '$' : $currency . ' ');
+        $billingCycleKey = 'notifications.billing_cycle.' . ($this->subscription->billing_cycle ?? 'monthly');
+        $billingCycleLabel = __($billingCycleKey);
 
         $fields[] = [
-            'title' => 'Price',
-            'value' => $currencySymbol . number_format($this->subscription->price, 2) . '/' . $this->subscription->billing_cycle_label,
+            'title' => __('notifications.subscription.price'),
+            'value' => $currencySymbol . number_format($this->subscription->price, 2) . '/' . $billingCycleLabel,
             'short' => true,
         ];
 
+        $statusKey = 'notifications.status.' . $this->subscription->status;
+        $statusText = __($statusKey);
+
         $fields[] = [
-            'title' => 'Status',
-            'value' => ucfirst($this->subscription->status),
+            'title' => __('notifications.subscription.status'),
+            'value' => $statusText,
             'short' => true,
         ];
 
